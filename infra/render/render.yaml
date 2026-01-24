@@ -14,16 +14,23 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      - key: DATABASE_URL
+      # Neon API credentials (passwordless - no DATABASE_URL/DIRECT_URL stored)
+      - key: NEON_API_KEY
         sync: false
-      - key: DIRECT_URL
+      - key: NEON_PROJECT_ID
         sync: false
+      - key: NEON_DATABASE
+        value: neondb
+      - key: NEON_ROLE
+        value: neondb_owner
+      # App config
       - key: APP_ORIGIN
         value: https://crm.quantract.co.uk
       - key: NEXT_PUBLIC_APP_ORIGIN
         value: https://crm.quantract.co.uk
       - key: QT_USE_PRISMA
         value: "1"
+      # Third-party services
       - key: SENTRY_DSN
         sync: false
       - key: RESEND_API_KEY
