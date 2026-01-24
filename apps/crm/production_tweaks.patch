@@ -1,0 +1,467 @@
+diff -ruN /mnt/data/quantract_orig/app/admin/layout.tsx /mnt/data/quantract_src/app/admin/layout.tsx
+--- /mnt/data/quantract_orig/app/admin/layout.tsx	2026-01-08 20:27:52.000000000 +0000
++++ /mnt/data/quantract_src/app/admin/layout.tsx	2026-01-08 21:31:23.929555546 +0000
+@@ -1,17 +1,23 @@
+-// app/admin/layout.tsx
+-import type { ReactNode } from "react";
+-import { AppShell } from "@/components/AppShell";
+-import { Toaster } from "@/components/ui/Toaster";
+-
+-export default function AdminLayout({ children }: { children: ReactNode }) {
+-  return (
+-    <AppShell
+-      role="admin"
+-      title="Admin"
+-      subtitle="Manage quotes, agreements, invoices, jobs and staff."
+-    >
+-      {children}
+-      <Toaster />
+-    </AppShell>
+-  );
+-}
++// app/admin/layout.tsx
++"use client";
++
++import type { ReactNode } from "react";
++import { usePathname } from "next/navigation";
++import { AppShell } from "@/components/AppShell";
++import { Toaster } from "@/components/ui/Toaster";
++
++export default function AdminLayout({ children }: { children: ReactNode }) {
++  const pathname = usePathname();
++  const hideNav = pathname === "/admin/settings" || pathname === "/admin/onboarding";
++  return (
++    <AppShell
++      role="admin"
++      title="Admin"
++      subtitle="Manage quotes, agreements, invoices, jobs and staff."
++      hideNav={hideNav}
++    >
++      {children}
++      <Toaster />
++    </AppShell>
++  );
++}
+diff -ruN /mnt/data/quantract_orig/app/admin/onboarding/page.tsx /mnt/data/quantract_src/app/admin/onboarding/page.tsx
+--- /mnt/data/quantract_orig/app/admin/onboarding/page.tsx	2026-01-08 20:27:52.000000000 +0000
++++ /mnt/data/quantract_src/app/admin/onboarding/page.tsx	2026-01-08 21:28:28.470157609 +0000
+@@ -1,10 +1,5 @@
+-import { AppShell } from "@/components/AppShell";
+-import { CompanySettingsForm } from "@/components/admin/CompanySettingsForm";
+-
+-export default function AdminOnboardingPage() {
+-  return (
+-    <AppShell role="admin" title="Onboarding" subtitle="Set up branding, VAT defaults, and numbering.">
+-      <CompanySettingsForm mode="onboarding" />
+-    </AppShell>
+-  );
+-}
++import { CompanySettingsForm } from "@/components/admin/CompanySettingsForm";
++
++export default function AdminOnboardingPage() {
++  return <CompanySettingsForm mode="onboarding" />;
++}
+diff -ruN /mnt/data/quantract_orig/app/admin/settings/page.tsx /mnt/data/quantract_src/app/admin/settings/page.tsx
+--- /mnt/data/quantract_orig/app/admin/settings/page.tsx	2026-01-08 20:27:52.000000000 +0000
++++ /mnt/data/quantract_src/app/admin/settings/page.tsx	2026-01-08 21:28:12.386034454 +0000
+@@ -1,10 +1,5 @@
+-import { AppShell } from "@/components/AppShell";
+-import { CompanySettingsForm } from "@/components/admin/CompanySettingsForm";
+-
+-export default function AdminSettingsPage() {
+-  return (
+-    <AppShell role="admin" title="Settings" subtitle="Company, VAT, templates, and preferences.">
+-      <CompanySettingsForm mode="settings" />
+-    </AppShell>
+-  );
+-}
++import { CompanySettingsForm } from "@/components/admin/CompanySettingsForm";
++
++export default function AdminSettingsPage() {
++  return <CompanySettingsForm mode="settings" />;
++}
+diff -ruN /mnt/data/quantract_orig/src/components/AppShell.tsx /mnt/data/quantract_src/src/components/AppShell.tsx
+--- /mnt/data/quantract_orig/src/components/AppShell.tsx	2026-01-08 20:27:52.000000000 +0000
++++ /mnt/data/quantract_src/src/components/AppShell.tsx	2026-01-08 21:29:08.137074364 +0000
+@@ -1,121 +1,122 @@
+-import type { ComponentType, ReactNode } from "react";
+-import Link from "next/link";
+-import { cn } from "@/lib/cn";
+-import { Badge } from "@/components/ui/Badge";
+-import { Button } from "@/components/ui/Button";
+-import { BadgeCheck, FileText, LayoutDashboard, Receipt, Settings, Users, Briefcase, Clock, CalendarDays } from "lucide-react";
+-
+-const BRAND_NAME = process.env.NEXT_PUBLIC_QT_BRAND_NAME || "Quantract";
+-const BRAND_TAGLINE = process.env.NEXT_PUBLIC_QT_BRAND_TAGLINE || "Electrical & Building Services";
+-
+-export type Role = "admin" | "client" | "engineer";
+-
+-type NavItem = {
+-  label: string;
+-  href: string;
+-  icon: ComponentType<{ className?: string }>;
+-};
+-
+-const adminNav: NavItem[] = [
+-  { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
+-  { label: "Quotes", href: "/admin/quotes", icon: FileText },
+-  { label: "Invoices", href: "/admin/invoices", icon: Receipt },
+-  { label: "Jobs", href: "/admin/jobs", icon: Briefcase },
+-  { label: "Profitability", href: "/admin/reports/profitability", icon: Receipt },
+-  { label: "Certificates", href: "/admin/certificates", icon: BadgeCheck },
+-  { label: "Schedule", href: "/admin/schedule", icon: CalendarDays },
+-  { label: "Timesheets", href: "/admin/timesheets", icon: Clock },
+-  { label: "Clients", href: "/admin/clients", icon: Users },
+-  { label: "Engineers", href: "/admin/engineers", icon: Users },
+-  { label: "Settings", href: "/admin/settings", icon: Settings },
+-];
+-
+-const clientNav: NavItem[] = [
+-  { label: "My Quotes", href: "/client", icon: FileText },
+-  { label: "My Invoices", href: "/client/invoices", icon: Receipt },
+-  { label: "Settings", href: "/client/settings", icon: Settings },
+-];
+-
+-const engineerNav: NavItem[] = [
+-  { label: "Dashboard", href: "/engineer", icon: LayoutDashboard },
+-  { label: "My Jobs", href: "/engineer/jobs", icon: FileText },
+-  { label: "Schedule", href: "/engineer/schedule", icon: CalendarDays },
+-  { label: "Timesheets", href: "/engineer/timesheets", icon: Clock },
+-  { label: "Settings", href: "/engineer/settings", icon: Settings },
+-];
+-
+-export function AppShell({
+-  role,
+-  title,
+-  subtitle,
+-  children,
+-}: {
+-  role: Role;
+-  title: string;
+-  subtitle?: string;
+-  children: ReactNode;
+-}) {
+-  const nav = role === "admin" ? adminNav : role === "engineer" ? engineerNav : clientNav;
+-
+-  return (
+-    <div className="min-h-screen bg-slate-50">
+-      <header className="border-b border-slate-200 bg-white">
+-        <div className="mx-auto flex w-full max-w-6xl items-start justify-between gap-4 px-4 py-5 sm:px-6">
+-          <div className="flex items-start gap-4">
+-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-white">
+-              <span className="text-xs font-extrabold text-slate-900">{BRAND_NAME.slice(0, 1).toUpperCase()}</span>
+-            </div>
+-            <div className="min-w-0">
+-              <div className="text-sm font-bold text-slate-900">{BRAND_NAME.toUpperCase()}</div>
+-              <div className="mt-0.5 text-xs text-slate-600">{BRAND_TAGLINE}</div>
+-              <div className="mt-2 flex flex-wrap items-center gap-2">
+-                <Badge>{role === "admin" ? "Admin" : role === "engineer" ? "Engineer" : "Client"}</Badge>
+-                <Badge>Secure docs • Audit trail</Badge>
+-              </div>
+-            </div>
+-          </div>
+-
+-          <div className="hidden sm:flex items-center gap-2">
+-            <Button variant="secondary" type="button">
+-              Support
+-            </Button>
+-            <Button type="button">New</Button>
+-          </div>
+-        </div>
+-      </header>
+-
+-      <div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-6 px-4 py-6 sm:px-6 lg:grid-cols-12">
+-        <aside className="lg:col-span-3">
+-          <nav className="space-y-2">
+-            {nav.map((item) => (
+-              <Link
+-                key={item.href}
+-                href={item.href}
+-                className={cn(
+-                  "flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900 shadow-sm hover:bg-slate-50"
+-                )}
+-              >
+-                <item.icon className="h-4 w-4 text-slate-700" />
+-                {item.label}
+-              </Link>
+-            ))}
+-          </nav>
+-        </aside>
+-
+-        <main className="lg:col-span-9">
+-          <div className="mb-4">
+-            <h1 className="text-xl font-bold text-slate-900">{title}</h1>
+-            {subtitle ? <p className="mt-1 text-sm text-slate-600">{subtitle}</p> : null}
+-          </div>
+-          {children}
+-        </main>
+-      </div>
+-
+-      <footer className="mt-10 border-t border-slate-200 bg-white">
+-        <div className="mx-auto w-full max-w-6xl px-4 py-6 text-xs text-slate-600 sm:px-6">
+-          COMPANY REGISTRATION 13893644 • VAT 403339623 • UTR 7708219555
+-        </div>
+-      </footer>
+-    </div>
+-  );
+-}
++import type { ComponentType, ReactNode } from "react";
++import Link from "next/link";
++import { cn } from "@/lib/cn";
++import { Badge } from "@/components/ui/Badge";
++import { BadgeCheck, FileText, LayoutDashboard, Receipt, Settings, Users, Briefcase, Clock, CalendarDays } from "lucide-react";
++import ShellTopActions from "@/components/shell/ShellTopActions";
++
++const BRAND_NAME = process.env.NEXT_PUBLIC_QT_BRAND_NAME || "Quantract";
++const BRAND_TAGLINE = process.env.NEXT_PUBLIC_QT_BRAND_TAGLINE || "Electrical & Building Services";
++
++export type Role = "admin" | "client" | "engineer";
++
++type NavItem = {
++  label: string;
++  href: string;
++  icon: ComponentType<{ className?: string }>;
++};
++
++const adminNav: NavItem[] = [
++  { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
++  { label: "Quotes", href: "/admin/quotes", icon: FileText },
++  { label: "Invoices", href: "/admin/invoices", icon: Receipt },
++  { label: "Jobs", href: "/admin/jobs", icon: Briefcase },
++  { label: "Profitability", href: "/admin/reports/profitability", icon: Receipt },
++  { label: "Certificates", href: "/admin/certificates", icon: BadgeCheck },
++  { label: "Schedule", href: "/admin/schedule", icon: CalendarDays },
++  { label: "Timesheets", href: "/admin/timesheets", icon: Clock },
++  { label: "Clients", href: "/admin/clients", icon: Users },
++  { label: "Engineers", href: "/admin/engineers", icon: Users },
++  { label: "Settings", href: "/admin/settings", icon: Settings },
++];
++
++const clientNav: NavItem[] = [
++  { label: "My Quotes", href: "/client", icon: FileText },
++  { label: "My Invoices", href: "/client/invoices", icon: Receipt },
++  { label: "Settings", href: "/client/settings", icon: Settings },
++];
++
++const engineerNav: NavItem[] = [
++  { label: "Dashboard", href: "/engineer", icon: LayoutDashboard },
++  { label: "My Jobs", href: "/engineer/jobs", icon: FileText },
++  { label: "Schedule", href: "/engineer/schedule", icon: CalendarDays },
++  { label: "Timesheets", href: "/engineer/timesheets", icon: Clock },
++  { label: "Settings", href: "/engineer/settings", icon: Settings },
++];
++
++export function AppShell({
++  role,
++  title,
++  subtitle,
++  children,
++  hideNav,
++}: {
++  role: Role;
++  title: string;
++  subtitle?: string;
++  children: ReactNode;
++  hideNav?: boolean;
++}) {
++  const nav = role === "admin" ? adminNav : role === "engineer" ? engineerNav : clientNav;
++
++  return (
++    <div className="min-h-screen bg-slate-50">
++      <header className="border-b border-slate-200 bg-white">
++        <div className="mx-auto flex w-full max-w-6xl items-start justify-between gap-4 px-4 py-5 sm:px-6">
++          <div className="flex items-start gap-4">
++            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-white">
++              <span className="text-xs font-extrabold text-slate-900">{BRAND_NAME.slice(0, 1).toUpperCase()}</span>
++            </div>
++            <div className="min-w-0">
++              <div className="text-sm font-bold text-slate-900">{BRAND_NAME.toUpperCase()}</div>
++              <div className="mt-0.5 text-xs text-slate-600">{BRAND_TAGLINE}</div>
++              <div className="mt-2 flex flex-wrap items-center gap-2">
++                <Badge>{role === "admin" ? "Admin" : role === "engineer" ? "Engineer" : "Client"}</Badge>
++                <Badge>Secure docs • Audit trail</Badge>
++              </div>
++            </div>
++          </div>
++
++          <div className="hidden sm:flex items-center gap-2">
++            <ShellTopActions role={role} />
++          </div>
++        </div>
++      </header>
++
++      <div className={cn("mx-auto grid w-full max-w-6xl grid-cols-1 gap-6 px-4 py-6 sm:px-6", hideNav ? "" : "lg:grid-cols-12") }>
++        {hideNav ? null : (
++          <aside className="lg:col-span-3">
++            <nav className="space-y-2">
++              {nav.map((item) => (
++                <Link
++                  key={item.href}
++                  href={item.href}
++                  className={cn(
++                    "flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900 shadow-sm hover:bg-slate-50"
++                  )}
++                >
++                  <item.icon className="h-4 w-4 text-slate-700" />
++                  {item.label}
++                </Link>
++              ))}
++            </nav>
++          </aside>
++        )}
++
++        <main className={hideNav ? "" : "lg:col-span-9"}>
++          <div className="mb-4">
++            <h1 className="text-xl font-bold text-slate-900">{title}</h1>
++            {subtitle ? <p className="mt-1 text-sm text-slate-600">{subtitle}</p> : null}
++          </div>
++          {children}
++        </main>
++      </div>
++
++      <footer className="mt-10 border-t border-slate-200 bg-white">
++        <div className="mx-auto w-full max-w-6xl px-4 py-6 text-xs text-slate-600 sm:px-6">
++          COMPANY REGISTRATION 13893644 • VAT 403339623 • UTR 7708219555
++        </div>
++      </footer>
++    </div>
++  );
++}
+diff -ruN /mnt/data/quantract_orig/src/components/shell/ShellTopActions.tsx /mnt/data/quantract_src/src/components/shell/ShellTopActions.tsx
+--- /mnt/data/quantract_orig/src/components/shell/ShellTopActions.tsx	1970-01-01 00:00:00.000000000 +0000
++++ /mnt/data/quantract_src/src/components/shell/ShellTopActions.tsx	2026-01-08 21:31:01.410048745 +0000
+@@ -0,0 +1,134 @@
++"use client";
++
++import { useMemo, useState } from "react";
++import Link from "next/link";
++import { Button } from "@/components/ui/Button";
++import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/Dialog";
++import type { Role } from "@/components/AppShell";
++
++function dispatchOpenAi() {
++  // Allows you to plug in your own AI widget without coupling AppShell to it.
++  // Your bot can listen for this event: window.addEventListener('qt:open-ai', ...)
++  window.dispatchEvent(new CustomEvent("qt:open-ai"));
++}
++
++export default function ShellTopActions({ role }: { role: Role }) {
++  const [supportOpen, setSupportOpen] = useState(false);
++  const [newOpen, setNewOpen] = useState(false);
++
++  const supportEmail = useMemo(() => {
++    const to = "support@quantract.co.uk";
++    const subject = encodeURIComponent("Quantract support");
++    const body = encodeURIComponent("Hi Quantract,\n\nI need help with…\n\nThanks");
++    return `mailto:${to}?subject=${subject}&body=${body}`;
++  }, []);
++
++  return (
++    <>
++      <Button variant="secondary" type="button" onClick={() => setSupportOpen(true)}>
++        Support
++      </Button>
++      <Button type="button" onClick={() => setNewOpen(true)}>
++        New
++      </Button>
++
++      <Dialog open={supportOpen} onOpenChange={(o: boolean) => setSupportOpen(o)}>
++        <DialogContent>
++          <DialogHeader>
++            <div className="flex items-center justify-between gap-3">
++              <DialogTitle>Support</DialogTitle>
++              <Button variant="ghost" type="button" onClick={() => setSupportOpen(false)}>
++                Close
++              </Button>
++            </div>
++          </DialogHeader>
++          <DialogBody>
++            <div className="grid gap-3">
++              <div className="rounded-2xl border border-slate-200 bg-white p-4">
++                <div className="text-sm font-semibold text-slate-900">AI Assistant</div>
++                <div className="mt-1 text-xs text-slate-600">Open your in-app assistant for quick answers and help drafting replies.</div>
++                <div className="mt-3">
++                  <Button type="button" onClick={dispatchOpenAi}>
++                    Open AI assistant
++                  </Button>
++                </div>
++              </div>
++
++              <div className="rounded-2xl border border-slate-200 bg-white p-4">
++                <div className="text-sm font-semibold text-slate-900">Contact support</div>
++                <div className="mt-1 text-xs text-slate-600">Opens your email app with a pre-filled message.</div>
++                <div className="mt-3 flex flex-wrap gap-2">
++                  <a className="inline-flex" href={supportEmail}>
++                    <Button type="button" variant="secondary">
++                      Email support
++                    </Button>
++                  </a>
++                  <Button type="button" variant="secondary" onClick={() => window.alert("Docs link coming next.")}
++                  >
++                    View docs
++                  </Button>
++                </div>
++              </div>
++
++              {role === "client" ? (
++                <div className="rounded-2xl border border-slate-200 bg-white p-4">
++                  <div className="text-sm font-semibold text-slate-900">Client help</div>
++                  <div className="mt-1 text-xs text-slate-600">Need something changed before accepting a quote? Use “Request a change” on the quote.</div>
++                </div>
++              ) : null}
++            </div>
++          </DialogBody>
++        </DialogContent>
++      </Dialog>
++
++      <Dialog open={newOpen} onOpenChange={(o: boolean) => setNewOpen(o)}>
++        <DialogContent>
++          <DialogHeader>
++            <div className="flex items-center justify-between gap-3">
++              <DialogTitle>Create new</DialogTitle>
++              <Button variant="ghost" type="button" onClick={() => setNewOpen(false)}>
++                Close
++              </Button>
++            </div>
++          </DialogHeader>
++          <DialogBody>
++            <div className="grid gap-3">
++              {role === "admin" ? (
++                <>
++                  <Link href="/admin/quotes/new" className="block" onClick={() => setNewOpen(false)}>
++                    <div className="rounded-2xl border border-slate-200 bg-white p-4 hover:bg-slate-50">
++                      <div className="text-sm font-semibold text-slate-900">Quote</div>
++                      <div className="mt-1 text-xs text-slate-600">Create a new quote and send to a client.</div>
++                    </div>
++                  </Link>
++                  <Link href="/admin/clients" className="block" onClick={() => setNewOpen(false)}>
++                    <div className="rounded-2xl border border-slate-200 bg-white p-4 hover:bg-slate-50">
++                      <div className="text-sm font-semibold text-slate-900">Client</div>
++                      <div className="mt-1 text-xs text-slate-600">Add a client record (mobile-friendly form is next).</div>
++                    </div>
++                  </Link>
++                  <Link href="/admin/jobs" className="block" onClick={() => setNewOpen(false)}>
++                    <div className="rounded-2xl border border-slate-200 bg-white p-4 hover:bg-slate-50">
++                      <div className="text-sm font-semibold text-slate-900">Job</div>
++                      <div className="mt-1 text-xs text-slate-600">Create a job and assign an engineer.</div>
++                    </div>
++                  </Link>
++                  <Link href="/admin/invoices" className="block" onClick={() => setNewOpen(false)}>
++                    <div className="rounded-2xl border border-slate-200 bg-white p-4 hover:bg-slate-50">
++                      <div className="text-sm font-semibold text-slate-900">Invoice</div>
++                      <div className="mt-1 text-xs text-slate-600">Create an invoice (manual or from a quote).</div>
++                    </div>
++                  </Link>
++                </>
++              ) : (
++                <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-700">
++                  New actions are available for admins.
++                </div>
++              )}
++            </div>
++          </DialogBody>
++        </DialogContent>
++      </Dialog>
++    </>
++  );
++}

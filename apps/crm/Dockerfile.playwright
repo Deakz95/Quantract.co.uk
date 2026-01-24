@@ -1,0 +1,37 @@
+# Use Playwright's official Docker image with all dependencies pre-installed
+FROM mcr.microsoft.com/playwright:v1.48.0-jammy
+
+# Set working directory
+WORKDIR /app
+
+# Set environment variables
+ENV NODE_ENV=production
+ENV CI=true
+ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm ci --only=production && \
+    npm ci --only=development
+
+# Copy application files
+COPY . .
+
+# Build the application
+RUN npm run build
+
+# Run tests during Docker build
+# Comment out the next line if you want to run tests after deployment instead
+RUN npm run test:ci || (echo "Tests failed" && exit 1)
+
+# Expose the port your app runs on
+EXPOSE 3000
+
+# Health check (optional but recommended)
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})" || exit 1
+
+# Start the application
+CMD ["npm", "start"]

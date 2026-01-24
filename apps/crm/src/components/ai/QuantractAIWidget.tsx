@@ -1,0 +1,541 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+import { cn } from "@/lib/cn";
+
+type AIRole = "ADMIN" | "ENGINEER" | "CLIENT";
+
+interface Message {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  timestamp: Date;
+  confidence?: number;
+  citations?: Array<{ entityType: string; entityId: string; note: string }>;
+  suggestedActions?: Array<{ type: string; label: string; payload?: Record<string, unknown> }>;
+  missingData?: string[];
+  error?: string;
+}
+
+interface QuantractAIWidgetProps {
+  /** Optional externally-provided session (mostly for embedding). */
+  session?: { companyId: string | null; userEmail: string | null; role: AIRole } | null;
+  apiBaseUrl?: string;
+  suggestedPrompts?: string[];
+  accentColor?: string;
+  position?: "bottom-right" | "bottom-left";
+}
+
+const defaultPrompts: Record<string, string[]> = {
+  admin: ["Which invoices are overdue?", "What jobs are blocked?", "Unapproved variations?", "Outstanding receivables?"],
+  ADMIN: ["Which invoices are overdue?", "What jobs are blocked?", "Unapproved variations?", "Outstanding receivables?"],
+  engineer: ["What job am I on today?", "Log 7.5 hours for today", "What certs are needed?", "Show my job stages"],
+  ENGINEER: ["What job am I on today?", "Log 7.5 hours for today", "What certs are needed?", "Show my job stages"],
+  client: ["Explain my latest invoice", "What variations have I approved?", "Show my job status", "Find my certificates"],
+  CLIENT: ["Explain my latest invoice", "What variations have I approved?", "Show my job status", "Find my certificates"],
+};
+
+function formatPct(n: number) {
+  return `${Math.round(Math.max(0, Math.min(1, n)) * 100)}%`;
+}
+
+/** ----------------------------------------------------------------
+ * Inline icons (no dependency). All are simple SVGs using currentColor.
+ * ---------------------------------------------------------------- */
+type IconProps = { className?: string };
+
+function IconRobot(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={props.className} aria-hidden="true">
+      <path
+        d="M10 3h4v2h-4V3ZM7 7h10a4 4 0 0 1 4 4v3a6 6 0 0 1-6 6H9a6 6 0 0 1-6-6v-3a4 4 0 0 1 4-4Z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+      <path d="M8.5 12h.5" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+      <path d="M15 12h.5" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+      <path d="M8 16c1.2 1 2.6 1.5 4 1.5s2.8-.5 4-1.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconSend(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={props.className} aria-hidden="true">
+      <path
+        d="M3 11.5 21 3l-8.5 18-2.2-7.1L3 11.5Z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+      <path d="M21 3 10.3 13.9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconSpinner(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={props.className} aria-hidden="true">
+      <path
+        d="M12 3a9 9 0 1 0 9 9"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function IconX(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={props.className} aria-hidden="true">
+      <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconExpand(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={props.className} aria-hidden="true">
+      <path d="M8 3H3v5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M3 3l7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M16 3h5v5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M21 3l-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M8 21H3v-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M3 21l7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M16 21h5v-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M21 21l-7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconMinimize(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={props.className} aria-hidden="true">
+      <path d="M9 3H3v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M3 3l7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M15 21h6v-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M21 21l-7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconMessage(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={props.className} aria-hidden="true">
+      <path
+        d="M4 5h16v11a3 3 0 0 1-3 3H10l-4 3v-3H7a3 3 0 0 1-3-3V5Z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+      <path d="M7 9h10M7 12h7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconCheckCircle(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={props.className} aria-hidden="true">
+      <path d="M22 12a10 10 0 1 1-10-10 10 10 0 0 1 10 10Z" stroke="currentColor" strokeWidth="2" />
+      <path d="M7.5 12.5 10.5 15.5 16.5 9.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconFile(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={props.className} aria-hidden="true">
+      <path
+        d="M7 3h7l3 3v15a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+      <path d="M14 3v4h4" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+      <path d="M8 11h8M8 15h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconAlertTriangle(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={props.className} aria-hidden="true">
+      <path
+        d="M12 3 2 21h20L12 3Z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+      <path d="M12 9v5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M12 17h.01" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconAlertCircle(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={props.className} aria-hidden="true">
+      <path d="M22 12a10 10 0 1 1-10-10 10 10 0 0 1 10 10Z" stroke="currentColor" strokeWidth="2" />
+      <path d="M12 8v5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M12 16h.01" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconSparkles(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={props.className} aria-hidden="true">
+      <path d="M12 2l1.4 4.3L18 8l-4.6 1.7L12 14l-1.4-4.3L6 8l4.6-1.7L12 2Z" stroke="currentColor" strokeWidth="2" />
+      <path d="M19 12l.9 2.6L23 16l-3.1 1.4L19 20l-.9-2.6L15 16l3.1-1.4L19 12Z" stroke="currentColor" strokeWidth="2" />
+      <path d="M3 12l.9 2.6L7 16l-3.1 1.4L3 20l-.9-2.6L-1 16l3.1-1.4L3 12Z" stroke="currentColor" strokeWidth="2" />
+    </svg>
+  );
+}
+
+/** ---------------------------------------------------------------- */
+
+export default function QuantractAIWidget({
+  session: externalSession,
+  apiBaseUrl = "/api",
+  suggestedPrompts: customPrompts,
+  accentColor = "hsl(262, 83%, 58%)",
+  position = "bottom-right",
+}: QuantractAIWidgetProps) {
+  const router = useRouter();
+  const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    const handler = () => setIsOpen(true);
+    window.addEventListener("qt:open-ai", handler as any);
+    return () => window.removeEventListener("qt:open-ai", handler as any);
+  }, []);
+
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [session, setSession] = useState<QuantractAIWidgetProps["session"]>(externalSession ?? null);
+  const [prompts, setPrompts] = useState<string[]>([]);
+  const [aiConfigured, setAiConfigured] = useState(true);
+
+  const bottomRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (externalSession) return;
+    fetch(`${apiBaseUrl}/ai/session`, { credentials: "include" })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.authenticated && data?.session) setSession(data.session);
+      })
+      .catch(() => null);
+  }, [externalSession, apiBaseUrl]);
+
+  useEffect(() => {
+    fetch(`${apiBaseUrl}/ai/status`)
+      .then((r) => r.json())
+      .then((data) => setAiConfigured(Boolean(data?.configured)))
+      .catch(() => setAiConfigured(false));
+  }, [apiBaseUrl]);
+
+  useEffect(() => {
+    if (customPrompts?.length) return setPrompts(customPrompts);
+    const role = session?.role;
+    if (role) return setPrompts(defaultPrompts[role] ?? []);
+    setPrompts([]);
+  }, [session?.role, customPrompts]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [messages, isLoading]);
+
+  const positionClasses = position === "bottom-right" ? "right-4 sm:right-6" : "left-4 sm:left-6";
+  const panelClasses = isFullscreen
+    ? "fixed inset-0 z-50"
+    : `fixed bottom-4 sm:bottom-6 ${positionClasses} z-50 w-[95vw] sm:w-[420px] h-[80vh] sm:h-[600px] max-h-[calc(100vh-2rem)]`;
+
+  const derivedPrompts = useMemo(() => prompts.slice(0, 4), [prompts]);
+
+  async function handleAction(action: NonNullable<Message["suggestedActions"]>[number]) {
+    if (action.type === "NAVIGATE") {
+      const path = typeof action.payload?.path === "string" ? (action.payload.path as string) : null;
+      if (path) router.push(path);
+      return;
+    }
+    setInput(action.label);
+  }
+
+  const sendMessage = async (content: string) => {
+    if (!content.trim() || isLoading) return;
+
+    const userMessage: Message = {
+      id: crypto.randomUUID(),
+      role: "user",
+      content: content.trim(),
+      timestamp: new Date(),
+    };
+
+    const nextMessages = [...messages, userMessage];
+    setMessages(nextMessages);
+    setInput("");
+    setIsLoading(true);
+
+    try {
+      const res = await fetch(`${apiBaseUrl}/ai/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          message: content,
+          history: nextMessages
+            .slice(-12)
+            .map((m) => ({ role: m.role, content: m.content, timestamp: m.timestamp.toISOString() })),
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const msg = typeof data?.error === "string" ? data.error : "Request failed";
+        throw new Error(msg);
+      }
+
+      const assistantMessage: Message = {
+        id: typeof data?.id === "string" ? data.id : crypto.randomUUID(),
+        role: "assistant",
+        content: typeof data?.answer === "string" ? data.answer : "I couldn't process that request.",
+        timestamp: data?.timestamp ? new Date(data.timestamp) : new Date(),
+        confidence: typeof data?.confidence === "number" ? data.confidence : undefined,
+        citations: Array.isArray(data?.citations) ? data.citations : undefined,
+        suggestedActions: Array.isArray(data?.suggestedActions) ? data.suggestedActions : undefined,
+        missingData: Array.isArray(data?.missingData) ? data.missingData : undefined,
+        error: typeof data?.error === "string" ? data.error : undefined,
+      };
+
+      setMessages((prev) => [...prev, assistantMessage]);
+    } catch (error) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          content: error instanceof Error ? error.message : "An error occurred.",
+          timestamp: new Date(),
+          error: "REQUEST_FAILED",
+        },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (!isOpen) {
+    return (
+      <button
+        onClick={() => setIsOpen(true)}
+        className={cn(
+          `fixed bottom-4 sm:bottom-6 ${positionClasses} z-50 h-14 w-14 rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-110 hover:shadow-xl`
+        )}
+        style={{ backgroundColor: accentColor }}
+        aria-label="Open AI Assistant"
+      >
+        <IconMessage className="h-6 w-6 text-white" />
+      </button>
+    );
+  }
+
+  return (
+    <div className={panelClasses}>
+      <Card className="h-full flex flex-col bg-slate-900 border border-slate-700 shadow-2xl rounded-2xl overflow-hidden">
+        <CardHeader className="px-4 py-3 border-b border-slate-700" style={{ backgroundColor: accentColor }}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-white/20 flex items-center justify-center">
+                <IconRobot className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <CardTitle className="text-white">Quantract AI</CardTitle>
+                <p className="text-xs text-white/70">{session?.role ? `${session.role} Assistant` : "Operations Assistant"}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                className="h-9 w-9 p-0 text-white/80 hover:text-white"
+                onClick={() => setIsFullscreen((v) => !v)}
+                title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+              >
+                {isFullscreen ? <IconMinimize className="h-4 w-4" /> : <IconExpand className="h-4 w-4" />}
+              </Button>
+              <Button
+                variant="ghost"
+                className="h-9 w-9 p-0 text-white/80 hover:text-white"
+                onClick={() => {
+                  setIsOpen(false);
+                  setIsFullscreen(false);
+                }}
+                title="Close"
+              >
+                <IconX className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+
+        <CardContent className="flex-1 overflow-hidden p-0">
+          <div className="h-full overflow-auto p-4">
+            {!aiConfigured && (
+              <div className="mb-4 p-3 rounded-lg bg-amber-500/20 border border-amber-500/30 text-amber-200 text-sm">
+                <IconAlertTriangle className="h-4 w-4 inline mr-2 align-[-2px]" />
+                AI not configured. Set OPENAI_API_KEY.
+              </div>
+            )}
+
+            {messages.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-center px-4">
+                <div className="h-16 w-16 rounded-2xl bg-slate-800 flex items-center justify-center mb-4">
+                  <IconSparkles className="h-8 w-8 text-slate-400" />
+                </div>
+                <p className="text-slate-200 text-sm mb-4">How can I help you today?</p>
+                {derivedPrompts.length > 0 && (
+                  <div className="w-full space-y-2">
+                    {derivedPrompts.map((prompt) => (
+                      <button
+                        key={prompt}
+                        onClick={() => void sendMessage(prompt)}
+                        className="w-full text-left p-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm transition-colors"
+                      >
+                        {prompt}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {messages.map((m) => (
+                  <div key={m.id} className={cn("flex gap-2", m.role === "user" ? "justify-end" : "justify-start")}>
+                    {m.role === "assistant" && (
+                      <div className="h-7 w-7 rounded-full flex items-center justify-center" style={{ backgroundColor: accentColor }}>
+                        <IconRobot className="h-4 w-4 text-white" />
+                      </div>
+                    )}
+                    <div
+                      className={cn(
+                        "max-w-[85%] rounded-2xl p-3",
+                        m.role === "user" ? "text-white" : "bg-slate-800 text-slate-100"
+                      )}
+                      style={m.role === "user" ? { backgroundColor: accentColor } : undefined}
+                    >
+                      <p className="whitespace-pre-wrap text-sm">{m.content}</p>
+
+                      {typeof m.confidence === "number" && m.role === "assistant" && (
+                        <div className="mt-2 flex items-center gap-2">
+                          <div className="h-1 flex-1 bg-slate-700 rounded-full overflow-hidden">
+                            <div
+                              className={cn(
+                                "h-full rounded-full",
+                                m.confidence > 0.7 ? "bg-green-500" : m.confidence > 0.4 ? "bg-yellow-500" : "bg-red-500"
+                              )}
+                              style={{ width: `${Math.max(0, Math.min(1, m.confidence)) * 100}%` }}
+                            />
+                          </div>
+                          <span className="text-[10px] text-slate-400">{formatPct(m.confidence)}</span>
+                        </div>
+                      )}
+
+                      {m.suggestedActions?.length ? (
+                        <div className="mt-2 pt-2 border-t border-slate-700">
+                          <p className="text-[10px] text-slate-300 mb-1 flex items-center gap-1">
+                            <IconCheckCircle className="h-3 w-3" /> Actions
+                          </p>
+                          <div className="flex flex-wrap gap-1">
+                            {m.suggestedActions.map((a, i) => (
+                              <Badge
+                                key={`${a.type}-${i}`}
+                                className="text-[10px] bg-slate-700 text-slate-100 cursor-pointer hover:bg-slate-600"
+                                onClick={() => void handleAction(a)}
+                              >
+                                {a.label}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
+
+                      {m.citations?.length ? (
+                        <div className="mt-2 pt-2 border-t border-slate-700">
+                          <p className="text-[10px] text-blue-300 mb-1 flex items-center gap-1">
+                            <IconFile className="h-3 w-3" /> Sources
+                          </p>
+                          {m.citations.slice(0, 3).map((c, i) => (
+                            <div key={`${c.entityType}-${c.entityId}-${i}`} className="text-[10px] text-slate-300">
+                              <span className="mr-1 rounded border border-slate-600 px-1 py-[1px] text-[9px]">{c.entityType}</span>
+                              {c.note} ({c.entityId})
+                            </div>
+                          ))}
+                        </div>
+                      ) : null}
+
+                      {m.error ? (
+                        <div className="mt-2 flex items-center gap-1 text-red-300 text-[10px]">
+                          <IconAlertCircle className="h-3 w-3" /> {m.error}
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                ))}
+
+                {isLoading && (
+                  <div className="flex gap-2">
+                    <div className="h-7 w-7 rounded-full flex items-center justify-center" style={{ backgroundColor: accentColor }}>
+                      <IconRobot className="h-4 w-4 text-white" />
+                    </div>
+                    <div className="bg-slate-800 rounded-2xl p-3">
+                      <IconSpinner className="h-4 w-4 animate-spin text-slate-300" />
+                    </div>
+                  </div>
+                )}
+
+                <div ref={bottomRef} />
+              </div>
+            )}
+          </div>
+        </CardContent>
+
+        <div className="p-3 border-t border-slate-700">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              void sendMessage(input);
+            }}
+            className="flex gap-2"
+          >
+            <input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Ask a question..."
+              disabled={isLoading || !aiConfigured}
+              className="flex-1 h-10 px-3 rounded-lg border bg-white text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-2 text-sm"
+              style={{ borderColor: accentColor }}
+            />
+            <Button
+              type="submit"
+              disabled={!input.trim() || isLoading || !aiConfigured}
+              className="h-10 w-10 p-0"
+              style={{ backgroundColor: accentColor }}
+            >
+              {isLoading ? <IconSpinner className="h-4 w-4 animate-spin" /> : <IconSend className="h-4 w-4" />}
+            </Button>
+          </form>
+        </div>
+      </Card>
+    </div>
+  );
+}

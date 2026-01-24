@@ -1,0 +1,11 @@
+[
+  {
+    "step": "Admin Login",
+    "status": "success",
+    "duration": 3437,
+    "clicksRequired": 2,
+    "url": "https://quantract.co.uk/admin/login",
+    "issues": [],
+    "recommendations": []
+  }
+]

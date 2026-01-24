@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Access Tester</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            background: #f8fafc;
+        }
+        h1 {
+            color: #0f172a;
+            border-bottom: 3px solid #3b82f6;
+            padding-bottom: 0.5rem;
+        }
+        .section {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .test-group {
+            margin: 1rem 0;
+        }
+        .test-item {
+            padding: 0.75rem;
+            margin: 0.5rem 0;
+            background: #f1f5f9;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+        button.danger {
+            background: #ef4444;
+        }
+        button.danger:hover {
+            background: #dc2626;
+        }
+        .success {
+            color: #059669;
+            font-weight: 600;
+        }
+        .error {
+            color: #dc2626;
+            font-weight: 600;
+        }
+        .result {
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            background: #f8fafc;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+        }
+        .warning {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        code {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 0.125rem 0.25rem;
+            border-radius: 3px;
+        }
+        input {
+            padding: 0.5rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            width: 300px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🚀 Admin Universal Access Tester</h1>
+
+    <div class="warning">
+        <strong>⚠️ Prerequisites:</strong>
+        <ul>
+            <li>Be logged in as admin: <code>callumdeakin95@hotmail.com / password123</code></li>
+            <li>App running on <code>http://localhost:3000</code></li>
+        </ul>
+    </div>
+
+    <!-- Route Access Tests -->
+    <div class="section">
+        <h2>1. Route Access Tests</h2>
+        <p>Click each button to test admin access to different portals:</p>
+
+        <div class="test-group">
+            <div class="test-item">
+                <span>Admin Portal Access</span>
+                <button onclick="testRoute('/admin')">Test /admin</button>
+            </div>
+            <div id="result-admin" class="result" style="display:none;"></div>
+
+            <div class="test-item">
+                <span>Client Portal Access (NEW!)</span>
+                <button onclick="testRoute('/client')">Test /client</button>
+            </div>
+            <div id="result-client" class="result" style="display:none;"></div>
+
+            <div class="test-item">
+                <span>Engineer Portal Access (NEW!)</span>
+                <button onclick="testRoute('/engineer')">Test /engineer</button>
+            </div>
+            <div id="result-engineer" class="result" style="display:none;"></div>
+        </div>
+    </div>
+
+    <!-- API Tests -->
+    <div class="section">
+        <h2>2. API Access Tests</h2>
+        <p>Test admin access to client and engineer APIs:</p>
+
+        <div class="test-group">
+            <div class="test-item">
+                <span>Client API Access</span>
+                <button onclick="testAPI('/api/client/quotes')">Test /api/client/quotes</button>
+            </div>
+            <div id="result-api-client" class="result" style="display:none;"></div>
+
+            <div class="test-item">
+                <span>Engineer API Access</span>
+                <button onclick="testAPI('/api/engineer/jobs')">Test /api/engineer/jobs</button>
+            </div>
+            <div id="result-api-engineer" class="result" style="display:none;"></div>
+        </div>
+    </div>
+
+    <!-- Quote Actions -->
+    <div class="section">
+        <h2>3. Admin Quote Actions (NEW!)</h2>
+        <p>Test admin ability to accept/reject quotes:</p>
+
+        <div class="test-group">
+            <div class="test-item" style="display: block;">
+                <div style="margin-bottom: 0.5rem;">
+                    <label>Quote ID: <input type="text" id="quoteId" placeholder="Enter quote ID"></label>
+                </div>
+                <div style="display: flex; gap: 0.5rem;">
+                    <button onclick="acceptQuote()">Accept Quote</button>
+                    <button class="danger" onclick="rejectQuote()">Reject Quote</button>
+                </div>
+            </div>
+            <div id="result-quote-action" class="result" style="display:none;"></div>
+        </div>
+    </div>
+
+    <!-- Summary -->
+    <div class="section">
+        <h2>✅ Test Summary</h2>
+        <div id="summary">
+            <p>Run tests above to see results here.</p>
+        </div>
+    </div>
+
+    <script>
+        let testResults = {
+            passed: 0,
+            failed: 0,
+            total: 0
+        };
+
+        async function testRoute(path) {
+            const resultId = `result-${path.split('/')[1]}`;
+            const resultEl = document.getElementById(resultId);
+            resultEl.style.display = 'block';
+            resultEl.innerHTML = 'Testing...';
+
+            try {
+                const response = await fetch(path, {
+                    redirect: 'manual' // Don't follow redirects
+                });
+
+                // Check if redirected
+                if (response.type === 'opaqueredirect' || response.status === 302 || response.status === 307) {
+                    resultEl.innerHTML = `<span class="error">❌ FAILED:</span> Redirected (admin should have access!)`;
+                    testResults.failed++;
+                } else if (response.ok) {
+                    resultEl.innerHTML = `<span class="success">✅ PASSED:</span> Status ${response.status} - Admin has access!`;
+                    testResults.passed++;
+                } else {
+                    resultEl.innerHTML = `<span class="error">❌ FAILED:</span> Status ${response.status}`;
+                    testResults.failed++;
+                }
+            } catch (error) {
+                resultEl.innerHTML = `<span class="error">❌ ERROR:</span> ${error.message}`;
+                testResults.failed++;
+            }
+
+            testResults.total++;
+            updateSummary();
+        }
+
+        async function testAPI(path) {
+            const resultId = `result-api-${path.split('/')[2]}`;
+            const resultEl = document.getElementById(resultId);
+            resultEl.style.display = 'block';
+            resultEl.innerHTML = 'Testing...';
+
+            try {
+                const response = await fetch(path);
+                const data = await response.json();
+
+                if (response.ok) {
+                    resultEl.innerHTML = `<span class="success">✅ PASSED:</span> Status ${response.status}<br>Response: ${JSON.stringify(data).substring(0, 100)}...`;
+                    testResults.passed++;
+                } else if (response.status === 401 || response.status === 403) {
+                    resultEl.innerHTML = `<span class="error">❌ FAILED:</span> Status ${response.status} - Admin should have access!`;
+                    testResults.failed++;
+                } else {
+                    resultEl.innerHTML = `<span class="error">⚠️ WARNING:</span> Status ${response.status}<br>${JSON.stringify(data)}`;
+                    testResults.failed++;
+                }
+            } catch (error) {
+                resultEl.innerHTML = `<span class="error">❌ ERROR:</span> ${error.message}`;
+                testResults.failed++;
+            }
+
+            testResults.total++;
+            updateSummary();
+        }
+
+        async function acceptQuote() {
+            const quoteId = document.getElementById('quoteId').value;
+            const resultEl = document.getElementById('result-quote-action');
+
+            if (!quoteId) {
+                alert('Please enter a Quote ID first');
+                return;
+            }
+
+            resultEl.style.display = 'block';
+            resultEl.innerHTML = 'Accepting quote...';
+
+            try {
+                const response = await fetch(`/api/admin/quotes/${quoteId}/accept`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+
+                if (data.ok) {
+                    resultEl.innerHTML = `<span class="success">✅ SUCCESS:</span> Quote accepted!<br>Status: ${data.quote.status}<br>Response: ${JSON.stringify(data, null, 2)}`;
+                    testResults.passed++;
+                } else {
+                    resultEl.innerHTML = `<span class="error">❌ FAILED:</span> ${data.error || 'Unknown error'}<br>Response: ${JSON.stringify(data, null, 2)}`;
+                    testResults.failed++;
+                }
+            } catch (error) {
+                resultEl.innerHTML = `<span class="error">❌ ERROR:</span> ${error.message}`;
+                testResults.failed++;
+            }
+
+            testResults.total++;
+            updateSummary();
+        }
+
+        async function rejectQuote() {
+            const quoteId = document.getElementById('quoteId').value;
+            const resultEl = document.getElementById('result-quote-action');
+
+            if (!quoteId) {
+                alert('Please enter a Quote ID first');
+                return;
+            }
+
+            const reason = prompt('Rejection reason (optional):') || 'Test rejection';
+
+            resultEl.style.display = 'block';
+            resultEl.innerHTML = 'Rejecting quote...';
+
+            try {
+                const response = await fetch(`/api/admin/quotes/${quoteId}/reject`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reason })
+                });
+                const data = await response.json();
+
+                if (data.ok) {
+                    resultEl.innerHTML = `<span class="success">✅ SUCCESS:</span> Quote rejected!<br>Status: ${data.quote.status}<br>Reason: ${reason}<br>Response: ${JSON.stringify(data, null, 2)}`;
+                    testResults.passed++;
+                } else {
+                    resultEl.innerHTML = `<span class="error">❌ FAILED:</span> ${data.error || 'Unknown error'}<br>Response: ${JSON.stringify(data, null, 2)}`;
+                    testResults.failed++;
+                }
+            } catch (error) {
+                resultEl.innerHTML = `<span class="error">❌ ERROR:</span> ${error.message}`;
+                testResults.failed++;
+            }
+
+            testResults.total++;
+            updateSummary();
+        }
+
+        function updateSummary() {
+            const summaryEl = document.getElementById('summary');
+            const passRate = testResults.total > 0 ? ((testResults.passed / testResults.total) * 100).toFixed(0) : 0;
+
+            summaryEl.innerHTML = `
+                <h3>Results:</h3>
+                <p>✅ Passed: <strong>${testResults.passed}</strong></p>
+                <p>❌ Failed: <strong>${testResults.failed}</strong></p>
+                <p>📊 Total: <strong>${testResults.total}</strong></p>
+                <p>Pass Rate: <strong>${passRate}%</strong></p>
+                ${passRate == 100 ? '<p class="success">🎉 All tests passed! Ready for deployment!</p>' : ''}
+            `;
+        }
+
+        // Auto-update summary on load
+        updateSummary();
+    </script>
+</body>
+</html>

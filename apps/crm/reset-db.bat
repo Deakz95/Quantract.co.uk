@@ -1,0 +1,3 @@
+@echo off
+set PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION=yes i have no data on neon anyways so i would be happy to reinstate it anyways ....
+npx prisma db push --force-reset --accept-data-loss

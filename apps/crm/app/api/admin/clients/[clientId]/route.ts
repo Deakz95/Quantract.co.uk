@@ -1,0 +1,127 @@
+import { NextResponse } from "next/server";
+import { requireRole } from "@/lib/serverAuth";
+import * as repo from "@/lib/server/repo";
+import { withRequestLogging } from "@/lib/server/observability";
+import { getRouteParams } from "@/lib/server/routeParams";
+function jsonOk(data: Record<string, unknown>, status = 200) {
+  return NextResponse.json({
+    ok: true,
+    ...data
+  }, {
+    status
+  });
+}
+function jsonErr(error: unknown, status = 400) {
+  const msg = error instanceof Error ? error.message : String(error || "Request failed");
+  return NextResponse.json({
+    ok: false,
+    error: msg
+  }, {
+    status
+  });
+}
+async function ensureAdmin() {
+  // keep your auth model
+  await requireRole("admin");
+}
+function pickDefined<T extends Record<string, any>>(obj: T) {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(obj)) {
+    if (v !== undefined) out[k] = v;
+  }
+  return out;
+}
+export const GET = withRequestLogging(
+  async function GET(_req: Request, ctx: { params: Promise<{ clientId: string }> }) {
+  try {
+    await ensureAdmin();
+    const { clientId } = await getRouteParams(ctx);
+    const client = await repo.getClientById(clientId);
+    if (!client) return jsonErr("Not found", 404);
+    return jsonOk({
+      client
+    });
+  } catch (e) {
+    // treat auth errors as 401, everything else 400
+    const msg = e instanceof Error ? e.message : "";
+    const status = msg.toLowerCase().includes("unauthorized") ? 401 : 400;
+    return jsonErr(e, status);
+  }
+});
+export const PATCH = withRequestLogging(
+  async function PATCH(req: Request, ctx: { params: Promise<{ clientId: string }> }) {
+  try {
+    const authCtx = await requireRole("admin");
+    const { clientId } = await getRouteParams(ctx);
+    const body = (await req.json().catch(() => ({}))) as any;
+    const patch = pickDefined({
+      name: body?.name,
+      email: body?.email,
+      phone: body?.phone,
+      address1: body?.address1,
+      address2: body?.address2,
+      city: body?.city,
+      county: body?.county,
+      postcode: body?.postcode,
+      country: body?.country,
+      notes: body?.notes,
+      paymentTermsDays: body?.paymentTermsDays,
+      disableAutoChase: body?.disableAutoChase
+    });
+    const updated = await repo.updateClient(clientId, patch as any);
+    if (!updated) return jsonErr("Not found", 404);
+
+    // Audit event for client update
+    await repo.recordAuditEvent({
+      entityType: "client",
+      entityId: clientId,
+      action: "client.updated",
+      actorRole: "admin",
+      actor: authCtx.email,
+      meta: { changes: patch },
+    });
+
+    return jsonOk({
+      client: updated
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "";
+    const status = msg.toLowerCase().includes("unauthorized") ? 401 : 400;
+    return jsonErr(e, status);
+  }
+});
+export const DELETE = withRequestLogging(
+  async function DELETE(_req: Request, ctx: { params: Promise<{ clientId: string }> }) {
+  try {
+    const authCtx = await requireRole("admin");
+    const { clientId } = await getRouteParams(ctx);
+
+    // Get client details before deletion for audit
+    const client = await repo.getClientById(clientId);
+
+    const deleted = await repo.deleteClient(clientId);
+
+    // Audit event for client deletion
+    if (deleted && client) {
+      await repo.recordAuditEvent({
+        entityType: "client",
+        entityId: clientId,
+        action: "client.deleted",
+        actorRole: "admin",
+        actor: authCtx.email,
+        meta: {
+          name: client.name,
+          email: client.email,
+        },
+      });
+    }
+
+    return jsonOk({
+      deleted
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "";
+    const status = msg.toLowerCase().includes("unauthorized") ? 401 : 400;
+    return jsonErr(e, status);
+  }
+});

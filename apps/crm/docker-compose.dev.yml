@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  # Local PostgreSQL database for development
+  postgres:
+    image: postgres:16-alpine
+    container_name: quantract-dev-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: quantract
+      POSTGRES_PASSWORD: dev_password_local
+      POSTGRES_DB: quantract_dev
+      POSTGRES_INITDB_ARGS: "-E UTF8"
+    ports:
+      - "5433:5432"  # Using 5433 to avoid conflicts with system Postgres
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U quantract -d quantract_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Prisma Studio (optional - for visual DB management)
+  # Access at http://localhost:5555
+  # Uncomment to enable
+  # prisma-studio:
+  #   image: node:22-alpine
+  #   container_name: quantract-prisma-studio
+  #   working_dir: /app
+  #   command: sh -c "npm install -g prisma && npx prisma studio"
+  #   ports:
+  #     - "5555:5555"
+  #   volumes:
+  #     - ./prisma:/app/prisma
+  #     - ./.env.local:/app/.env
+  #   environment:
+  #     DATABASE_URL: postgresql://quantract:dev_password_local@postgres:5432/quantract_dev
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+
+volumes:
+  postgres_dev_data:
+    driver: local

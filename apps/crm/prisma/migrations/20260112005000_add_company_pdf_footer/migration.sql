@@ -1,0 +1,3 @@
+ALTER TABLE "Company"
+  ADD COLUMN IF NOT EXISTS "pdfFooterLine1" TEXT,
+  ADD COLUMN IF NOT EXISTS "pdfFooterLine2" TEXT;

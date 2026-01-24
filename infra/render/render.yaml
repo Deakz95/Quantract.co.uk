@@ -1,0 +1,79 @@
+# Render Blueprint for Quantract Monorepo
+# https://render.com/docs/blueprint-spec
+
+services:
+  # CRM Application
+  - type: web
+    name: quantract-crm
+    runtime: node
+    region: frankfurt
+    rootDir: apps/crm
+    buildCommand: npm ci && npm run build
+    startCommand: npm run prisma:migrate:deploy && npm run start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: APP_ORIGIN
+        value: https://crm.quantract.co.uk
+      - key: NEXT_PUBLIC_APP_ORIGIN
+        value: https://crm.quantract.co.uk
+      - key: QT_USE_PRISMA
+        value: "1"
+      - key: SENTRY_DSN
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+
+  # Marketing Site
+  - type: web
+    name: quantract-marketing
+    runtime: node
+    region: frankfurt
+    rootDir: apps/marketing
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: APP_ORIGIN
+        value: https://www.quantract.co.uk
+
+  # Certificates Application
+  - type: web
+    name: quantract-certificates
+    runtime: node
+    region: frankfurt
+    rootDir: apps/certificates
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: APP_ORIGIN
+        value: https://certificates.quantract.co.uk
+
+  # Tools Application
+  - type: web
+    name: quantract-tools
+    runtime: node
+    region: frankfurt
+    rootDir: apps/tools
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: APP_ORIGIN
+        value: https://apps.quantract.co.uk

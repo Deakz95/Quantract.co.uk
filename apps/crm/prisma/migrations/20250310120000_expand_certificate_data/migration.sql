@@ -1,0 +1,3 @@
+ALTER TABLE "Certificate" ADD COLUMN "dataVersion" INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE "Certificate" ADD COLUMN "data" JSONB NOT NULL DEFAULT '{}'::jsonb;
+ALTER TABLE "Certificate" ADD COLUMN "completedAt" TIMESTAMP(3);

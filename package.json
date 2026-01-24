@@ -1,0 +1,22 @@
+{
+  "name": "quantract",
+  "private": true,
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "install:all": "npm install",
+    "build:all": "npm run build --workspaces --if-present",
+    "lint:all": "npm run lint --workspaces --if-present",
+    "typecheck:all": "npm run typecheck --workspaces --if-present",
+    "dev:crm": "npm run dev --workspace @quantract/crm",
+    "dev:marketing": "npm run dev --workspace @quantract/marketing",
+    "dev:certificates": "npm run dev --workspace @quantract/certificates",
+    "dev:tools": "npm run dev --workspace @quantract/tools",
+    "build:crm": "npm run build --workspace @quantract/crm",
+    "build:marketing": "npm run build --workspace @quantract/marketing",
+    "build:certificates": "npm run build --workspace @quantract/certificates",
+    "build:tools": "npm run build --workspace @quantract/tools"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

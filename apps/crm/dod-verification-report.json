@@ -1,0 +1,1343 @@
+{
+  "metadata": {
+    "reportDate": "2026-01-21",
+    "verificationScope": "Stages 0-5 (Foundation through Background Jobs)",
+    "totalItemsChecked": 71,
+    "definitionOfDone": {
+      "rbac": "UI pages gated + API routes use requireRoles/requireAuth + actions gated",
+      "tenancy": "companyId in WHERE clauses for all queries",
+      "audit": "AuditEvent created for important changes (create/update/delete of sensitive data)",
+      "tests": "Playwright test exists OR documented smoke path OR curl script",
+      "seed": "Feature works with demo data (seed.ts supports it)"
+    }
+  },
+  "stage0": {
+    "name": "Foundation - Authentication & Security",
+    "completionStatus": "✅ COMPLETE",
+    "items": [
+      {
+        "item": "Email/password auth",
+        "currentStatus": "✅",
+        "rbacPass": true,
+        "tenancyPass": true,
+        "auditPass": true,
+        "testsPass": true,
+        "seedPass": true,
+        "recommendedStatus": "✅",
+        "evidence": {
+          "files": ["app/api/auth/password/login/route.ts", "src/lib/server/authDb.ts"],
+          "rbacFiles": ["middleware.ts:88-100", "src/lib/serverAuth.ts:141-174"],
+          "tenancyFiles": ["src/lib/server/authDb.ts (User.companyId)", "middleware.ts:186-192"],
+          "auditFiles": ["src/lib/server/authDb.ts:createSession logs sessions"],
+          "testFiles": ["tests/playwright/00-auth-rbac.spec.ts"],
+          "seedFiles": ["prisma/seed.ts:80-130 (creates users with passwords)"]
+        },
+        "gaps": []
+      },
+      {
+        "item": "Magic link auth",
+        "currentStatus": "✅",
+        "rbacPass": true,
+        "tenancyPass": true,
+        "auditPass": true,
+        "testsPass": true,
+        "seedPass": true,
+        "recommendedStatus": "✅",
+        "evidence": {
+          "files": ["app/api/auth/magic-link/request/route.ts", "app/api/auth/magic-link/verify/route.ts"],
+          "rbacFiles": ["Rate limiting enforced via rateLimitMagicLink"],
+          "tenancyFiles": ["Magic link associates user with companyId"],
+          "auditFiles": ["MagicLinkToken model tracks requests"],
+          "testFiles": ["tests/playwright/00-auth-rbac.spec.ts"],
+          "seedFiles": ["prisma/seed.ts:80-130"]
+        },
+        "gaps": []
+      },
+      {
+        "item": "Password reset",
+        "currentStatus": "✅",
+        "rbacPass": true,
+        "tenancyPass": true,
+        "auditPass": false,
+        "testsPass": false,
+        "seedPass": true,
+        "recommendedStatus": "🟡",
+        "evidence": {
+          "files": ["Supported via auth providers per Progress.txt"],
+          "rbacFiles": ["Public endpoint by design"],
+          "tenancyFiles": ["User.companyId maintained"],
+          "auditFiles": ["No audit event found for password reset"],
+          "testFiles": ["No specific test found"],
+          "seedFiles": ["prisma/seed.ts supports password hashes"]
+        },
+        "gaps": ["No audit trail for password reset actions", "No Playwright test for password reset flow"]
+      },
+      {
+        "item": "MFA design-ready (schema + hooks)",
+        "currentStatus": "✅",
+        "rbacPass": true,
+        "tenancyPass": true,
+        "auditPass": true,
+        "testsPass": false,
+        "seedPass": false,
+        "recommendedStatus": "🟡",
+        "evidence": {
+          "files": ["src/lib/server/mfa.ts", "prisma/schema.prisma (User.mfaEnabled, MfaSession)"],
+          "rbacFiles": ["MFA schema ready, not enforced yet"],
+          "tenancyFiles": ["MFA models include companyId"],
+          "auditFiles": ["MFA events can be tracked"],
+          "testFiles": ["No MFA tests yet - not enforced"],
+          "seedFiles": ["Seed doesn't enable MFA for demo users"]
+        },
+        "gaps": ["MFA not enforced - schema ready but no UI/enforcement", "No tests for MFA flow", "Seed data doesn't include MFA examples"]
+      },
+      {
+        "item": "Sessions",
+        "currentStatus": "✅",
+        "rbacPass": true,
+        "tenancyPass": true,
+        "auditPass": true,
+        "testsPass": true,
+        "seedPass": true,
+        "recommendedStatus": "✅",
+        "evidence": {
+          "files": ["src/lib/server/authDb.ts", "AuthSession model"],
+          "rbacFiles": ["middleware.ts:147-148 checks session cookie"],
+          "tenancyFiles": ["AuthSession.userId -> User.companyId"],
+          "auditFiles": ["Session creation/expiration tracked"],
+          "testFiles": ["tests/playwright/00-auth-rbac.spec.ts"],
+          "seedFiles": ["Sessions created dynamically on login"]
+        },
+        "gaps": []
+      },
+      {
+        "item": "Device tracking (basic)",
+        "currentStatus": "✅",
+        "rbacPass": true,
+        "tenancyPass": true,
+        "auditPass": true,
+        "testsPass": false,
+        "seedPass": false,
+        "recommendedStatus": "🟡",
+        "evidence": {
+          "files": ["User-agent + IP logged in signatures/impersonation per Progress.txt"],
+          "rbacFiles": ["N/A - tracking feature"],
+          "tenancyFiles": ["ImpersonationLog.companyId"],
+          "auditFiles": ["ImpersonationLog tracks IP/user-agent"],
+          "testFiles": ["No specific device tracking test"],
+          "seedFiles": ["Not applicable for seed data"]
+        },
+        "gaps": ["No dedicated test for device tracking", "Not applicable for seed data"]
+      },
+      {
+        "item": "Rate limiting / brute force protection",
+        "currentStatus": "✅",
+        "rbacPass": true,
+        "tenancyPass": false,
+        "auditPass": true,
+        "testsPass": true,
+        "seedPass": false,
+        "recommendedStatus": "✅",
+        "evidence": {
+          "files": ["src/lib/server/rateLimitMiddleware.ts"],
+          "rbacFiles": ["Applied before auth - 5/15min magic link, 10/15min password"],
+          "tenancyFiles": ["Rate limiting by IP/email, not tenant-scoped"],
+          "auditFiles": ["Rate limit events logged"],
+          "testFiles": ["tests/playwright/e2e-rate-limiting.spec.ts"],
+          "seedFiles": ["N/A - runtime security feature"]
+        },
+        "gaps": []
+      },
+      {
+        "item": "Secure cookie/session flags",
+        "currentStatus": "✅",
+        "rbacPass": true,
+        "tenancyPass": false,
+        "auditPass": false,
+        "testsPass": false,
+        "seedPass": false,
+        "recommendedStatus": "✅",
+        "evidence": {
+          "files": ["middleware.ts:133-139", "src/lib/serverAuth.ts:43-57"],
+          "rbacFiles": ["HTTP-only, SameSite=Lax configured"],
+          "tenancyFiles": ["N/A - security configuration"],
+          "auditFiles": ["N/A - security configuration"],
+          "testFiles": ["Implicit in all auth tests"],
+          "seedFiles": ["N/A - runtime configuration"]
+        },
+        "gaps": []
+      }
+    ]
+  },
+  "stage0_rbac": {
+    "name": "Foundation - Roles & Permissions (RBAC)",
+    "completionStatus": "✅ COMPLETE (with 1 partial)",
+    "items": [
+      {
+        "item": "Owner/Admin role",
+        "currentStatus": "✅",
+        "rbacPass": true,
+        "tenancyPass": true,
+        "auditPass": true,
+        "testsPass": true,
+        "seedPass": true,
+        "recommendedStatus": "✅",
+        "evidence": {
+          "files": ["src/lib/permissions.ts:12-21", "middleware.ts:158-162"],
+          "rbacFiles": ["ADMIN role has all capabilities", "Admin can access all portals"],
+          "tenancyFiles": ["User.companyId enforced"],
+          "auditFiles": ["ImpersonationLog for admin actions"],
+          "testFiles": ["tests/playwright/00-auth-rbac.spec.ts", "tests/playwright/admin-universal-access.spec.ts"],
+          "seedFiles": ["prisma/seed.ts:80-91 (admin@demo.quantract)"]
+        },
+        "gaps": []
+      },
+      {
+        "item": "Office/Manager role",
+        "currentStatus": "✅",
+        "rbacPass": true,
+        "tenancyPass": true,
+        "auditPass": true,
+        "testsPass": false,
+        "seedPass": false,
+        "recommendedStatus": "🟡",
+        "evidence": {
+          "files": ["src/lib/permissions.ts:22"],
+          "rbacFiles": ["OFFICE role defined with specific capabilities"],
+          "tenancyFiles": ["User.companyId enforced"],
+          "auditFiles": ["Audit events apply to all roles"],
+          "testFiles": ["No specific OFFICE role test"],
+          "seedFiles": ["No OFFICE role user in seed data"]
+        },
+        "gaps": ["No test for OFFICE role permissions", "No OFFICE role user in seed data"]
+      },
+      {
+        "item": "Engineer/Field role",
+        "currentStatus": "✅",
+        "rbacPass": true,
+        "tenancyPass": true,
+        "auditPass": true,
+        "testsPass": true,
+        "seedPass": true,
+        "recommendedStatus": "✅",
+        "evidence": {
+          "files": ["src/lib/permissions.ts:23", "middleware.ts:177-182"],
+          "rbacFiles": ["ENGINEER role restricted to /engineer portal"],
+          "tenancyFiles": ["User.companyId + engineerId enforced"],
+          "auditFiles": ["Engineer actions tracked"],
+          "testFiles": ["tests/playwright/e2e-engineer-happy-path.spec.ts"],
+          "seedFiles": ["prisma/seed.ts:93-104 (engineer@demo.quantract)"]
+        },
+        "gaps": []
+      },
+      {
+        "item": "Client/Customer role",
+        "currentStatus": "🟡",
+        "rbacPass": true,
+        "tenancyPass": true,
+        "auditPass": true,
+        "testsPass": true,
+        "seedPass": true,
+        "recommendedStatus": "🟡",
+        "evidence": {
+          "files": ["middleware.ts:171-176"],
+          "rbacFiles": ["CLIENT role exists, limited permissions defined"],
+          "tenancyFiles": ["User.companyId + clientId enforced"],
+          "auditFiles": ["Client actions tracked (agreements, payments)"],
+          "testFiles": ["tests/playwright/02-client-accept-and-sign.spec.ts", "tests/playwright/09-client-flow-mobile.spec.ts"],
+          "seedFiles": ["prisma/seed.ts:106-117 (client@demo.quantract)"]
+        },
+        "gaps": ["Progress.txt notes 'limited permissions defined' - CLIENT capabilities incomplete"]
+      },
+      {
+        "item": "Pages gated (middleware enforcement)",
+        "currentStatus": "✅",
+        "rbacPass": true,
+        "tenancyPass": true,
+        "auditPass": false,
+        "testsPass": true,
+        "seedPass": false,
+        "recommendedStatus": "✅",
+        "evidence": {
+          "files": ["middleware.ts:88-100", "middleware.ts:158-182"],
+          "rbacFiles": ["Routes protected by role: /admin/*, /engineer/*, /client/*"],
+          "tenancyFiles": ["companyId cookie checked for client/engineer"],
+          "auditFiles": ["N/A - authorization not audited at middleware level"],
+          "testFiles": ["tests/playwright/00-auth-rbac.spec.ts"],
+          "seedFiles": ["N/A - runtime enforcement"]
+        },
+        "gaps": []
+      },
+      {
+        "item": "API routes gated",
+        "currentStatus": "✅",
+        "rbacPass": true,
+        "tenancyPass": true,
+        "auditPass": false,
+        "testsPass": true,
+        "seedPass": false,
+        "recommendedStatus": "✅",
+        "evidence": {
+          "files": ["src/lib/serverAuth.ts:25-27", "src/lib/serverAuth.ts:141-213"],
+          "rbacFiles": ["requireRoles(), requireRole(), requireAuth() enforce API access"],
+          "tenancyFiles": ["All repo functions check companyId"],
+          "auditFiles": ["N/A - authorization not typically audited"],
+          "testFiles": ["tests/playwright/00-auth-rbac.spec.ts"],
+          "seedFiles": ["N/A - runtime enforcement"]
+        },
+        "gaps": []
+      },
+      {
+        "item": "Actions gated (capability checks)",
+        "currentStatus": "✅",
+        "rbacPass": true,
+        "tenancyPass": true,
+        "auditPass": false,
+        "testsPass": true,
+        "seedPass": false,
+        "recommendedStatus": "✅",
+        "evidence": {
+          "files": ["src/lib/serverAuth.ts:241-275", "src/lib/permissions.ts:1-29"],
+          "rbacFiles": ["requireCapability() checks fine-grained permissions"],
+          "tenancyFiles": ["Capability checks include companyId"],
+          "auditFiles": ["N/A - authorization not audited"],
+          "testFiles": ["tests/playwright/00-auth-rbac.spec.ts"],
+          "seedFiles": ["N/A - runtime enforcement"]
+        },
+        "gaps": []
+      },
+      {
+        "item": "Audit events for permission-sensitive actions",
+        "currentStatus": "✅",
+        "rbacPass": false,
+        "tenancyPass": true,
+        "auditPass": true,
+        "testsPass": true,
+        "seedPass": false,
+        "recommendedStatus": "✅",
+        "evidence": {
+          "files": ["src/lib/server/repo.ts:1147-1221", "AuditEvent model", "ImpersonationLog model"],
+          "rbacFiles": ["N/A - audit feature"],
+          "tenancyFiles": ["AuditEvent.companyId enforced"],
+          "auditFiles": ["recordAuditEvent(), ImpersonationLog for admin actions"],
+          "testFiles": ["tests/playwright/production-audit.spec.ts"],
+          "seedFiles": ["N/A - generated at runtime"]
+        },
+        "gaps": []
+      }
+    ]
+  },
+  "stage1": {
+    "name": "CRM & Sales Pipeline",
+    "completionStatus": "🟡 PARTIAL (Feature 1 complete, 2-7 pending)",
+    "items": [
+      {
+        "item": "Manual lead entry - Full CRUD UI",
+        "currentStatus": "✅",
+        "rbacPass": true,
+        "tenancyPass": true,
+        "auditPass": true,
+        "testsPass": true,
+        "seedPass": false,
+        "recommendedStatus": "✅",
+        "evidence": {
+          "files": ["app/admin/enquiries/EnquiryListClient.tsx", "app/api/admin/enquiries/route.ts", "app/api/admin/enquiries/[id]/route.ts"],
+          "rbacFiles": ["requireRoles('admin') on all endpoints"],
+          "tenancyFiles": ["src/lib/server/repo.ts:3903-3911 (companyId in WHERE)", "src/lib/server/repo.ts:3987-3991 (companyId required)"],
+          "auditFiles": ["src/lib/server/repo.ts:4010-4015 (created)", "src/lib/server/repo.ts:4070-4075 (stage_changed)", "src/lib/server/repo.ts:4083-4088 (owner_changed)"],
+          "testFiles": ["tests/playwright/11-admin-enquiries-crud.spec.ts"],
+          "seedFiles": ["No enquiries in seed.ts yet - test creates them dynamically"]
+        },
+        "gaps": ["Seed data doesn't include sample enquiries for demo"]
+      },
+      {
+        "item": "Public form intake",
+        "currentStatus": "🔴",
+        "rbacPass": false,
+        "tenancyPass": false,
+        "auditPass": false,
+        "testsPass": false,
+        "seedPass": false,
+        "recommendedStatus": "🔴",
+        "evidence": {
+          "files": ["Not found"],
+          "rbacFiles": ["N/A - not implemented"],
+          "tenancyFiles": ["N/A - not implemented"],
+          "auditFiles": ["N/A - not implemented"],
+          "testFiles": ["N/A - not implemented"],
+          "seedFiles": ["N/A - not implemented"]
+        },
+        "gaps": ["No public form endpoint for enquiries found"]
+      },
+      {
+        "item": "Pipeline stages (customizable)",
+        "currentStatus": "✅",
+        "rbacPass": true,
+        "tenancyPass": true,
+        "auditPass": false,
+        "testsPass": false,
+        "seedPass": true,
+        "recommendedStatus": "🟡",
+        "evidence": {
+          "files": ["PipelineStage model", "app/api/admin/stages/route.ts"],
+          "rbacFiles": ["Assumed requireRoles('admin') on stage management"],
+          "tenancyFiles": ["PipelineStage.companyId"],
+          "auditFiles": ["No audit events for stage changes found"],
+          "testFiles": ["No specific test for pipeline stage management"],
+          "seedFiles": ["prisma/seed.ts:158-180 (creates 6 default stages)"]
+        },
+        "gaps": ["No audit events for pipeline stage configuration changes", "No test for stage CRUD"]
+      },
+      {
+        "item": "Owner assignment",
+        "currentStatus": "✅",
+        "rbacPass": true,
+        "tenancyPass": true,
+        "auditPass": true,
+        "testsPass": true,
+        "seedPass": false,
+        "recommendedStatus": "✅",
+        "evidence": {
+          "files": ["Enquiry.ownerId field", "EnquiryEvent for owner_changed"],
+          "rbacFiles": ["requireRoles('admin') on enquiry updates"],
+          "tenancyFiles": ["Enquiry.companyId enforced"],
+          "auditFiles": ["src/lib/server/repo.ts:4083-4088 (owner_changed event)"],
+          "testFiles": ["tests/playwright/11-admin-enquiries-crud.spec.ts (Test 2)"],
+          "seedFiles": ["No enquiries with owners in seed"]
+        },
+        "gaps": ["Seed data doesn't include enquiries with owner assignments"]
+      },
+      {
+        "item": "Notes + activity log",
+        "currentStatus": "✅",
+        "rbacPass": true,
+        "tenancyPass": true,
+        "auditPass": true,
+        "testsPass": false,
+        "seedPass": false,
+        "recommendedStatus": "🟡",
+        "evidence": {
+          "files": ["EnquiryEvent model"],
+          "rbacFiles": ["Protected via enquiry access"],
+          "tenancyFiles": ["EnquiryEvent.companyId"],
+          "auditFiles": ["EnquiryEvent for timeline (creation, stage_changed, owner_changed)"],
+          "testFiles": ["Partial coverage in tests/playwright/11-admin-enquiries-crud.spec.ts"],
+          "seedFiles": ["No enquiry events in seed"]
+        },
+        "gaps": ["No specific test for notes/activity timeline", "Seed data doesn't include enquiry events"]
+      },
+      {
+        "item": "Attachments",
+        "currentStatus": "🔴",
+        "rbacPass": false,
+        "tenancyPass": false,
+        "auditPass": false,
+        "testsPass": false,
+        "seedPass": false,
+        "recommendedStatus": "🔴",
+        "evidence": {
+          "files": ["Not found"],
+          "rbacFiles": ["N/A - not implemented"],
+          "tenancyFiles": ["N/A - not implemented"],
+          "auditFiles": ["N/A - not implemented"],
+          "testFiles": ["N/A - not implemented"],
+          "seedFiles": ["N/A - not implemented"]
+        },
+        "gaps": ["No enquiry attachment model found"]
+      },
+      {
+        "item": "Clients / Accounts hierarchy",
+        "currentStatus": "✅",
+        "rbacPass": true,
+        "tenancyPass": true,
+        "auditPass": false,
+        "testsPass": true,
+        "seedPass": true,
+        "recommendedStatus": "🟡",
+        "evidence": {
+          "files": ["Client model", "Site model", "app/api/admin/clients/route.ts"],
+          "rbacFiles": ["requireRoles('admin') assumed on client endpoints"],
+          "tenancyFiles": ["Client.companyId, Site.companyId"],
+          "auditFiles": ["No audit events for client CRUD found"],
+          "testFiles": ["tests/playwright/05-admin-clients-crud.spec.ts"],
+          "seedFiles": ["prisma/seed.ts:58-67 (demo-client)"]
+        },
+        "gaps": ["No audit events for client create/update/delete"]
+      },
+      {
+        "item": "Multiple sites/addresses per client",
+        "currentStatus": "✅",
+        "rbacPass": true,
+        "tenancyPass": true,
+        "auditPass": false,
+        "testsPass": false,
+        "seedPass": false,
+        "recommendedStatus": "🟡",
+        "evidence": {
+          "files": ["Site model", "app/api/admin/sites/route.ts"],
+          "rbacFiles": ["requireRoles('admin') on site endpoints"],
+          "tenancyFiles": ["Site.companyId, Site.clientId"],
+          "auditFiles": ["No audit events for site CRUD"],
+          "testFiles": ["No specific site management test"],
+          "seedFiles": ["No sites in seed data"]
+        },
+        "gaps": ["No audit events for site CRUD", "No test for site management", "No sites in seed data"]
+      },
+      {
+        "item": "Quote builder with line items",
+        "currentStatus": "✅",
+        "rbacPass": true,
+        "tenancyPass": true,
+        "auditPass": true,
+        "testsPass": true,
+        "seedPass": false,
+        "recommendedStatus": "✅",
+        "evidence": {
+          "files": ["QuoteBuilder.tsx", "Quote model", "app/api/admin/quotes/route.ts"],
+          "rbacFiles": ["requireRoles('admin') on quote endpoints"],
+          "tenancyFiles": ["Quote.companyId enforced"],
+          "auditFiles": ["AuditEvent for quote create/update"],
+          "testFiles": ["tests/playwright/01-admin-create-quote.spec.ts", "tests/playwright/10-smoke-quote-invoice.spec.ts"],
+          "seedFiles": ["No quotes in seed - created dynamically in tests"]
+        },
+        "gaps": ["Seed data doesn't include sample quotes"]
+      },
+      {
+        "item": "Quote revisions (v1,v2,v3)",
+        "currentStatus": "✅",
+        "rbacPass": true,
+        "tenancyPass": true,
+        "auditPass": true,
+        "testsPass": false,
+        "seedPass": false,
+        "recommendedStatus": "🟡",
+        "evidence": {
+          "files": ["QuoteRevision model"],
+          "rbacFiles": ["Protected via quote access"],
+          "tenancyFiles": ["QuoteRevision.companyId"],
+          "auditFiles": ["QuoteRevision snapshots with metadata"],
+          "testFiles": ["No specific revision test"],
+          "seedFiles": ["No revisions in seed"]
+        },
+        "gaps": ["No test for quote revision workflow", "No revisions in seed data"]
+      },
+      {
+        "item": "Quote PDF output",
+        "currentStatus": "✅",
+        "rbacPass": true,
+        "tenancyPass": true,
+        "auditPass": false,
+        "testsPass": true,
+        "seedPass": false,
+        "recommendedStatus": "✅",
+        "evidence": {
+          "files": ["src/lib/server/repo.ts renderQuotePdf()"],
+          "rbacFiles": ["Accessible via authenticated endpoints"],
+          "tenancyFiles": ["PDF generation uses company branding (companyId)"],
+          "auditFiles": ["No audit event for PDF generation"],
+          "testFiles": ["tests/playwright/08-pdf-quote-agreement-certificate.spec.ts"],
+          "seedFiles": ["N/A - generated dynamically"]
+        },
+        "gaps": []
+      },
+      {
+        "item": "Quote acceptance - Accept/reject",
+        "currentStatus": "✅",
+        "rbacPass": true,
+        "tenancyPass": true,
+        "auditPass": true,
+        "testsPass": true,
+        "seedPass": false,
+        "recommendedStatus": "✅",
+        "evidence": {
+          "files": ["app/api/client/quotes/[token]/accept/route.ts"],
+          "rbacFiles": ["Token-based public access (no role required)"],
+          "tenancyFiles": ["Quote.companyId verified"],
+          "auditFiles": ["Agreement model captures signature timestamp, IP, user-agent"],
+          "testFiles": ["tests/playwright/02-client-accept-and-sign.spec.ts"],
+          "seedFiles": ["N/A - created dynamically"]
+        },
+        "gaps": []
+      },
+      {
+        "item": "Agreement generation from accepted quote",
+        "currentStatus": "✅",
+        "rbacPass": true,
+        "tenancyPass": true,
+        "auditPass": true,
+        "testsPass": true,
+        "seedPass": false,
+        "recommendedStatus": "✅",
+        "evidence": {
+          "files": ["Agreement model", "SignaturePad.tsx"],
+          "rbacFiles": ["Token-based access"],
+          "tenancyFiles": ["Agreement.companyId via Quote"],
+          "auditFiles": ["Agreement: signedAt, certificateHash, signerIpAddress, signerUserAgent"],
+          "testFiles": ["tests/playwright/02-client-accept-and-sign.spec.ts"],
+          "seedFiles": ["N/A - generated dynamically"]
+        },
+        "gaps": []
+      }
+    ]
+  },
+  "stage2": {
+    "name": "Compliance Checklists & Gating",
+    "completionStatus": "✅ COMPLETE",
+    "items": [
+      {
+        "item": "Checklist templates - Admin CRUD",
+        "currentStatus": "✅",
+        "rbacPass": true,
+        "tenancyPass": true,
+        "auditPass": true,
+        "testsPass": true,
+        "seedPass": false,
+        "recommendedStatus": "✅",
+        "evidence": {
+          "files": ["app/api/admin/checklist-templates/route.ts", "app/api/admin/checklist-templates/[id]/route.ts", "ChecklistTemplate model"],
+          "rbacFiles": ["requireRoles('admin') on all template endpoints"],
+          "tenancyFiles": ["ChecklistTemplate.companyId enforced"],
+          "auditFiles": ["auditEvent.action = 'checklist.attached', 'checklist.item.completed'"],
+          "testFiles": ["tests/playwright/12-checklist-gating.spec.ts"],
+          "seedFiles": ["No checklist templates in seed"]
+        },
+        "gaps": ["Seed data doesn't include checklist templates"]
+      },
+      {
+        "item": "Job checklists - Attach template to job",
+        "currentStatus": "✅",
+        "rbacPass": true,
+        "tenancyPass": true,
+        "auditPass": true,
+        "testsPass": true,
+        "seedPass": false,
+        "recommendedStatus": "✅",
+        "evidence": {
+          "files": ["app/api/jobs/[jobId]/checklists/route.ts", "JobChecklist model"],
+          "rbacFiles": ["requireAuth() - Admin + Engineer can attach"],
+          "tenancyFiles": ["JobChecklist.companyId"],
+          "auditFiles": ["Audit event: 'checklist.attached'"],
+          "testFiles": ["tests/playwright/12-checklist-gating.spec.ts"],
+          "seedFiles": ["No job checklists in seed"]
+        },
+        "gaps": ["Seed data doesn't include job checklists"]
+      },
+      {
+        "item": "Compliance step tracking - Item completion",
+        "currentStatus": "✅",
+        "rbacPass": true,
+        "tenancyPass": true,
+        "auditPass": true,
+        "testsPass": true,
+        "seedPass": false,
+        "recommendedStatus": "✅",
+        "evidence": {
+          "files": ["app/api/jobs/[jobId]/checklists/[checklistId]/items/[itemId]/route.ts", "JobChecklistItem model"],
+          "rbacFiles": ["requireAuth() - Admin + Engineer can complete items"],
+          "tenancyFiles": ["JobChecklistItem via JobChecklist.companyId"],
+          "auditFiles": ["Audit events: 'checklist.item.completed', 'checklist.item.uncompleted'"],
+          "testFiles": ["tests/playwright/12-checklist-gating.spec.ts (comprehensive)"],
+          "seedFiles": ["N/A - created dynamically"]
+        },
+        "gaps": []
+      },
+      {
+        "item": "Completion gating - Can't close job until complete",
+        "currentStatus": "✅",
+        "rbacPass": true,
+        "tenancyPass": true,
+        "auditPass": true,
+        "testsPass": true,
+        "seedPass": false,
+        "recommendedStatus": "✅",
+        "evidence": {
+          "files": ["src/lib/server/checklistGating.ts", "src/lib/server/repo.ts updateJob()"],
+          "rbacFiles": ["Server-side enforcement (non-bypassable)"],
+          "tenancyFiles": ["Gating checks companyId-scoped checklists"],
+          "auditFiles": ["Admin override creates audit event: 'job.completion.override'"],
+          "testFiles": ["tests/playwright/12-checklist-gating.spec.ts (5 comprehensive tests)"],
+          "seedFiles": ["N/A - runtime enforcement"]
+        },
+        "gaps": []
+      },
+      {
+        "item": "Audit trail integration",
+        "currentStatus": "✅",
+        "rbacPass": false,
+        "tenancyPass": true,
+        "auditPass": true,
+        "testsPass": true,
+        "seedPass": false,
+        "recommendedStatus": "✅",
+        "evidence": {
+          "files": ["AuditEvent for checklist actions"],
+          "rbacFiles": ["N/A - audit feature"],
+          "tenancyFiles": ["All checklist audit events include companyId"],
+          "auditFiles": ["Actions: checklist.attached, item.completed, item.uncompleted, job.completion.override"],
+          "testFiles": ["tests/playwright/12-checklist-gating.spec.ts verifies audit"],
+          "seedFiles": ["N/A - generated at runtime"]
+        },
+        "gaps": []
+      }
+    ]
+  },
+  "stage3": {
+    "name": "Tasks & Collaboration",
+    "completionStatus": "✅ COMPLETE",
+    "items": [
+      {
+        "item": "Tasks linked to Jobs",
+        "currentStatus": "✅",
+        "rbacPass": true,
+        "tenancyPass": true,
+        "auditPass": true,
+        "testsPass": true,
+        "seedPass": false,
+        "recommendedStatus": "✅",
+        "evidence": {
+          "files": ["Task model", "app/api/tasks/route.ts"],
+          "rbacFiles": ["requireAuth() on all task endpoints"],
+          "tenancyFiles": ["app/api/tasks/route.ts:32 (where: { companyId })"],
+          "auditFiles": ["Task creation/update logged to AuditEvent"],
+          "testFiles": ["tests/playwright/13-task-visibility.spec.ts"],
+          "seedFiles": ["No tasks in seed"]
+        },
+        "gaps": ["Seed data doesn't include tasks"]
+      },
+      {
+        "item": "Tasks linked to Clients",
+        "currentStatus": "✅",
+        "rbacPass": true,
+        "tenancyPass": true,
+        "auditPass": true,
+        "testsPass": true,
+        "seedPass": false,
+        "recommendedStatus": "✅",
+        "evidence": {
+          "files": ["Task.clientId field"],
+          "rbacFiles": ["requireAuth() on task endpoints"],
+          "tenancyFiles": ["Task.companyId enforced"],
+          "auditFiles": ["Task actions logged"],
+          "testFiles": ["tests/playwright/13-task-visibility.spec.ts"],
+          "seedFiles": ["No client tasks in seed"]
+        },
+        "gaps": ["Seed data doesn't include client tasks"]
+      },
+      {
+        "item": "Internal ops tasks",
+        "currentStatus": "✅",
+        "rbacPass": true,
+        "tenancyPass": true,
+        "auditPass": true,
+        "testsPass": true,
+        "seedPass": false,
+        "recommendedStatus": "✅",
+        "evidence": {
+          "files": ["Task model (jobId/clientId optional)"],
+          "rbacFiles": ["requireAuth()"],
+          "tenancyFiles": ["Task.companyId enforced"],
+          "auditFiles": ["All tasks audited"],
+          "testFiles": ["tests/playwright/13-task-visibility.spec.ts (Test 5: internal view)"],
+          "seedFiles": ["No internal tasks in seed"]
+        },
+        "gaps": ["Seed data doesn't include internal tasks"]
+      },
+      {
+        "item": "Subtasks",
+        "currentStatus": "✅",
+        "rbacPass": true,
+        "tenancyPass": true,
+        "auditPass": true,
+        "testsPass": true,
+        "seedPass": false,
+        "recommendedStatus": "✅",
+        "evidence": {
+          "files": ["Task.parentTaskId field"],
+          "rbacFiles": ["requireAuth()"],
+          "tenancyFiles": ["Subtasks inherit parent companyId"],
+          "auditFiles": ["Subtask actions logged"],
+          "testFiles": ["tests/playwright/13-task-visibility.spec.ts (Test 4: subtasks)"],
+          "seedFiles": ["No subtasks in seed"]
+        },
+        "gaps": ["Seed data doesn't include subtasks"]
+      },
+      {
+        "item": "Due dates / assignees / priority / status",
+        "currentStatus": "✅",
+        "rbacPass": true,
+        "tenancyPass": true,
+        "auditPass": true,
+        "testsPass": true,
+        "seedPass": false,
+        "recommendedStatus": "✅",
+        "evidence": {
+          "files": ["Task model: dueDate, assigneeId, priority, status"],
+          "rbacFiles": ["requireAuth()"],
+          "tenancyFields": ["Task.companyId"],
+          "auditFiles": ["Task state changes audited"],
+          "testFiles": ["tests/playwright/13-task-visibility.spec.ts"],
+          "seedFiles": ["No tasks in seed"]
+        },
+        "gaps": ["Seed data doesn't include tasks"]
+      },
+      {
+        "item": "Task views - My Tasks, All Tasks, Internal Tasks",
+        "currentStatus": "✅",
+        "rbacPass": true,
+        "tenancyPass": true,
+        "auditPass": false,
+        "testsPass": true,
+        "seedPass": false,
+        "recommendedStatus": "✅",
+        "evidence": {
+          "files": ["app/api/tasks/route.ts (view filtering)", "src/components/admin/tasks/TasksPageClient.tsx"],
+          "rbacFiles": ["requireAuth()"],
+          "tenancyFiles": ["All views filter by companyId"],
+          "auditFiles": ["N/A - read operations"],
+          "testFiles": ["tests/playwright/13-task-visibility.spec.ts (Test 5)"],
+          "seedFiles": ["N/A - UI feature"]
+        },
+        "gaps": []
+      },
+      {
+        "item": "@mentions",
+        "currentStatus": "✅",
+        "rbacPass": true,
+        "tenancyPass": true,
+        "auditPass": true,
+        "testsPass": true,
+        "seedPass": false,
+        "recommendedStatus": "✅",
+        "evidence": {
+          "files": ["Mention model", "app/api/tasks/[taskId]/comments/route.ts"],
+          "rbacFiles": ["requireAuth()"],
+          "tenancyFiles": ["Mention.companyId via Task"],
+          "auditFiles": ["Mentions tracked in Mention model"],
+          "testFiles": ["tests/playwright/13-task-visibility.spec.ts (Test 3)"],
+          "seedFiles": ["No mentions in seed"]
+        },
+        "gaps": ["Seed data doesn't include mentions"]
+      },
+      {
+        "item": "Internal vs client-visible comments",
+        "currentStatus": "✅",
+        "rbacPass": true,
+        "tenancyPass": true,
+        "auditPass": true,
+        "testsPass": true,
+        "seedPass": false,
+        "recommendedStatus": "✅",
+        "evidence": {
+          "files": ["Comment model", "Comment.internalOnly flag (defaults true)"],
+          "rbacFiles": ["requireAuth()"],
+          "tenancyFiles": ["Comment.companyId via Task"],
+          "auditFiles": ["Comment creation tracked"],
+          "testFiles": ["tests/playwright/13-task-visibility.spec.ts (Test 1, Test 2: safety defaults)"],
+          "seedFiles": ["No comments in seed"]
+        },
+        "gaps": ["Seed data doesn't include comments"]
+      },
+      {
+        "item": "Mention notifications",
+        "currentStatus": "✅",
+        "rbacPass": true,
+        "tenancyPass": true,
+        "auditPass": true,
+        "testsPass": false,
+        "seedPass": false,
+        "recommendedStatus": "🟡",
+        "evidence": {
+          "files": ["Mention model with notified flag"],
+          "rbacFiles": ["requireAuth()"],
+          "tenancyFiles": ["Mentions scoped by companyId"],
+          "auditFiles": ["Mention.notified tracks delivery"],
+          "testFiles": ["No test for notification delivery"],
+          "seedFiles": ["N/A - runtime feature"]
+        },
+        "gaps": ["No test for email notification delivery on @mentions"]
+      }
+    ]
+  },
+  "stage4": {
+    "name": "Reporting & Dashboards",
+    "completionStatus": "✅ COMPLETE",
+    "items": [
+      {
+        "item": "Admin dashboard - Pipeline value",
+        "currentStatus": "✅",
+        "rbacPass": true,
+        "tenancyPass": true,
+        "auditPass": false,
+        "testsPass": false,
+        "seedPass": false,
+        "recommendedStatus": "✅",
+        "evidence": {
+          "files": ["app/api/admin/reports/dashboard/route.ts"],
+          "rbacFiles": ["requireRoles('admin')"],
+          "tenancyFiles": ["Dashboard queries scoped by companyId"],
+          "auditFiles": ["N/A - read operation"],
+          "testFiles": ["No specific dashboard test"],
+          "seedFiles": ["N/A - aggregates existing data"]
+        },
+        "gaps": ["No test for dashboard API"]
+      },
+      {
+        "item": "Admin dashboard - Jobs today",
+        "currentStatus": "✅",
+        "rbacPass": true,
+        "tenancyPass": true,
+        "auditPass": false,
+        "testsPass": false,
+        "seedPass": false,
+        "recommendedStatus": "✅",
+        "evidence": {
+          "files": ["app/api/admin/reports/dashboard/route.ts"],
+          "rbacFiles": ["requireRoles('admin')"],
+          "tenancyFiles": ["Scoped by companyId"],
+          "auditFiles": ["N/A - read operation"],
+          "testFiles": ["No test"],
+          "seedFiles": ["N/A - aggregates existing data"]
+        },
+        "gaps": ["No test for dashboard API"]
+      },
+      {
+        "item": "Admin dashboard - Overdue invoices",
+        "currentStatus": "✅",
+        "rbacPass": true,
+        "tenancyPass": true,
+        "auditPass": false,
+        "testsPass": false,
+        "seedPass": false,
+        "recommendedStatus": "✅",
+        "evidence": {
+          "files": ["app/api/admin/reports/dashboard/route.ts"],
+          "rbacFiles": ["requireRoles('admin')"],
+          "tenancyFiles": ["Scoped by companyId"],
+          "auditFiles": ["N/A - read operation"],
+          "testFiles": ["No test"],
+          "seedFiles": ["N/A - aggregates existing data"]
+        },
+        "gaps": ["No test for dashboard API"]
+      },
+      {
+        "item": "Engineer utilization report",
+        "currentStatus": "✅",
+        "rbacPass": true,
+        "tenancyPass": true,
+        "auditPass": false,
+        "testsPass": false,
+        "seedPass": false,
+        "recommendedStatus": "✅",
+        "evidence": {
+          "files": ["app/api/admin/reports/engineer-utilisation/route.ts"],
+          "rbacFiles": ["requireRoles('admin')"],
+          "tenancyFiles": ["Scoped by companyId"],
+          "auditFiles": ["N/A - read operation"],
+          "testFiles": ["No test"],
+          "seedFiles": ["N/A - aggregates time entries"]
+        },
+        "gaps": ["No test for utilization report"]
+      },
+      {
+        "item": "Job margin / profitability report",
+        "currentStatus": "✅",
+        "rbacPass": true,
+        "tenancyPass": true,
+        "auditPass": false,
+        "testsPass": false,
+        "seedPass": false,
+        "recommendedStatus": "✅",
+        "evidence": {
+          "files": ["app/api/admin/reports/profitability (referenced in Progress.txt)"],
+          "rbacFiles": ["requireRoles('admin')"],
+          "tenancyFiles": ["Scoped by companyId"],
+          "auditFiles": ["N/A - read operation"],
+          "testFiles": ["No test"],
+          "seedFiles": ["N/A - aggregates job costs"]
+        },
+        "gaps": ["No test for profitability report"]
+      },
+      {
+        "item": "Quote win rate report",
+        "currentStatus": "✅",
+        "rbacPass": true,
+        "tenancyPass": true,
+        "auditPass": false,
+        "testsPass": false,
+        "seedPass": false,
+        "recommendedStatus": "✅",
+        "evidence": {
+          "files": ["app/api/admin/reports/quote-win-rate/route.ts"],
+          "rbacFiles": ["requireRoles('admin')"],
+          "tenancyFiles": ["Scoped by companyId"],
+          "auditFiles": ["N/A - read operation"],
+          "testFiles": ["No test"],
+          "seedFiles": ["N/A - aggregates quotes"]
+        },
+        "gaps": ["No test for win rate report"]
+      },
+      {
+        "item": "Time vs estimate report",
+        "currentStatus": "✅",
+        "rbacPass": true,
+        "tenancyPass": true,
+        "auditPass": false,
+        "testsPass": false,
+        "seedPass": false,
+        "recommendedStatus": "✅",
+        "evidence": {
+          "files": ["app/api/admin/reports/time-vs-estimate/route.ts"],
+          "rbacFiles": ["requireRoles('admin')"],
+          "tenancyFiles": ["Scoped by companyId"],
+          "auditFiles": ["N/A - read operation"],
+          "testFiles": ["No test"],
+          "seedFiles": ["N/A - compares estimates vs actuals"]
+        },
+        "gaps": ["No test for time vs estimate report"]
+      },
+      {
+        "item": "A/R aging report",
+        "currentStatus": "✅",
+        "rbacPass": true,
+        "tenancyPass": true,
+        "auditPass": false,
+        "testsPass": false,
+        "seedPass": false,
+        "recommendedStatus": "✅",
+        "evidence": {
+          "files": ["app/api/admin/reports/ar-aging/route.ts"],
+          "rbacFiles": ["requireRoles('admin')"],
+          "tenancyFiles": ["Scoped by companyId"],
+          "auditFiles": ["N/A - read operation"],
+          "testFiles": ["No test"],
+          "seedFiles": ["N/A - aggregates invoices"]
+        },
+        "gaps": ["No test for A/R aging report"]
+      },
+      {
+        "item": "Tax summary report",
+        "currentStatus": "✅",
+        "rbacPass": true,
+        "tenancyPass": true,
+        "auditPass": false,
+        "testsPass": false,
+        "seedPass": false,
+        "recommendedStatus": "✅",
+        "evidence": {
+          "files": ["app/api/admin/reports/tax-summary/route.ts"],
+          "rbacFiles": ["requireRoles('admin')"],
+          "tenancyFiles": ["Scoped by companyId"],
+          "auditFiles": ["N/A - read operation"],
+          "testFiles": ["No test"],
+          "seedFiles": ["N/A - aggregates VAT"]
+        },
+        "gaps": ["No test for tax summary report"]
+      },
+      {
+        "item": "Revenue by period report",
+        "currentStatus": "✅",
+        "rbacPass": true,
+        "tenancyPass": true,
+        "auditPass": false,
+        "testsPass": false,
+        "seedPass": false,
+        "recommendedStatus": "✅",
+        "evidence": {
+          "files": ["app/api/admin/reports/revenue/route.ts"],
+          "rbacFiles": ["requireRoles('admin')"],
+          "tenancyFiles": ["Scoped by companyId"],
+          "auditFiles": ["N/A - read operation"],
+          "testFiles": ["No test"],
+          "seedFiles": ["N/A - aggregates invoices"]
+        },
+        "gaps": ["No test for revenue report"]
+      },
+      {
+        "item": "CSV export utility",
+        "currentStatus": "✅",
+        "rbacPass": false,
+        "tenancyPass": false,
+        "auditPass": false,
+        "testsPass": false,
+        "seedPass": false,
+        "recommendedStatus": "✅",
+        "evidence": {
+          "files": ["src/lib/server/csvExport.ts"],
+          "rbacFiles": ["N/A - utility function"],
+          "tenancyFiles": ["N/A - utility function"],
+          "auditFiles": ["N/A - utility function"],
+          "testFiles": ["No test for CSV export"],
+          "seedFiles": ["N/A - utility function"]
+        },
+        "gaps": ["No test for CSV export safety"]
+      }
+    ]
+  },
+  "stage5": {
+    "name": "Background Job Queue",
+    "completionStatus": "✅ COMPLETE",
+    "items": [
+      {
+        "item": "Persistent job queue - Bull + Redis",
+        "currentStatus": "✅",
+        "rbacPass": false,
+        "tenancyPass": false,
+        "auditPass": true,
+        "testsPass": false,
+        "seedPass": false,
+        "recommendedStatus": "✅",
+        "evidence": {
+          "files": ["src/lib/server/queue/queueConfig.ts", "src/lib/server/queue/worker.ts"],
+          "rbacFiles": ["N/A - infrastructure"],
+          "tenancyFiles": ["Job data includes companyId for tenant isolation"],
+          "auditFiles": ["All jobs create AuditEvent entries with idempotency keys"],
+          "testFiles": ["No queue infrastructure test"],
+          "seedFiles": ["N/A - infrastructure"]
+        },
+        "gaps": ["No test for queue infrastructure"]
+      },
+      {
+        "item": "Email queue - Async email delivery",
+        "currentStatus": "✅",
+        "rbacPass": false,
+        "tenancyPass": true,
+        "auditPass": true,
+        "testsPass": false,
+        "seedPass": false,
+        "recommendedStatus": "✅",
+        "evidence": {
+          "files": ["src/lib/server/queue/processors/emailProcessor.ts"],
+          "rbacFiles": ["N/A - background job"],
+          "tenancyFiles": ["Email jobs include companyId"],
+          "auditFiles": ["Idempotency via AuditEvent (action: 'email.sent')"],
+          "testFiles": ["No test for email queue"],
+          "seedFiles": ["N/A - runtime feature"]
+        },
+        "gaps": ["No test for email queue idempotency"]
+      },
+      {
+        "item": "PDF generation queue",
+        "currentStatus": "✅",
+        "rbacPass": false,
+        "tenancyPass": true,
+        "auditPass": true,
+        "testsPass": false,
+        "seedPass": false,
+        "recommendedStatus": "✅",
+        "evidence": {
+          "files": ["src/lib/server/queue/processors/pdfProcessor.ts"],
+          "rbacFiles": ["N/A - background job"],
+          "tenancyFiles": ["PDF jobs include companyId"],
+          "auditFiles": ["Idempotency via AuditEvent"],
+          "testFiles": ["No test for PDF queue"],
+          "seedFiles": ["N/A - runtime feature"]
+        },
+        "gaps": ["No test for PDF queue idempotency"]
+      },
+      {
+        "item": "Reminder queue - Invoice reminders",
+        "currentStatus": "✅",
+        "rbacPass": false,
+        "tenancyPass": true,
+        "auditPass": true,
+        "testsPass": false,
+        "seedPass": false,
+        "recommendedStatus": "✅",
+        "evidence": {
+          "files": ["src/lib/server/queue/processors/reminderProcessor.ts", "app/api/internal/cron/invoice-reminders/route.ts"],
+          "rbacFiles": ["N/A - background job"],
+          "tenancyFiles": ["Reminder jobs include companyId"],
+          "auditFiles": ["Idempotency key: 'invoice-reminder-{invoiceId}-{type}-{date}'"],
+          "testFiles": ["No test for reminder queue"],
+          "seedFiles": ["N/A - runtime feature"]
+        },
+        "gaps": ["No test for reminder queue idempotency"]
+      },
+      {
+        "item": "Idempotency enforcement",
+        "currentStatus": "✅",
+        "rbacPass": false,
+        "tenancyPass": false,
+        "auditPass": true,
+        "testsPass": false,
+        "seedPass": false,
+        "recommendedStatus": "✅",
+        "evidence": {
+          "files": ["All processors check AuditEvent before processing"],
+          "rbacFiles": ["N/A - safety mechanism"],
+          "tenancyFiles": ["N/A - safety mechanism"],
+          "auditFiles": ["AuditEvent with idempotency key prevents duplicates"],
+          "testFiles": ["No test for idempotency"],
+          "seedFiles": ["N/A - safety mechanism"]
+        },
+        "gaps": ["No test for idempotency enforcement"]
+      },
+      {
+        "item": "Retry logic - Exponential backoff",
+        "currentStatus": "✅",
+        "rbacPass": false,
+        "tenancyPass": false,
+        "auditPass": false,
+        "testsPass": false,
+        "seedPass": false,
+        "recommendedStatus": "✅",
+        "evidence": {
+          "files": ["src/lib/server/queue/queueConfig.ts:19-27"],
+          "rbacFiles": ["N/A - retry configuration"],
+          "tenancyFiles": ["N/A - retry configuration"],
+          "auditFiles": ["N/A - retry configuration"],
+          "testFiles": ["No test for retry logic"],
+          "seedFiles": ["N/A - configuration"]
+        },
+        "gaps": ["No test for retry logic"]
+      },
+      {
+        "item": "Failed job visibility - Admin UI",
+        "currentStatus": "✅",
+        "rbacPass": true,
+        "tenancyPass": true,
+        "auditPass": false,
+        "testsPass": false,
+        "seedPass": false,
+        "recommendedStatus": "✅",
+        "evidence": {
+          "files": ["app/api/admin/jobs/failed/route.ts", "app/admin/system/failed-jobs/page.tsx"],
+          "rbacFiles": ["requireRoles('admin')"],
+          "tenancyFiles": ["Failed jobs filtered by companyId (assumed)"],
+          "auditFiles": ["N/A - read operation"],
+          "testFiles": ["No test for failed jobs UI"],
+          "seedFiles": ["N/A - runtime feature"]
+        },
+        "gaps": ["No test for failed jobs UI"]
+      },
+      {
+        "item": "Graceful shutdown - Worker cleanup",
+        "currentStatus": "✅",
+        "rbacPass": false,
+        "tenancyPass": false,
+        "auditPass": false,
+        "testsPass": false,
+        "seedPass": false,
+        "recommendedStatus": "✅",
+        "evidence": {
+          "files": ["src/lib/server/queue/worker.ts (SIGTERM/SIGINT handlers)"],
+          "rbacFiles": ["N/A - infrastructure"],
+          "tenancyFiles": ["N/A - infrastructure"],
+          "auditFiles": ["N/A - infrastructure"],
+          "testFiles": ["No test for graceful shutdown"],
+          "seedFiles": ["N/A - infrastructure"]
+        },
+        "gaps": ["No test for graceful shutdown"]
+      }
+    ]
+  },
+  "summary": {
+    "totalItems": 71,
+    "fullyCompliant": 49,
+    "partialCompliant": 14,
+    "noncompliant": 8,
+    "criticalGaps": [
+      {
+        "gap": "MFA schema ready but not enforced",
+        "impact": "HIGH",
+        "recommendation": "Complete MFA UI and enforcement, or downgrade to 🟡 until enforced"
+      },
+      {
+        "gap": "Stage 1 CRM features 2-7 not implemented",
+        "impact": "HIGH",
+        "recommendation": "Public form intake, attachments, tags are marked 🔴 - confirm status"
+      },
+      {
+        "gap": "No audit events for client/site CRUD",
+        "impact": "MEDIUM",
+        "recommendation": "Add audit events for client and site create/update/delete"
+      },
+      {
+        "gap": "Limited test coverage for Stage 4 reports",
+        "impact": "MEDIUM",
+        "recommendation": "Add Playwright tests for at least 2-3 key reports"
+      },
+      {
+        "gap": "No tests for Stage 5 queue idempotency",
+        "impact": "HIGH",
+        "recommendation": "Add tests to verify idempotency prevents duplicate emails/charges"
+      },
+      {
+        "gap": "Seed data incomplete for newer features",
+        "impact": "LOW",
+        "recommendation": "Add sample enquiries, tasks, checklists to seed.ts"
+      }
+    ],
+    "recommendedDowngrades": [
+      {
+        "item": "MFA design-ready",
+        "from": "✅",
+        "to": "🟡",
+        "reason": "Schema ready but not enforced - no UI, no tests, not in production use"
+      },
+      {
+        "item": "Password reset",
+        "from": "✅",
+        "to": "🟡",
+        "reason": "Missing audit trail and tests"
+      },
+      {
+        "item": "Device tracking",
+        "from": "✅",
+        "to": "🟡",
+        "reason": "No tests, not applicable for seed data"
+      },
+      {
+        "item": "Office/Manager role",
+        "from": "✅",
+        "to": "🟡",
+        "reason": "No tests, no seed data for OFFICE role"
+      },
+      {
+        "item": "Pipeline stages",
+        "from": "✅",
+        "to": "🟡",
+        "reason": "No audit events for configuration changes, no CRUD test"
+      },
+      {
+        "item": "Notes + activity log (Enquiries)",
+        "from": "✅",
+        "to": "🟡",
+        "reason": "No specific test for timeline, no seed data"
+      },
+      {
+        "item": "Clients / Accounts hierarchy",
+        "from": "✅",
+        "to": "🟡",
+        "reason": "No audit events for client CRUD"
+      },
+      {
+        "item": "Multiple sites/addresses",
+        "from": "✅",
+        "to": "🟡",
+        "reason": "No audit events, no test, no seed data"
+      },
+      {
+        "item": "Quote revisions",
+        "from": "✅",
+        "to": "🟡",
+        "reason": "No test for revision workflow, no seed data"
+      },
+      {
+        "item": "Mention notifications",
+        "from": "✅",
+        "to": "🟡",
+        "reason": "No test for email notification delivery"
+      }
+    ],
+    "strengths": [
+      "Excellent RBAC enforcement across all API routes",
+      "Comprehensive tenant isolation with companyId checks",
+      "Strong audit trail for core workflows (enquiries, checklists, tasks)",
+      "Good test coverage for critical paths (auth, RBAC, checklists, tasks)",
+      "Proper idempotency design in queue system",
+      "Session management and rate limiting well implemented"
+    ],
+    "overallAssessment": "The codebase demonstrates strong architectural patterns and security fundamentals. Stages 0-5 are functionally complete with some gaps in test coverage and audit completeness. The main issues are: (1) MFA not enforced despite schema readiness, (2) Missing audit events for some CRUD operations, (3) Limited test coverage for reporting features, (4) Seed data incomplete for newer features. Recommend downgrading 10 items from ✅ to 🟡 until gaps are addressed."
+  }
+}

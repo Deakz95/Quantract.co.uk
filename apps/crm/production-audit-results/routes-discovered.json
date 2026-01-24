@@ -1,0 +1,34 @@
+[
+  {
+    "name": "Admin Dashboard",
+    "url": "https://www.quantract.co.uk/admin"
+  },
+  {
+    "name": "Enquiries",
+    "url": "https://www.quantract.co.uk/admin/enquiries"
+  },
+  {
+    "name": "Quotes",
+    "url": "https://www.quantract.co.uk/admin/quotes"
+  },
+  {
+    "name": "Jobs",
+    "url": "https://www.quantract.co.uk/admin/jobs"
+  },
+  {
+    "name": "Invoices",
+    "url": "https://www.quantract.co.uk/admin/invoices"
+  },
+  {
+    "name": "Engineers",
+    "url": "https://www.quantract.co.uk/admin/engineers"
+  },
+  {
+    "name": "Timesheets",
+    "url": "https://www.quantract.co.uk/admin/timesheets"
+  },
+  {
+    "name": "Clients",
+    "url": "https://www.quantract.co.uk/admin/clients"
+  }
+]

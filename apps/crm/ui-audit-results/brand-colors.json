@@ -1,0 +1,24 @@
+{
+  "primaryButton": {
+    "background": "rgba(0, 0, 0, 0)",
+    "color": "rgb(230, 232, 236)",
+    "border": "rgb(230, 232, 236)"
+  },
+  "body": {
+    "background": "rgb(15, 17, 21)",
+    "color": "rgb(230, 232, 236)"
+  },
+  "heading": {
+    "color": "rgb(255, 255, 255)",
+    "fontFamily": "Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+    "fontWeight": "900"
+  },
+  "navigation": {
+    "background": "rgba(21, 25, 34, 0.95)",
+    "color": "rgb(230, 232, 236)"
+  },
+  "card": {
+    "background": "rgb(35, 42, 59)",
+    "border": "rgba(255, 255, 255, 0.05) rgb(230, 232, 236)"
+  }
+}

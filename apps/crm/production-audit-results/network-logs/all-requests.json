@@ -1,0 +1,4016 @@
+[
+  {
+    "timestamp": "2026-01-17T15:13:00.281Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://www.quantract.co.uk/admin/login",
+    "status": 301,
+    "requestBody": null,
+    "duration": 168
+  },
+  {
+    "timestamp": "2026-01-17T15:13:00.423Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login",
+    "status": 200,
+    "requestBody": null,
+    "duration": 143
+  },
+  {
+    "timestamp": "2026-01-17T15:13:00.493Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/052d68b996f752d5.css",
+    "status": 200,
+    "requestBody": null,
+    "duration": 54
+  },
+  {
+    "timestamp": "2026-01-17T15:13:00.529Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/657afe7b6ded4927.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 89
+  },
+  {
+    "timestamp": "2026-01-17T15:13:00.532Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/turbopack-afc78fa8ae8e471b.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 89
+  },
+  {
+    "timestamp": "2026-01-17T15:13:00.538Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/de50ae1b8095f4b6.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 91
+  },
+  {
+    "timestamp": "2026-01-17T15:13:00.541Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/a1efa75082b67452.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 95
+  },
+  {
+    "timestamp": "2026-01-17T15:13:00.547Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/6c71f6236a92a974.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 98
+  },
+  {
+    "timestamp": "2026-01-17T15:13:00.549Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/724428d10901825b.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 105
+  },
+  {
+    "timestamp": "2026-01-17T15:13:00.552Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/a54edcef78dcd63a.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 104
+  },
+  {
+    "timestamp": "2026-01-17T15:13:00.553Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/1498543cae7dbdb6.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 104
+  },
+  {
+    "timestamp": "2026-01-17T15:13:00.563Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/5820221d2fcb1e4f.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 118
+  },
+  {
+    "timestamp": "2026-01-17T15:13:00.566Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/72dfeddde2e7b3a4.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 115
+  },
+  {
+    "timestamp": "2026-01-17T15:13:00.566Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/a4606ecc7f9d396a.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 119
+  },
+  {
+    "timestamp": "2026-01-17T15:13:00.567Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/96579c50bab1031f.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 117
+  },
+  {
+    "timestamp": "2026-01-17T15:13:00.569Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/f4663027d75bcfe0.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 128
+  },
+  {
+    "timestamp": "2026-01-17T15:13:00.570Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/0272c645c8852a8e.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 126
+  },
+  {
+    "timestamp": "2026-01-17T15:13:00.572Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/624f2ec5ad9eedd1.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 129
+  },
+  {
+    "timestamp": "2026-01-17T15:13:00.589Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/737edb47a2b38749.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 147
+  },
+  {
+    "timestamp": "2026-01-17T15:13:00.605Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/48aa4afab29e30d6.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 159
+  },
+  {
+    "timestamp": "2026-01-17T15:13:00.607Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/088e7eb42256e9a1.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 165
+  },
+  {
+    "timestamp": "2026-01-17T15:13:00.649Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/a3d69eb42b0283b4.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 205
+  },
+  {
+    "timestamp": "2026-01-17T15:13:00.650Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/1ecfe2e88d4d6d86.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 205
+  },
+  {
+    "timestamp": "2026-01-17T15:13:00.894Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/api/admin/impersonate/status",
+    "status": 307,
+    "requestBody": null,
+    "duration": 54
+  },
+  {
+    "timestamp": "2026-01-17T15:13:00.918Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/api/ai/status",
+    "status": 200,
+    "requestBody": null,
+    "duration": 77
+  },
+  {
+    "timestamp": "2026-01-17T15:13:00.944Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/?_rsc=1fgmb",
+    "status": 200,
+    "requestBody": null,
+    "duration": 54
+  },
+  {
+    "timestamp": "2026-01-17T15:13:00.947Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/engineer/login?_rsc=1fgmb",
+    "status": 200,
+    "requestBody": null,
+    "duration": 58
+  },
+  {
+    "timestamp": "2026-01-17T15:13:00.954Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?_rsc=1fgmb",
+    "status": 200,
+    "requestBody": null,
+    "duration": 64
+  },
+  {
+    "timestamp": "2026-01-17T15:13:00.959Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/client/login?_rsc=1fgmb",
+    "status": 200,
+    "requestBody": null,
+    "duration": 69
+  },
+  {
+    "timestamp": "2026-01-17T15:13:00.962Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?next=%2Fapi%2Fadmin%2Fimpersonate%2Fstatus",
+    "status": 200,
+    "requestBody": null,
+    "duration": 69
+  },
+  {
+    "timestamp": "2026-01-17T15:13:01.011Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/?_rsc=1nke2",
+    "status": 200,
+    "requestBody": null,
+    "duration": 59
+  },
+  {
+    "timestamp": "2026-01-17T15:13:01.013Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/?_rsc=4yyve",
+    "status": 200,
+    "requestBody": null,
+    "duration": 62
+  },
+  {
+    "timestamp": "2026-01-17T15:13:01.019Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/engineer/login?_rsc=1hmcs",
+    "status": 200,
+    "requestBody": null,
+    "duration": 58
+  },
+  {
+    "timestamp": "2026-01-17T15:13:01.025Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/engineer/login?_rsc=4yyve",
+    "status": 200,
+    "requestBody": null,
+    "duration": 69
+  },
+  {
+    "timestamp": "2026-01-17T15:13:01.032Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/api/auth/get-session",
+    "status": 200,
+    "requestBody": null,
+    "duration": 208
+  },
+  {
+    "timestamp": "2026-01-17T15:13:01.040Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/api/ai/session",
+    "status": 200,
+    "requestBody": null,
+    "duration": 200
+  },
+  {
+    "timestamp": "2026-01-17T15:13:01.070Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/engineer/login?_rsc=ujtv2",
+    "status": 200,
+    "requestBody": null,
+    "duration": 54
+  },
+  {
+    "timestamp": "2026-01-17T15:13:01.074Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/engineer/login?_rsc=9uiz2",
+    "status": 200,
+    "requestBody": null,
+    "duration": 57
+  },
+  {
+    "timestamp": "2026-01-17T15:13:01.083Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/e7fc5864b3727480.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 61
+  },
+  {
+    "timestamp": "2026-01-17T15:13:01.085Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/client/login?_rsc=1v57e",
+    "status": 200,
+    "requestBody": null,
+    "duration": 60
+  },
+  {
+    "timestamp": "2026-01-17T15:13:01.088Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/client/login?_rsc=4yyve",
+    "status": 200,
+    "requestBody": null,
+    "duration": 64
+  },
+  {
+    "timestamp": "2026-01-17T15:13:01.091Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/f5408cab359fb175.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 69
+  },
+  {
+    "timestamp": "2026-01-17T15:13:01.131Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/client/login?_rsc=1oo8o",
+    "status": 200,
+    "requestBody": null,
+    "duration": 55
+  },
+  {
+    "timestamp": "2026-01-17T15:13:01.142Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/client/login?_rsc=gieb5",
+    "status": 200,
+    "requestBody": null,
+    "duration": 60
+  },
+  {
+    "timestamp": "2026-01-17T15:13:01.144Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/9f8b9e1f13f01aaf.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 64
+  },
+  {
+    "timestamp": "2026-01-17T15:13:01.147Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/?_rsc=7wwzi",
+    "status": 200,
+    "requestBody": null,
+    "duration": 60
+  },
+  {
+    "timestamp": "2026-01-17T15:13:01.148Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?_rsc=4yyve",
+    "status": 200,
+    "requestBody": null,
+    "duration": 60
+  },
+  {
+    "timestamp": "2026-01-17T15:13:01.163Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/e4f8fa0c2f1b0dcd.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 78
+  },
+  {
+    "timestamp": "2026-01-17T15:13:01.164Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/47860240b279dadf.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 79
+  },
+  {
+    "timestamp": "2026-01-17T15:13:01.190Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?_rsc=o4p4t",
+    "status": 200,
+    "requestBody": null,
+    "duration": 55
+  },
+  {
+    "timestamp": "2026-01-17T15:13:01.194Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/b2bd59d884193ec8.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 52
+  },
+  {
+    "timestamp": "2026-01-17T15:13:01.195Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?_rsc=4svnm",
+    "status": 200,
+    "requestBody": null,
+    "duration": 51
+  },
+  {
+    "timestamp": "2026-01-17T15:13:01.204Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?_rsc=1h2ql",
+    "status": 200,
+    "requestBody": null,
+    "duration": 54
+  },
+  {
+    "timestamp": "2026-01-17T15:13:01.212Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/ecbf4595f097ad78.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 63
+  },
+  {
+    "timestamp": "2026-01-17T15:13:02.701Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://www.quantract.co.uk/admin",
+    "status": 301,
+    "requestBody": null,
+    "duration": 58
+  },
+  {
+    "timestamp": "2026-01-17T15:13:02.872Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin",
+    "status": 307,
+    "requestBody": null,
+    "duration": 171
+  },
+  {
+    "timestamp": "2026-01-17T15:13:03.078Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?next=%2Fadmin",
+    "status": 200,
+    "requestBody": null,
+    "duration": 207
+  },
+  {
+    "timestamp": "2026-01-17T15:13:03.199Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/052d68b996f752d5.css",
+    "status": 200,
+    "requestBody": null,
+    "duration": 21
+  },
+  {
+    "timestamp": "2026-01-17T15:13:03.200Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/657afe7b6ded4927.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 22
+  },
+  {
+    "timestamp": "2026-01-17T15:13:03.201Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/f4663027d75bcfe0.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 13
+  },
+  {
+    "timestamp": "2026-01-17T15:13:03.201Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/088e7eb42256e9a1.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 12
+  },
+  {
+    "timestamp": "2026-01-17T15:13:03.201Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/737edb47a2b38749.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 11
+  },
+  {
+    "timestamp": "2026-01-17T15:13:03.201Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/624f2ec5ad9eedd1.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 11
+  },
+  {
+    "timestamp": "2026-01-17T15:13:03.201Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/turbopack-afc78fa8ae8e471b.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 10
+  },
+  {
+    "timestamp": "2026-01-17T15:13:03.201Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/0272c645c8852a8e.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 9
+  },
+  {
+    "timestamp": "2026-01-17T15:13:03.201Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/724428d10901825b.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 9
+  },
+  {
+    "timestamp": "2026-01-17T15:13:03.201Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/a3d69eb42b0283b4.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 8
+  },
+  {
+    "timestamp": "2026-01-17T15:13:03.201Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/1ecfe2e88d4d6d86.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 8
+  },
+  {
+    "timestamp": "2026-01-17T15:13:03.201Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/5820221d2fcb1e4f.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 7
+  },
+  {
+    "timestamp": "2026-01-17T15:13:03.201Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/48aa4afab29e30d6.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 7
+  },
+  {
+    "timestamp": "2026-01-17T15:13:03.201Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/a1efa75082b67452.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 6
+  },
+  {
+    "timestamp": "2026-01-17T15:13:03.201Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/a4606ecc7f9d396a.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 6
+  },
+  {
+    "timestamp": "2026-01-17T15:13:03.202Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/de50ae1b8095f4b6.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 6
+  },
+  {
+    "timestamp": "2026-01-17T15:13:03.202Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/a54edcef78dcd63a.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 6
+  },
+  {
+    "timestamp": "2026-01-17T15:13:03.202Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/1498543cae7dbdb6.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 5
+  },
+  {
+    "timestamp": "2026-01-17T15:13:03.202Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/6c71f6236a92a974.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 5
+  },
+  {
+    "timestamp": "2026-01-17T15:13:03.202Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/96579c50bab1031f.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 4
+  },
+  {
+    "timestamp": "2026-01-17T15:13:03.202Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/72dfeddde2e7b3a4.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 4
+  },
+  {
+    "timestamp": "2026-01-17T15:13:03.344Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/api/admin/impersonate/status",
+    "status": 307,
+    "requestBody": null,
+    "duration": 48
+  },
+  {
+    "timestamp": "2026-01-17T15:13:03.441Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/engineer/login?_rsc=1fgmb",
+    "status": 200,
+    "requestBody": null,
+    "duration": 132
+  },
+  {
+    "timestamp": "2026-01-17T15:13:03.448Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/?_rsc=1fgmb",
+    "status": 200,
+    "requestBody": null,
+    "duration": 137
+  },
+  {
+    "timestamp": "2026-01-17T15:13:03.451Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/api/ai/session",
+    "status": 200,
+    "requestBody": null,
+    "duration": 155
+  },
+  {
+    "timestamp": "2026-01-17T15:13:03.545Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/api/auth/get-session",
+    "status": 200,
+    "requestBody": null,
+    "duration": 263
+  },
+  {
+    "timestamp": "2026-01-17T15:13:03.554Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/api/ai/status",
+    "status": 200,
+    "requestBody": null,
+    "duration": 256
+  },
+  {
+    "timestamp": "2026-01-17T15:13:03.681Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/client/login?_rsc=1fgmb",
+    "status": 200,
+    "requestBody": null,
+    "duration": 371
+  },
+  {
+    "timestamp": "2026-01-17T15:13:03.743Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?next=%2Fadmin&_rsc=1fgmb",
+    "status": 200,
+    "requestBody": null,
+    "duration": 431
+  },
+  {
+    "timestamp": "2026-01-17T15:13:03.744Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/engineer/login?_rsc=4yyve",
+    "status": 200,
+    "requestBody": null,
+    "duration": 65
+  },
+  {
+    "timestamp": "2026-01-17T15:13:03.747Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/engineer/login?_rsc=1nke2",
+    "status": 200,
+    "requestBody": null,
+    "duration": 67
+  },
+  {
+    "timestamp": "2026-01-17T15:13:03.753Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?next=%2Fapi%2Fadmin%2Fimpersonate%2Fstatus",
+    "status": 200,
+    "requestBody": null,
+    "duration": 410
+  },
+  {
+    "timestamp": "2026-01-17T15:13:03.811Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/engineer/login?_rsc=1hmcs",
+    "status": 200,
+    "requestBody": null,
+    "duration": 60
+  },
+  {
+    "timestamp": "2026-01-17T15:13:03.820Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/engineer/login?_rsc=9uiz2",
+    "status": 200,
+    "requestBody": null,
+    "duration": 64
+  },
+  {
+    "timestamp": "2026-01-17T15:13:03.822Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/f5408cab359fb175.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 5
+  },
+  {
+    "timestamp": "2026-01-17T15:13:03.822Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/e7fc5864b3727480.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 4
+  },
+  {
+    "timestamp": "2026-01-17T15:13:03.824Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/9f8b9e1f13f01aaf.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 2
+  },
+  {
+    "timestamp": "2026-01-17T15:13:03.832Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/engineer/login?_rsc=ujtv2",
+    "status": 200,
+    "requestBody": null,
+    "duration": 77
+  },
+  {
+    "timestamp": "2026-01-17T15:13:03.856Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/client/login?_rsc=4yyve",
+    "status": 200,
+    "requestBody": null,
+    "duration": 62
+  },
+  {
+    "timestamp": "2026-01-17T15:13:03.877Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/client/login?_rsc=1v57e",
+    "status": 200,
+    "requestBody": null,
+    "duration": 57
+  },
+  {
+    "timestamp": "2026-01-17T15:13:03.883Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/e4f8fa0c2f1b0dcd.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 4
+  },
+  {
+    "timestamp": "2026-01-17T15:13:03.884Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/client/login?_rsc=1oo8o",
+    "status": 200,
+    "requestBody": null,
+    "duration": 61
+  },
+  {
+    "timestamp": "2026-01-17T15:13:03.884Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/47860240b279dadf.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 3
+  },
+  {
+    "timestamp": "2026-01-17T15:13:03.904Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/client/login?_rsc=gieb5",
+    "status": 200,
+    "requestBody": null,
+    "duration": 71
+  },
+  {
+    "timestamp": "2026-01-17T15:13:03.910Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/b2bd59d884193ec8.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 4
+  },
+  {
+    "timestamp": "2026-01-17T15:13:03.916Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/?_rsc=4yyve",
+    "status": 200,
+    "requestBody": null,
+    "duration": 59
+  },
+  {
+    "timestamp": "2026-01-17T15:13:03.941Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/?_rsc=7wwzi",
+    "status": 200,
+    "requestBody": null,
+    "duration": 59
+  },
+  {
+    "timestamp": "2026-01-17T15:13:03.946Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/ecbf4595f097ad78.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 2
+  },
+  {
+    "timestamp": "2026-01-17T15:13:03.963Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?next=%2Fadmin&_rsc=4yyve",
+    "status": 200,
+    "requestBody": null,
+    "duration": 79
+  },
+  {
+    "timestamp": "2026-01-17T15:13:03.968Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?next=%2Fadmin&_rsc=o4p4t",
+    "status": 200,
+    "requestBody": null,
+    "duration": 62
+  },
+  {
+    "timestamp": "2026-01-17T15:13:03.977Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?next=%2Fadmin&_rsc=4svnm",
+    "status": 200,
+    "requestBody": null,
+    "duration": 61
+  },
+  {
+    "timestamp": "2026-01-17T15:13:04.006Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?next=%2Fadmin&_rsc=1h2ql",
+    "status": 200,
+    "requestBody": null,
+    "duration": 61
+  },
+  {
+    "timestamp": "2026-01-17T15:13:04.027Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?_rsc=1fgmb",
+    "status": 200,
+    "requestBody": null,
+    "duration": 62
+  },
+  {
+    "timestamp": "2026-01-17T15:13:04.933Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://www.quantract.co.uk/admin/enquiries",
+    "status": 301,
+    "requestBody": null,
+    "duration": 80
+  },
+  {
+    "timestamp": "2026-01-17T15:13:04.989Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/enquiries",
+    "status": 307,
+    "requestBody": null,
+    "duration": 56
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.053Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?next=%2Fadmin%2Fenquiries",
+    "status": 200,
+    "requestBody": null,
+    "duration": 65
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.085Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/052d68b996f752d5.css",
+    "status": 200,
+    "requestBody": null,
+    "duration": 22
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.085Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/657afe7b6ded4927.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 21
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.088Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/f4663027d75bcfe0.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 15
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.088Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/088e7eb42256e9a1.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 15
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.088Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/737edb47a2b38749.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 14
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.088Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/624f2ec5ad9eedd1.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 14
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.088Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/turbopack-afc78fa8ae8e471b.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 13
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.088Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/0272c645c8852a8e.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 13
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.088Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/724428d10901825b.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 12
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.088Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/a3d69eb42b0283b4.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 12
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.088Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/1ecfe2e88d4d6d86.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 12
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.088Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/5820221d2fcb1e4f.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 11
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.088Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/48aa4afab29e30d6.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 11
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.089Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/a1efa75082b67452.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 11
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.089Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/a4606ecc7f9d396a.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 11
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.089Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/de50ae1b8095f4b6.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 10
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.089Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/a54edcef78dcd63a.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 10
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.089Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/1498543cae7dbdb6.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 10
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.089Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/6c71f6236a92a974.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 9
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.089Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/96579c50bab1031f.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 8
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.089Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/72dfeddde2e7b3a4.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 8
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.218Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/api/admin/impersonate/status",
+    "status": 307,
+    "requestBody": null,
+    "duration": 51
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.220Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/api/ai/status",
+    "status": 200,
+    "requestBody": null,
+    "duration": 51
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.232Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?next=%2Fadmin%2Fenquiries&_rsc=1fgmb",
+    "status": 200,
+    "requestBody": null,
+    "duration": 52
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.235Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/?_rsc=1fgmb",
+    "status": 200,
+    "requestBody": null,
+    "duration": 56
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.237Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/api/auth/get-session",
+    "status": 200,
+    "requestBody": null,
+    "duration": 80
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.240Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/client/login?_rsc=1fgmb",
+    "status": 200,
+    "requestBody": null,
+    "duration": 63
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.244Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/api/ai/session",
+    "status": 200,
+    "requestBody": null,
+    "duration": 77
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.248Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/engineer/login?_rsc=1fgmb",
+    "status": 200,
+    "requestBody": null,
+    "duration": 71
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.281Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?next=%2Fapi%2Fadmin%2Fimpersonate%2Fstatus",
+    "status": 200,
+    "requestBody": null,
+    "duration": 64
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.289Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?next=%2Fadmin%2Fenquiries&_rsc=4yyve",
+    "status": 200,
+    "requestBody": null,
+    "duration": 56
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.290Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?next=%2Fadmin%2Fenquiries&_rsc=1nke2",
+    "status": 200,
+    "requestBody": null,
+    "duration": 56
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.304Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/engineer/login?_rsc=4yyve",
+    "status": 200,
+    "requestBody": null,
+    "duration": 55
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.318Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/client/login?_rsc=4yyve",
+    "status": 200,
+    "requestBody": null,
+    "duration": 76
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.352Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/engineer/login?_rsc=ujtv2",
+    "status": 200,
+    "requestBody": null,
+    "duration": 58
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.360Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/engineer/login?_rsc=1hmcs",
+    "status": 200,
+    "requestBody": null,
+    "duration": 69
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.366Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/f5408cab359fb175.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 4
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.367Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/e7fc5864b3727480.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 2
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.369Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/engineer/login?_rsc=9uiz2",
+    "status": 200,
+    "requestBody": null,
+    "duration": 64
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.373Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/9f8b9e1f13f01aaf.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 2
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.374Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/client/login?_rsc=1v57e",
+    "status": 200,
+    "requestBody": null,
+    "duration": 55
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.382Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/e4f8fa0c2f1b0dcd.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 5
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.383Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/47860240b279dadf.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 5
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.434Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/client/login?_rsc=1oo8o",
+    "status": 200,
+    "requestBody": null,
+    "duration": 78
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.434Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/?_rsc=4yyve",
+    "status": 200,
+    "requestBody": null,
+    "duration": 62
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.435Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/client/login?_rsc=gieb5",
+    "status": 200,
+    "requestBody": null,
+    "duration": 70
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.437Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/?_rsc=7wwzi",
+    "status": 200,
+    "requestBody": null,
+    "duration": 58
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.444Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/b2bd59d884193ec8.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 4
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.447Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/ecbf4595f097ad78.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 4
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.498Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?next=%2Fadmin%2Fenquiries&_rsc=4svnm",
+    "status": 200,
+    "requestBody": null,
+    "duration": 58
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.499Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?next=%2Fadmin%2Fenquiries&_rsc=o4p4t",
+    "status": 200,
+    "requestBody": null,
+    "duration": 63
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.505Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?next=%2Fadmin%2Fenquiries&_rsc=1h2ql",
+    "status": 200,
+    "requestBody": null,
+    "duration": 60
+  },
+  {
+    "timestamp": "2026-01-17T15:13:05.514Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?_rsc=1fgmb",
+    "status": 200,
+    "requestBody": null,
+    "duration": 69
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.419Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://www.quantract.co.uk/admin/quotes",
+    "status": 301,
+    "requestBody": null,
+    "duration": 90
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.503Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/quotes",
+    "status": 307,
+    "requestBody": null,
+    "duration": 84
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.558Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?next=%2Fadmin%2Fquotes",
+    "status": 200,
+    "requestBody": null,
+    "duration": 56
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.606Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/052d68b996f752d5.css",
+    "status": 200,
+    "requestBody": null,
+    "duration": 36
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.606Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/657afe7b6ded4927.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 35
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.611Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/f4663027d75bcfe0.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 26
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.611Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/088e7eb42256e9a1.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 25
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.611Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/737edb47a2b38749.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 24
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.611Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/624f2ec5ad9eedd1.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 24
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.611Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/turbopack-afc78fa8ae8e471b.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 23
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.611Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/0272c645c8852a8e.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 22
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.612Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/724428d10901825b.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 23
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.612Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/a3d69eb42b0283b4.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 22
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.612Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/1ecfe2e88d4d6d86.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 21
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.612Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/5820221d2fcb1e4f.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 21
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.612Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/48aa4afab29e30d6.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 20
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.612Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/a1efa75082b67452.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 19
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.612Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/a4606ecc7f9d396a.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 18
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.612Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/de50ae1b8095f4b6.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 17
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.612Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/a54edcef78dcd63a.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 17
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.612Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/1498543cae7dbdb6.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 16
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.612Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/6c71f6236a92a974.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 14
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.612Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/96579c50bab1031f.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 13
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.612Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/72dfeddde2e7b3a4.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 12
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.722Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/api/ai/status",
+    "status": 200,
+    "requestBody": null,
+    "duration": 51
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.734Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/engineer/login?_rsc=1fgmb",
+    "status": 200,
+    "requestBody": null,
+    "duration": 57
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.735Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/client/login?_rsc=1fgmb",
+    "status": 200,
+    "requestBody": null,
+    "duration": 57
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.743Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?next=%2Fadmin%2Fquotes&_rsc=1fgmb",
+    "status": 200,
+    "requestBody": null,
+    "duration": 64
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.746Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/api/admin/impersonate/status",
+    "status": 307,
+    "requestBody": null,
+    "duration": 76
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.748Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/api/ai/session",
+    "status": 200,
+    "requestBody": null,
+    "duration": 78
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.754Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/api/auth/get-session",
+    "status": 200,
+    "requestBody": null,
+    "duration": 98
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.760Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/?_rsc=1fgmb",
+    "status": 200,
+    "requestBody": null,
+    "duration": 82
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.796Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/engineer/login?_rsc=4yyve",
+    "status": 200,
+    "requestBody": null,
+    "duration": 55
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.801Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/engineer/login?_rsc=1hmcs",
+    "status": 200,
+    "requestBody": null,
+    "duration": 56
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.812Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/f5408cab359fb175.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 7
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.812Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?next=%2Fapi%2Fadmin%2Fimpersonate%2Fstatus",
+    "status": 200,
+    "requestBody": null,
+    "duration": 66
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.813Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/engineer/login?_rsc=1nke2",
+    "status": 200,
+    "requestBody": null,
+    "duration": 72
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.814Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/e7fc5864b3727480.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 6
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.817Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/engineer/login?_rsc=ujtv2",
+    "status": 200,
+    "requestBody": null,
+    "duration": 56
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.855Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/engineer/login?_rsc=9uiz2",
+    "status": 200,
+    "requestBody": null,
+    "duration": 58
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.860Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/9f8b9e1f13f01aaf.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 3
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.861Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/client/login?_rsc=4yyve",
+    "status": 200,
+    "requestBody": null,
+    "duration": 52
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.866Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/client/login?_rsc=1v57e",
+    "status": 200,
+    "requestBody": null,
+    "duration": 51
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.871Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/e4f8fa0c2f1b0dcd.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 3
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.871Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/47860240b279dadf.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 1
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.890Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/client/login?_rsc=1oo8o",
+    "status": 200,
+    "requestBody": null,
+    "duration": 72
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.911Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/client/login?_rsc=gieb5",
+    "status": 200,
+    "requestBody": null,
+    "duration": 52
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.916Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/b2bd59d884193ec8.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 3
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.916Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/?_rsc=4yyve",
+    "status": 200,
+    "requestBody": null,
+    "duration": 55
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.922Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/?_rsc=7wwzi",
+    "status": 200,
+    "requestBody": null,
+    "duration": 52
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.927Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/ecbf4595f097ad78.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 2
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.944Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?next=%2Fadmin%2Fquotes&_rsc=4yyve",
+    "status": 200,
+    "requestBody": null,
+    "duration": 52
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.967Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?next=%2Fadmin%2Fquotes&_rsc=o4p4t",
+    "status": 200,
+    "requestBody": null,
+    "duration": 52
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.975Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?next=%2Fadmin%2Fquotes&_rsc=4svnm",
+    "status": 200,
+    "requestBody": null,
+    "duration": 58
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.983Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?next=%2Fadmin%2Fquotes&_rsc=1h2ql",
+    "status": 200,
+    "requestBody": null,
+    "duration": 57
+  },
+  {
+    "timestamp": "2026-01-17T15:13:06.998Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?_rsc=1fgmb",
+    "status": 200,
+    "requestBody": null,
+    "duration": 53
+  },
+  {
+    "timestamp": "2026-01-17T15:13:07.854Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://www.quantract.co.uk/admin/jobs",
+    "status": 301,
+    "requestBody": null,
+    "duration": 66
+  },
+  {
+    "timestamp": "2026-01-17T15:13:07.907Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/jobs",
+    "status": 307,
+    "requestBody": null,
+    "duration": 54
+  },
+  {
+    "timestamp": "2026-01-17T15:13:07.966Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?next=%2Fadmin%2Fjobs",
+    "status": 200,
+    "requestBody": null,
+    "duration": 59
+  },
+  {
+    "timestamp": "2026-01-17T15:13:07.996Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/052d68b996f752d5.css",
+    "status": 200,
+    "requestBody": null,
+    "duration": 22
+  },
+  {
+    "timestamp": "2026-01-17T15:13:07.997Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/657afe7b6ded4927.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 10
+  },
+  {
+    "timestamp": "2026-01-17T15:13:07.997Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/f4663027d75bcfe0.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 10
+  },
+  {
+    "timestamp": "2026-01-17T15:13:07.997Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/088e7eb42256e9a1.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 9
+  },
+  {
+    "timestamp": "2026-01-17T15:13:07.998Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/737edb47a2b38749.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 10
+  },
+  {
+    "timestamp": "2026-01-17T15:13:07.998Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/624f2ec5ad9eedd1.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 10
+  },
+  {
+    "timestamp": "2026-01-17T15:13:07.998Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/turbopack-afc78fa8ae8e471b.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 9
+  },
+  {
+    "timestamp": "2026-01-17T15:13:07.998Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/0272c645c8852a8e.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 9
+  },
+  {
+    "timestamp": "2026-01-17T15:13:07.998Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/724428d10901825b.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 8
+  },
+  {
+    "timestamp": "2026-01-17T15:13:07.998Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/a3d69eb42b0283b4.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 8
+  },
+  {
+    "timestamp": "2026-01-17T15:13:07.998Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/1ecfe2e88d4d6d86.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 8
+  },
+  {
+    "timestamp": "2026-01-17T15:13:07.998Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/5820221d2fcb1e4f.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 7
+  },
+  {
+    "timestamp": "2026-01-17T15:13:07.998Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/48aa4afab29e30d6.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 7
+  },
+  {
+    "timestamp": "2026-01-17T15:13:07.998Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/a1efa75082b67452.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 7
+  },
+  {
+    "timestamp": "2026-01-17T15:13:07.998Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/a4606ecc7f9d396a.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 6
+  },
+  {
+    "timestamp": "2026-01-17T15:13:07.998Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/de50ae1b8095f4b6.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 6
+  },
+  {
+    "timestamp": "2026-01-17T15:13:07.998Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/a54edcef78dcd63a.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 5
+  },
+  {
+    "timestamp": "2026-01-17T15:13:07.998Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/1498543cae7dbdb6.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 5
+  },
+  {
+    "timestamp": "2026-01-17T15:13:07.998Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/6c71f6236a92a974.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 5
+  },
+  {
+    "timestamp": "2026-01-17T15:13:07.998Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/96579c50bab1031f.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 4
+  },
+  {
+    "timestamp": "2026-01-17T15:13:07.999Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/72dfeddde2e7b3a4.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 5
+  },
+  {
+    "timestamp": "2026-01-17T15:13:08.137Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/api/admin/impersonate/status",
+    "status": 307,
+    "requestBody": null,
+    "duration": 65
+  },
+  {
+    "timestamp": "2026-01-17T15:13:08.146Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/api/ai/status",
+    "status": 200,
+    "requestBody": null,
+    "duration": 71
+  },
+  {
+    "timestamp": "2026-01-17T15:13:08.148Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/client/login?_rsc=1fgmb",
+    "status": 200,
+    "requestBody": null,
+    "duration": 60
+  },
+  {
+    "timestamp": "2026-01-17T15:13:08.149Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/?_rsc=1fgmb",
+    "status": 200,
+    "requestBody": null,
+    "duration": 59
+  },
+  {
+    "timestamp": "2026-01-17T15:13:08.155Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/api/auth/get-session",
+    "status": 200,
+    "requestBody": null,
+    "duration": 92
+  },
+  {
+    "timestamp": "2026-01-17T15:13:08.171Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/engineer/login?_rsc=1fgmb",
+    "status": 200,
+    "requestBody": null,
+    "duration": 84
+  },
+  {
+    "timestamp": "2026-01-17T15:13:08.172Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?next=%2Fadmin%2Fjobs&_rsc=1fgmb",
+    "status": 200,
+    "requestBody": null,
+    "duration": 82
+  },
+  {
+    "timestamp": "2026-01-17T15:13:08.193Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/api/ai/session",
+    "status": 200,
+    "requestBody": null,
+    "duration": 119
+  },
+  {
+    "timestamp": "2026-01-17T15:13:08.211Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/client/login?_rsc=1nke2",
+    "status": 200,
+    "requestBody": null,
+    "duration": 57
+  },
+  {
+    "timestamp": "2026-01-17T15:13:08.214Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?next=%2Fapi%2Fadmin%2Fimpersonate%2Fstatus",
+    "status": 200,
+    "requestBody": null,
+    "duration": 78
+  },
+  {
+    "timestamp": "2026-01-17T15:13:08.216Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/client/login?_rsc=4yyve",
+    "status": 200,
+    "requestBody": null,
+    "duration": 63
+  },
+  {
+    "timestamp": "2026-01-17T15:13:08.233Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/engineer/login?_rsc=1hmcs",
+    "status": 200,
+    "requestBody": null,
+    "duration": 58
+  },
+  {
+    "timestamp": "2026-01-17T15:13:08.239Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/f5408cab359fb175.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 3
+  },
+  {
+    "timestamp": "2026-01-17T15:13:08.239Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/e7fc5864b3727480.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 1
+  },
+  {
+    "timestamp": "2026-01-17T15:13:08.260Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/engineer/login?_rsc=4yyve",
+    "status": 200,
+    "requestBody": null,
+    "duration": 87
+  },
+  {
+    "timestamp": "2026-01-17T15:13:08.278Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/engineer/login?_rsc=ujtv2",
+    "status": 200,
+    "requestBody": null,
+    "duration": 61
+  },
+  {
+    "timestamp": "2026-01-17T15:13:08.295Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/engineer/login?_rsc=9uiz2",
+    "status": 200,
+    "requestBody": null,
+    "duration": 73
+  },
+  {
+    "timestamp": "2026-01-17T15:13:08.299Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/9f8b9e1f13f01aaf.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 2
+  },
+  {
+    "timestamp": "2026-01-17T15:13:08.324Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/client/login?_rsc=1v57e",
+    "status": 200,
+    "requestBody": null,
+    "duration": 86
+  },
+  {
+    "timestamp": "2026-01-17T15:13:08.330Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/e4f8fa0c2f1b0dcd.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 3
+  },
+  {
+    "timestamp": "2026-01-17T15:13:08.330Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/47860240b279dadf.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 3
+  },
+  {
+    "timestamp": "2026-01-17T15:13:08.339Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/client/login?_rsc=gieb5",
+    "status": 200,
+    "requestBody": null,
+    "duration": 60
+  },
+  {
+    "timestamp": "2026-01-17T15:13:08.343Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/b2bd59d884193ec8.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 3
+  },
+  {
+    "timestamp": "2026-01-17T15:13:08.350Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/client/login?_rsc=1oo8o",
+    "status": 200,
+    "requestBody": null,
+    "duration": 89
+  },
+  {
+    "timestamp": "2026-01-17T15:13:08.360Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/?_rsc=4yyve",
+    "status": 200,
+    "requestBody": null,
+    "duration": 62
+  },
+  {
+    "timestamp": "2026-01-17T15:13:08.387Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/?_rsc=7wwzi",
+    "status": 200,
+    "requestBody": null,
+    "duration": 58
+  },
+  {
+    "timestamp": "2026-01-17T15:13:08.390Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/ecbf4595f097ad78.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 2
+  },
+  {
+    "timestamp": "2026-01-17T15:13:08.405Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?next=%2Fadmin%2Fjobs&_rsc=4yyve",
+    "status": 200,
+    "requestBody": null,
+    "duration": 63
+  },
+  {
+    "timestamp": "2026-01-17T15:13:08.448Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?next=%2Fadmin%2Fjobs&_rsc=o4p4t",
+    "status": 200,
+    "requestBody": null,
+    "duration": 97
+  },
+  {
+    "timestamp": "2026-01-17T15:13:08.452Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?next=%2Fadmin%2Fjobs&_rsc=4svnm",
+    "status": 200,
+    "requestBody": null,
+    "duration": 91
+  },
+  {
+    "timestamp": "2026-01-17T15:13:08.461Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?next=%2Fadmin%2Fjobs&_rsc=1h2ql",
+    "status": 200,
+    "requestBody": null,
+    "duration": 71
+  },
+  {
+    "timestamp": "2026-01-17T15:13:08.467Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?_rsc=1fgmb",
+    "status": 200,
+    "requestBody": null,
+    "duration": 60
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.377Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://www.quantract.co.uk/admin/engineers",
+    "status": 301,
+    "requestBody": null,
+    "duration": 92
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.444Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/engineers",
+    "status": 307,
+    "requestBody": null,
+    "duration": 68
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.504Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?next=%2Fadmin%2Fengineers",
+    "status": 200,
+    "requestBody": null,
+    "duration": 60
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.536Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/052d68b996f752d5.css",
+    "status": 200,
+    "requestBody": null,
+    "duration": 22
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.536Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/657afe7b6ded4927.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 21
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.536Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/f4663027d75bcfe0.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 20
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.539Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/088e7eb42256e9a1.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 12
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.539Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/737edb47a2b38749.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 11
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.540Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/624f2ec5ad9eedd1.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 12
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.540Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/turbopack-afc78fa8ae8e471b.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 11
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.540Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/0272c645c8852a8e.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 11
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.540Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/724428d10901825b.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 10
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.540Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/a3d69eb42b0283b4.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 10
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.540Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/1ecfe2e88d4d6d86.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 9
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.540Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/5820221d2fcb1e4f.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 9
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.540Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/48aa4afab29e30d6.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 8
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.540Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/a1efa75082b67452.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 8
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.540Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/a4606ecc7f9d396a.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 8
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.540Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/de50ae1b8095f4b6.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 7
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.540Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/a54edcef78dcd63a.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 7
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.540Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/1498543cae7dbdb6.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 7
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.540Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/6c71f6236a92a974.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 6
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.540Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/96579c50bab1031f.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 6
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.540Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/72dfeddde2e7b3a4.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 6
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.667Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/api/admin/impersonate/status",
+    "status": 307,
+    "requestBody": null,
+    "duration": 54
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.683Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/api/auth/get-session",
+    "status": 200,
+    "requestBody": null,
+    "duration": 78
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.684Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/api/ai/session",
+    "status": 200,
+    "requestBody": null,
+    "duration": 69
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.687Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/client/login?_rsc=1fgmb",
+    "status": 200,
+    "requestBody": null,
+    "duration": 60
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.690Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/api/ai/status",
+    "status": 200,
+    "requestBody": null,
+    "duration": 74
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.696Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/engineer/login?_rsc=1fgmb",
+    "status": 200,
+    "requestBody": null,
+    "duration": 69
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.697Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/?_rsc=1fgmb",
+    "status": 200,
+    "requestBody": null,
+    "duration": 69
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.720Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?next=%2Fapi%2Fadmin%2Fimpersonate%2Fstatus",
+    "status": 200,
+    "requestBody": null,
+    "duration": 54
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.739Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?next=%2Fadmin%2Fengineers&_rsc=1fgmb",
+    "status": 200,
+    "requestBody": null,
+    "duration": 110
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.749Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/client/login?_rsc=4yyve",
+    "status": 200,
+    "requestBody": null,
+    "duration": 55
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.755Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/engineer/login?_rsc=4yyve",
+    "status": 200,
+    "requestBody": null,
+    "duration": 57
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.761Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/client/login?_rsc=1nke2",
+    "status": 200,
+    "requestBody": null,
+    "duration": 67
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.801Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/engineer/login?_rsc=1hmcs",
+    "status": 200,
+    "requestBody": null,
+    "duration": 62
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.807Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/f5408cab359fb175.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 3
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.809Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/e7fc5864b3727480.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 4
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.809Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/engineer/login?_rsc=ujtv2",
+    "status": 200,
+    "requestBody": null,
+    "duration": 59
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.811Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/engineer/login?_rsc=9uiz2",
+    "status": 200,
+    "requestBody": null,
+    "duration": 54
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.816Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/9f8b9e1f13f01aaf.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 3
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.856Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/client/login?_rsc=1v57e",
+    "status": 200,
+    "requestBody": null,
+    "duration": 92
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.864Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/e4f8fa0c2f1b0dcd.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 5
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.864Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/47860240b279dadf.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 4
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.866Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/client/login?_rsc=1oo8o",
+    "status": 200,
+    "requestBody": null,
+    "duration": 60
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.869Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/client/login?_rsc=gieb5",
+    "status": 200,
+    "requestBody": null,
+    "duration": 60
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.875Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/?_rsc=4yyve",
+    "status": 200,
+    "requestBody": null,
+    "duration": 60
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.877Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/b2bd59d884193ec8.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 5
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.935Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?next=%2Fadmin%2Fengineers&_rsc=4yyve",
+    "status": 200,
+    "requestBody": null,
+    "duration": 67
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.944Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?next=%2Fadmin%2Fengineers&_rsc=o4p4t",
+    "status": 200,
+    "requestBody": null,
+    "duration": 71
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.949Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?next=%2Fadmin%2Fengineers&_rsc=4svnm",
+    "status": 200,
+    "requestBody": null,
+    "duration": 73
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.977Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/?_rsc=7wwzi",
+    "status": 200,
+    "requestBody": null,
+    "duration": 115
+  },
+  {
+    "timestamp": "2026-01-17T15:13:09.979Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/ecbf4595f097ad78.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 1
+  },
+  {
+    "timestamp": "2026-01-17T15:13:10.001Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?_rsc=1fgmb",
+    "status": 200,
+    "requestBody": null,
+    "duration": 56
+  },
+  {
+    "timestamp": "2026-01-17T15:13:10.056Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?next=%2Fadmin%2Fengineers&_rsc=1h2ql",
+    "status": 200,
+    "requestBody": null,
+    "duration": 120
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.072Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://www.quantract.co.uk/admin/timesheets",
+    "status": 301,
+    "requestBody": null,
+    "duration": 200
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.128Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/timesheets",
+    "status": 307,
+    "requestBody": null,
+    "duration": 56
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.188Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?next=%2Fadmin%2Ftimesheets",
+    "status": 200,
+    "requestBody": null,
+    "duration": 61
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.216Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/052d68b996f752d5.css",
+    "status": 200,
+    "requestBody": null,
+    "duration": 20
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.216Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/657afe7b6ded4927.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 20
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.218Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/f4663027d75bcfe0.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 13
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.218Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/088e7eb42256e9a1.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 13
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.218Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/737edb47a2b38749.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 12
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.218Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/624f2ec5ad9eedd1.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 12
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.218Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/turbopack-afc78fa8ae8e471b.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 12
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.218Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/0272c645c8852a8e.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 11
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.218Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/724428d10901825b.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 11
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.218Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/a3d69eb42b0283b4.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 10
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.218Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/1ecfe2e88d4d6d86.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 9
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.218Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/5820221d2fcb1e4f.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 8
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.219Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/48aa4afab29e30d6.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 8
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.219Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/a1efa75082b67452.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 8
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.219Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/a4606ecc7f9d396a.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 7
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.219Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/de50ae1b8095f4b6.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 7
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.219Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/a54edcef78dcd63a.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 6
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.219Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/1498543cae7dbdb6.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 6
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.219Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/6c71f6236a92a974.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 5
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.219Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/96579c50bab1031f.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 5
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.219Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/72dfeddde2e7b3a4.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 4
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.371Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/api/admin/impersonate/status",
+    "status": 307,
+    "requestBody": null,
+    "duration": 82
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.373Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/api/ai/status",
+    "status": 200,
+    "requestBody": null,
+    "duration": 83
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.379Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/client/login?_rsc=1fgmb",
+    "status": 200,
+    "requestBody": null,
+    "duration": 80
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.380Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/api/auth/get-session",
+    "status": 200,
+    "requestBody": null,
+    "duration": 98
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.385Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/engineer/login?_rsc=1fgmb",
+    "status": 200,
+    "requestBody": null,
+    "duration": 87
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.393Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/api/ai/session",
+    "status": 200,
+    "requestBody": null,
+    "duration": 103
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.394Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/?_rsc=1fgmb",
+    "status": 200,
+    "requestBody": null,
+    "duration": 95
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.404Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?next=%2Fadmin%2Ftimesheets&_rsc=1fgmb",
+    "status": 200,
+    "requestBody": null,
+    "duration": 104
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.447Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?next=%2Fapi%2Fadmin%2Fimpersonate%2Fstatus",
+    "status": 200,
+    "requestBody": null,
+    "duration": 76
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.449Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/client/login?_rsc=4yyve",
+    "status": 200,
+    "requestBody": null,
+    "duration": 58
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.457Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/client/login?_rsc=1nke2",
+    "status": 200,
+    "requestBody": null,
+    "duration": 65
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.493Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/engineer/login?_rsc=4yyve",
+    "status": 200,
+    "requestBody": null,
+    "duration": 96
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.512Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/engineer/login?_rsc=1hmcs",
+    "status": 200,
+    "requestBody": null,
+    "duration": 67
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.517Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/f5408cab359fb175.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 2
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.518Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/e7fc5864b3727480.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 2
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.518Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/engineer/login?_rsc=ujtv2",
+    "status": 200,
+    "requestBody": null,
+    "duration": 63
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.523Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/engineer/login?_rsc=9uiz2",
+    "status": 200,
+    "requestBody": null,
+    "duration": 63
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.526Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/9f8b9e1f13f01aaf.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 2
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.556Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/client/login?_rsc=1v57e",
+    "status": 200,
+    "requestBody": null,
+    "duration": 62
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.561Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/e4f8fa0c2f1b0dcd.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 3
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.561Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/47860240b279dadf.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 1
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.575Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/client/login?_rsc=1oo8o",
+    "status": 200,
+    "requestBody": null,
+    "duration": 59
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.580Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/client/login?_rsc=gieb5",
+    "status": 200,
+    "requestBody": null,
+    "duration": 59
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.583Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/?_rsc=4yyve",
+    "status": 200,
+    "requestBody": null,
+    "duration": 58
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.594Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/b2bd59d884193ec8.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 2
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.647Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?next=%2Fadmin%2Ftimesheets&_rsc=4svnm",
+    "status": 200,
+    "requestBody": null,
+    "duration": 54
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.655Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/?_rsc=7wwzi",
+    "status": 200,
+    "requestBody": null,
+    "duration": 95
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.660Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/ecbf4595f097ad78.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 3
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.666Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?next=%2Fadmin%2Ftimesheets&_rsc=4yyve",
+    "status": 200,
+    "requestBody": null,
+    "duration": 89
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.668Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?next=%2Fadmin%2Ftimesheets&_rsc=o4p4t",
+    "status": 200,
+    "requestBody": null,
+    "duration": 84
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.708Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?next=%2Fadmin%2Ftimesheets&_rsc=1h2ql",
+    "status": 200,
+    "requestBody": null,
+    "duration": 59
+  },
+  {
+    "timestamp": "2026-01-17T15:13:11.727Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?_rsc=1fgmb",
+    "status": 200,
+    "requestBody": null,
+    "duration": 68
+  },
+  {
+    "timestamp": "2026-01-17T15:13:12.614Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://www.quantract.co.uk/admin/invoices",
+    "status": 301,
+    "requestBody": null,
+    "duration": 71
+  },
+  {
+    "timestamp": "2026-01-17T15:13:12.666Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/invoices",
+    "status": 307,
+    "requestBody": null,
+    "duration": 52
+  },
+  {
+    "timestamp": "2026-01-17T15:13:12.723Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?next=%2Fadmin%2Finvoices",
+    "status": 200,
+    "requestBody": null,
+    "duration": 57
+  },
+  {
+    "timestamp": "2026-01-17T15:13:12.757Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/052d68b996f752d5.css",
+    "status": 200,
+    "requestBody": null,
+    "duration": 23
+  },
+  {
+    "timestamp": "2026-01-17T15:13:12.757Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/657afe7b6ded4927.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 23
+  },
+  {
+    "timestamp": "2026-01-17T15:13:12.761Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/f4663027d75bcfe0.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 17
+  },
+  {
+    "timestamp": "2026-01-17T15:13:12.761Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/088e7eb42256e9a1.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 17
+  },
+  {
+    "timestamp": "2026-01-17T15:13:12.761Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/737edb47a2b38749.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 16
+  },
+  {
+    "timestamp": "2026-01-17T15:13:12.761Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/624f2ec5ad9eedd1.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 16
+  },
+  {
+    "timestamp": "2026-01-17T15:13:12.761Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/turbopack-afc78fa8ae8e471b.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 15
+  },
+  {
+    "timestamp": "2026-01-17T15:13:12.762Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/0272c645c8852a8e.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 16
+  },
+  {
+    "timestamp": "2026-01-17T15:13:12.762Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/724428d10901825b.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 15
+  },
+  {
+    "timestamp": "2026-01-17T15:13:12.762Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/a3d69eb42b0283b4.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 15
+  },
+  {
+    "timestamp": "2026-01-17T15:13:12.762Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/1ecfe2e88d4d6d86.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 14
+  },
+  {
+    "timestamp": "2026-01-17T15:13:12.762Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/5820221d2fcb1e4f.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 13
+  },
+  {
+    "timestamp": "2026-01-17T15:13:12.762Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/48aa4afab29e30d6.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 13
+  },
+  {
+    "timestamp": "2026-01-17T15:13:12.762Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/a1efa75082b67452.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 12
+  },
+  {
+    "timestamp": "2026-01-17T15:13:12.762Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/a4606ecc7f9d396a.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 11
+  },
+  {
+    "timestamp": "2026-01-17T15:13:12.762Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/de50ae1b8095f4b6.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 11
+  },
+  {
+    "timestamp": "2026-01-17T15:13:12.762Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/a54edcef78dcd63a.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 10
+  },
+  {
+    "timestamp": "2026-01-17T15:13:12.762Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/1498543cae7dbdb6.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 9
+  },
+  {
+    "timestamp": "2026-01-17T15:13:12.762Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/6c71f6236a92a974.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 8
+  },
+  {
+    "timestamp": "2026-01-17T15:13:12.762Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/96579c50bab1031f.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 8
+  },
+  {
+    "timestamp": "2026-01-17T15:13:12.762Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/72dfeddde2e7b3a4.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 7
+  },
+  {
+    "timestamp": "2026-01-17T15:13:12.898Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/api/ai/status",
+    "status": 200,
+    "requestBody": null,
+    "duration": 59
+  },
+  {
+    "timestamp": "2026-01-17T15:13:12.901Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/api/admin/impersonate/status",
+    "status": 307,
+    "requestBody": null,
+    "duration": 63
+  },
+  {
+    "timestamp": "2026-01-17T15:13:12.915Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/engineer/login?_rsc=1fgmb",
+    "status": 200,
+    "requestBody": null,
+    "duration": 68
+  },
+  {
+    "timestamp": "2026-01-17T15:13:12.916Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?next=%2Fadmin%2Finvoices&_rsc=1fgmb",
+    "status": 200,
+    "requestBody": null,
+    "duration": 67
+  },
+  {
+    "timestamp": "2026-01-17T15:13:12.917Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/?_rsc=1fgmb",
+    "status": 200,
+    "requestBody": null,
+    "duration": 68
+  },
+  {
+    "timestamp": "2026-01-17T15:13:12.921Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/client/login?_rsc=1fgmb",
+    "status": 200,
+    "requestBody": null,
+    "duration": 73
+  },
+  {
+    "timestamp": "2026-01-17T15:13:12.925Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/api/ai/session",
+    "status": 200,
+    "requestBody": null,
+    "duration": 87
+  },
+  {
+    "timestamp": "2026-01-17T15:13:12.926Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/api/auth/get-session",
+    "status": 200,
+    "requestBody": null,
+    "duration": 98
+  },
+  {
+    "timestamp": "2026-01-17T15:13:12.951Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?next=%2Fapi%2Fadmin%2Fimpersonate%2Fstatus",
+    "status": 200,
+    "requestBody": null,
+    "duration": 51
+  },
+  {
+    "timestamp": "2026-01-17T15:13:12.976Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/engineer/login?_rsc=1nke2",
+    "status": 200,
+    "requestBody": null,
+    "duration": 57
+  },
+  {
+    "timestamp": "2026-01-17T15:13:12.978Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/engineer/login?_rsc=1hmcs",
+    "status": 200,
+    "requestBody": null,
+    "duration": 56
+  },
+  {
+    "timestamp": "2026-01-17T15:13:12.983Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/engineer/login?_rsc=ujtv2",
+    "status": 200,
+    "requestBody": null,
+    "duration": 60
+  },
+  {
+    "timestamp": "2026-01-17T15:13:12.991Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/f5408cab359fb175.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 3
+  },
+  {
+    "timestamp": "2026-01-17T15:13:12.991Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/e7fc5864b3727480.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 3
+  },
+  {
+    "timestamp": "2026-01-17T15:13:13.028Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/engineer/login?_rsc=4yyve",
+    "status": 200,
+    "requestBody": null,
+    "duration": 110
+  },
+  {
+    "timestamp": "2026-01-17T15:13:13.046Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/client/login?_rsc=4yyve",
+    "status": 200,
+    "requestBody": null,
+    "duration": 57
+  },
+  {
+    "timestamp": "2026-01-17T15:13:13.048Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/engineer/login?_rsc=9uiz2",
+    "status": 200,
+    "requestBody": null,
+    "duration": 64
+  },
+  {
+    "timestamp": "2026-01-17T15:13:13.059Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/client/login?_rsc=1v57e",
+    "status": 200,
+    "requestBody": null,
+    "duration": 69
+  },
+  {
+    "timestamp": "2026-01-17T15:13:13.061Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/9f8b9e1f13f01aaf.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 5
+  },
+  {
+    "timestamp": "2026-01-17T15:13:13.064Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/e4f8fa0c2f1b0dcd.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 3
+  },
+  {
+    "timestamp": "2026-01-17T15:13:13.064Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/47860240b279dadf.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 2
+  },
+  {
+    "timestamp": "2026-01-17T15:13:13.094Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/client/login?_rsc=1oo8o",
+    "status": 200,
+    "requestBody": null,
+    "duration": 66
+  },
+  {
+    "timestamp": "2026-01-17T15:13:13.105Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/client/login?_rsc=gieb5",
+    "status": 200,
+    "requestBody": null,
+    "duration": 56
+  },
+  {
+    "timestamp": "2026-01-17T15:13:13.109Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/b2bd59d884193ec8.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 2
+  },
+  {
+    "timestamp": "2026-01-17T15:13:13.112Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/?_rsc=7wwzi",
+    "status": 200,
+    "requestBody": null,
+    "duration": 50
+  },
+  {
+    "timestamp": "2026-01-17T15:13:13.118Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/_next/static/chunks/ecbf4595f097ad78.js",
+    "status": 200,
+    "requestBody": null,
+    "duration": 2
+  },
+  {
+    "timestamp": "2026-01-17T15:13:13.121Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/?_rsc=4yyve",
+    "status": 200,
+    "requestBody": null,
+    "duration": 63
+  },
+  {
+    "timestamp": "2026-01-17T15:13:13.157Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?next=%2Fadmin%2Finvoices&_rsc=4yyve",
+    "status": 200,
+    "requestBody": null,
+    "duration": 62
+  },
+  {
+    "timestamp": "2026-01-17T15:13:13.176Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?next=%2Fadmin%2Finvoices&_rsc=4svnm",
+    "status": 200,
+    "requestBody": null,
+    "duration": 60
+  },
+  {
+    "timestamp": "2026-01-17T15:13:13.183Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?next=%2Fadmin%2Finvoices&_rsc=1h2ql",
+    "status": 200,
+    "requestBody": null,
+    "duration": 61
+  },
+  {
+    "timestamp": "2026-01-17T15:13:13.211Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?next=%2Fadmin%2Finvoices&_rsc=o4p4t",
+    "status": 200,
+    "requestBody": null,
+    "duration": 103
+  },
+  {
+    "timestamp": "2026-01-17T15:13:13.290Z",
+    "action": "Request",
+    "method": "GET",
+    "url": "https://quantract.co.uk/admin/login?_rsc=1fgmb",
+    "status": 200,
+    "requestBody": null,
+    "duration": 132
+  }
+]

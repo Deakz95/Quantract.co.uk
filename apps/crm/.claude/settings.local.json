@@ -1,0 +1,43 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx prisma migrate dev:*)",
+      "Bash(test:*)",
+      "Bash(docker ps:*)",
+      "Bash(findstr:*)",
+      "Bash(timeout /t 10 /nobreak)",
+      "Bash(set PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION=yes i have no data on neon anyways so i would be happy to reinstate it anyways ....)",
+      "Bash(npx prisma db push:*)",
+      "Bash(cmd /c \"set PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION=yes i have no data on neon anyways so i would be happy to reinstate it anyways .... && npx prisma db push --force-reset --accept-data-loss\")",
+      "Bash(reset-db.bat)",
+      "Bash(cmd /c reset-db.bat)",
+      "Bash(npm run prisma:seed:*)",
+      "Bash(docker exec:*)",
+      "Bash(npm run test:e2e:*)",
+      "Bash(npx prisma generate:*)",
+      "Bash(npm run dev:*)",
+      "Bash(ping:*)",
+      "Bash(curl:*)",
+      "Bash(cmd /c \"rmdir /s /q node_modules\\\\.prisma & npx prisma generate\")",
+      "Bash(dir node_modules.prismaclient*.* /s)",
+      "Bash(cmd /c \"taskkill /F /IM node.exe >nul 2>&1 & rmdir /s /q .next >nul 2>&1 & rmdir /s /q node_modules\\\\.prisma >nul 2>&1 & npx prisma generate && echo DONE\")",
+      "Bash(.setup-stage0.bat)",
+      "Bash(cmd /c setup-stage0.bat)",
+      "Bash(move:*)",
+      "Bash(cmd /c \"move .env.local .env.local.neon.backup\")",
+      "Bash(taskkill:*)",
+      "Bash(dir /s /b \"C:\\\\Users\\\\user\\\\Documents\\\\GitHub\\\\app\\\\web_portal\\\\app\\\\admin\\\\enquiries\")",
+      "Bash(dir /s /b \"C:\\\\Users\\\\user\\\\Documents\\\\GitHub\\\\app\\\\web_portal\\\\app\\\\api\\\\admin\\\\enquiries\")",
+      "Bash(dir /b \"C:\\\\Users\\\\user\\\\Documents\\\\GitHub\\\\app\\\\web_portal\\\\app\\\\api\\\\admin\\\\enquiries\\\\[id]\")",
+      "Bash(dir /b \"C:\\\\Users\\\\user\\\\Documents\\\\GitHub\\\\app\\\\web_portal\\\\app\\\\api\\\\admin\\\\enquiries\")",
+      "Bash(npm run docker:reset:*)",
+      "Bash(npm run seed:*)",
+      "Bash(npx tsx:*)",
+      "Bash(npm run typecheck:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run lint)",
+      "Bash(npm uninstall:*)",
+      "Bash(npm run build:*)"
+    ]
+  }
+}

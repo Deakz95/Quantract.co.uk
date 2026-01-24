@@ -1,0 +1,26 @@
+[
+  {
+    "priority": "P2",
+    "area": "Mobile",
+    "recommendation": "Dashboard has tap targets smaller than 44x44px - increase size",
+    "impact": "Low - accessibility concern"
+  },
+  {
+    "priority": "P2",
+    "area": "Mobile",
+    "recommendation": "Quotes List has tap targets smaller than 44x44px - increase size",
+    "impact": "Low - accessibility concern"
+  },
+  {
+    "priority": "P2",
+    "area": "Mobile",
+    "recommendation": "Jobs List has tap targets smaller than 44x44px - increase size",
+    "impact": "Low - accessibility concern"
+  },
+  {
+    "priority": "P0",
+    "area": "Impersonation",
+    "recommendation": "Add impersonate button to engineer list",
+    "impact": "Critical - admin cannot test engineer workflows"
+  }
+]

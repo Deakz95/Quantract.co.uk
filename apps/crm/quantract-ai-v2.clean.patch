@@ -1,0 +1,690 @@
+﻿diff --git a/components/ai/QuantractAIWidget.tsx b/components/ai/QuantractAIWidget.tsx
+new file mode 100644
+--- /dev/null
++++ b/components/ai/QuantractAIWidget.tsx
+@@ -0,0 +1,338 @@
++'use client';
++
++import { useState, useEffect, useRef } from 'react';
++import { Button } from '@/components/ui/button';
++import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
++import { ScrollArea } from '@/components/ui/scroll-area';
++import { Badge } from '@/components/ui/badge';
++import { Avatar, AvatarFallback } from '@/components/ui/avatar';
++import { Bot, Send, Loader2, X, Maximize2, Minimize2, MessageSquare, CheckCircle, FileText, AlertTriangle, AlertCircle, Sparkles } from 'lucide-react';
++
++interface Message {
++  id: string;
++  role: 'user' | 'assistant';
++  content: string;
++  timestamp: Date;
++  confidence?: number;
++  citations?: Array<{ entityType: string; entityId: string; note: string }>;
++  suggestedActions?: Array<{ type: string; label: string; payload?: Record<string, any> }>;
++  missingData?: string[];
++  error?: string;
++}
++
++interface QuantractAIWidgetProps {
++  session?: { tenantId: string; userId: string; role: 'ADMIN' | 'ENGINEER' | 'CLIENT'; name: string; email: string } | null;
++  apiBaseUrl?: string;
++  suggestedPrompts?: string[];
++  accentColor?: string;
++  position?: 'bottom-right' | 'bottom-left';
++}
++
++const defaultPrompts = {
++  ADMIN: ['Which invoices are overdue?', 'What jobs are blocked?', 'Show unapproved variations', 'Outstanding receivables?'],
++  ENGINEER: ['What job am I on today?', 'Log 7.5 hours for today', 'What certs are needed?', 'Show my job stages'],
++  CLIENT: ['Explain my latest invoice', 'What variations have I approved?', 'Show my job status', 'Find my certificates'],
++};
++
++export default function QuantractAIWidget({ session: externalSession, apiBaseUrl = '/api', suggestedPrompts: customPrompts, accentColor = 'hsl(262, 83%, 58%)', position = 'bottom-right' }: QuantractAIWidgetProps) {
++  const [isOpen, setIsOpen] = useState(false);
++  const [isFullscreen, setIsFullscreen] = useState(false);
++  const [messages, setMessages] = useState<Message[]>([]);
++  const [input, setInput] = useState('');
++  const [isLoading, setIsLoading] = useState(false);
++  const [session, setSession] = useState(externalSession || null);
++  const [prompts, setPrompts] = useState<string[]>([]);
++  const [aiConfigured, setAiConfigured] = useState(true);
++  const scrollRef = useRef<HTMLDivElement>(null);
++
++  useEffect(() => {
++    if (!externalSession) {
++      fetch(`${apiBaseUrl}/ai/session`, { credentials: 'include' })
++        .then(res => res.json())
++        .then(data => { if (data.authenticated && data.session) setSession(data.session); })
++        .catch(console.error);
++    }
++    fetch(`${apiBaseUrl}/ai/status`)
++      .then(res => res.json())
++      .then(data => setAiConfigured(data.configured))
++      .catch(() => setAiConfigured(false));
++  }, [externalSession, apiBaseUrl]);
++
++  useEffect(() => { if (customPrompts) setPrompts(customPrompts); else if (session?.role) setPrompts(defaultPrompts[session.role] || []); }, [session, customPrompts]);
++  useEffect(() => { if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; }, [messages]);
++
++  const sendMessage = async (content: string) => {
++    if (!content.trim() || isLoading) return;
++    const userMessage: Message = { id: Date.now().toString(), role: 'user', content: content.trim(), timestamp: new Date() };
++    setMessages(prev => [...prev, userMessage]);
++    setInput('');
++    setIsLoading(true);
++    try {
++      const res = await fetch(`${apiBaseUrl}/ai/chat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ message: content, history: messages.map(m => ({ role: m.role, content: m.content, timestamp: m.timestamp })) }) });
++      const data = await res.json();
++      if (data.error && res.status === 401) throw new Error('Please log in to use the AI assistant');
++      const assistantMessage: Message = { id: data.id || Date.now().toString() + '-ai', role: 'assistant', content: data.answer || "I couldn't process that request.", timestamp: new Date(data.timestamp || Date.now()), confidence: data.confidence, citations: data.citations, suggestedActions: data.suggestedActions, missingData: data.missingData, error: data.error };
++      setMessages(prev => [...prev, assistantMessage]);
++    } catch (error) {
++      setMessages(prev => [...prev, { id: Date.now().toString() + '-error', role: 'assistant', content: error instanceof Error ? error.message : 'An error occurred.', timestamp: new Date(), error: 'Request failed' }]);
++    } finally { setIsLoading(false); }
++  };
++
++  const handleSubmit = (e: React.FormEvent) => { e.preventDefault(); sendMessage(input); };
++  const positionClasses = position === 'bottom-right' ? 'right-4 sm:right-6' : 'left-4 sm:left-6';
++
++  if (!isOpen) {
++    return (<button onClick={() => setIsOpen(true)} className={`fixed bottom-4 sm:bottom-6 ${positionClasses} z-50 h-14 w-14 rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-110 hover:shadow-xl`} style={{ backgroundColor: accentColor }} aria-label="Open AI Assistant"><MessageSquare className="h-6 w-6 text-white" /></button>);
++  }
++
++  const panelClasses = isFullscreen ? 'fixed inset-0 z-50' : `fixed bottom-4 sm:bottom-6 ${positionClasses} z-50 w-[95vw] sm:w-[420px] h-[80vh] sm:h-[600px] max-h-[calc(100vh-2rem)]`;
++
++  return (
++    <div className={panelClasses}>
++      <Card className="h-full flex flex-col bg-slate-900 border-slate-700 shadow-2xl rounded-2xl overflow-hidden">
++        <CardHeader className="p-3 sm:p-4 border-b border-slate-700 flex-shrink-0" style={{ backgroundColor: accentColor }}>
++          <div className="flex items-center justify-between">
++            <div className="flex items-center gap-2 sm:gap-3">
++              <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl bg-white/20 flex items-center justify-center"><Bot className="h-4 w-4 sm:h-5 sm:w-5 text-white" /></div>
++              <div><CardTitle className="text-sm sm:text-base text-white">Quantract AI</CardTitle><p className="text-[10px] sm:text-xs text-white/70">{session ? `${session.role} Assistant` : 'Operations Assistant'}</p></div>
++            </div>
++            <div className="flex items-center gap-1">
++              <Button variant="ghost" size="icon" onClick={() => setIsFullscreen(!isFullscreen)} className="h-8 w-8 text-white/70 hover:text-white hover:bg-white/10">{isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}</Button>
++              <Button variant="ghost" size="icon" onClick={() => { setIsOpen(false); setIsFullscreen(false); }} className="h-8 w-8 text-white/70 hover:text-white hover:bg-white/10"><X className="h-4 w-4" /></Button>
++            </div>
++          </div>
++        </CardHeader>
++        <CardContent className="flex-1 p-0 overflow-hidden">
++          <ScrollArea className="h-full p-3 sm:p-4" ref={scrollRef}>
++            {!aiConfigured && (<div className="mb-4 p-3 rounded-lg bg-amber-500/20 border border-amber-500/30 text-amber-200 text-sm"><AlertTriangle className="h-4 w-4 inline mr-2" />AI not configured. Contact your administrator.</div>)}
++            {messages.length === 0 ? (
++              <div className="h-full flex flex-col items-center justify-center text-center px-4">
++                <div className="h-16 w-16 rounded-2xl bg-slate-800 flex items-center justify-center mb-4"><Sparkles className="h-8 w-8 text-slate-400" /></div>
++                <p className="text-slate-300 text-sm mb-4">How can I help you today?</p>
++                {prompts.length > 0 && (<div className="w-full space-y-2">{prompts.slice(0, 4).map((prompt, i) => (<button key={i} onClick={() => sendMessage(prompt)} className="w-full text-left p-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs sm:text-sm transition-colors">{prompt}</button>))}</div>)}
++              </div>
++            ) : (
++              <div className="space-y-3">
++                {messages.map(message => (
++                  <div key={message.id} className={`flex gap-2 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
++                    {message.role === 'assistant' && (<Avatar className="h-7 w-7 flex-shrink-0" style={{ backgroundColor: accentColor }}><AvatarFallback style={{ backgroundColor: accentColor }} className="text-white"><Bot className="h-3.5 w-3.5" /></AvatarFallback></Avatar>)}
++                    <div className={`max-w-[85%] rounded-2xl p-3 text-sm ${message.role === 'user' ? 'bg-slate-700 text-white' : 'bg-slate-800 text-slate-100'}`} style={message.role === 'user' ? { backgroundColor: accentColor } : {}}>
++                      <p className="whitespace-pre-wrap text-xs sm:text-sm">{message.content}</p>
++                      {message.confidence !== undefined && message.role === 'assistant' && (<div className="mt-2 flex items-center gap-2"><div className="h-1 flex-1 bg-slate-700 rounded-full overflow-hidden"><div className={`h-full rounded-full ${message.confidence > 0.7 ? 'bg-green-500' : message.confidence > 0.4 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${message.confidence * 100}%` }} /></div><span className="text-[10px] text-slate-500">{Math.round(message.confidence * 100)}%</span></div>)}
++                      {message.suggestedActions && message.suggestedActions.length > 0 && (<div className="mt-2 pt-2 border-t border-slate-700"><p className="text-[10px] text-slate-400 mb-1 flex items-center gap-1"><CheckCircle className="h-3 w-3" /> Actions</p><div className="flex flex-wrap gap-1">{message.suggestedActions.map((action, i) => (<Badge key={i} variant="secondary" className="text-[10px] bg-slate-700 text-slate-300 cursor-pointer hover:bg-slate-600">{action.label}</Badge>))}</div></div>)}
++                      {message.citations && message.citations.length > 0 && (<div className="mt-2 pt-2 border-t border-slate-700"><p className="text-[10px] text-blue-400 mb-1 flex items-center gap-1"><FileText className="h-3 w-3" /> Sources</p>{message.citations.slice(0, 3).map((c, i) => (<div key={i} className="text-[10px] text-slate-400"><Badge variant="outline" className="text-[9px] mr-1 border-slate-600">{c.entityType}</Badge>{c.note}</div>))}</div>)}
++                      {message.error && (<div className="mt-2 flex items-center gap-1 text-red-400 text-[10px]"><AlertCircle className="h-3 w-3" /> {message.error}</div>)}
++                    </div>
++                  </div>
++                ))}
++                {isLoading && (<div className="flex gap-2"><Avatar className="h-7 w-7" style={{ backgroundColor: accentColor }}><AvatarFallback style={{ backgroundColor: accentColor }} className="text-white"><Bot className="h-3.5 w-3.5" /></AvatarFallback></Avatar><div className="bg-slate-800 rounded-2xl p-3"><Loader2 className="h-4 w-4 animate-spin text-slate-400" /></div></div>)}
++              </div>
++            )}
++          </ScrollArea>
++        </CardContent>
++        <div className="p-3 border-t border-slate-700 flex-shrink-0">
++          <form onSubmit={handleSubmit} className="flex gap-2">
++            <input value={input} onChange={e => setInput(e.target.value)} placeholder="Ask a question..." disabled={isLoading || !aiConfigured} className="flex-1 h-10 px-3 rounded-lg border bg-white text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 text-sm" style={{ borderColor: accentColor }} />
++            <Button type="submit" disabled={!input.trim() || isLoading || !aiConfigured} className="h-10 w-10 p-0" style={{ backgroundColor: accentColor }}>{isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}</Button>
++          </form>
++        </div>
++      </Card>
++    </div>
++  );
++}
+diff --git a/app/api/ai/chat/route.ts b/app/api/ai/chat/route.ts
+new file mode 100644
+--- /dev/null
++++ b/app/api/ai/chat/route.ts
+@@ -0,0 +1,42 @@
++import { NextRequest, NextResponse } from 'next/server';
++import { v4 as uuidv4 } from 'uuid';
++import { z } from 'zod';
++import { processAIQuery, ChatMessage } from '@/lib/ai/service';
++import { getAISession } from '@/lib/auth/aiSession';
++
++const ChatBodySchema = z.object({
++  message: z.string().min(1).max(2000),
++  history: z.array(z.object({ role: z.enum(['user', 'assistant']), content: z.string(), timestamp: z.string().optional() })).optional().default([]),
++});
++
++export async function POST(request: NextRequest) {
++  try {
++    const session = await getAISession(request);
++    if (!session) {
++      return NextResponse.json({ error: 'Not authenticated. Please select a role first.' }, { status: 401 });
++    }
++
++    const body = await request.json();
++    const parseResult = ChatBodySchema.safeParse(body);
++    if (!parseResult.success) {
++      return NextResponse.json({ error: 'Invalid request body', details: parseResult.error.format() }, { status: 400 });
++    }
++
++    const { message, history } = parseResult.data;
++    const conversationHistory: ChatMessage[] = history.map((h) => ({
++      role: h.role as 'user' | 'assistant',
++      content: h.content,
++      timestamp: new Date(h.timestamp || Date.now()),
++    }));
++
++    const response = await processAIQuery(message, session, conversationHistory);
++
++    return NextResponse.json({
++      id: uuidv4(), role: session.role, query: message, ...response, timestamp: new Date().toISOString(),
++    });
++  } catch (error) {
++    console.error('AI Chat Error:', error);
++    return NextResponse.json({ error: 'Internal server error', answer: 'I encountered an error. Please try again.', confidence: 0, citations: [], suggestedActions: [], missingData: [] }, { status: 500 });
++  }
++}
+diff --git a/app/api/ai/session/route.ts b/app/api/ai/session/route.ts
+new file mode 100644
+--- /dev/null
++++ b/app/api/ai/session/route.ts
+@@ -0,0 +1,62 @@
++import { NextRequest, NextResponse } from 'next/server';
++import { cookies } from 'next/headers';
++import { SignJWT, jwtVerify } from 'jose';
++import prisma from '@/lib/db';
++
++const SECRET_KEY = new TextEncoder().encode(process.env.SESSION_SECRET || 'quantract-ai-demo-secret-change-in-prod');
++const COOKIE_NAME = 'quantract_ai_session';
++
++// GET /api/ai/session - Get current demo session
++export async function GET() {
++  try {
++    const cookieStore = await cookies();
++    const token = cookieStore.get(COOKIE_NAME)?.value;
++    if (!token) return NextResponse.json({ authenticated: false, session: null });
++    const { payload } = await jwtVerify(token, SECRET_KEY);
++    return NextResponse.json({ authenticated: true, session: payload });
++  } catch {
++    return NextResponse.json({ authenticated: false, session: null });
++  }
++}
++
++// POST /api/ai/session - Set demo session (login as demo user)
++export async function POST(request: NextRequest) {
++  try {
++    const body = await request.json();
++    const { userId } = body;
++    if (!userId) return NextResponse.json({ error: 'userId is required' }, { status: 400 });
++
++    const user = await prisma.user.findUnique({ where: { id: userId } });
++    if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
++
++    const sessionData = {
++      tenantId: user.tenantId,
++      userId: user.id,
++      role: user.role as 'ADMIN' | 'ENGINEER' | 'CLIENT',
++      name: user.name,
++      email: user.email,
++    };
++
++    const token = await new SignJWT(sessionData as unknown as Record<string, unknown>)
++      .setProtectedHeader({ alg: 'HS256' })
++      .setExpirationTime('24h')
++      .sign(SECRET_KEY);
++
++    const cookieStore = await cookies();
++    cookieStore.set(COOKIE_NAME, token, {
++      httpOnly: true,
++      secure: process.env.NODE_ENV === 'production',
++      sameSite: 'lax',
++      maxAge: 60 * 60 * 24,
++      path: '/',
++    });
++
++    return NextResponse.json({ success: true, session: sessionData });
++  } catch (error) {
++    console.error('Session Error:', error);
++    return NextResponse.json({ error: 'Failed to create session' }, { status: 500 });
++  }
++}
++
++// DELETE /api/ai/session - Clear demo session
++export async function DELETE() {
++  const cookieStore = await cookies();
++  cookieStore.delete(COOKIE_NAME);
++  return NextResponse.json({ success: true });
++}
+diff --git a/app/api/ai/session/users/route.ts b/app/api/ai/session/users/route.ts
+new file mode 100644
+--- /dev/null
++++ b/app/api/ai/session/users/route.ts
+@@ -0,0 +1,16 @@
++import { NextResponse } from 'next/server';
++import prisma from '@/lib/db';
++
++// GET /api/ai/session/users - Get available demo users for role selector
++export async function GET() {
++  try {
++    const users = await prisma.user.findMany({
++      select: { id: true, tenantId: true, email: true, name: true, role: true },
++      orderBy: [{ role: 'asc' }, { name: 'asc' }],
++    });
++    return NextResponse.json({ users });
++  } catch (error) {
++    console.error('Users Error:', error);
++    return NextResponse.json({ users: [] }, { status: 500 });
++  }
++}
+diff --git a/app/api/ai/prompts/route.ts b/app/api/ai/prompts/route.ts
+new file mode 100644
+--- /dev/null
++++ b/app/api/ai/prompts/route.ts
+@@ -0,0 +1,16 @@
++import { NextRequest, NextResponse } from 'next/server';
++import { getAISession } from '@/lib/auth/aiSession';
++import { SUGGESTED_PROMPTS } from '@/lib/ai/prompts';
++
++export async function GET(request: NextRequest) {
++  try {
++    const session = await getAISession(request);
++    if (!session) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
++    const prompts = SUGGESTED_PROMPTS[session.role] || [];
++    return NextResponse.json({ prompts, role: session.role });
++  } catch (error) {
++    console.error('Prompts Error:', error);
++    return NextResponse.json({ prompts: [], role: null }, { status: 500 });
++  }
++}
+diff --git a/app/api/ai/status/route.ts b/app/api/ai/status/route.ts
+new file mode 100644
+--- /dev/null
++++ b/app/api/ai/status/route.ts
+@@ -0,0 +1,9 @@
++import { NextResponse } from 'next/server';
++import { isAIAvailable } from '@/lib/ai/service';
++
++export async function GET() {
++  const configured = isAIAvailable();
++  return NextResponse.json({ configured, message: configured ? 'AI assistant is ready' : 'OPENAI_API_KEY not configured.' });
++}
+diff --git a/lib/auth/aiSession.ts b/lib/auth/aiSession.ts
+new file mode 100644
+--- /dev/null
++++ b/lib/auth/aiSession.ts
+@@ -0,0 +1,44 @@
++import { NextRequest } from 'next/server';
++import { jwtVerify } from 'jose';
++
++/**
++ * AI Session Adapter
++ * 
++ * FOR PRODUCTION: Replace the demo cookie logic with your real auth.
++ */
++
++export type AIRole = 'ADMIN' | 'ENGINEER' | 'CLIENT';
++
++export interface AISessionData {
++  tenantId: string;
++  userId: string;
++  role: AIRole;
++  name: string;
++  email: string;
++}
++
++const SECRET_KEY = new TextEncoder().encode(process.env.SESSION_SECRET || 'quantract-ai-demo-secret-change-in-prod');
++const COOKIE_NAME = 'quantract_ai_session';
++
++/**
++ * Get the current user's session for AI queries.
++ * 
++ * PRODUCTION TODO: Replace with your auth system (NextAuth, Clerk, etc.)
++ */
++export async function getAISession(request: NextRequest): Promise<AISessionData | null> {
++  try {
++    const token = request.cookies.get(COOKIE_NAME)?.value;
++    if (!token) return null;
++
++    const { payload } = await jwtVerify(token, SECRET_KEY);
++    return {
++      tenantId: payload.tenantId as string,
++      userId: payload.userId as string,
++      role: payload.role as AIRole,
++      name: payload.name as string,
++      email: payload.email as string,
++    };
++  } catch {
++    return null;
++  }
++}
+diff --git a/lib/ai/dataAccess.ts b/lib/ai/dataAccess.ts
+new file mode 100644
+--- /dev/null
++++ b/lib/ai/dataAccess.ts
+@@ -0,0 +1,94 @@
++import prisma from '@/lib/db';
++import { AISessionData } from '@/lib/auth/aiSession';
++import { getAccessibleJobIds, getClientProfileId, getEngineerProfileId, hasPermission } from '@/lib/ai/permissions';
++
++export interface AiDataBundle {
++  role: string;
++  jobs: any[];
++  quotes: any[];
++  variations: any[];
++  invoices: any[];
++  timesheets: any[];
++  certs: any[];
++  audits: any[];
++  validEntityIds: Set<string>;
++}
++
++export async function buildAiContext(session: AISessionData): Promise<AiDataBundle> {
++  const { role, tenantId } = session;
++  const accessibleJobIds = await getAccessibleJobIds(session);
++  const clientProfileId = await getClientProfileId(session);
++  const engineerProfileId = await getEngineerProfileId(session);
++
++  const bundle: AiDataBundle = { role, jobs: [], quotes: [], variations: [], invoices: [], timesheets: [], certs: [], audits: [], validEntityIds: new Set<string>() };
++
++  // JOBS - tenantId required on ALL queries
++  if (hasPermission(role as any, 'job', 'read')) {
++    const jobFilter = role === 'ADMIN' ? { tenantId } : { tenantId, id: { in: accessibleJobIds } };
++    bundle.jobs = await prisma.job.findMany({ where: jobFilter, include: { client: { select: { companyName: true, contactName: true } }, stages: { orderBy: { order: 'asc' } }, assignments: { include: { engineer: { include: { user: { select: { name: true } } } } } } } });
++    bundle.jobs.forEach(j => bundle.validEntityIds.add(j.id));
++  }
++
++  // QUOTES - tenantId required
++  if (hasPermission(role as any, 'quote', 'read')) {
++    const quoteFilter = role === 'ADMIN' ? { tenantId } : role === 'CLIENT' && clientProfileId ? { tenantId, clientId: clientProfileId } : { tenantId, id: 'none' };
++    bundle.quotes = await prisma.quote.findMany({ where: quoteFilter, include: { client: { select: { companyName: true } } } });
++    bundle.quotes.forEach(q => bundle.validEntityIds.add(q.id));
++  }
++
++  // INVOICES - tenantId required (Engineers have NO access)
++  if (hasPermission(role as any, 'invoice', 'read')) {
++    const invoiceFilter = role === 'ADMIN' ? { tenantId } : role === 'CLIENT' && clientProfileId ? { tenantId, clientId: clientProfileId } : { tenantId, id: 'none' };
++    bundle.invoices = await prisma.invoice.findMany({ where: invoiceFilter, include: { client: { select: { companyName: true } }, job: { select: { jobNumber: true, title: true } } } });
++    bundle.invoices.forEach(i => bundle.validEntityIds.add(i.id));
++  }
++
++  // VARIATIONS - tenantId required
++  if (hasPermission(role as any, 'variation', 'read')) {
++    const variationFilter = role === 'ADMIN' ? { tenantId } : { tenantId, jobId: { in: accessibleJobIds } };
++    bundle.variations = await prisma.variation.findMany({ where: variationFilter, include: { job: { select: { jobNumber: true } } } });
++    bundle.variations.forEach(v => bundle.validEntityIds.add(v.id));
++  }
++
++  // TIMESHEETS - tenantId required (Clients have NO access)
++  if (hasPermission(role as any, 'timesheet', 'read')) {
++    const timesheetFilter = role === 'ADMIN' ? { tenantId } : role === 'ENGINEER' && engineerProfileId ? { tenantId, engineerId: engineerProfileId } : { tenantId, id: 'none' };
++    bundle.timesheets = await prisma.timesheetEntry.findMany({ where: timesheetFilter, include: { job: { select: { jobNumber: true } }, engineer: { include: { user: { select: { name: true } } } } } });
++    bundle.timesheets.forEach(t => bundle.validEntityIds.add(t.id));
++  }
++
++  // CERTIFICATES - tenantId required
++  if (hasPermission(role as any, 'certificate', 'read')) {
++    const certFilter = role === 'ADMIN' ? { tenantId } : { tenantId, jobId: { in: accessibleJobIds } };
++    bundle.certs = await prisma.certificate.findMany({ where: certFilter, include: { job: { select: { jobNumber: true } } } });
++    bundle.certs.forEach(c => bundle.validEntityIds.add(c.id));
++  }
++
++  // AUDIT LOGS - Admin only
++  if (hasPermission(role as any, 'audit', 'read')) {
++    bundle.audits = await prisma.auditEvent.findMany({ where: { tenantId }, include: { actor: { select: { name: true, role: true } } }, orderBy: { createdAt: 'desc' }, take: 30 });
++    bundle.audits.forEach(a => bundle.validEntityIds.add(a.id));
++  }
++
++  return bundle;
++}
+diff --git a/lib/ai/permissions.ts b/lib/ai/permissions.ts
+new file mode 100644
+--- /dev/null
++++ b/lib/ai/permissions.ts
+@@ -0,0 +1,50 @@
++import { AISessionData, AIRole } from '@/lib/auth/aiSession';
++import prisma from '@/lib/db';
++
++export type EntityType = 'job' | 'quote' | 'invoice' | 'variation' | 'timesheet' | 'certificate' | 'audit';
++
++const ROLE_PERMISSIONS: Record<AIRole, Record<EntityType, ('read' | 'write' | 'delete')[]>> = {
++  ADMIN: { job: ['read', 'write', 'delete'], quote: ['read', 'write', 'delete'], invoice: ['read', 'write', 'delete'], variation: ['read', 'write', 'delete'], timesheet: ['read', 'write', 'delete'], certificate: ['read', 'write', 'delete'], audit: ['read'] },
++  ENGINEER: { job: ['read'], quote: [], invoice: [], variation: ['read'], timesheet: ['read', 'write'], certificate: ['read', 'write'], audit: [] },
++  CLIENT: { job: ['read'], quote: ['read'], invoice: ['read'], variation: ['read'], timesheet: [], certificate: ['read'], audit: [] },
++};
++
++export function hasPermission(role: AIRole, entity: EntityType, action: 'read' | 'write' | 'delete'): boolean {
++  return ROLE_PERMISSIONS[role][entity]?.includes(action) ?? false;
++}
++
++export async function getAccessibleJobIds(session: AISessionData): Promise<string[]> {
++  const { role, userId, tenantId } = session;
++  if (role === 'ADMIN') {
++    const jobs = await prisma.job.findMany({ where: { tenantId }, select: { id: true } });
++    return jobs.map(j => j.id);
++  }
++  if (role === 'ENGINEER') {
++    const engineer = await prisma.engineerProfile.findFirst({ where: { userId, tenantId }, include: { assignedJobs: { select: { jobId: true } } } });
++    return engineer?.assignedJobs.map(a => a.jobId) ?? [];
++  }
++  if (role === 'CLIENT') {
++    const client = await prisma.clientProfile.findFirst({ where: { userId, tenantId }, include: { jobs: { select: { id: true } } } });
++    return client?.jobs.map(j => j.id) ?? [];
++  }
++  return [];
++}
++
++export async function getClientProfileId(session: AISessionData): Promise<string | null> {
++  if (session.role !== 'CLIENT') return null;
++  const client = await prisma.clientProfile.findFirst({ where: { userId: session.userId, tenantId: session.tenantId }, select: { id: true } });
++  return client?.id ?? null;
++}
++
++export async function getEngineerProfileId(session: AISessionData): Promise<string | null> {
++  if (session.role !== 'ENGINEER') return null;
++  const engineer = await prisma.engineerProfile.findFirst({ where: { userId: session.userId, tenantId: session.tenantId }, select: { id: true } });
++  return engineer?.id ?? null;
++}
+diff --git a/lib/ai/prompts.ts b/lib/ai/prompts.ts
+new file mode 100644
+--- /dev/null
++++ b/lib/ai/prompts.ts
+@@ -0,0 +1,20 @@
++import { AIRole } from '@/lib/auth/aiSession';
++
++export const SYSTEM_PROMPTS: Record<AIRole, string> = {
++  ADMIN: `You are Quantract AI, an Operations Manager assistant for electrical contractors. ADMIN user with full visibility. Help with jobs, invoices, quotes, variations, certificates, cashflow, overdue invoices. RULES: NEVER hallucinate. Format GBP (Â£). Citations MUST use exact 'id' field (cuid), NOT jobNumber/invoiceNumber.`,
++  ENGINEER: `You are Quantract AI, a Job Foreman assistant. ENGINEER user sees only assigned jobs. Help with job briefings, time logging, stage updates, compliance. RULES: NEVER mention financial data. NEVER show unassigned jobs. Citations MUST use exact 'id' field (cuid).`,
++  CLIENT: `You are Quantract AI, a Trust-Building assistant. CLIENT user sees only their jobs/quotes/invoices/certificates. Explain invoices, clarify variations, retrieve documents. RULES: NEVER show other clients' data. Use clear language. Citations MUST use exact 'id' field (cuid).`,
++};
++
++export const SUGGESTED_PROMPTS: Record<AIRole, string[]> = {
++  ADMIN: ['Which invoices are overdue?', 'What jobs are blocked?', 'Missing certificates?', 'Unapproved variations?', 'Outstanding receivables?'],
++  ENGINEER: ['What job am I on today?', 'Log 7.5 hours', 'What cert is required?', 'Show my job stages'],
++  CLIENT: ['Explain my latest invoice', 'What variations have I approved?', 'Show my job certificates', 'Job status?'],
++};
+diff --git a/lib/ai/responseSchema.ts b/lib/ai/responseSchema.ts
+new file mode 100644
+--- /dev/null
++++ b/lib/ai/responseSchema.ts
+@@ -0,0 +1,18 @@
++import { z } from "zod";
++
++export const AiCitationSchema = z.object({
++  entityType: z.enum(["JOB", "QUOTE", "VARIATION", "INVOICE", "TIMESHEET", "CERTIFICATE", "AUDIT"]),
++  entityId: z.string().min(1),
++  note: z.string().max(200),
++});
++
++export const AiResponseSchema = z.object({
++  answer: z.string().min(1),
++  confidence: z.number().min(0).max(1),
++  citations: z.array(AiCitationSchema).max(20).default([]),
++  suggestedActions: z.array(z.object({ type: z.enum(["NAVIGATE", "DRAFT_EMAIL", "DRAFT_SMS", "SUGGEST_NEXT_STEP"]), label: z.string().max(200), payload: z.record(z.any()).optional() })).max(10).default([]),
++  missingData: z.array(z.string()).max(10).default([]),
++});
++
++export type AiResponse = z.infer<typeof AiResponseSchema>;
++export type AiCitation = z.infer<typeof AiCitationSchema>;
+diff --git a/lib/ai/runQuantractAi.ts b/lib/ai/runQuantractAi.ts
+new file mode 100644
+--- /dev/null
++++ b/lib/ai/runQuantractAi.ts
+@@ -0,0 +1,28 @@
++import { getOpenAIClient, DEFAULT_MODEL } from "@/lib/llm/openaiClient";
++import { AiResponseSchema, type AiResponse } from "./responseSchema";
++
++export async function runQuantractAi(args: { system: string; user: string; dataBundle: unknown }): Promise<AiResponse> {
++  const openai = getOpenAIClient();
++  const res = await openai.chat.completions.create({
++    model: DEFAULT_MODEL,
++    messages: [{ role: "system", content: args.system }, { role: "user", content: JSON.stringify({ question: args.user, data: args.dataBundle }) }],
++    response_format: { type: "json_object" },
++    temperature: 0.3,
++    max_tokens: 2048,
++  });
++
++  const text = res.choices[0]?.message?.content ?? "{}";
++  try {
++    const jsonResponse = JSON.parse(text);
++    const parsed = AiResponseSchema.safeParse(jsonResponse);
++    if (parsed.success) return parsed.data;
++    return {
++      answer: jsonResponse.answer || jsonResponse.response || text,
++      confidence: typeof jsonResponse.confidence === 'number' ? jsonResponse.confidence : 0.7,
++      citations: Array.isArray(jsonResponse.citations) ? jsonResponse.citations.slice(0, 20) : [],
++      suggestedActions: Array.isArray(jsonResponse.suggestedActions) ? jsonResponse.suggestedActions.slice(0, 10) : [],
++      missingData: Array.isArray(jsonResponse.missingData) ? jsonResponse.missingData : [],
++    };
++  } catch { return { answer: text, confidence: 0.5, citations: [], suggestedActions: [], missingData: [] }; }
++}
+diff --git a/lib/ai/validateCitations.ts b/lib/ai/validateCitations.ts
+new file mode 100644
+--- /dev/null
++++ b/lib/ai/validateCitations.ts
+@@ -0,0 +1,26 @@
++import { AiResponse } from "./responseSchema";
++import { AiDataBundle } from "./dataAccess";
++
++export class InvalidCitationError extends Error {
++  constructor(public invalidCitations: Array<{ entityType: string; entityId: string }>) {
++    super(`Invalid citations: ${JSON.stringify(invalidCitations)}`);
++    this.name = 'InvalidCitationError';
++  }
++}
++
++/**
++ * Validates citations reference real record IDs (cuid format only).
++ * THROWS on invalid citations - does NOT silently strip them.
++ */
++export function validateCitations(ai: AiResponse, bundle: AiDataBundle): void {
++  if (!ai.citations || ai.citations.length === 0) return;
++
++  const invalidCitations = ai.citations.filter(c => !bundle.validEntityIds.has(c.entityId));
++
++  if (invalidCitations.length > 0) {
++    throw new InvalidCitationError(invalidCitations.map(c => ({ entityType: c.entityType, entityId: c.entityId })));
++  }
++}
+diff --git a/lib/ai/service.ts b/lib/ai/service.ts
+new file mode 100644
+--- /dev/null
++++ b/lib/ai/service.ts
+@@ -0,0 +1,68 @@
++import prisma from '@/lib/db';
++import { AISessionData } from '@/lib/auth/aiSession';
++import { SYSTEM_PROMPTS } from './prompts';
++import { runQuantractAi } from './runQuantractAi';
++import { buildAiContext, AiDataBundle } from './dataAccess';
++import { validateCitations, InvalidCitationError } from './validateCitations';
++import { AiResponse } from './responseSchema';
++
++export interface ChatMessage { role: 'user' | 'assistant'; content: string; timestamp: Date; }
++export function isAIAvailable(): boolean { return !!process.env.OPENAI_API_KEY; }
++
++const MAX_RETRIES = 1;
++
++export async function processAIQuery(query: string, session: AISessionData, conversationHistory: ChatMessage[] = []): Promise<AiResponse & { error?: string }> {
++  if (!isAIAvailable()) {
++    return { answer: 'AI not configured. Set OPENAI_API_KEY.', confidence: 0, citations: [], suggestedActions: [], missingData: ['OPENAI_API_KEY'], error: 'LLM_NOT_CONFIGURED' };
++  }
++
++  try {
++    const bundle = await buildAiContext(session);
++    const systemPrompt = `${SYSTEM_PROMPTS[session.role]}
++
++CITATION RULES (CRITICAL):
++1. Use ONLY provided data. Never invent.
++2. Citations MUST use exact 'id' field (cuid like "clx..."), NOT jobNumber/invoiceNumber.
++3. JSON output: {"answer":"...","confidence":0-1,"citations":[{"entityType":"JOB|QUOTE|INVOICE|VARIATION|TIMESHEET|CERTIFICATE|AUDIT","entityId":"exact-id","note":"..."}],"suggestedActions":[],"missingData":[]}
++4. GBP (Â£). Penniesâ†’pounds.
++
++User: ${session.name} (${session.email}) | Role: ${session.role} | Tenant: ${session.tenantId}`;
++
++    const historyContext = conversationHistory.slice(-4).map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`).join('\n');
++    const userMessage = historyContext ? `Previous:\n${historyContext}\n\nQuestion: ${query}` : query;
++
++    let aiResponse: AiResponse;
++    let retries = 0;
++
++    while (true) {
++      aiResponse = await runQuantractAi({ system: systemPrompt, user: userMessage, dataBundle: stripValidIds(bundle) });
++      try {
++        validateCitations(aiResponse, bundle);
++        break;
++      } catch (error) {
++        if (error instanceof InvalidCitationError && retries < MAX_RETRIES) {
++          retries++;
++          continue;
++        }
++        throw error;
++      }
++    }
++
++    await logAI(session, query, aiResponse);
++    return aiResponse;
++  } catch (error) {
++    console.error('AI error:', error);
++    const msg = error instanceof InvalidCitationError ? 'Response contained invalid references. Try rephrasing.' : 'Error processing request.';
++    return { answer: msg, confidence: 0, citations: [], suggestedActions: [], missingData: [], error: error instanceof Error ? error.message : 'Unknown' };
++  }
++}
++
++function stripValidIds(bundle: AiDataBundle): Omit<AiDataBundle, 'validEntityIds'> {
++  const { validEntityIds, ...rest } = bundle;
++  return rest;
++}
++
++async function logAI(session: AISessionData, query: string, response: AiResponse): Promise<void> {
++  try {
++    await prisma.auditEvent.create({ data: { tenantId: session.tenantId, actorUserId: session.userId, entityType: 'USER', entityId: session.userId, action: 'ai.query', summary: `AI: "${query.substring(0, 100)}"`, metadata: JSON.stringify({ query, confidence: response.confidence }) } });
++  } catch {}
++}
+diff --git a/lib/llm/openaiClient.ts b/lib/llm/openaiClient.ts
+new file mode 100644
+--- /dev/null
++++ b/lib/llm/openaiClient.ts
+@@ -0,0 +1,8 @@
++import OpenAI from "openai";
++
++export function getOpenAIClient() {
++  const apiKey = process.env.OPENAI_API_KEY;
++  if (!apiKey) throw new Error("Missing OPENAI_API_KEY");
++  return new OpenAI({ apiKey });
++}
++export const DEFAULT_MODEL = process.env.OPENAI_MODEL ?? "gpt-4o-mini";
+diff --git a/.env.local.example b/.env.local.example
+new file mode 100644
+--- /dev/null
++++ b/.env.local.example
+@@ -0,0 +1,5 @@
++# Quantract AI
++OPENAI_API_KEY=sk-your-key-here
++# OPENAI_MODEL=gpt-4o
++# SESSION_SECRET=change-in-production

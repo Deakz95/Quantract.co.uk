@@ -1,0 +1,91 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+
+export default function AdminOnboarding() {
+  const router = useRouter();
+  const sp = useSearchParams();
+  const next = sp.get("next") || "/admin";
+  const [name, setName] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function submit() {
+    setLoading(true);
+    setErr(null);
+    try {
+      const res = await fetch("/api/profile/complete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ name }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { setErr(data?.error || "Could not save profile"); return; }
+      router.replace(next);
+      router.refresh();
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50">
+      <div className="w-full max-w-md">
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow-xl mb-4">
+            <span className="text-white font-bold text-2xl">Q</span>
+          </div>
+          <h1 className="text-2xl font-bold text-slate-900">Welcome to Quantract</h1>
+          <p className="text-slate-600 mt-1">Let's finish setting up your profile</p>
+        </div>
+
+        <div className="bg-white rounded-2xl shadow-lg p-6 space-y-6">
+          <div className="text-center">
+            <h2 className="text-lg font-semibold text-slate-900">Create Your Profile</h2>
+            <p className="text-sm text-slate-500">Enter your name to get started</p>
+          </div>
+
+          {err && (
+            <div className="rounded-xl bg-red-50 border border-red-200 p-4">
+              <p className="text-sm font-medium text-red-700">Error</p>
+              <p className="text-xs text-red-600 mt-0.5">{err}</p>
+            </div>
+          )}
+
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-slate-700">Your Name</label>
+            <input
+              type="text"
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+              placeholder="Enter your full name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </div>
+
+          <button
+            className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-medium hover:from-violet-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            onClick={submit}
+            disabled={loading || !name.trim()}
+          >
+            {loading ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Saving...
+              </>
+            ) : (
+              "Continue →"
+            )}
+          </button>
+
+          <p className="text-xs text-slate-500 text-center">
+            You'll be able to update this later in settings
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}

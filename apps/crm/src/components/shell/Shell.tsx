@@ -1,0 +1,176 @@
+"use client";
+
+import type React from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { cn } from "@/lib/cn";
+
+type Role = "admin" | "client" | "engineer";
+
+const NAV: Record<Role, { label: string; href: string; section?: string }[]> = {
+  admin: [
+    { label: "Dashboard", href: "/admin" },
+    { label: "Enquiries", href: "/admin/enquiries" },
+    { label: "Quotes", href: "/admin/quotes" },
+    { label: "Jobs", href: "/admin/jobs" },
+    { label: "Invoices", href: "/admin/invoices" },
+    { label: "Planner", href: "/admin/planner" },
+    { label: "Clients", href: "/admin/clients" },
+    { label: "Engineers", href: "/admin/engineers" },
+    { label: "Certificates", href: "/admin/certificates" },
+    { label: "Timesheets", href: "/admin/timesheets" },
+    { label: "Invites", href: "/admin/invites" },
+    { label: "Settings", href: "/admin/settings" },
+    // Admin can access all portals
+    { label: "→ Client Portal", href: "/client", section: "portals" },
+    { label: "→ Engineer Portal", href: "/engineer", section: "portals" },
+  ],
+  client: [
+    { label: "Dashboard", href: "/client" },
+    { label: "Quotes", href: "/client/quotes" },
+    { label: "Invoices", href: "/client/invoices" },
+    { label: "Documents", href: "/client/documents" },
+  ],
+  engineer: [
+    { label: "Today", href: "/engineer/today" },
+    { label: "Schedule", href: "/engineer/schedule" },
+    { label: "My Jobs", href: "/engineer/jobs" },
+    { label: "Timesheets", href: "/engineer/timesheets" },
+    { label: "Profile", href: "/engineer/profile" },
+  ],
+};
+
+export function Shell({
+  role,
+  title,
+  subtitle,
+  children,
+}: {
+  role: Role;
+  title: string;
+  subtitle?: string;
+  children: React.ReactNode;
+}) {
+  const pathname = usePathname();
+  const items = NAV[role];
+
+  async function logout() {
+    await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+    window.location.href = `/${role}/login`;
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-50 pb-20 md:pb-0">
+      {/* Top bar */}
+      <div className="border-b border-slate-200 bg-white">
+        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
+          <Link href="/" className="font-extrabold tracking-tight">
+            QUANTRACT
+          </Link>
+          <div className="text-xs font-semibold text-slate-600">{role.toUpperCase()}</div>
+        </div>
+      </div>
+
+      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-12">
+          {/* Sidebar */}
+          <aside className="hidden md:block md:col-span-3">
+            <div className="rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
+              {items.filter(it => !it.section).map((it) => {
+                const active = pathname === it.href || pathname.startsWith(it.href + "/");
+                return (
+                  <Link
+                    key={it.href}
+                    href={it.href}
+                    className={cn(
+                      "block rounded-xl px-3 py-2 text-sm font-semibold",
+                      active ? "bg-slate-900 text-white" : "text-slate-700 hover:bg-slate-50"
+                    )}
+                  >
+                    {it.label}
+                  </Link>
+                );
+              })}
+
+              {/* Portal access section (admin only) */}
+              {role === "admin" && items.some(it => it.section === "portals") && (
+                <>
+                  <div className="mt-2 border-t border-slate-100 pt-2 px-3">
+                    <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
+                      Access Other Portals
+                    </div>
+                  </div>
+                  {items.filter(it => it.section === "portals").map((it) => {
+                    const active = pathname === it.href || pathname.startsWith(it.href + "/");
+                    return (
+                      <Link
+                        key={it.href}
+                        href={it.href}
+                        className={cn(
+                          "block rounded-xl px-3 py-2 text-sm font-semibold",
+                          active ? "bg-blue-100 text-blue-900" : "text-blue-700 hover:bg-blue-50"
+                        )}
+                      >
+                        {it.label}
+                      </Link>
+                    );
+                  })}
+                </>
+              )}
+
+              <div className="mt-2 border-t border-slate-100 pt-2">
+                <button
+                  type="button"
+                  onClick={logout}
+                  className="block w-full rounded-xl px-3 py-2 text-left text-sm text-slate-600 hover:bg-slate-50"
+                >
+                  Log out
+                </button>
+              </div>
+            </div>
+          </aside>
+
+          {/* Main */}
+          <main className="md:col-span-9">
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="mb-5">
+                <div className="text-2xl font-extrabold">{title}</div>
+                {subtitle ? <div className="mt-1 text-sm text-slate-600">{subtitle}</div> : null}
+              </div>
+              {children}
+            </div>
+          </main>
+        </div>
+      </div>
+
+      {/* Mobile bottom nav */}
+      <nav className="md:hidden fixed bottom-0 inset-x-0 border-t border-slate-200 bg-white">
+        <div className="mx-auto flex max-w-4xl justify-around px-2 py-2">
+          {items.filter(it => !it.section).slice(0, 4).map((it) => {
+            const active = pathname === it.href || pathname.startsWith(it.href + "/");
+            return (
+              <Link
+                key={it.href}
+                href={it.href}
+                className={cn(
+                  "flex flex-1 flex-col items-center justify-center rounded-xl px-2 py-2 text-xs font-semibold",
+                  active ? "text-slate-900" : "text-slate-500"
+                )}
+              >
+                {it.label}
+              </Link>
+            );
+          })}
+
+          <button
+            type="button"
+            onClick={logout}
+            className="flex flex-1 flex-col items-center justify-center rounded-xl px-2 py-2 text-xs font-semibold text-slate-500"
+          >
+            Logout
+          </button>
+        </div>
+      </nav>
+    </div>
+  );
+}

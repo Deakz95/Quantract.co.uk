@@ -1,0 +1,5 @@
+public/**/*.min.*
+public/**/*.map
+public/**/*.webmanifest
+public/**/sw.js
+public/**/workbox-*.js

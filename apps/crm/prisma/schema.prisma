@@ -1,0 +1,1267 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Agreement {
+  id              String       @id
+  companyId       String
+  token           String       @unique
+  quoteId         String       @unique
+  status          String
+  templateVersion String
+  quoteSnapshot   Json
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime
+  signedAt        DateTime?
+  signerName      String?
+  signerEmail     String?
+  signerIp        String?
+  signerUserAgent String?
+  certificateHash String?
+  Company         Company      @relation(fields: [companyId], references: [id])
+  Quote           Quote        @relation(fields: [quoteId], references: [id])
+  AuditEvent      AuditEvent[]
+
+  @@index([companyId])
+}
+
+model AuditEvent {
+  id            String       @id
+  companyId     String
+  entityType    String
+  entityId      String
+  action        String
+  actorRole     String
+  actor         String?
+  meta          Json?
+  createdAt     DateTime     @default(now())
+  quoteId       String?
+  agreementId   String?
+  invoiceId     String?
+  jobId         String?
+  certificateId String?
+  Agreement     Agreement?   @relation(fields: [agreementId], references: [id])
+  Certificate   Certificate? @relation(fields: [certificateId], references: [id])
+  Company       Company      @relation(fields: [companyId], references: [id])
+  Invoice       Invoice?     @relation(fields: [invoiceId], references: [id])
+  Job           Job?         @relation(fields: [jobId], references: [id])
+  Quote         Quote?       @relation(fields: [quoteId], references: [id])
+
+  @@index([companyId])
+  @@index([createdAt])
+  @@index([entityType, entityId])
+}
+
+model AuthSession {
+  id        String    @id
+  userId    String
+  createdAt DateTime  @default(now())
+  expiresAt DateTime
+  revokedAt DateTime?
+  User      User      @relation(fields: [userId], references: [id])
+
+  @@index([userId, expiresAt])
+}
+
+model Certificate {
+  id                    String                  @id
+  companyId             String
+  jobId                 String?
+  siteId                String?
+  clientId              String?
+  type                  String
+  status                String
+  certificateNumber     String?
+  issuedAt              DateTime?
+  inspectorName         String?
+  inspectorEmail        String?
+  dataVersion           Int                     @default(1)
+  data                  Json                    @default("{}")
+  completedAt           DateTime?
+  pdfKey                String?
+  signedName            String?
+  signedAt              DateTime?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime
+  AuditEvent            AuditEvent[]
+  Client                Client?                 @relation(fields: [clientId], references: [id])
+  Company               Company                 @relation(fields: [companyId], references: [id])
+  Job                   Job?                    @relation(fields: [jobId], references: [id])
+  Site                  Site?                   @relation(fields: [siteId], references: [id])
+  CertificateTestResult CertificateTestResult[]
+
+  @@index([clientId])
+  @@index([companyId])
+  @@index([jobId])
+  @@index([siteId])
+}
+
+model CertificateTestResult {
+  id            String      @id
+  companyId     String
+  certificateId String
+  circuitRef    String?
+  data          Json
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime
+  Certificate   Certificate @relation(fields: [certificateId], references: [id])
+  Company       Company     @relation(fields: [companyId], references: [id])
+
+  @@index([certificateId])
+  @@index([companyId])
+}
+
+model Client {
+  id                   String        @id
+  companyId            String
+  name                 String
+  email                String
+  phone                String?
+  address1             String?
+  address2             String?
+  city                 String?
+  county               String?
+  postcode             String?
+  country              String?
+  notes                String?
+  serviceAddress1      String?
+  serviceAddress2      String?
+  serviceCity          String?
+  serviceCounty        String?
+  servicePostcode      String?
+  serviceCountry       String?
+  billingAddress1      String?
+  billingAddress2      String?
+  billingCity          String?
+  billingCounty        String?
+  billingPostcode      String?
+  billingCountry       String?
+  billingSameAsService Boolean       @default(true)
+  paymentTermsDays     Int?
+  disableAutoChase     Boolean       @default(false)
+  xeroContactId        String?
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime
+  Certificate          Certificate[]
+  Company              Company       @relation(fields: [companyId], references: [id])
+  Invoice              Invoice[]
+  Job                  Job[]
+  Quote                Quote[]
+  Site                 Site[]
+  User                 User[]
+  Task                 Task[]
+
+  @@unique([companyId, email])
+  @@index([companyId])
+}
+
+model Company {
+  id                      String                  @id
+  name                    String
+  slug                    String                  @unique
+  subdomain               String?                 @unique
+  dataTier                String                  @default("shared")
+  dedicatedDatabaseUrl    String?
+  dataRegion              String                  @default("eu-west-2")
+  brandName               String                  @default("Quantract")
+  brandTagline            String?
+  logoKey                 String?
+  themePrimary            String                  @default("#0f172a")
+  themeAccent             String                  @default("#16a34a")
+  themeBg                 String                  @default("#f8fafc")
+  themeText               String                  @default("#0f172a")
+  pdfFooterLine1          String?
+  pdfFooterLine2          String?
+  defaultVatRate          Float                   @default(0.2)
+  invoiceNumberPrefix     String                  @default("INV-")
+  nextInvoiceNumber       Int                     @default(1)
+  certificateNumberPrefix String                  @default("CERT-")
+  nextCertificateNumber   Int                     @default(1)
+  onboardedAt             DateTime?
+  defaultPaymentTermsDays Int                     @default(14)
+  autoChaseEnabled        Boolean                 @default(false)
+  autoChaseFirstDays      Int                     @default(7)
+  autoChaseSecondDays     Int                     @default(14)
+  autoChaseThirdDays      Int                     @default(21)
+  quoteValidityDays       Int                     @default(30)
+  termsAndConditions      String?
+  plan                    String                  @default("trial")
+  subscriptionStatus      String                  @default("inactive")
+  stripeCustomerId        String?
+  stripeSubscriptionId    String?
+  currentPeriodEnd        DateTime?
+  trialEnd                DateTime?
+  trialStartedAt          DateTime?
+  quotesThisMonth         Int                     @default(0)
+  invoicesThisMonth       Int                     @default(0)
+  usageResetAt            DateTime?
+  xeroConnected           Boolean                 @default(false)
+  xeroTenantId            String?
+  xeroAccessToken         String?
+  xeroRefreshToken        String?
+  xeroTokenExpiresAt      DateTime?
+  createdAt               DateTime                @default(now())
+  updatedAt               DateTime
+  Agreement               Agreement[]
+  AuditEvent              AuditEvent[]
+  Certificate             Certificate[]
+  CertificateTestResult   CertificateTestResult[]
+  Client                  Client[]
+  CompanyUser             CompanyUser[]
+  CostItem                CostItem[]
+  CostItemAttachment      CostItemAttachment[]
+  Engineer                Engineer[]
+  Expense                 Expense[]
+  Invite                  Invite[]
+  Invoice                 Invoice[]
+  InvoiceAttachment       InvoiceAttachment[]
+  InvoiceChase            InvoiceChase[]
+  InvoicePayment          InvoicePayment[]
+  InvoiceVariation        InvoiceVariation[]
+  Job                     Job[]
+  JobBudgetLine           JobBudgetLine[]
+  JobStage                JobStage[]
+  Quote                   Quote[]
+  QuoteRevision           QuoteRevision[]
+  RateCard                RateCard[]
+  ScheduleEntry           ScheduleEntry[]
+  Site                    Site[]
+  SnagItem                SnagItem[]
+  Subcontractor           Subcontractor[]
+  Supplier                Supplier[]
+  SupplierBill            SupplierBill[]
+  SupplierBillLine        SupplierBillLine[]
+  TimeEntry               TimeEntry[]
+  Timesheet               Timesheet[]
+  User                    User[]
+  Variation               Variation[]
+  VariationAttachment     VariationAttachment[]
+  impersonation_logs      impersonation_logs[]
+  ChecklistTemplate       ChecklistTemplate[]
+  JobChecklist            JobChecklist[]
+  Task                    Task[]
+  Comment                 Comment[]
+  Mention                 Mention[]
+}
+
+model CompanyUser {
+  id        String   @id
+  companyId String
+  email     String
+  role      String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  Company   Company  @relation(fields: [companyId], references: [id])
+
+  @@unique([companyId, email])
+  @@index([email])
+}
+
+model CostItem {
+  id                 String               @id
+  companyId          String
+  jobId              String
+  stageId            String?
+  type               String
+  source             String               @default("manual")
+  lockStatus         String               @default("open")
+  supplier           String?
+  description        String
+  quantity           Float                @default(1)
+  unitCost           Float                @default(0)
+  markupPct          Float                @default(0)
+  incurredAt         DateTime?
+  totalCost          Float                @default(0)
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime
+  Company            Company              @relation(fields: [companyId], references: [id])
+  Job                Job                  @relation(fields: [jobId], references: [id])
+  JobStage           JobStage?            @relation(fields: [stageId], references: [id])
+  CostItemAttachment CostItemAttachment[]
+  SupplierBillLine   SupplierBillLine[]
+
+  @@index([companyId])
+  @@index([jobId])
+  @@index([stageId])
+  @@index([type])
+}
+
+model CostItemAttachment {
+  id         String   @id
+  companyId  String
+  costItemId String
+  name       String
+  fileKey    String
+  mimeType   String
+  createdAt  DateTime @default(now())
+  Company    Company  @relation(fields: [companyId], references: [id])
+  CostItem   CostItem @relation(fields: [costItemId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([costItemId])
+}
+
+model Engineer {
+  id                    String          @id
+  companyId             String
+  email                 String
+  name                  String?
+  phone                 String?
+  costRatePerHour       Float?
+  chargeRatePerHour     Float?
+  rateCardId            String?
+  isActive              Boolean         @default(true)
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime
+  address1              String?
+  address2              String?
+  city                  String?
+  county                String?
+  postcode              String?
+  country               String?
+  emergencyName         String?
+  emergencyPhone        String?
+  emergencyRelationship String?
+  Company               Company         @relation(fields: [companyId], references: [id])
+  RateCard              RateCard?       @relation(fields: [rateCardId], references: [id])
+  Job                   Job[]
+  ScheduleEntry         ScheduleEntry[]
+  TimeEntry             TimeEntry[]
+  Timesheet             Timesheet[]
+  User                  User[]
+
+  @@unique([companyId, email])
+  @@index([companyId])
+}
+
+model Enquiry {
+  id            String         @id
+  companyId     String
+  stageId       String
+  ownerId       String?        // Owner assignment (User.id)
+  name          String?
+  email         String?
+  phone         String?
+  notes         String?
+  valueEstimate Int?
+  quoteId       String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime
+  owner         User?          @relation("EnquiryOwner", fields: [ownerId], references: [id])
+  PipelineStage PipelineStage  @relation(fields: [stageId], references: [id])
+  EnquiryEvent  EnquiryEvent[]
+
+  @@index([companyId, stageId])
+  @@index([ownerId])
+}
+
+model EnquiryEvent {
+  id        String   @id
+  companyId String
+  enquiryId String
+  type      String
+  note      String?
+  createdAt DateTime @default(now())
+  Enquiry   Enquiry  @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
+}
+
+model Expense {
+  id            String        @id
+  companyId     String
+  jobId         String?
+  supplierId    String?
+  amount        Int?
+  currency      String        @default("GBP")
+  expenseDate   DateTime?
+  status        ExpenseStatus @default(UPLOADED)
+  attachmentKey String?
+  parsedData    Json?
+  category      String?
+  notes         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime
+  Company       Company       @relation(fields: [companyId], references: [id])
+  Supplier      Supplier?     @relation(fields: [supplierId], references: [id])
+
+  @@index([companyId, status])
+}
+
+model Invite {
+  id        String    @id
+  companyId String
+  role      String
+  email     String
+  name      String?
+  token     String    @unique
+  expiresAt DateTime?
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  Company   Company   @relation(fields: [companyId], references: [id])
+
+  @@index([companyId, email])
+  @@index([companyId, role])
+}
+
+model Invoice {
+  id                String              @id
+  companyId         String
+  token             String              @unique
+  invoiceNumber     String?
+  clientId          String?
+  quoteId           String?
+  jobId             String?
+  variationId       String?
+  type              String              @default("stage")
+  stageName         String?
+  clientName        String
+  clientEmail       String
+  subtotal          Float
+  vat               Float
+  total             Float
+  currency          String              @default("gbp")
+  status            String
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime
+  sentAt            DateTime?
+  dueAt             DateTime?
+  paidAt            DateTime?
+  xeroInvoiceId     String?
+  xeroSyncStatus    String              @default("not_synced")
+  xeroLastSyncAt    DateTime?
+  xeroLastError     String?
+  paymentProvider   String?
+  paymentUrl        String?
+  paymentRef        String?
+  AuditEvent        AuditEvent[]
+  Client            Client?             @relation(fields: [clientId], references: [id])
+  Company           Company             @relation(fields: [companyId], references: [id])
+  Job               Job?                @relation(fields: [jobId], references: [id])
+  Quote             Quote?              @relation(fields: [quoteId], references: [id])
+  Variation         Variation?          @relation(fields: [variationId], references: [id])
+  InvoiceAttachment InvoiceAttachment[]
+  InvoiceChase      InvoiceChase[]
+  InvoicePayment    InvoicePayment[]
+  InvoiceVariation  InvoiceVariation[]
+
+  @@unique([companyId, invoiceNumber])
+  @@index([companyId])
+  @@index([jobId])
+  @@index([variationId])
+}
+
+model InvoiceAttachment {
+  id        String   @id
+  companyId String
+  invoiceId String
+  name      String
+  fileKey   String
+  mimeType  String
+  createdAt DateTime @default(now())
+  Company   Company  @relation(fields: [companyId], references: [id])
+  Invoice   Invoice  @relation(fields: [invoiceId], references: [id])
+
+  @@index([companyId])
+  @@index([invoiceId])
+}
+
+model InvoiceChase {
+  id        String   @id
+  companyId String
+  invoiceId String
+  kind      String
+  sentAt    DateTime @default(now())
+  meta      Json?
+  Company   Company  @relation(fields: [companyId], references: [id])
+  Invoice   Invoice  @relation(fields: [invoiceId], references: [id])
+
+  @@unique([companyId, invoiceId, kind])
+  @@index([companyId])
+  @@index([invoiceId])
+}
+
+model InvoicePayment {
+  id          String   @id
+  companyId   String
+  invoiceId   String
+  amount      Float
+  currency    String   @default("gbp")
+  provider    String   @default("stripe")
+  status      String   @default("succeeded")
+  providerRef String?
+  receivedAt  DateTime @default(now())
+  Company     Company  @relation(fields: [companyId], references: [id])
+  Invoice     Invoice  @relation(fields: [invoiceId], references: [id])
+
+  @@index([companyId])
+  @@index([invoiceId])
+}
+
+model InvoiceVariation {
+  id          String    @id
+  companyId   String
+  invoiceId   String
+  variationId String
+  createdAt   DateTime  @default(now())
+  Company     Company   @relation(fields: [companyId], references: [id])
+  Invoice     Invoice   @relation(fields: [invoiceId], references: [id])
+  Variation   Variation @relation(fields: [variationId], references: [id])
+
+  @@unique([companyId, variationId])
+  @@index([companyId])
+  @@index([invoiceId])
+}
+
+model Job {
+  id             String          @id
+  companyId      String
+  quoteId        String?
+  clientId       String?
+  siteId         String
+  engineerId     String?
+  title          String?
+  status         String
+  scheduledAt    DateTime?
+  notes          String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime
+  budgetSubtotal Float           @default(0)
+  budgetVat      Float           @default(0)
+  budgetTotal    Float           @default(0)
+  AuditEvent     AuditEvent[]
+  Certificate    Certificate[]
+  CostItem       CostItem[]
+  Invoice        Invoice[]
+  Client         Client?         @relation(fields: [clientId], references: [id])
+  Company        Company         @relation(fields: [companyId], references: [id])
+  Engineer       Engineer?       @relation(fields: [engineerId], references: [id])
+  Quote          Quote?          @relation(fields: [quoteId], references: [id])
+  Site           Site            @relation(fields: [siteId], references: [id])
+  JobBudgetLine  JobBudgetLine[]
+  JobStage       JobStage[]
+  ScheduleEntry  ScheduleEntry[]
+  SnagItem       SnagItem[]
+  SupplierBill   SupplierBill[]
+  TimeEntry      TimeEntry[]
+  Variation      Variation[]
+  Timesheet      Timesheet[]     @relation("JobTimesheets")
+  JobChecklist   JobChecklist[]
+  Task           Task[]
+  Comment        Comment[]
+
+  @@index([companyId])
+  @@index([scheduledAt])
+  @@index([status])
+}
+
+model ChecklistTemplate {
+  id          String                   @id
+  companyId   String
+  title       String
+  description String?
+  isActive    Boolean                  @default(true)
+  version     Int                      @default(1)
+  createdAt   DateTime                 @default(now())
+  updatedAt   DateTime
+  createdBy   String?
+  Company     Company                  @relation(fields: [companyId], references: [id])
+  items       ChecklistTemplateItem[]
+  JobChecklist JobChecklist[]
+
+  @@index([companyId])
+  @@index([isActive])
+}
+
+model ChecklistTemplateItem {
+  id          String             @id
+  templateId  String
+  title       String
+  description String?
+  isRequired  Boolean            @default(true)
+  sortOrder   Int                @default(0)
+  createdAt   DateTime           @default(now())
+  template    ChecklistTemplate  @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@index([templateId, sortOrder])
+}
+
+model JobChecklist {
+  id                 String              @id
+  companyId          String
+  jobId              String
+  templateId         String?
+  templateSnapshotId String?
+  title              String
+  description        String?
+  attachedAt         DateTime            @default(now())
+  attachedBy         String?
+  Company            Company             @relation(fields: [companyId], references: [id])
+  Job                Job                 @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  template           ChecklistTemplate?  @relation(fields: [templateId], references: [id])
+  items              JobChecklistItem[]
+
+  @@index([companyId])
+  @@index([jobId])
+}
+
+model JobChecklistItem {
+  id             String        @id
+  checklistId    String
+  title          String
+  description    String?
+  isRequired     Boolean       @default(true)
+  sortOrder      Int           @default(0)
+  status         String        @default("pending")
+  completedAt    DateTime?
+  completedBy    String?
+  completedByName String?
+  notes          String?
+  checklist      JobChecklist  @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+
+  @@index([checklistId, sortOrder])
+  @@index([status])
+}
+
+model Task {
+  id           String       @id
+  companyId    String
+  title        String
+  description  String?
+  status       String       @default("todo")
+  priority     String       @default("medium")
+  dueDate      DateTime?
+  assigneeId   String?
+  jobId        String?
+  clientId     String?
+  parentTaskId String?
+  createdBy    String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime
+  completedAt  DateTime?
+  Company      Company      @relation(fields: [companyId], references: [id])
+  Assignee     User?        @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  Creator      User?        @relation("TaskCreator", fields: [createdBy], references: [id])
+  Job          Job?         @relation(fields: [jobId], references: [id])
+  Client       Client?      @relation(fields: [clientId], references: [id])
+  ParentTask   Task?        @relation("TaskSubtasks", fields: [parentTaskId], references: [id], onDelete: Cascade)
+  Subtasks     Task[]       @relation("TaskSubtasks")
+  Comments     Comment[]
+  Mentions     Mention[]
+
+  @@index([companyId])
+  @@index([assigneeId])
+  @@index([jobId])
+  @@index([clientId])
+  @@index([parentTaskId])
+  @@index([status])
+  @@index([dueDate])
+}
+
+model Comment {
+  id           String    @id
+  companyId    String
+  taskId       String?
+  jobId        String?
+  content      String
+  internalOnly Boolean   @default(true)
+  createdBy    String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime
+  Company      Company   @relation(fields: [companyId], references: [id])
+  Task         Task?     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  Job          Job?      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  Creator      User      @relation("CommentCreator", fields: [createdBy], references: [id])
+  Mentions     Mention[]
+
+  @@index([companyId])
+  @@index([taskId])
+  @@index([jobId])
+  @@index([createdAt])
+}
+
+model Mention {
+  id        String   @id
+  companyId String
+  taskId    String?
+  commentId String?
+  userId    String
+  createdAt DateTime @default(now())
+  notified  Boolean  @default(false)
+  Company   Company  @relation(fields: [companyId], references: [id])
+  Task      Task?    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  Comment   Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  User      User     @relation("UserMentions", fields: [userId], references: [id])
+
+  @@index([companyId])
+  @@index([userId, notified])
+  @@index([taskId])
+  @@index([commentId])
+}
+
+model JobBudgetLine {
+  id          String   @id
+  companyId   String
+  jobId       String
+  source      String   @default("quote")
+  description String
+  quantity    Float    @default(1)
+  unitPrice   Float    @default(0)
+  total       Float    @default(0)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime
+  Company     Company  @relation(fields: [companyId], references: [id])
+  Job         Job      @relation(fields: [jobId], references: [id])
+
+  @@index([companyId])
+  @@index([jobId])
+}
+
+model JobStage {
+  id          String      @id
+  companyId   String
+  jobId       String
+  name        String
+  status      String      @default("not_started")
+  sortOrder   Int         @default(0)
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime
+  CostItem    CostItem[]
+  Company     Company     @relation(fields: [companyId], references: [id])
+  Job         Job         @relation(fields: [jobId], references: [id])
+  Variation   Variation[]
+
+  @@unique([jobId, sortOrder])
+  @@index([companyId])
+  @@index([jobId])
+  @@index([status])
+}
+
+model MagicLinkToken {
+  id        String    @id
+  userId    String
+  tokenHash String    @unique
+  createdAt DateTime  @default(now())
+  expiresAt DateTime
+  usedAt    DateTime?
+  ip        String?
+  User      User      @relation(fields: [userId], references: [id])
+
+  @@index([userId, expiresAt])
+}
+
+model MfaSession {
+  id             String    @id
+  userId         String
+  status         String    @default("pending")
+  challengeToken String    @unique
+  createdAt      DateTime  @default(now())
+  expiresAt      DateTime
+  verifiedAt     DateTime?
+  ipAddress      String?
+  userAgent      String?
+  User           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@index([userId, status])
+}
+
+model NotificationPreference {
+  id        String   @id
+  userId    String
+  channel   String
+  category  String
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  User      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, channel, category])
+  @@index([userId])
+}
+
+model PipelineStage {
+  id        String    @id
+  companyId String
+  name      String
+  sortOrder Int       @default(0)
+  color     String?
+  isWon     Boolean   @default(false)
+  isLost    Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime
+  Enquiry   Enquiry[]
+
+  @@index([companyId, sortOrder])
+}
+
+model PurchaseOrder {
+  id         String              @id
+  companyId  String
+  supplierId String
+  jobId      String?
+  status     PurchaseOrderStatus @default(DRAFT)
+  poNumber   String
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime
+
+  @@unique([companyId, poNumber])
+}
+
+model PurchaseOrderLine {
+  id              String @id
+  purchaseOrderId String
+  description     String
+  qty             Int
+  unitCost        Int
+  total           Int
+}
+
+model Quote {
+  id            String          @id
+  companyId     String
+  token         String          @unique
+  clientId      String?
+  siteId        String?
+  version       Int             @default(1)
+  clientName    String
+  clientEmail   String
+  siteAddress   String?
+  notes         String?
+  vatRate       Float
+  items         Json
+  status        String
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime
+  acceptedAt    DateTime?
+  Agreement     Agreement?
+  AuditEvent    AuditEvent[]
+  Invoice       Invoice[]
+  Job           Job[]
+  Client        Client?         @relation(fields: [clientId], references: [id])
+  Company       Company         @relation(fields: [companyId], references: [id])
+  Site          Site?           @relation(fields: [siteId], references: [id])
+  QuoteRevision QuoteRevision[]
+  Variation     Variation[]
+
+  @@index([clientId])
+  @@index([companyId])
+}
+
+model QuoteRevision {
+  id        String   @id
+  companyId String
+  quoteId   String
+  version   Int
+  snapshot  Json
+  createdAt DateTime @default(now())
+  Company   Company  @relation(fields: [companyId], references: [id])
+  Quote     Quote    @relation(fields: [quoteId], references: [id])
+
+  @@unique([quoteId, version])
+  @@index([companyId])
+  @@index([createdAt])
+  @@index([quoteId])
+}
+
+model RateCard {
+  id                String     @id
+  companyId         String
+  name              String
+  costRatePerHour   Float      @default(0)
+  chargeRatePerHour Float      @default(0)
+  isDefault         Boolean    @default(false)
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime
+  Engineer          Engineer[]
+  Company           Company    @relation(fields: [companyId], references: [id])
+
+  @@unique([companyId, name])
+  @@index([companyId])
+}
+
+model ScheduleEntry {
+  id         String   @id
+  companyId  String
+  jobId      String
+  engineerId String
+  startAt    DateTime
+  endAt      DateTime
+  notes      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime
+  Company    Company  @relation(fields: [companyId], references: [id])
+  Engineer   Engineer @relation(fields: [engineerId], references: [id])
+  Job        Job      @relation(fields: [jobId], references: [id])
+
+  @@index([companyId])
+  @@index([engineerId, startAt])
+  @@index([jobId])
+}
+
+model Site {
+  id               String        @id
+  companyId        String
+  clientId         String
+  name             String?
+  address1         String?
+  address2         String?
+  city             String?
+  county           String?
+  postcode         String?
+  country          String?
+  notes            String?
+  paymentTermsDays Int?
+  disableAutoChase Boolean       @default(false)
+  xeroContactId    String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime
+  Certificate      Certificate[]
+  Job              Job[]
+  Quote            Quote[]
+  Client           Client        @relation(fields: [clientId], references: [id])
+  Company          Company       @relation(fields: [companyId], references: [id])
+
+  @@index([clientId])
+  @@index([companyId])
+}
+
+model SnagItem {
+  id          String    @id
+  companyId   String
+  jobId       String
+  title       String
+  description String?
+  status      String    @default("open")
+  resolvedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime
+  Company     Company   @relation(fields: [companyId], references: [id])
+  Job         Job       @relation(fields: [jobId], references: [id])
+
+  @@index([companyId])
+  @@index([jobId])
+  @@index([status])
+}
+
+model StockItem {
+  id           String   @id
+  companyId    String
+  sku          String?
+  name         String
+  unit         String
+  defaultCost  Int?
+  reorderLevel Int?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime
+
+  @@index([companyId, isActive])
+}
+
+model StockMovement {
+  id          String            @id
+  companyId   String
+  stockItemId String
+  type        StockMovementType
+  qtyDelta    Int
+  refType     String?
+  refId       String?
+  createdAt   DateTime          @default(now())
+
+  @@index([companyId, stockItemId])
+}
+
+model Subcontractor {
+  id        String   @id
+  companyId String
+  name      String
+  trade     String?
+  email     String?
+  phone     String?
+  dayRate   Int?
+  notes     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  Company   Company  @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+}
+
+model Supplier {
+  id        String    @id
+  companyId String
+  name      String
+  email     String?
+  phone     String?
+  address   String?
+  notes     String?
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime
+  Expense   Expense[]
+  Company   Company   @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+}
+
+model SupplierBill {
+  id               String             @id
+  companyId        String
+  jobId            String
+  supplier         String
+  reference        String?
+  billDate         DateTime?
+  status           String             @default("draft")
+  postedAt         DateTime?
+  subtotal         Float              @default(0)
+  vat              Float              @default(0)
+  total            Float              @default(0)
+  pdfKey           String?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime
+  Company          Company            @relation(fields: [companyId], references: [id])
+  Job              Job                @relation(fields: [jobId], references: [id])
+  SupplierBillLine SupplierBillLine[]
+
+  @@index([companyId])
+  @@index([jobId])
+}
+
+model SupplierBillLine {
+  id           String       @id
+  companyId    String
+  billId       String
+  description  String
+  quantity     Float        @default(1)
+  unitCost     Float        @default(0)
+  vatRate      Float        @default(0.2)
+  totalExVat   Float        @default(0)
+  costItemId   String?
+  createdAt    DateTime     @default(now())
+  SupplierBill SupplierBill @relation(fields: [billId], references: [id], onDelete: Cascade)
+  Company      Company      @relation(fields: [companyId], references: [id])
+  CostItem     CostItem?    @relation(fields: [costItemId], references: [id])
+
+  @@index([billId])
+  @@index([companyId])
+}
+
+model TimeEntry {
+  id           String     @id
+  companyId    String
+  jobId        String
+  engineerId   String
+  timesheetId  String?
+  startedAt    DateTime
+  endedAt      DateTime?
+  breakMinutes Int        @default(0)
+  notes        String?
+  status       String     @default("draft")
+  lockedAt     DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime
+  Company      Company    @relation(fields: [companyId], references: [id])
+  Engineer     Engineer   @relation(fields: [engineerId], references: [id])
+  Job          Job        @relation(fields: [jobId], references: [id])
+  Timesheet    Timesheet? @relation(fields: [timesheetId], references: [id])
+
+  @@index([companyId])
+  @@index([engineerId])
+  @@index([jobId])
+  @@index([startedAt])
+}
+
+model Timesheet {
+  id          String      @id
+  companyId   String
+  engineerId  String
+  weekStart   DateTime
+  status      String      @default("draft")
+  submittedAt DateTime?
+  approvedAt  DateTime?
+  approvedBy  String?
+  notes       String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime
+  TimeEntry   TimeEntry[]
+  Company     Company     @relation(fields: [companyId], references: [id])
+  Engineer    Engineer    @relation(fields: [engineerId], references: [id])
+  Job         Job[]       @relation("JobTimesheets")
+
+  @@unique([companyId, engineerId, weekStart])
+  @@index([companyId])
+  @@index([status])
+  @@index([weekStart])
+}
+
+model User {
+  id                                                       String                   @id
+  neonAuthUserId                                           String?                  @unique
+  companyId                                                String?
+  role                                                     String
+  email                                                    String
+  name                                                     String?
+  passwordHash                                             String?
+  engineerId                                               String?
+  clientId                                                 String?
+  createdAt                                                DateTime                 @default(now())
+  updatedAt                                                DateTime
+  profileComplete                                          Boolean                  @default(false)
+  address1                                                 String?
+  address2                                                 String?
+  city                                                     String?
+  county                                                   String?
+  postcode                                                 String?
+  country                                                  String?
+  emergencyName                                            String?
+  emergencyPhone                                           String?
+  emergencyRelationship                                    String?
+  mfaEnabled                                               Boolean                  @default(false)
+  mfaSecret                                                String?
+  mfaBackupCodes                                           String?
+  mfaEnrolledAt                                            DateTime?
+  mfaVerifiedAt                                            DateTime?
+  mfaRequiredBy                                            DateTime?
+  currentImpersonationId                                   String?
+  AuthSession                                              AuthSession[]
+  MagicLinkToken                                           MagicLinkToken[]
+  MfaSession                                               MfaSession[]
+  NotificationPreference                                   NotificationPreference[]
+  Client                                                   Client?                  @relation(fields: [clientId], references: [id])
+  Company                                                  Company?                 @relation(fields: [companyId], references: [id])
+  Engineer                                                 Engineer?                @relation(fields: [engineerId], references: [id])
+  impersonation_logs_impersonation_logs_adminUserIdToUser  impersonation_logs[]     @relation("impersonation_logs_adminUserIdToUser")
+  impersonation_logs_impersonation_logs_targetUserIdToUser impersonation_logs[]     @relation("impersonation_logs_targetUserIdToUser")
+  EnquiriesOwned                                           Enquiry[]                @relation("EnquiryOwner")
+  TasksAssigned                                            Task[]                   @relation("TaskAssignee")
+  TasksCreated                                             Task[]                   @relation("TaskCreator")
+  CommentsCreated                                          Comment[]                @relation("CommentCreator")
+  Mentions                                                 Mention[]                @relation("UserMentions")
+
+  @@unique([role, email])
+  @@index([companyId])
+}
+
+model UserPermission {
+  id        String   @id
+  companyId String
+  userId    String
+  key       String
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+
+  @@unique([companyId, userId, key])
+  @@index([companyId, userId])
+}
+
+model Variation {
+  id                  String                @id
+  companyId           String
+  token               String                @unique
+  quoteId             String?
+  jobId               String?
+  stageId             String?
+  title               String
+  reason              String?
+  notes               String?
+  status              String
+  vatRate             Float
+  items               Json
+  subtotal            Float                 @default(0)
+  vat                 Float                 @default(0)
+  total               Float                 @default(0)
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime
+  sentAt              DateTime?
+  approvedAt          DateTime?
+  rejectedAt          DateTime?
+  approvedBy          String?
+  Invoice             Invoice[]
+  InvoiceVariation    InvoiceVariation[]
+  Company             Company               @relation(fields: [companyId], references: [id])
+  Job                 Job?                  @relation(fields: [jobId], references: [id])
+  Quote               Quote?                @relation(fields: [quoteId], references: [id])
+  JobStage            JobStage?             @relation(fields: [stageId], references: [id])
+  VariationAttachment VariationAttachment[]
+
+  @@index([companyId])
+  @@index([stageId])
+  @@index([status])
+}
+
+model VariationAttachment {
+  id          String    @id
+  companyId   String
+  variationId String
+  name        String
+  fileKey     String
+  mimeType    String
+  createdAt   DateTime  @default(now())
+  Company     Company   @relation(fields: [companyId], references: [id])
+  Variation   Variation @relation(fields: [variationId], references: [id])
+
+  @@index([companyId])
+  @@index([variationId])
+}
+
+model impersonation_logs {
+  id                                         String    @id
+  adminUserId                                String
+  targetUserId                               String
+  reason                                     String?
+  startedAt                                  DateTime  @default(now())
+  endedAt                                    DateTime?
+  actionsTaken                               Json      @default("[]")
+  ipAddress                                  String?   @db.VarChar(45)
+  userAgent                                  String?
+  companyId                                  String
+  createdAt                                  DateTime  @default(now())
+  updatedAt                                  DateTime
+  User_impersonation_logs_adminUserIdToUser  User      @relation("impersonation_logs_adminUserIdToUser", fields: [adminUserId], references: [id], onDelete: Cascade)
+  Company                                    Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  User_impersonation_logs_targetUserIdToUser User      @relation("impersonation_logs_targetUserIdToUser", fields: [targetUserId], references: [id], onDelete: Cascade)
+
+  @@index([adminUserId])
+  @@index([companyId])
+  @@index([endedAt])
+  @@index([targetUserId])
+}
+
+enum ExpenseStatus {
+  UPLOADED
+  PARSED
+  CONFIRMED
+  POSTED
+}
+
+enum PurchaseOrderStatus {
+  DRAFT
+  SENT
+  CONFIRMED
+  RECEIVED
+  CANCELLED
+}
+
+enum StockMovementType {
+  RECEIVED
+  USED
+  ADJUSTMENT
+}
+
+enum UserRole {
+  ADMIN
+  OFFICE
+  ENGINEER
+  FINANCE
+}

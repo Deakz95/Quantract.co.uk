@@ -1,0 +1,210 @@
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+
+function makeId() {
+  return (globalThis.crypto?.randomUUID?.() ?? Math.random().toString(16).slice(2)) as string;
+}
+
+const ROLE_COOKIE = "qt_session_v1";
+const COMPANY_COOKIE = "qt_company_id";
+const PROFILE_COOKIE = "qt_profile_complete";
+const TENANT_COOKIE = "qt_tenant_subdomain";
+
+// Reserved subdomains that should not be treated as tenant subdomains
+const RESERVED_SUBDOMAINS = ["www", "api", "app", "admin", "mail", "email", "ftp", "ssl", "cdn", "static", "assets"];
+
+/**
+ * Extract subdomain from hostname
+ * e.g., "hawksworth.quantract.co.uk" -> "hawksworth"
+ * e.g., "quantract.co.uk" -> null
+ * e.g., "localhost:3000" -> null
+ */
+function extractSubdomain(hostname: string): string | null {
+  // Remove port if present
+  const host = hostname.split(":")[0];
+  
+  // Handle localhost
+  if (host === "localhost" || host === "127.0.0.1") {
+    return null;
+  }
+  
+  // Split hostname into parts
+  const parts = host.split(".");
+  
+  // Need at least 3 parts for a subdomain (subdomain.domain.tld)
+  // For .co.uk we need 4 parts (subdomain.domain.co.uk)
+  if (host.endsWith(".co.uk") && parts.length >= 4) {
+    const subdomain = parts[0];
+    if (!RESERVED_SUBDOMAINS.includes(subdomain.toLowerCase())) {
+      return subdomain.toLowerCase();
+    }
+  } else if (parts.length >= 3 && !host.endsWith(".co.uk")) {
+    // For regular TLDs like .com
+    const subdomain = parts[0];
+    if (!RESERVED_SUBDOMAINS.includes(subdomain.toLowerCase())) {
+      return subdomain.toLowerCase();
+    }
+  }
+  
+  return null;
+}
+
+function isPublicPath(pathname: string) {
+  // Public pages + auth endpoints
+  if (pathname.startsWith("/_next")) return true;
+  if (pathname.startsWith("/public")) return true;
+  if (pathname.startsWith("/favicon")) return true;
+  if (pathname === "/") return true; // Landing page is public
+
+  // Public auth UI
+  if (pathname.startsWith("/auth/")) return true;
+
+  // Portal login pages
+  if (pathname === "/admin/login" || pathname === "/client/login" || pathname === "/engineer/login" || pathname === "/ops/login") return true;
+
+  // Public invite acceptance pages
+  if (pathname.startsWith("/invite/")) return true;
+
+  // Public API endpoints
+  if (pathname.startsWith("/api/auth/")) return true;
+  if (pathname.startsWith("/api/better-auth/")) return true;
+  if (pathname.startsWith("/api/public/")) return true;
+
+  // Tokenized client endpoints (public access via token)
+  if (pathname.match(/^\/api\/client\/quotes\/[^\/]+$/)) return true; // GET quote by token
+  if (pathname.match(/^\/api\/client\/quotes\/[^\/]+\/accept$/)) return true; // POST accept quote
+  if (pathname.match(/^\/api\/client\/quotes\/[^\/]+\/pdf$/)) return true; // GET quote PDF
+
+  // Tokenized client UI pages (public access via token)
+  if (pathname.match(/^\/client\/quotes\/[^\/]+/)) return true; // View quote by token (including /sign, /certificate, etc.)
+
+  // Webhooks / health (if any)
+  if (pathname === "/api/health") return true;
+  if (pathname.startsWith("/api/webhooks/")) return true;
+
+  return false;
+}
+
+function requiredRoleForPath(pathname: string): "admin" | "client" | "engineer" | null {
+  if (pathname.startsWith("/admin")) return "admin";
+  if (pathname.startsWith("/client")) return "client";
+  if (pathname.startsWith("/engineer")) return "engineer";
+  if (pathname.startsWith("/ops")) return "admin"; // ops portal is admin/engineer domain; default protect as admin
+  if (pathname.startsWith("/portal")) return "client";
+  // Protect admin APIs too
+  if (pathname.startsWith("/api/admin")) return "admin";
+  if (pathname.startsWith("/api/client")) return "client";
+  if (pathname.startsWith("/api/engineer")) return "engineer";
+  if (pathname.startsWith("/api/ops")) return "admin";
+  return null;
+}
+
+
+function isOnboardingPath(pathname: string) {
+  return pathname === "/client/onboarding" || pathname === "/engineer/onboarding" || pathname === "/admin/onboarding";
+}
+
+function isProfileApi(pathname: string) {
+  return pathname.startsWith("/api/profile/");
+}
+
+function loginUrlForRole(role: "admin" | "client" | "engineer") {
+  if (role === "admin") return "/admin/login";
+  if (role === "client") return "/client/login";
+  return "/engineer/login";
+}
+
+export async function middleware(req: NextRequest) {
+  const requestId = req.headers.get("x-request-id") ?? makeId();
+  const { pathname } = req.nextUrl;
+  const hostname = req.headers.get("host") || "";
+
+  // Extract subdomain for multi-tenant routing
+  const subdomain = extractSubdomain(hostname);
+
+  // Create response with request ID
+  const res = NextResponse.next();
+  res.headers.set("x-request-id", requestId);
+  
+  // Set subdomain header for downstream use
+  if (subdomain) {
+    res.headers.set("x-tenant-subdomain", subdomain);
+    // Also set a cookie so server components can access it
+    res.cookies.set(TENANT_COOKIE, subdomain, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24, // 24 hours
+    });
+  }
+
+  if (isPublicPath(pathname)) return res;
+
+  const needed = requiredRoleForPath(pathname);
+  if (!needed) return res;
+
+  const raw = req.cookies.get(ROLE_COOKIE)?.value ?? "";
+  const role = raw.startsWith("role:") ? (raw.slice("role:".length) as any) : null;
+
+  if (!role) {
+    const url = req.nextUrl.clone();
+    url.pathname = loginUrlForRole(needed);
+    url.searchParams.set("next", pathname);
+    return NextResponse.redirect(url);
+  }
+
+  // Basic role isolation: block crossing between portals
+  // ADMIN CAN ACCESS EVERYTHING - no restrictions for admin role
+  if (role === "admin") {
+    // Admin has universal access - allow through
+    return res;
+  }
+
+  // Non-admin roles are restricted to their portals
+  if (needed === "admin" && role !== "admin") {
+    const url = req.nextUrl.clone();
+    url.pathname = loginUrlForRole("admin");
+    url.searchParams.set("next", pathname);
+    return NextResponse.redirect(url);
+  }
+  if (needed === "client" && role !== "client") {
+    const url = req.nextUrl.clone();
+    url.pathname = loginUrlForRole("client");
+    url.searchParams.set("next", pathname);
+    return NextResponse.redirect(url);
+  }
+  if (needed === "engineer" && role !== "engineer") {
+    const url = req.nextUrl.clone();
+    url.pathname = loginUrlForRole("engineer");
+    url.searchParams.set("next", pathname);
+    return NextResponse.redirect(url);
+  }
+
+
+  // Company gating (session should always have a companyId for client/engineer, and usually for admin)
+  const companyId = req.cookies.get(COMPANY_COOKIE)?.value || "";
+  if ((role === "client" || role === "engineer") && !companyId) {
+    const url = req.nextUrl.clone();
+    url.pathname = loginUrlForRole(role);
+    url.searchParams.set("next", pathname);
+    return NextResponse.redirect(url);
+  }
+
+  // Profile completion gating (Edge-safe via cookie set at login)
+  const pc = req.cookies.get(PROFILE_COOKIE)?.value || "";
+  const isComplete = pc === "1";
+  if (!isComplete && !isOnboardingPath(pathname) && !isProfileApi(pathname)) {
+    const url = req.nextUrl.clone();
+    if (role === "admin") url.pathname = "/admin/onboarding";
+    else if (role === "client") url.pathname = "/client/onboarding";
+    else url.pathname = "/engineer/onboarding";
+    url.searchParams.set("next", pathname);
+    return NextResponse.redirect(url);
+  }
+  return res;
+}
+
+export const config = {
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+};
