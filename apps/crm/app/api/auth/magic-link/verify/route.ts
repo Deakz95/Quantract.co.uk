@@ -3,10 +3,19 @@ import { withRequestLogging } from "@/lib/server/observability";
 import { consumeMagicLink, createSession } from "@/lib/server/authDb";
 import { setSession, setUserEmail, setCompanyId, setProfileComplete } from "@/lib/serverAuth";
 
-function redirectTo(req: Request, path: string) {
+function getBaseUrl(req: Request): string {
+  if (process.env.NEXT_PUBLIC_APP_ORIGIN) {
+    return process.env.NEXT_PUBLIC_APP_ORIGIN;
+  }
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("NEXT_PUBLIC_APP_ORIGIN must be set in production");
+  }
   const url = new URL(req.url);
-  const base = process.env.NEXT_PUBLIC_APP_URL || `${url.protocol}//${url.host}`;
-  return NextResponse.redirect(new URL(path, base));
+  return `${url.protocol}//${url.host}`;
+}
+
+function redirectTo(req: Request, path: string) {
+  return NextResponse.redirect(new URL(path, getBaseUrl(req)));
 }
 
 export const GET = withRequestLogging(async function GET(req: Request) {
