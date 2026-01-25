@@ -38,34 +38,17 @@ export async function POST(req: Request) {
     });
 
     if (!dbUser) {
-      // Create company for new user
-      const companyId = randomUUID();
-      const companySlug = `company-${companyId.slice(0, 8)}`;
-      const company = await prisma.company.create({
-        data: {
-          id: companyId,
-          name: user.name || "New Company",
-          slug: companySlug,
-          brandName: user.name || "New Company",
-          brandTagline: "",
-          themePrimary: "#0f172a",
-          themeAccent: "#38bdf8",
-          themeBg: "#ffffff",
-          themeText: "#0f172a",
-        },
-      });
-
-      // Create user with company
+      // Create user WITHOUT company - they'll create one when subscribing to CRM
       const userId = randomUUID();
       dbUser = await prisma.user.create({
         data: {
           id: userId,
           email: email || `user-${user.id}@example.com`,
           name: user.name || null,
-          companyId: company.id,
+          companyId: null, // No company until they subscribe to CRM
           role: "admin",
           neonAuthUserId: user.id,
-          profileComplete: false,
+          profileComplete: true, // Profile is complete for tools/certs usage
         },
       });
     } else if (!dbUser.neonAuthUserId) {
@@ -82,11 +65,18 @@ export async function POST(req: Request) {
     if (dbUser.companyId) await setCompanyId(dbUser.companyId);
     await setProfileComplete(Boolean(dbUser.profileComplete));
 
-    // Determine redirect based on profile completion
+    // Determine redirect based on company status
+    // Users without a company go to /account (tools/certs)
+    // Users with a company go to their role dashboard
     const role = dbUser.role || "admin";
-    const redirectTo = dbUser.profileComplete
-      ? `/${role}`
-      : `/${role}/onboarding`;
+    let redirectTo: string;
+    if (!dbUser.companyId) {
+      redirectTo = "/account"; // Tools/certs area for users without CRM subscription
+    } else if (!dbUser.profileComplete) {
+      redirectTo = `/${role}/onboarding`;
+    } else {
+      redirectTo = `/${role}`;
+    }
 
     return NextResponse.json({
       ok: true,
@@ -138,34 +128,17 @@ export async function GET(req: Request) {
     });
 
     if (!dbUser) {
-      // Create company for new user
-      const companyId = randomUUID();
-      const companySlug = `company-${companyId.slice(0, 8)}`;
-      const company = await prisma.company.create({
-        data: {
-          id: companyId,
-          name: user.name || "New Company",
-          slug: companySlug,
-          brandName: user.name || "New Company",
-          brandTagline: "",
-          themePrimary: "#0f172a",
-          themeAccent: "#38bdf8",
-          themeBg: "#ffffff",
-          themeText: "#0f172a",
-        },
-      });
-
-      // Create user with company
+      // Create user WITHOUT company - they'll create one when subscribing to CRM
       const userId = randomUUID();
       dbUser = await prisma.user.create({
         data: {
           id: userId,
           email: email || `user-${user.id}@example.com`,
           name: user.name || null,
-          companyId: company.id,
+          companyId: null, // No company until they subscribe to CRM
           role: "admin",
           neonAuthUserId: user.id,
-          profileComplete: false,
+          profileComplete: true, // Profile is complete for tools/certs usage
         },
       });
     } else if (!dbUser.neonAuthUserId) {
@@ -182,16 +155,17 @@ export async function GET(req: Request) {
     if (dbUser.companyId) await setCompanyId(dbUser.companyId);
     await setProfileComplete(Boolean(dbUser.profileComplete));
 
-    // Determine redirect
+    // Determine redirect based on company status
     const role = dbUser.role || "admin";
     let redirectTo: string;
 
-    if (dbUser.profileComplete && next) {
-      redirectTo = next;
-    } else if (dbUser.profileComplete) {
-      redirectTo = `/${role}`;
-    } else {
+    if (!dbUser.companyId) {
+      // Users without a company go to /account (tools/certs)
+      redirectTo = next || "/account";
+    } else if (!dbUser.profileComplete) {
       redirectTo = `/${role}/onboarding`;
+    } else {
+      redirectTo = next || `/${role}`;
     }
 
     return NextResponse.redirect(new URL(redirectTo, req.url));
