@@ -12,7 +12,7 @@ export default async function AuthPage({ params }: { params: Promise<{ path: str
   return (
     <main className="min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <AuthView path={path} redirectTo="/api/auth/session-sync" />
+        <AuthView path={path} redirectTo="/auth/callback" />
       </div>
     </main>
   );
