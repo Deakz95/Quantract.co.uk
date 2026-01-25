@@ -12,8 +12,14 @@ export async function GET() {
     // IMPORTANT: return the array directly (UI + Playwright expect an array)
     const jobs = await repo.listJobs();
     return NextResponse.json(jobs);
-  } catch {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  } catch (error: any) {
+    // Log the actual error for debugging
+    console.error("[GET /api/admin/jobs] Error:", error);
+    // Return 401 for auth errors, 500 for others
+    if (error?.status === 401 || error?.status === 403) {
+      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    }
+    return NextResponse.json({ error: error?.message || "internal_server_error" }, { status: 500 });
   }
 }
 

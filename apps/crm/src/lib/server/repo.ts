@@ -2165,7 +2165,9 @@ export async function deleteEngineer(engineerId: string): Promise<boolean> {
 export async function listJobs(): Promise<Job[]> {
   const client = p();
   if (!client) return fileDb.listJobs();
+  const companyId = await getCompanyId();
   const rows = await client.job.findMany({
+    where: companyId ? { companyId } : {},
     orderBy: { createdAt: "desc" },
     include: { Client: true, Site: true, Engineer: true },
   });
@@ -2186,7 +2188,7 @@ export async function listJobProfitability(opts?: { status?: string; query?: str
   const query = String(opts?.query || "").trim().toLowerCase();
   const filtered = query
     ? rows.filter((row: any) =>
-        [row.id, row.title, row.client?.name, row.client?.email, row.engineer?.email, row.status, row.site?.address1]
+        [row.id, row.title, row.Client?.name, row.Client?.email, row.Engineer?.email, row.status, row.Site?.address1]
           .filter(Boolean)
           .some((v) => String(v).toLowerCase().includes(query))
       )
