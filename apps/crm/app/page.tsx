@@ -136,10 +136,10 @@ export default function LandingPage() {
             {/* Auth Buttons */}
             <div className="flex items-center gap-3">
               <ThemeToggle className="mr-2" />
-              <Link href="/auth">
+              <Link href="/admin/login">
                 <Button variant="ghost" size="sm">Log in</Button>
               </Link>
-              <Link href="/auth?signup=1">
+              <Link href="/auth/sign-up">
                 <Button variant="gradient" size="sm">Start Free Trial</Button>
               </Link>
             </div>
@@ -174,7 +174,7 @@ export default function LandingPage() {
             </p>
 
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link href="/auth?signup=1">
+              <Link href="/auth/sign-up">
                 <Button variant="gradient" size="lg" className="w-full sm:w-auto shadow-xl">
                   Start Free Trial
                   <ArrowRight className="w-4 h-4 ml-2" />
@@ -284,7 +284,7 @@ export default function LandingPage() {
                       </li>
                     ))}
                   </ul>
-                  <Link href="/auth?signup=1" className="block">
+                  <Link href="/auth/sign-up" className="block">
                     <Button 
                       variant={plan.popular ? "gradient" : "outline"} 
                       className="w-full"
@@ -353,7 +353,7 @@ export default function LandingPage() {
                 and grown their business with Quantract.
               </p>
               <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-                <Link href="/auth?signup=1">
+                <Link href="/auth/sign-up">
                   <Button variant="gradient" size="lg">
                     Start Your Free Trial
                     <ArrowRight className="w-4 h-4 ml-2" />
@@ -388,7 +388,7 @@ export default function LandingPage() {
               <ul className="space-y-2 text-sm text-[var(--muted-foreground)]">
                 <li><a href="#features" className="hover:text-[var(--foreground)]">Features</a></li>
                 <li><a href="#pricing" className="hover:text-[var(--foreground)]">Pricing</a></li>
-                <li><Link href="/auth" className="hover:text-[var(--foreground)]">Login</Link></li>
+                <li><Link href="/admin/login" className="hover:text-[var(--foreground)]">Login</Link></li>
               </ul>
             </div>
             <div>
