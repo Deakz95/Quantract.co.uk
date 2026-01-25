@@ -3,6 +3,7 @@ import { hasCapability, ROLE_DEFAULTS, type Capability } from "@/lib/permissions
 import { p } from "@/lib/server/prisma";
 import { neonAuth } from "@neondatabase/auth/next/server";
 import { cookies } from "next/headers";
+import { randomUUID } from "crypto";
 
 export type Role = "admin" | "client" | "engineer";
 
@@ -296,23 +297,34 @@ async function resolveBetterAuthSession() {
   let dbUser = await prisma.user.findFirst({ where: { email } });
 
   if (!dbUser) {
+    const companyId = randomUUID();
+    const companyName = user.name || "New Company";
+    const companySlug = `${companyName.toLowerCase().replace(/[^a-z0-9]/g, "-").slice(0, 30)}-${companyId.slice(0, 8)}`;
+
     const company = await prisma.company.create({
       data: {
-        brandName: user.name || "New Company",
+        id: companyId,
+        name: companyName,
+        slug: companySlug,
+        brandName: companyName,
         brandTagline: "",
         themePrimary: "#0f172a",
         themeAccent: "#38bdf8",
         themeBg: "#ffffff",
         themeText: "#0f172a",
+        updatedAt: new Date(),
       }
     });
 
+    const userId = randomUUID();
     dbUser = await prisma.user.create({
       data: {
+        id: userId,
         email,
         name: user.name || null,
         companyId: company.id,
-        role: "admin"
+        role: "admin",
+        updatedAt: new Date(),
       }
     });
   }
@@ -336,24 +348,35 @@ async function resolveNeonSession() {
   });
 
   if (!dbUser) {
+    const companyId = randomUUID();
+    const companyName = user.name || "New Company";
+    const companySlug = `${companyName.toLowerCase().replace(/[^a-z0-9]/g, "-").slice(0, 30)}-${companyId.slice(0, 8)}`;
+
     const company = await prisma.company.create({
       data: {
-        brandName: user.name || "New Company",
+        id: companyId,
+        name: companyName,
+        slug: companySlug,
+        brandName: companyName,
         brandTagline: "",
         themePrimary: "#0f172a",
         themeAccent: "#38bdf8",
         themeBg: "#ffffff",
         themeText: "#0f172a",
+        updatedAt: new Date(),
       },
     });
 
+    const userId = randomUUID();
     dbUser = await prisma.user.create({
       data: {
+        id: userId,
         email: email || `user-${user.id}@example.com`,
         name: user.name || null,
         companyId: company.id,
         role: "admin",
         neonAuthUserId: user.id,
+        updatedAt: new Date(),
       },
     });
   } else if (!dbUser.neonAuthUserId) {
