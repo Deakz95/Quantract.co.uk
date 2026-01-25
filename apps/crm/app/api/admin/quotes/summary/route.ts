@@ -25,7 +25,7 @@ export async function GET(req: Request) {
 
     const quotes = await prisma.quote.findMany({
       where: { companyId: ctx.companyId, ...(status ? { status } : {}) },
-      include: { client: true, site: true },
+      include: { Client: true, Site: true },
       orderBy: { createdAt: "desc" }
     });
 
@@ -34,8 +34,8 @@ export async function GET(req: Request) {
       data: quotes.map((q: any) => ({
         quoteId: q.id,
         quoteNumber: q.quoteNumber,
-        clientName: q.client?.name,
-        siteName: q.site?.name,
+        clientName: q.Client?.name || q.clientName,
+        siteName: q.Site?.name,
         total: q.total,
         status: q.status,
         lastSentAt: q.sentAt,
