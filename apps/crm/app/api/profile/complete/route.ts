@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getPrisma } from "@/lib/server/prisma";
-import { getAuthContext } from "@/lib/serverAuth";
+import { getAuthContext, requireAuth } from "@/lib/serverAuth";
 import { withRequestLogging } from "@/lib/server/observability";
 import { setCompanyId, setProfileComplete } from "@/lib/serverAuth";
 
@@ -52,11 +52,14 @@ function requireFields(obj: any, fields: string[]) {
 
 export const POST = withRequestLogging(async function POST(req: Request) {
   try {
-    const ctx = await getAuthContext();
-    if (!ctx) {
+    // Use requireAuth which checks Neon Auth, Better Auth, and legacy sessions
+    let ctx;
+    try {
+      ctx = await requireAuth();
+    } catch (e: any) {
       return NextResponse.json(
-        { ok: false, error: "Unauthorized" },
-        { status: 401 }
+        { ok: false, error: e?.message || "Unauthorized" },
+        { status: e?.status || 401 }
       );
     }
 
