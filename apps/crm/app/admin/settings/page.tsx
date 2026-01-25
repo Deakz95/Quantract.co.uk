@@ -5,7 +5,7 @@ import { AppShell } from "@/components/AppShell";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Briefcase, Zap, Receipt, AlertCircle, Users, FileText, Settings } from "lucide-react";
+import { Briefcase, Zap, Receipt, AlertCircle, Users, FileText, Settings, Globe } from "lucide-react";
 import Link from "next/link";
 
 export default function SettingsPage() {
@@ -57,7 +57,9 @@ export default function SettingsPage() {
                 </div>
               </div>
               <div className="mt-4 pt-4 border-t border-[var(--border)]">
-                <Button variant="secondary" size="sm">Edit Company Details</Button>
+                <Link href="/admin/settings/account">
+                  <Button variant="secondary" size="sm">Edit Company Details</Button>
+                </Link>
               </div>
             </CardContent>
           </Card>
@@ -80,7 +82,7 @@ export default function SettingsPage() {
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-[var(--muted-foreground)]">Primary Color</label>
                   <div className="flex items-center gap-3">
-                    <div 
+                    <div
                       className="w-8 h-8 rounded-lg border border-[var(--border)]"
                       style={{ backgroundColor: data.themePrimary || '#3b82f6' }}
                     />
@@ -90,7 +92,7 @@ export default function SettingsPage() {
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-[var(--muted-foreground)]">Accent Color</label>
                   <div className="flex items-center gap-3">
-                    <div 
+                    <div
                       className="w-8 h-8 rounded-lg border border-[var(--border)]"
                       style={{ backgroundColor: data.themeAccent || '#06b6d4' }}
                     />
@@ -99,7 +101,9 @@ export default function SettingsPage() {
                 </div>
               </div>
               <div className="mt-4 pt-4 border-t border-[var(--border)]">
-                <Button variant="secondary" size="sm">Customize Theme</Button>
+                <Link href="/admin/settings/appearance">
+                  <Button variant="secondary" size="sm">Customize Theme</Button>
+                </Link>
               </div>
             </CardContent>
           </Card>
@@ -138,7 +142,7 @@ export default function SettingsPage() {
             <Link href="/admin/settings/subdomain">
               <Card variant="interactive" className="cursor-pointer h-full">
                 <CardContent className="p-5 flex items-center gap-4">
-                  <Settings className="w-6 h-6 text-[var(--primary)]" />
+                  <Globe className="w-6 h-6 text-[var(--primary)]" />
                   <div>
                     <p className="font-medium text-[var(--foreground)]">Custom Domain</p>
                     <p className="text-xs text-[var(--muted-foreground)]">Branded portal URL</p>
@@ -157,24 +161,28 @@ export default function SettingsPage() {
                 </CardContent>
               </Card>
             </Link>
-            <Card variant="interactive" className="cursor-pointer h-full">
-              <CardContent className="p-5 flex items-center gap-4">
-                <AlertCircle className="w-6 h-6 text-[var(--primary)]" />
-                <div>
-                  <p className="font-medium text-[var(--foreground)]">Notifications</p>
-                  <p className="text-xs text-[var(--muted-foreground)]">Email & alerts</p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card variant="interactive" className="cursor-pointer h-full">
-              <CardContent className="p-5 flex items-center gap-4">
-                <Users className="w-6 h-6 text-[var(--primary)]" />
-                <div>
-                  <p className="font-medium text-[var(--foreground)]">Security</p>
-                  <p className="text-xs text-[var(--muted-foreground)]">Password & 2FA</p>
-                </div>
-              </CardContent>
-            </Card>
+            <Link href="/admin/settings/notifications">
+              <Card variant="interactive" className="cursor-pointer h-full">
+                <CardContent className="p-5 flex items-center gap-4">
+                  <AlertCircle className="w-6 h-6 text-[var(--primary)]" />
+                  <div>
+                    <p className="font-medium text-[var(--foreground)]">Notifications</p>
+                    <p className="text-xs text-[var(--muted-foreground)]">Email & alerts</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+            <Link href="/admin/settings/security">
+              <Card variant="interactive" className="cursor-pointer h-full">
+                <CardContent className="p-5 flex items-center gap-4">
+                  <Users className="w-6 h-6 text-[var(--primary)]" />
+                  <div>
+                    <p className="font-medium text-[var(--foreground)]">Security</p>
+                    <p className="text-xs text-[var(--muted-foreground)]">Password & 2FA</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
           </div>
         </div>
       )}

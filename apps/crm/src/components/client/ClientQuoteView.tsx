@@ -96,9 +96,9 @@ export default function ClientQuoteView({ token }: { token: string }) {
         </CardHeader>
         <CardContent>
           <div className="space-y-3 animate-pulse">
-            <div className="h-4 bg-slate-200 rounded w-3/4"></div>
-            <div className="h-4 bg-slate-200 rounded w-1/2"></div>
-            <div className="h-32 bg-slate-100 rounded"></div>
+            <div className="h-4 bg-[var(--muted)] rounded w-3/4"></div>
+            <div className="h-4 bg-[var(--muted)] rounded w-1/2"></div>
+            <div className="h-32 bg-[var(--muted)] rounded"></div>
           </div>
         </CardContent>
       </Card>
@@ -118,7 +118,7 @@ export default function ClientQuoteView({ token }: { token: string }) {
               <div className="text-sm text-rose-800">{error}</div>
             </div>
           )}
-          <div className="text-sm text-slate-700">
+          <div className="text-sm text-[var(--muted-foreground)]">
             This quote may have been removed or the link may be invalid. Please contact support if you continue to experience issues.
           </div>
           <Button type="button" variant="secondary" onClick={load} disabled={busy}>
@@ -136,10 +136,10 @@ export default function ClientQuoteView({ token }: { token: string }) {
       <CardHeader className="flex items-start justify-between gap-3 sm:flex-row">
         <div>
           <CardTitle>Your quote</CardTitle>
-          <div className="mt-1 text-xs text-slate-600">
-            Status: <span className="font-semibold text-slate-900">{quote.status}</span>
+          <div className="mt-1 text-xs text-[var(--muted-foreground)]">
+            Status: <span className="font-semibold text-[var(--foreground)]">{quote.status}</span>
             {quote.acceptedAtISO ? (
-              <span className="ml-2 text-slate-500">Accepted: {new Date(quote.acceptedAtISO).toLocaleString()}</span>
+              <span className="ml-2 text-[var(--muted-foreground)]">Accepted: {new Date(quote.acceptedAtISO).toLocaleString()}</span>
             ) : null}
           </div>
         </div>
@@ -157,30 +157,30 @@ export default function ClientQuoteView({ token }: { token: string }) {
       </CardHeader>
 
       <CardContent>
-        <div className="mb-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600">
+        <div className="mb-4 rounded-2xl border border-[var(--border)] bg-[var(--muted)] p-4 text-xs text-[var(--muted-foreground)]">
           This is a private, token-secured link. Don’t forward it unless you want someone else to access your quote.
         </div>
 
         {quote.status === "accepted" && quote.agreement ? (
-          <div className="mb-4 rounded-2xl border border-slate-200 bg-white p-3">
-            <div className="text-xs font-semibold text-slate-700">Next step</div>
+          <div className="mb-4 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3">
+            <div className="text-xs font-semibold text-[var(--muted-foreground)]">Next step</div>
             <div className="mt-1 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div className="text-sm text-slate-700">
+              <div className="text-sm text-[var(--muted-foreground)]">
                 Please sign the works agreement to confirm the scope.
               </div>
               <a
                 href={quote.agreement.shareUrl}
                 rel="noreferrer"
-                className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm"
+                className="inline-flex items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-sm font-semibold text-white shadow-sm"
               >
                 Open agreement
               </a>
             </div>
           </div>
         ) : quote.status !== "accepted" ? (
-          <div className="mb-4 rounded-2xl border border-slate-200 bg-white p-3">
-            <div className="text-xs font-semibold text-slate-700">What happens next</div>
-            <div className="mt-1 text-sm text-slate-700">
+          <div className="mb-4 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3">
+            <div className="text-xs font-semibold text-[var(--muted-foreground)]">What happens next</div>
+            <div className="mt-1 text-sm text-[var(--muted-foreground)]">
               Review the quote, download the PDF for your records, then accept it to unlock the agreement signing step.
             </div>
           </div>
@@ -188,18 +188,18 @@ export default function ClientQuoteView({ token }: { token: string }) {
 
         <div className="grid gap-3 sm:grid-cols-2">
           <div>
-            <div className="text-xs font-semibold text-slate-700">Client</div>
-            <div className="text-sm font-semibold text-slate-900">{quote.clientName}</div>
-            <div className="text-xs text-slate-600">{quote.clientEmail}</div>
-            {quote.siteAddress ? <div className="mt-2 text-xs text-slate-600">{quote.siteAddress}</div> : null}
+            <div className="text-xs font-semibold text-[var(--muted-foreground)]">Client</div>
+            <div className="text-sm font-semibold text-[var(--foreground)]">{quote.clientName}</div>
+            <div className="text-xs text-[var(--muted-foreground)]">{quote.clientEmail}</div>
+            {quote.siteAddress ? <div className="mt-2 text-xs text-[var(--muted-foreground)]">{quote.siteAddress}</div> : null}
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-3">
-            <div className="text-xs font-semibold text-slate-700">Totals</div>
+          <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3">
+            <div className="text-xs font-semibold text-[var(--muted-foreground)]">Totals</div>
             <div className="mt-2 grid gap-1 text-sm">
               <div className="flex justify-between"><span>Subtotal</span><span>£{quote.totals.subtotal.toFixed(2)}</span></div>
               <div className="flex justify-between"><span>VAT</span><span>£{quote.totals.vat.toFixed(2)}</span></div>
-              <div className="flex justify-between font-semibold text-slate-900"><span>Total</span><span>£{quote.totals.total.toFixed(2)}</span></div>
+              <div className="flex justify-between font-semibold text-[var(--foreground)]"><span>Total</span><span>£{quote.totals.total.toFixed(2)}</span></div>
             </div>
           </div>
         </div>
@@ -207,7 +207,7 @@ export default function ClientQuoteView({ token }: { token: string }) {
         <div className="mt-4 overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-xs text-slate-500">
+              <tr className="text-left text-xs text-[var(--muted-foreground)]">
                 <th className="py-2 pr-3">Description</th>
                 <th className="py-2 pr-3">Qty</th>
                 <th className="py-2 pr-3">Unit</th>
@@ -216,7 +216,7 @@ export default function ClientQuoteView({ token }: { token: string }) {
             </thead>
             <tbody>
               {quote.items.map((it) => (
-                <tr key={it.id} className="border-t border-slate-100">
+                <tr key={it.id} className="border-t border-[var(--border)]">
                   <td className="py-3 pr-3">{it.description}</td>
                   <td className="py-3 pr-3">{it.qty}</td>
                   <td className="py-3 pr-3">£{it.unitPrice.toFixed(2)}</td>
@@ -225,7 +225,7 @@ export default function ClientQuoteView({ token }: { token: string }) {
               ))}
               {quote.items.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="py-6 text-center text-slate-600">
+                  <td colSpan={4} className="py-6 text-center text-[var(--muted-foreground)]">
                     No items.
                   </td>
                 </tr>
@@ -236,8 +236,8 @@ export default function ClientQuoteView({ token }: { token: string }) {
 
         {quote.notes ? (
           <div className="mt-4">
-            <div className="text-xs font-semibold text-slate-700">Notes</div>
-            <div className="mt-1 whitespace-pre-wrap rounded-2xl border border-slate-200 bg-white p-3 text-sm text-slate-800">
+            <div className="text-xs font-semibold text-[var(--muted-foreground)]">Notes</div>
+            <div className="mt-1 whitespace-pre-wrap rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3 text-sm text-[var(--foreground)]">
               {quote.notes}
             </div>
           </div>
@@ -245,16 +245,16 @@ export default function ClientQuoteView({ token }: { token: string }) {
 
         {quote.variations && quote.variations.length ? (
           <div className="mt-5">
-            <div className="text-xs font-semibold text-slate-700">Variations</div>
+            <div className="text-xs font-semibold text-[var(--muted-foreground)]">Variations</div>
             <div className="mt-2 space-y-2">
               {quote.variations.map((v) => (
-                <div key={v.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-slate-200 bg-white p-3 text-sm">
+                <div key={v.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3 text-sm">
                   <div className="min-w-0">
-                    <div className="font-semibold text-slate-900">{v.title}</div>
-                    <div className="mt-0.5 text-xs text-slate-600">{v.status} • £{v.total.toFixed(2)}</div>
+                    <div className="font-semibold text-[var(--foreground)]">{v.title}</div>
+                    <div className="mt-0.5 text-xs text-[var(--muted-foreground)]">{v.status} • £{v.total.toFixed(2)}</div>
                   </div>
                   {v.token ? (
-                    <a className="text-sm font-semibold text-slate-900 hover:underline" href={`/client/variations/${v.token}`} target="_blank" rel="noreferrer">
+                    <a className="text-sm font-semibold text-[var(--foreground)] hover:underline" href={`/client/variations/${v.token}`} target="_blank" rel="noreferrer">
                       View / Approve
                     </a>
                   ) : null}

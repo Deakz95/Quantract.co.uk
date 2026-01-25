@@ -28,19 +28,19 @@ export default function VerifyClient() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="text-sm text-slate-700">
+          <div className="text-sm text-[var(--muted-foreground)]">
             This page verifies a signing certificate link (demo).
           </div>
 
           <div className="mt-4 space-y-2 text-sm">
             <div>
-              Quote ID: <span className="font-semibold text-slate-900">{data.quoteId || "(missing)"}</span>
+              Quote ID: <span className="font-semibold text-[var(--foreground)]">{data.quoteId || "(missing)"}</span>
             </div>
             <div className="break-all">
-              Hash: <span className="font-mono text-slate-900">{data.hash || "(missing)"}</span>
+              Hash: <span className="font-mono text-[var(--foreground)]">{data.hash || "(missing)"}</span>
             </div>
             <div>
-              Signed at: <span className="font-semibold text-slate-900">{data.signedAt || "(missing)"}</span>
+              Signed at: <span className="font-semibold text-[var(--foreground)]">{data.signedAt || "(missing)"}</span>
             </div>
           </div>
 
@@ -55,7 +55,7 @@ export default function VerifyClient() {
             </Link>
           </div>
 
-          <p className="mt-4 text-xs text-slate-500">
+          <p className="mt-4 text-xs text-[var(--muted-foreground)]">
             In production, this would call the backend to validate the hash against immutable stored records.
           </p>
         </CardContent>

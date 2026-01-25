@@ -177,9 +177,9 @@ export default function AdminVariationPage({ variationId }: Props) {
       <Breadcrumbs />
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="min-w-0">
-          <div className="text-sm font-semibold text-slate-900">Variation {variationId}</div>
+          <div className="text-sm font-semibold text-[var(--foreground)]">Variation {variationId}</div>
           {v?.jobId ? (
-            <div className="mt-1 text-xs text-slate-600">
+            <div className="mt-1 text-xs text-[var(--muted-foreground)]">
               Job: <Link className="hover:underline" href={`/admin/jobs/${v.jobId}`}>{v.jobId}</Link>
             </div>
           ) : null}
@@ -191,9 +191,9 @@ export default function AdminVariationPage({ variationId }: Props) {
       </div>
 
       {loading ? (
-        <div className="text-sm text-slate-700">Loading…</div>
+        <div className="text-sm text-[var(--muted-foreground)]">Loading…</div>
       ) : !v ? (
-        <div className="text-sm text-slate-700">Not found.</div>
+        <div className="text-sm text-[var(--muted-foreground)]">Not found.</div>
       ) : (
         <>
           <Card>
@@ -202,11 +202,11 @@ export default function AdminVariationPage({ variationId }: Props) {
                 <CardTitle>Header</CardTitle>
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge>{v.status}</Badge>
-                  <a className="text-sm font-semibold text-slate-900 hover:underline" href={`/api/admin/variations/${v.id}/pdf`} target="_blank" rel="noreferrer">
+                  <a className="text-sm font-semibold text-[var(--foreground)] hover:underline" href={`/api/admin/variations/${v.id}/pdf`} target="_blank" rel="noreferrer">
                     View PDF
                   </a>
                   {v.token ? (
-                    <a className="text-sm font-semibold text-slate-900 hover:underline" href={`/client/variations/${v.token}`} target="_blank" rel="noreferrer">
+                    <a className="text-sm font-semibold text-[var(--foreground)] hover:underline" href={`/client/variations/${v.token}`} target="_blank" rel="noreferrer">
                       Client link
                     </a>
                   ) : null}
@@ -215,38 +215,38 @@ export default function AdminVariationPage({ variationId }: Props) {
             </CardHeader>
             <CardContent>
               <div className="mb-4 grid gap-2 sm:grid-cols-4">
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
-                  <div className="text-xs font-semibold text-slate-600">Sent</div>
-                  <div className="mt-1 text-sm font-semibold text-slate-900">{formatDate(v.sentAtISO)}</div>
+                <div className="rounded-2xl border border-[var(--border)] bg-[var(--muted)] p-3">
+                  <div className="text-xs font-semibold text-[var(--muted-foreground)]">Sent</div>
+                  <div className="mt-1 text-sm font-semibold text-[var(--foreground)]">{formatDate(v.sentAtISO)}</div>
                 </div>
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
-                  <div className="text-xs font-semibold text-slate-600">Approved</div>
-                  <div className="mt-1 text-sm font-semibold text-slate-900">{formatDate(v.approvedAtISO)}</div>
-                  {v.approvedBy ? <div className="mt-1 text-xs text-slate-600">{v.approvedBy}</div> : null}
+                <div className="rounded-2xl border border-[var(--border)] bg-[var(--muted)] p-3">
+                  <div className="text-xs font-semibold text-[var(--muted-foreground)]">Approved</div>
+                  <div className="mt-1 text-sm font-semibold text-[var(--foreground)]">{formatDate(v.approvedAtISO)}</div>
+                  {v.approvedBy ? <div className="mt-1 text-xs text-[var(--muted-foreground)]">{v.approvedBy}</div> : null}
                 </div>
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
-                  <div className="text-xs font-semibold text-slate-600">Rejected</div>
-                  <div className="mt-1 text-sm font-semibold text-slate-900">{formatDate(v.rejectedAtISO)}</div>
+                <div className="rounded-2xl border border-[var(--border)] bg-[var(--muted)] p-3">
+                  <div className="text-xs font-semibold text-[var(--muted-foreground)]">Rejected</div>
+                  <div className="mt-1 text-sm font-semibold text-[var(--foreground)]">{formatDate(v.rejectedAtISO)}</div>
                 </div>
-                <div className="rounded-2xl border border-slate-200 bg-white p-3">
-                  <div className="text-xs font-semibold text-slate-600">Stage</div>
-                  <div className="mt-1 text-sm font-semibold text-slate-900">{stageLabel}</div>
+                <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3">
+                  <div className="text-xs font-semibold text-[var(--muted-foreground)]">Stage</div>
+                  <div className="mt-1 text-sm font-semibold text-[var(--foreground)]">{stageLabel}</div>
                 </div>
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
                 <label className="grid gap-1 sm:col-span-2">
-                  <span className="text-xs font-semibold text-slate-700">Title</span>
+                  <span className="text-xs font-semibold text-[var(--muted-foreground)]">Title</span>
                   <input
-                    className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                    className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm"
                     value={v.title}
                     onChange={(e) => setV((p) => (p ? { ...p, title: e.target.value } : p))}
                     disabled={!canEdit || busy}
                   />
                 </label>
                 <label className="grid gap-1">
-                  <span className="text-xs font-semibold text-slate-700">Stage (optional)</span>
+                  <span className="text-xs font-semibold text-[var(--muted-foreground)]">Stage (optional)</span>
                   <select
-                    className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                    className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm"
                     value={v.stageId || ""}
                     onChange={(e) => setV((p) => (p ? { ...p, stageId: e.target.value || undefined } : p))}
                     disabled={!canEdit || busy}
@@ -260,18 +260,18 @@ export default function AdminVariationPage({ variationId }: Props) {
                   </select>
                 </label>
                 <label className="grid gap-1 sm:col-span-2">
-                  <span className="text-xs font-semibold text-slate-700">Reason (optional)</span>
+                  <span className="text-xs font-semibold text-[var(--muted-foreground)]">Reason (optional)</span>
                   <textarea
-                    className="min-h-[90px] rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                    className="min-h-[90px] rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm"
                     value={v.reason || ""}
                     onChange={(e) => setV((p) => (p ? { ...p, reason: e.target.value } : p))}
                     disabled={!canEdit || busy}
                   />
                 </label>
                 <label className="grid gap-1 sm:col-span-2">
-                  <span className="text-xs font-semibold text-slate-700">Engineer notes</span>
+                  <span className="text-xs font-semibold text-[var(--muted-foreground)]">Engineer notes</span>
                   <textarea
-                    className="min-h-[90px] rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm"
+                    className="min-h-[90px] rounded-2xl border border-[var(--border)] bg-[var(--muted)] px-4 py-3 text-sm"
                     value={v.notes || ""}
                     onChange={(e) => setV((p) => (p ? { ...p, notes: e.target.value } : p))}
                     disabled={!canEdit || busy}
@@ -279,11 +279,11 @@ export default function AdminVariationPage({ variationId }: Props) {
                   />
                 </label>
                 <label className="grid gap-1">
-                  <span className="text-xs font-semibold text-slate-700">VAT rate</span>
+                  <span className="text-xs font-semibold text-[var(--muted-foreground)]">VAT rate</span>
                   <input
                     type="number"
                     step="0.01"
-                    className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                    className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm"
                     value={v.vatRate}
                     onChange={(e) => setV((p) => (p ? { ...p, vatRate: Number(e.target.value) } : p))}
                     disabled={!canEdit || busy}
@@ -292,7 +292,7 @@ export default function AdminVariationPage({ variationId }: Props) {
               </div>
 
               <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
-                <div className="text-xs text-slate-600">
+                <div className="text-xs text-[var(--muted-foreground)]">
                   Tip: once sent, it stays locked for audit. Approved/rejected is client-driven.
                 </div>
                 <Button type="button" onClick={send} disabled={busy || !v || v.status !== "draft"}>Send to client</Button>
@@ -304,7 +304,7 @@ export default function AdminVariationPage({ variationId }: Props) {
             <CardHeader>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <CardTitle>Line items</CardTitle>
-                <div className="text-xs text-slate-600">Edit items like a quote (qty × unit price).</div>
+                <div className="text-xs text-[var(--muted-foreground)]">Edit items like a quote (qty × unit price).</div>
               </div>
             </CardHeader>
             <CardContent>
@@ -312,17 +312,17 @@ export default function AdminVariationPage({ variationId }: Props) {
 
               {totals ? (
                 <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                    <div className="text-xs font-semibold text-slate-600">Subtotal</div>
-                    <div className="mt-1 text-sm font-semibold text-slate-900">{pounds(totals.subtotal)}</div>
+                  <div className="rounded-2xl border border-[var(--border)] bg-[var(--muted)] p-4">
+                    <div className="text-xs font-semibold text-[var(--muted-foreground)]">Subtotal</div>
+                    <div className="mt-1 text-sm font-semibold text-[var(--foreground)]">{pounds(totals.subtotal)}</div>
                   </div>
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                    <div className="text-xs font-semibold text-slate-600">VAT</div>
-                    <div className="mt-1 text-sm font-semibold text-slate-900">{pounds(totals.vat)}</div>
+                  <div className="rounded-2xl border border-[var(--border)] bg-[var(--muted)] p-4">
+                    <div className="text-xs font-semibold text-[var(--muted-foreground)]">VAT</div>
+                    <div className="mt-1 text-sm font-semibold text-[var(--foreground)]">{pounds(totals.vat)}</div>
                   </div>
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                    <div className="text-xs font-semibold text-slate-600">Total</div>
-                    <div className="mt-1 text-sm font-semibold text-slate-900">{pounds(totals.total)}</div>
+                  <div className="rounded-2xl border border-[var(--border)] bg-[var(--muted)] p-4">
+                    <div className="text-xs font-semibold text-[var(--muted-foreground)]">Total</div>
+                    <div className="mt-1 text-sm font-semibold text-[var(--foreground)]">{pounds(totals.total)}</div>
                   </div>
                 </div>
               ) : null}
@@ -335,13 +335,13 @@ export default function AdminVariationPage({ variationId }: Props) {
             </CardHeader>
             <CardContent>
               {attachments.length === 0 ? (
-                <div className="text-sm text-slate-600">No photos uploaded yet.</div>
+                <div className="text-sm text-[var(--muted-foreground)]">No photos uploaded yet.</div>
               ) : (
                 <div className="grid gap-3 sm:grid-cols-2">
                   {attachments.map((att) => (
                     <a
                       key={att.id}
-                      className="group overflow-hidden rounded-2xl border border-slate-200 bg-white"
+                      className="group overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--background)]"
                       href={`/api/admin/variations/${v.id}/attachments/${att.id}`}
                       target="_blank"
                       rel="noreferrer"
@@ -351,9 +351,9 @@ export default function AdminVariationPage({ variationId }: Props) {
                         alt={att.name}
                         className="h-48 w-full object-cover transition group-hover:scale-[1.02]"
                       />
-                      <div className="border-t border-slate-200 px-3 py-2">
-                        <div className="text-sm font-semibold text-slate-900">{att.name}</div>
-                        <div className="text-xs text-slate-600">Uploaded {formatDate(att.createdAtISO)}</div>
+                      <div className="border-t border-[var(--border)] px-3 py-2">
+                        <div className="text-sm font-semibold text-[var(--foreground)]">{att.name}</div>
+                        <div className="text-xs text-[var(--muted-foreground)]">Uploaded {formatDate(att.createdAtISO)}</div>
                       </div>
                     </a>
                   ))}

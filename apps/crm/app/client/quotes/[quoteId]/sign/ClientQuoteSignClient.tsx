@@ -57,7 +57,7 @@ export default function ClientSignQuote({ quoteId }: Props) {
           <CardTitle>Loading…</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-sm text-slate-700">Preparing signing…</div>
+          <div className="text-sm text-[var(--muted-foreground)]">Preparing signing…</div>
         </CardContent>
       </Card>
     );
@@ -73,7 +73,7 @@ export default function ClientSignQuote({ quoteId }: Props) {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="text-sm text-slate-700">Please review the quote and sign below to authorise us to proceed.</div>
+          <div className="text-sm text-[var(--muted-foreground)]">Please review the quote and sign below to authorise us to proceed.</div>
           <div className="mt-4 flex flex-wrap gap-2">
             <Button variant="secondary" type="button">
               View quote PDF
@@ -94,25 +94,25 @@ export default function ClientSignQuote({ quoteId }: Props) {
             <div className="space-y-5">
               <SignaturePad value={signatureDataUrl} onChange={setSignatureDataUrl} />
 
-              <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                <div className="text-xs font-semibold text-slate-900">Typed name (fallback)</div>
-                <p className="mt-1 text-xs text-slate-600">If you can’t draw a signature, type your full name to sign.</p>
+              <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4">
+                <div className="text-xs font-semibold text-[var(--foreground)]">Typed name (fallback)</div>
+                <p className="mt-1 text-xs text-[var(--muted-foreground)]">If you can’t draw a signature, type your full name to sign.</p>
                 <input
                   value={typedName}
                   onChange={(e) => setTypedName(e.target.value)}
                   placeholder="e.g. John Smith"
-                  className="mt-3 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm shadow-sm focus:border-slate-400 focus:outline-none"
+                  className="mt-3 w-full rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2.5 text-sm shadow-sm focus:border-[var(--border)] focus:outline-none"
                 />
               </div>
 
-              <label className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <label className="flex items-start gap-3 rounded-2xl border border-[var(--border)] bg-[var(--muted)] p-4">
                 <input
                   type="checkbox"
                   checked={agreed}
                   onChange={(e) => setAgreed(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 rounded border-slate-300"
+                  className="mt-0.5 h-4 w-4 rounded border-[var(--border)]"
                 />
-                <span className="text-sm text-slate-700">I confirm I have read and accept the quote and the Terms & Conditions.</span>
+                <span className="text-sm text-[var(--muted-foreground)]">I confirm I have read and accept the quote and the Terms & Conditions.</span>
               </label>
 
               <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
@@ -126,7 +126,7 @@ export default function ClientSignQuote({ quoteId }: Props) {
                 </Button>
               </div>
 
-              <p className="text-xs text-slate-500">We store a signing record (timestamp + document hash) for audit purposes.</p>
+              <p className="text-xs text-[var(--muted-foreground)]">We store a signing record (timestamp + document hash) for audit purposes.</p>
             </div>
           </CardContent>
         </Card>
@@ -136,7 +136,7 @@ export default function ClientSignQuote({ quoteId }: Props) {
             <CardTitle>Signature rules</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3 text-sm text-slate-700">
+            <div className="space-y-3 text-sm text-[var(--muted-foreground)]">
               <div>• Draw your signature, or type your full name.</div>
               <div>• You must tick acceptance before signing.</div>
               <div className="flex items-start gap-2">
@@ -144,7 +144,7 @@ export default function ClientSignQuote({ quoteId }: Props) {
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <span className="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700">
+                      <span className="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--background)] text-[var(--muted-foreground)]">
                         <HelpCircle className="h-4 w-4" />
                       </span>
                     </TooltipTrigger>

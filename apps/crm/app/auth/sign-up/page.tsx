@@ -63,15 +63,15 @@ export default function SignUpPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-4 bg-slate-900">
+    <main className="min-h-screen flex items-center justify-center p-4 bg-[var(--background)]">
       <div className="w-full max-w-md">
-        <div className="bg-slate-800 rounded-2xl shadow-xl p-8 border border-slate-700">
+        <div className="bg-[var(--card)] rounded-2xl shadow-xl p-8 border border-[var(--border)]">
           <div className="text-center mb-8">
             <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow-xl mb-4">
               <span className="text-white font-bold text-2xl">Q</span>
             </div>
             <h1 className="text-2xl font-bold text-white">Create Account</h1>
-            <p className="text-slate-400 mt-1">Get started with Quantract</p>
+            <p className="text-[var(--muted-foreground)] mt-1">Get started with Quantract</p>
           </div>
 
           {error && (
@@ -82,7 +82,7 @@ export default function SignUpPage() {
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label className="block text-sm font-medium text-[var(--muted-foreground)] mb-2">
                 Your Name
               </label>
               <input
@@ -90,13 +90,13 @@ export default function SignUpPage() {
                 required
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-4 py-3 rounded-xl bg-slate-700 border border-slate-600 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-3 rounded-xl bg-[var(--muted)] border border-[var(--border)] text-white placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="John Smith"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label className="block text-sm font-medium text-[var(--muted-foreground)] mb-2">
                 Company / Trading Name
               </label>
               <input
@@ -104,13 +104,13 @@ export default function SignUpPage() {
                 required
                 value={formData.companyName}
                 onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
-                className="w-full px-4 py-3 rounded-xl bg-slate-700 border border-slate-600 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-3 rounded-xl bg-[var(--muted)] border border-[var(--border)] text-white placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Smith Electrical Ltd"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label className="block text-sm font-medium text-[var(--muted-foreground)] mb-2">
                 Email
               </label>
               <input
@@ -118,13 +118,13 @@ export default function SignUpPage() {
                 required
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full px-4 py-3 rounded-xl bg-slate-700 border border-slate-600 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-3 rounded-xl bg-[var(--muted)] border border-[var(--border)] text-white placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="john@example.com"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label className="block text-sm font-medium text-[var(--muted-foreground)] mb-2">
                 Password
               </label>
               <input
@@ -133,7 +133,7 @@ export default function SignUpPage() {
                 minLength={8}
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                className="w-full px-4 py-3 rounded-xl bg-slate-700 border border-slate-600 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-3 rounded-xl bg-[var(--muted)] border border-[var(--border)] text-white placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Min 8 characters"
               />
             </div>
@@ -147,7 +147,7 @@ export default function SignUpPage() {
             </button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-slate-400">
+          <p className="mt-6 text-center text-sm text-[var(--muted-foreground)]">
             Already have an account?{" "}
             <Link href="/auth/sign-in" className="text-blue-400 hover:text-blue-300 font-medium">
               Sign In

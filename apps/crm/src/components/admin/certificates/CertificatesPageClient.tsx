@@ -131,7 +131,7 @@ export default function CertificatesPageClient() {
             {loading ? (
               <div className="space-y-3">
                 {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <div key={i} className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4">
                     <LoadingSkeleton className="h-4 w-40" />
                     <LoadingSkeleton className="mt-2 h-3 w-full" />
                   </div>
@@ -154,9 +154,9 @@ export default function CertificatesPageClient() {
             ) : (
               <div className="space-y-4">
                 <label className="grid gap-1">
-                  <span className="text-xs font-semibold text-slate-700">Choose job</span>
+                  <span className="text-xs font-semibold text-[var(--muted-foreground)]">Choose job</span>
                   <select
-                    className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm"
+                    className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-sm"
                     value={jobId}
                     onChange={(e) => setJobId(e.target.value)}
                   >
@@ -172,7 +172,7 @@ export default function CertificatesPageClient() {
                 {!jobId ? (
                   <EmptyState title="Select a job" description="Pick a job to view and manage its certificates." />
                 ) : certLoading ? (
-                  <div className="text-sm text-slate-600">Loading certificates…</div>
+                  <div className="text-sm text-[var(--muted-foreground)]">Loading certificates…</div>
                 ) : certs.length === 0 ? (
                   <EmptyState
                     title="No certificates for this job"
@@ -186,11 +186,11 @@ export default function CertificatesPageClient() {
                 ) : (
                   <div className="space-y-3">
                     {certs.map((cert) => (
-                      <div key={cert.id} className="rounded-2xl border border-slate-200 bg-white p-4">
+                      <div key={cert.id} className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4">
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <div>
-                            <div className="text-sm font-semibold text-slate-900">{cert.type} • {cert.id}</div>
-                            <div className="mt-1 text-xs text-slate-600">
+                            <div className="text-sm font-semibold text-[var(--foreground)]">{cert.type} • {cert.id}</div>
+                            <div className="mt-1 text-xs text-[var(--muted-foreground)]">
                               {cert.certificateNumber ? `Ref ${cert.certificateNumber} • ` : ""}
                               {cert.issuedAtISO
                                 ? `Issued ${new Date(cert.issuedAtISO).toLocaleDateString("en-GB")}`
@@ -225,10 +225,10 @@ export default function CertificatesPageClient() {
           </CardHeader>
           <CardContent>
             <div className="grid gap-3">
-              <div className="text-xs text-slate-600">
+              <div className="text-xs text-[var(--muted-foreground)]">
                 {selectedJob ? (
                   <>
-                    Selected job: <span className="font-semibold text-slate-900">{selectedJob.clientName}</span>
+                    Selected job: <span className="font-semibold text-[var(--foreground)]">{selectedJob.clientName}</span>
                     {selectedJob.siteAddress ? ` • ${selectedJob.siteAddress}` : ""}
                   </>
                 ) : (
@@ -236,9 +236,9 @@ export default function CertificatesPageClient() {
                 )}
               </div>
               <label className="grid gap-1">
-                <span className="text-xs font-semibold text-slate-700">Certificate type</span>
+                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Certificate type</span>
                 <select
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm"
+                  className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-sm"
                   value={type}
                   onChange={(e) => setType(e.target.value as Certificate["type"])}
                   disabled={!jobId}

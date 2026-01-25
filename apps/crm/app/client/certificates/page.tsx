@@ -41,27 +41,27 @@ export default function ClientCertificatesPage() {
         <CardHeader>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <CardTitle>Certificates</CardTitle>
-            <Link href="/client" className="text-sm font-semibold text-slate-900 hover:underline">
+            <Link href="/client" className="text-sm font-semibold text-[var(--foreground)] hover:underline">
               Back
             </Link>
           </div>
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="text-sm text-slate-700">Loading…</div>
+            <div className="text-sm text-[var(--muted-foreground)]">Loading…</div>
           ) : items.length === 0 ? (
-            <div className="text-sm text-slate-700">No certificates found.</div>
+            <div className="text-sm text-[var(--muted-foreground)]">No certificates found.</div>
           ) : (
             <div className="space-y-2">
               {items.map((c) => (
-                <div key={c.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-slate-200 bg-white p-3">
+                <div key={c.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <div className="text-sm font-semibold text-slate-900">{c.type}</div>
+                      <div className="text-sm font-semibold text-[var(--foreground)]">{c.type}</div>
                       <Badge>{c.status}</Badge>
                     </div>
                     {c.issuedAtISO ? (
-                      <div className="mt-0.5 text-xs text-slate-600">Issued {new Date(c.issuedAtISO).toLocaleString("en-GB")}</div>
+                      <div className="mt-0.5 text-xs text-[var(--muted-foreground)]">Issued {new Date(c.issuedAtISO).toLocaleString("en-GB")}</div>
                     ) : null}
                   </div>
                   <a href={`/api/client/certificates/${c.id}/pdf`} target="_blank" rel="noreferrer">

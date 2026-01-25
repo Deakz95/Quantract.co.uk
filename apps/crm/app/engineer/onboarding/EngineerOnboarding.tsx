@@ -64,11 +64,11 @@ export default function EngineerOnboarding() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50">
-      <div className="w-full max-w-xl bg-white rounded-2xl shadow p-6 space-y-4">
+    <div className="min-h-screen flex items-center justify-center p-6 bg-[var(--muted)]">
+      <div className="w-full max-w-xl bg-[var(--background)] rounded-2xl shadow p-6 space-y-4">
         <div>
           <h1 className="text-2xl font-semibold">Complete your profile</h1>
-          <p className="text-slate-600">Address and emergency contact are required.</p>
+          <p className="text-[var(--muted-foreground)]">Address and emergency contact are required.</p>
         </div>
 
         {err ? <div className="p-3 rounded bg-red-50 text-red-700 text-sm">{err}</div> : null}
@@ -104,7 +104,7 @@ export default function EngineerOnboarding() {
         </div>
 
         <button
-          className="w-full rounded-xl bg-slate-900 text-white py-2 font-medium disabled:opacity-50"
+          className="w-full rounded-xl bg-[var(--background)] text-white py-2 font-medium disabled:opacity-50"
           onClick={submit}
           disabled={loading}
         >

@@ -68,12 +68,12 @@ Contains: ${items.map((i) => i.label).join(", ")}
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <div className="text-xs font-semibold text-slate-900">Includes</div>
+              <div className="rounded-2xl border border-[var(--border)] bg-[var(--muted)] p-4">
+                <div className="text-xs font-semibold text-[var(--foreground)]">Includes</div>
                 <div className="mt-3 space-y-2">
                   {items.map((i) => (
                     <div key={i.key} className="flex items-center justify-between">
-                      <div className="text-sm text-slate-700">{i.label}</div>
+                      <div className="text-sm text-[var(--muted-foreground)]">{i.label}</div>
                       <Badge>{i.status === "ready" ? "Ready" : "Missing"}</Badge>
                     </div>
                   ))}
@@ -89,7 +89,7 @@ Contains: ${items.map((i) => i.label).join(", ")}
                 </Button>
               </div>
 
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-[var(--muted-foreground)]">
                 Production: return a ZIP containing PDFs + certificate JSON. Store hashes server-side.
               </p>
             </div>

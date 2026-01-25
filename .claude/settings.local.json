@@ -34,7 +34,10 @@
       "Bash(xargs:*)",
       "Bash(npm run build:tools:*)",
       "Bash(npm run build:certificates:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(powershell -Command \"Get-ChildItem -Recurse -Filter ''*.tsx'' | ForEach-Object { \\(Get-Content $_FullName -Raw\\) -replace ''text-slate-700'', ''text-[var\\(--muted-foreground\\)]'' -replace ''text-slate-600'', ''text-[var\\(--muted-foreground\\)]'' -replace ''text-slate-500'', ''text-[var\\(--muted-foreground\\)]'' -replace ''text-slate-900'', ''text-[var\\(--foreground\\)]'' -replace ''text-slate-800'', ''text-[var\\(--foreground\\)]'' -replace ''border-slate-200'', ''border-[var\\(--border\\)]'' -replace ''border-slate-100'', ''border-[var\\(--border\\)]'' -replace ''bg-slate-50'', ''bg-[var\\(--muted\\)]'' -replace ''bg-slate-100'', ''bg-[var\\(--muted\\)]'' | Set-Content $_FullName -NoNewline }\")",
+      "Bash(powershell -Command:*)",
+      "Bash(powershell -File:*)"
     ]
   }
 }

@@ -52,7 +52,7 @@ export function DropdownMenuContent({
       />
       <div
         className={cn(
-          "absolute z-50 mt-2 min-w-[8rem] rounded-md border border-slate-200 bg-white p-1 shadow-md",
+          "absolute z-50 mt-2 min-w-[8rem] rounded-md border border-[var(--border)] bg-[var(--card)] p-1 shadow-md",
           align === "end" ? "right-0" : "left-0",
           className
         )}
@@ -82,7 +82,7 @@ export function DropdownMenuItem({
   return (
     <button
       className={cn(
-        "w-full text-left px-2 py-1.5 text-sm rounded-sm hover:bg-slate-100 cursor-pointer transition-colors",
+        "w-full text-left px-2 py-1.5 text-sm rounded-sm text-[var(--foreground)] hover:bg-[var(--muted)] cursor-pointer transition-colors",
         className
       )}
       onClick={handleClick}

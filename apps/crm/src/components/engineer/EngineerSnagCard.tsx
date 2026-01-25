@@ -98,9 +98,9 @@ export default function EngineerSnagCard({ jobId }: { jobId: string }) {
       <CardContent className="space-y-4">
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="grid gap-1 sm:col-span-2">
-            <span className="text-xs font-semibold text-slate-700">Title</span>
+            <span className="text-xs font-semibold text-[var(--muted-foreground)]">Title</span>
             <input
-              className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
+              className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm"
               value={title}
               onChange={(event) => setTitle(event.target.value)}
               placeholder="e.g. Damaged faceplate"
@@ -108,9 +108,9 @@ export default function EngineerSnagCard({ jobId }: { jobId: string }) {
             />
           </label>
           <label className="grid gap-1 sm:col-span-2">
-            <span className="text-xs font-semibold text-slate-700">Details</span>
+            <span className="text-xs font-semibold text-[var(--muted-foreground)]">Details</span>
             <textarea
-              className="min-h-[100px] rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
+              className="min-h-[100px] rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm"
               value={description}
               onChange={(event) => setDescription(event.target.value)}
               placeholder="Add location, photos requested, or materials needed."
@@ -118,30 +118,30 @@ export default function EngineerSnagCard({ jobId }: { jobId: string }) {
             />
           </label>
           <div className="flex flex-wrap items-center justify-between gap-2 sm:col-span-2">
-            <div className="text-xs text-slate-600">Log snags as soon as you find them so the office can order parts.</div>
+            <div className="text-xs text-[var(--muted-foreground)]">Log snags as soon as you find them so the office can order parts.</div>
             <Button type="button" onClick={submit} disabled={busy}>Add snag</Button>
           </div>
         </div>
 
         {items.length === 0 ? (
-          <div className="text-sm text-slate-600">No snag items yet.</div>
+          <div className="text-sm text-[var(--muted-foreground)]">No snag items yet.</div>
         ) : (
           <div className="space-y-2">
             {items.map((item) => (
-              <div key={item.id} className="rounded-2xl border border-slate-200 bg-white p-3">
+              <div key={item.id} className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
-                    <div className="text-sm font-semibold text-slate-900">{item.title}</div>
-                    {item.description ? <div className="mt-1 text-xs text-slate-600">{item.description}</div> : null}
-                    <div className="mt-2 text-xs text-slate-500">Logged {new Date(item.createdAtISO).toLocaleString("en-GB")}</div>
+                    <div className="text-sm font-semibold text-[var(--foreground)]">{item.title}</div>
+                    {item.description ? <div className="mt-1 text-xs text-[var(--muted-foreground)]">{item.description}</div> : null}
+                    <div className="mt-2 text-xs text-[var(--muted-foreground)]">Logged {new Date(item.createdAtISO).toLocaleString("en-GB")}</div>
                   </div>
                   <Badge>{STATUS_LABELS[item.status]}</Badge>
                 </div>
                 <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <label className="text-xs font-semibold text-slate-700">
+                  <label className="text-xs font-semibold text-[var(--muted-foreground)]">
                     Update status
                     <select
-                      className="ml-2 rounded-xl border border-slate-200 bg-white px-2 py-1 text-xs"
+                      className="ml-2 rounded-xl border border-[var(--border)] bg-[var(--background)] px-2 py-1 text-xs"
                       value={item.status}
                       disabled={updatingId === item.id}
                       onChange={(event) => updateStatus(item.id, event.target.value as SnagItem["status"])}
@@ -152,7 +152,7 @@ export default function EngineerSnagCard({ jobId }: { jobId: string }) {
                     </select>
                   </label>
                   {item.resolvedAtISO ? (
-                    <span className="text-xs text-slate-500">Resolved {new Date(item.resolvedAtISO).toLocaleString("en-GB")}</span>
+                    <span className="text-xs text-[var(--muted-foreground)]">Resolved {new Date(item.resolvedAtISO).toLocaleString("en-GB")}</span>
                   ) : null}
                 </div>
               </div>

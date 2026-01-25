@@ -352,11 +352,11 @@ export default function QuantractAIWidget({
 
   return (
     <div className={panelClasses}>
-      <Card className="h-full flex flex-col bg-slate-900 border border-slate-700 shadow-2xl rounded-2xl overflow-hidden">
-        <CardHeader className="px-4 py-3 border-b border-slate-700" style={{ backgroundColor: accentColor }}>
+      <Card className="h-full flex flex-col bg-[var(--background)] border border-[var(--border)] shadow-2xl rounded-2xl overflow-hidden">
+        <CardHeader className="px-4 py-3 border-b border-[var(--border)]" style={{ backgroundColor: accentColor }}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-white/20 flex items-center justify-center">
+              <div className="h-10 w-10 rounded-xl bg-[var(--background)]/20 flex items-center justify-center">
                 <IconRobot className="h-5 w-5 text-white" />
               </div>
               <div>
@@ -399,17 +399,17 @@ export default function QuantractAIWidget({
 
             {messages.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center px-4">
-                <div className="h-16 w-16 rounded-2xl bg-slate-800 flex items-center justify-center mb-4">
-                  <IconSparkles className="h-8 w-8 text-slate-400" />
+                <div className="h-16 w-16 rounded-2xl bg-[var(--card)] flex items-center justify-center mb-4">
+                  <IconSparkles className="h-8 w-8 text-[var(--muted-foreground)]" />
                 </div>
-                <p className="text-slate-200 text-sm mb-4">How can I help you today?</p>
+                <p className="text-[var(--muted-foreground)] text-sm mb-4">How can I help you today?</p>
                 {derivedPrompts.length > 0 && (
                   <div className="w-full space-y-2">
                     {derivedPrompts.map((prompt) => (
                       <button
                         key={prompt}
                         onClick={() => void sendMessage(prompt)}
-                        className="w-full text-left p-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm transition-colors"
+                        className="w-full text-left p-2.5 rounded-lg bg-[var(--card)] hover:bg-[var(--muted)] text-[var(--muted-foreground)] text-sm transition-colors"
                       >
                         {prompt}
                       </button>
@@ -429,7 +429,7 @@ export default function QuantractAIWidget({
                     <div
                       className={cn(
                         "max-w-[85%] rounded-2xl p-3",
-                        m.role === "user" ? "text-white" : "bg-slate-800 text-slate-100"
+                        m.role === "user" ? "text-white" : "bg-[var(--card)] text-[var(--foreground)]"
                       )}
                       style={m.role === "user" ? { backgroundColor: accentColor } : undefined}
                     >
@@ -437,7 +437,7 @@ export default function QuantractAIWidget({
 
                       {typeof m.confidence === "number" && m.role === "assistant" && (
                         <div className="mt-2 flex items-center gap-2">
-                          <div className="h-1 flex-1 bg-slate-700 rounded-full overflow-hidden">
+                          <div className="h-1 flex-1 bg-[var(--muted)] rounded-full overflow-hidden">
                             <div
                               className={cn(
                                 "h-full rounded-full",
@@ -446,20 +446,20 @@ export default function QuantractAIWidget({
                               style={{ width: `${Math.max(0, Math.min(1, m.confidence)) * 100}%` }}
                             />
                           </div>
-                          <span className="text-[10px] text-slate-400">{formatPct(m.confidence)}</span>
+                          <span className="text-[10px] text-[var(--muted-foreground)]">{formatPct(m.confidence)}</span>
                         </div>
                       )}
 
                       {m.suggestedActions?.length ? (
-                        <div className="mt-2 pt-2 border-t border-slate-700">
-                          <p className="text-[10px] text-slate-300 mb-1 flex items-center gap-1">
+                        <div className="mt-2 pt-2 border-t border-[var(--border)]">
+                          <p className="text-[10px] text-[var(--muted-foreground)] mb-1 flex items-center gap-1">
                             <IconCheckCircle className="h-3 w-3" /> Actions
                           </p>
                           <div className="flex flex-wrap gap-1">
                             {m.suggestedActions.map((a, i) => (
                               <Badge
                                 key={`${a.type}-${i}`}
-                                className="text-[10px] bg-slate-700 text-slate-100 cursor-pointer hover:bg-slate-600"
+                                className="text-[10px] bg-[var(--muted)] text-[var(--foreground)] cursor-pointer hover:bg-[var(--muted)]"
                                 onClick={() => void handleAction(a)}
                               >
                                 {a.label}
@@ -470,13 +470,13 @@ export default function QuantractAIWidget({
                       ) : null}
 
                       {m.citations?.length ? (
-                        <div className="mt-2 pt-2 border-t border-slate-700">
+                        <div className="mt-2 pt-2 border-t border-[var(--border)]">
                           <p className="text-[10px] text-blue-300 mb-1 flex items-center gap-1">
                             <IconFile className="h-3 w-3" /> Sources
                           </p>
                           {m.citations.slice(0, 3).map((c, i) => (
-                            <div key={`${c.entityType}-${c.entityId}-${i}`} className="text-[10px] text-slate-300">
-                              <span className="mr-1 rounded border border-slate-600 px-1 py-[1px] text-[9px]">{c.entityType}</span>
+                            <div key={`${c.entityType}-${c.entityId}-${i}`} className="text-[10px] text-[var(--muted-foreground)]">
+                              <span className="mr-1 rounded border border-[var(--border)] px-1 py-[1px] text-[9px]">{c.entityType}</span>
                               {c.note} ({c.entityId})
                             </div>
                           ))}
@@ -497,8 +497,8 @@ export default function QuantractAIWidget({
                     <div className="h-7 w-7 rounded-full flex items-center justify-center" style={{ backgroundColor: accentColor }}>
                       <IconRobot className="h-4 w-4 text-white" />
                     </div>
-                    <div className="bg-slate-800 rounded-2xl p-3">
-                      <IconSpinner className="h-4 w-4 animate-spin text-slate-300" />
+                    <div className="bg-[var(--card)] rounded-2xl p-3">
+                      <IconSpinner className="h-4 w-4 animate-spin text-[var(--muted-foreground)]" />
                     </div>
                   </div>
                 )}
@@ -509,7 +509,7 @@ export default function QuantractAIWidget({
           </div>
         </CardContent>
 
-        <div className="p-3 border-t border-slate-700">
+        <div className="p-3 border-t border-[var(--border)]">
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -522,7 +522,7 @@ export default function QuantractAIWidget({
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask a question..."
               disabled={isLoading || !aiConfigured}
-              className="flex-1 h-10 px-3 rounded-lg border bg-white text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-2 text-sm"
+              className="flex-1 h-10 px-3 rounded-lg border bg-[var(--background)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:ring-2 text-sm"
               style={{ borderColor: accentColor }}
             />
             <Button

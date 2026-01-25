@@ -20,17 +20,17 @@ export default function ClientDocuments() {
       </CardHeader>
       <CardContent>
         {recs.length === 0 ? (
-          <div className="text-sm text-slate-700">No signed documents yet.</div>
+          <div className="text-sm text-[var(--muted-foreground)]">No signed documents yet.</div>
         ) : (
           <div className="space-y-3">
             {recs.map((r) => (
               <div
                 key={r.quoteId}
-                className="flex flex-col justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4 sm:flex-row sm:items-center"
+                className="flex flex-col justify-between gap-3 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4 sm:flex-row sm:items-center"
               >
                 <div>
-                  <div className="text-sm font-semibold text-slate-900">Signed Quote</div>
-                  <div className="mt-0.5 text-xs text-slate-600">
+                  <div className="text-sm font-semibold text-[var(--foreground)]">Signed Quote</div>
+                  <div className="mt-0.5 text-xs text-[var(--muted-foreground)]">
                     {r.quoteId} • {new Date(r.signedAtISO).toLocaleString()}
                   </div>
                 </div>

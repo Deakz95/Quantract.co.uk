@@ -49,7 +49,7 @@ export default function InvoiceBuilder({ invoiceId }: { invoiceId: string }) {
           <CardTitle>Invoice not found</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-sm text-slate-700">This invoice doesn’t exist in the demo store yet.</div>
+          <div className="text-sm text-[var(--muted-foreground)]">This invoice doesn’t exist in the demo store yet.</div>
         </CardContent>
       </Card>
     );
@@ -106,35 +106,35 @@ export default function InvoiceBuilder({ invoiceId }: { invoiceId: string }) {
         </CardHeader>
 
         <CardContent>
-          <div className="text-sm text-slate-700">
-            Invoice: <span className="font-semibold text-slate-900">{inv.id}</span>
+          <div className="text-sm text-[var(--muted-foreground)]">
+            Invoice: <span className="font-semibold text-[var(--foreground)]">{inv.id}</span>
           </div>
-          {inv.quoteId ? <div className="mt-1 text-xs text-slate-600">Linked quote: {inv.quoteId}</div> : null}
+          {inv.quoteId ? <div className="mt-1 text-xs text-[var(--muted-foreground)]">Linked quote: {inv.quoteId}</div> : null}
 
           <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-3">
             <div>
-              <label className="text-xs font-semibold text-slate-900">Subtotal</label>
+              <label className="text-xs font-semibold text-[var(--foreground)]">Subtotal</label>
               <input
                 inputMode="decimal"
                 value={String(inv.subtotal)}
                 onChange={(e) => setMoney("subtotal", Number(e.target.value || 0))}
-                className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm shadow-sm focus:border-slate-400 focus:outline-none"
+                className="mt-1 w-full rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2.5 text-sm shadow-sm focus:border-[var(--border)] focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-slate-900">VAT</label>
+              <label className="text-xs font-semibold text-[var(--foreground)]">VAT</label>
               <input
                 inputMode="decimal"
                 value={String(inv.vat)}
                 onChange={(e) => setMoney("vat", Number(e.target.value || 0))}
-                className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm shadow-sm focus:border-slate-400 focus:outline-none"
+                className="mt-1 w-full rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2.5 text-sm shadow-sm focus:border-[var(--border)] focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-slate-900">Total</label>
-              <div className="mt-1 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-900">
+              <label className="text-xs font-semibold text-[var(--foreground)]">Total</label>
+              <div className="mt-1 rounded-2xl border border-[var(--border)] bg-[var(--muted)] px-4 py-2.5 text-sm font-semibold text-[var(--foreground)]">
                 {formatGBP(inv.total)}
               </div>
             </div>
@@ -181,7 +181,7 @@ export default function InvoiceBuilder({ invoiceId }: { invoiceId: string }) {
             </Button>
           </div>
 
-          <p className="mt-4 text-xs text-slate-500">
+          <p className="mt-4 text-xs text-[var(--muted-foreground)]">
             Demo builder: in production, this will render the invoice template PDF + allow line-level edits.
             {isPayable ? " (Invoice is payable.)" : isPaid ? " (Invoice is paid.)" : ""}
           </p>

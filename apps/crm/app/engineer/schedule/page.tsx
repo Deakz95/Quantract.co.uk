@@ -120,8 +120,8 @@ export default function EngineerSchedulePage() {
           <CardContent>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
-                <div className="text-sm font-semibold text-slate-900">Week of {range.from.toLocaleDateString("en-GB")}</div>
-                <div className="text-xs text-slate-600">
+                <div className="text-sm font-semibold text-[var(--foreground)]">Week of {range.from.toLocaleDateString("en-GB")}</div>
+                <div className="text-xs text-[var(--muted-foreground)]">
                   {range.from.toLocaleDateString("en-GB")} → {addDays(range.to, -1).toLocaleDateString("en-GB")}
                 </div>
               </div>
@@ -150,36 +150,36 @@ export default function EngineerSchedulePage() {
         ) : null}
 
         {loading ? (
-          <div className="text-sm text-slate-600">Loading…</div>
+          <div className="text-sm text-[var(--muted-foreground)]">Loading…</div>
         ) : (
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-7">
             {days.map((day) => {
               const items = entriesByDay.get(day.toDateString()) ?? [];
               return (
-                <div key={day.toISOString()} className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+                <div key={day.toISOString()} className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3 shadow-sm">
                   <div className="flex items-center justify-between">
-                    <div className="text-xs font-semibold text-slate-700">{formatDayLabel(day)}</div>
+                    <div className="text-xs font-semibold text-[var(--muted-foreground)]">{formatDayLabel(day)}</div>
                     <Badge>{items.length} jobs</Badge>
                   </div>
                   <div className="mt-3 space-y-2">
-                    {items.length === 0 ? <div className="text-xs text-slate-500">No bookings.</div> : null}
+                    {items.length === 0 ? <div className="text-xs text-[var(--muted-foreground)]">No bookings.</div> : null}
                     {items.map((entry) => {
                       const job = jobsById.get(entry.jobId);
                       const clash = clashIds.has(entry.id);
                       return (
                         <Link key={entry.id} href={`/engineer/jobs/${entry.jobId}`} className="block">
-                          <div className="rounded-xl border border-slate-200 p-3 text-xs text-slate-700 hover:border-slate-300">
+                          <div className="rounded-xl border border-[var(--border)] p-3 text-xs text-[var(--muted-foreground)] hover:border-[var(--border)]">
                             <div className="flex flex-wrap items-center justify-between gap-2">
-                              <div className="text-sm font-semibold text-slate-900">{job?.title || "Job"}</div>
+                              <div className="text-sm font-semibold text-[var(--foreground)]">{job?.title || "Job"}</div>
                               {clash ? <Badge className="border-amber-300 bg-amber-100 text-amber-900">Clash</Badge> : null}
                             </div>
-                            <div className="mt-1 text-xs text-slate-600">{formatTimeRange(entry)}</div>
+                            <div className="mt-1 text-xs text-[var(--muted-foreground)]">{formatTimeRange(entry)}</div>
                             {job?.clientName || job?.siteAddress ? (
-                              <div className="mt-1 text-xs text-slate-600">
+                              <div className="mt-1 text-xs text-[var(--muted-foreground)]">
                                 {job?.clientName ? `${job.clientName} • ` : ""}{job?.siteAddress || ""}
                               </div>
                             ) : null}
-                            {entry.notes ? <div className="mt-1 text-xs text-slate-500">{entry.notes}</div> : null}
+                            {entry.notes ? <div className="mt-1 text-xs text-[var(--muted-foreground)]">{entry.notes}</div> : null}
                           </div>
                         </Link>
                       );

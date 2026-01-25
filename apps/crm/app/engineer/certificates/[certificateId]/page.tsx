@@ -9,7 +9,7 @@ export default async function EngineerCertificatePage({ params }: Props) {
   const { certificateId } = await params;
 
   if (!certificateId) {
-    return <div className="text-sm text-slate-700">Certificate not found.</div>;
+    return <div className="text-sm text-[var(--muted-foreground)]">Certificate not found.</div>;
   }
 
   return <CertificateEditorClient certificateId={certificateId} mode="engineer" />;

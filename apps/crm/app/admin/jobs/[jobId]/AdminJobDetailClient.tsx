@@ -569,9 +569,9 @@ export default function AdminJobDetail({ jobId }: Props) {
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
-          <div className="text-sm font-semibold text-slate-900">Job {jobId}</div>
+          <div className="text-sm font-semibold text-[var(--foreground)]">Job {jobId}</div>
           {job ? (
-            <div className="mt-1 text-xs text-slate-600">
+            <div className="mt-1 text-xs text-[var(--muted-foreground)]">
               {job.clientName} • {job.clientEmail} • {job.siteAddress || "Site TBD"} • Quote: {job.quoteId}
             </div>
           ) : null}
@@ -582,9 +582,9 @@ export default function AdminJobDetail({ jobId }: Props) {
       </div>
 
       {loading ? (
-        <div className="text-sm text-slate-700">Loading…</div>
+        <div className="text-sm text-[var(--muted-foreground)]">Loading…</div>
       ) : !job ? (
-        <div className="text-sm text-slate-700">Not found.</div>
+        <div className="text-sm text-[var(--muted-foreground)]">Not found.</div>
       ) : (
         <>
           <Card>
@@ -597,35 +597,35 @@ export default function AdminJobDetail({ jobId }: Props) {
             <CardContent>
               {profitability ? (
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                    <div className="text-xs font-semibold text-slate-700">Budget (ex VAT)</div>
-                    <div className="mt-1 text-lg font-bold text-slate-900">{pounds(profitability.budgetSubtotal)}</div>
+                  <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4">
+                    <div className="text-xs font-semibold text-[var(--muted-foreground)]">Budget (ex VAT)</div>
+                    <div className="mt-1 text-lg font-bold text-[var(--foreground)]">{pounds(profitability.budgetSubtotal)}</div>
                   </div>
-                  <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                    <div className="text-xs font-semibold text-slate-700">Actual cost (locked)</div>
-                    <div className="mt-1 text-lg font-bold text-slate-900">{pounds(profitability.actualCost)}</div>
-                    <div className="mt-1 text-xs text-slate-600">Margin {pounds(profitability.actualMargin)} • {profitability.actualMarginText}</div>
+                  <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4">
+                    <div className="text-xs font-semibold text-[var(--muted-foreground)]">Actual cost (locked)</div>
+                    <div className="mt-1 text-lg font-bold text-[var(--foreground)]">{pounds(profitability.actualCost)}</div>
+                    <div className="mt-1 text-xs text-[var(--muted-foreground)]">Margin {pounds(profitability.actualMargin)} • {profitability.actualMarginText}</div>
                   </div>
-                  <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                    <div className="text-xs font-semibold text-slate-700">Forecast cost</div>
-                    <div className="mt-1 text-lg font-bold text-slate-900">{pounds(profitability.forecastCost)}</div>
-                    <div className="mt-1 text-xs text-slate-600">Includes open items</div>
+                  <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4">
+                    <div className="text-xs font-semibold text-[var(--muted-foreground)]">Forecast cost</div>
+                    <div className="mt-1 text-lg font-bold text-[var(--foreground)]">{pounds(profitability.forecastCost)}</div>
+                    <div className="mt-1 text-xs text-[var(--muted-foreground)]">Includes open items</div>
                   </div>
-                  <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                    <div className="text-xs font-semibold text-slate-700">Cost to complete</div>
-                    <div className="mt-1 text-lg font-bold text-slate-900">
+                  <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4">
+                    <div className="text-xs font-semibold text-[var(--muted-foreground)]">Cost to complete</div>
+                    <div className="mt-1 text-lg font-bold text-[var(--foreground)]">
                       {pounds(Math.max(0, profitability.forecastCost - profitability.actualCost))}
                     </div>
-                    <div className="mt-1 text-xs text-slate-600">Forecast cost minus actual cost.</div>
+                    <div className="mt-1 text-xs text-[var(--muted-foreground)]">Forecast cost minus actual cost.</div>
                   </div>
-                  <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                    <div className="text-xs font-semibold text-slate-700">Forecast margin</div>
-                    <div className="mt-1 text-lg font-bold text-slate-900">{pounds(profitability.forecastMargin)}</div>
-                    <div className="mt-1 text-xs text-slate-600">{profitability.forecastMarginText}</div>
+                  <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4">
+                    <div className="text-xs font-semibold text-[var(--muted-foreground)]">Forecast margin</div>
+                    <div className="mt-1 text-lg font-bold text-[var(--foreground)]">{pounds(profitability.forecastMargin)}</div>
+                    <div className="mt-1 text-xs text-[var(--muted-foreground)]">{profitability.forecastMarginText}</div>
                   </div>
                 </div>
               ) : (
-                <div className="text-sm text-slate-700">No costing yet.</div>
+                <div className="text-sm text-[var(--muted-foreground)]">No costing yet.</div>
               )}
             </CardContent>
           </Card>
@@ -646,12 +646,12 @@ export default function AdminJobDetail({ jobId }: Props) {
             </CardHeader>
             <CardContent>
               {budgetLines.length === 0 ? (
-                <div className="text-sm text-slate-700">No budget lines yet.</div>
+                <div className="text-sm text-[var(--muted-foreground)]">No budget lines yet.</div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="text-left text-xs text-slate-600">
+                      <tr className="text-left text-xs text-[var(--muted-foreground)]">
                         <th className="py-2">Description</th>
                         <th className="py-2">Qty</th>
                         <th className="py-2">Unit price</th>
@@ -661,10 +661,10 @@ export default function AdminJobDetail({ jobId }: Props) {
                     </thead>
                     <tbody>
                       {budgetLines.map((line, idx) => (
-                        <tr key={line.id} className="border-t border-slate-100">
+                        <tr key={line.id} className="border-t border-[var(--border)]">
                           <td className="py-2 pr-2">
                             <input
-                              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                              className="w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
                               value={line.description}
                               onChange={(event) => {
                                 const next = [...budgetLines];
@@ -677,7 +677,7 @@ export default function AdminJobDetail({ jobId }: Props) {
                             <input
                               type="number"
                               step="0.01"
-                              className="w-24 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                              className="w-24 rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
                               value={line.quantity}
                               onChange={(event) => {
                                 const quantity = Number(event.target.value || 0);
@@ -691,7 +691,7 @@ export default function AdminJobDetail({ jobId }: Props) {
                             <input
                               type="number"
                               step="0.01"
-                              className="w-28 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                              className="w-28 rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
                               value={line.unitPrice}
                               onChange={(event) => {
                                 const unitPrice = Number(event.target.value || 0);
@@ -701,8 +701,8 @@ export default function AdminJobDetail({ jobId }: Props) {
                               }}
                             />
                           </td>
-                          <td className="py-2 pr-2 text-sm font-semibold text-slate-900">{pounds(line.total)}</td>
-                          <td className="py-2 text-xs text-slate-600">{line.source}</td>
+                          <td className="py-2 pr-2 text-sm font-semibold text-[var(--foreground)]">{pounds(line.total)}</td>
+                          <td className="py-2 text-xs text-[var(--muted-foreground)]">{line.source}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -722,19 +722,19 @@ export default function AdminJobDetail({ jobId }: Props) {
                   event.preventDefault();
                   void addTime(event.currentTarget);
                 }}
-                className="flex flex-wrap items-end gap-2 rounded-2xl border border-slate-200 bg-white p-3"
+                className="flex flex-wrap items-end gap-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3"
               >
                 <label className="grid gap-1">
-                  <span className="text-xs font-semibold text-slate-700">Engineer email</span>
-                  <input name="engineerEmail" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-400" placeholder="engineer@example.com" />
+                  <span className="text-xs font-semibold text-[var(--muted-foreground)]">Engineer email</span>
+                  <input name="engineerEmail" className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm placeholder:text-[var(--muted-foreground)]" placeholder="engineer@example.com" />
                 </label>
                 <label className="grid gap-1">
-                  <span className="text-xs font-semibold text-slate-700">Start</span>
-                  <input name="startedAt" type="datetime-local" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" />
+                  <span className="text-xs font-semibold text-[var(--muted-foreground)]">Start</span>
+                  <input name="startedAt" type="datetime-local" className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm" />
                 </label>
                 <label className="grid gap-1">
-                  <span className="text-xs font-semibold text-slate-700">End</span>
-                  <input name="endedAt" type="datetime-local" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" />
+                  <span className="text-xs font-semibold text-[var(--muted-foreground)]">End</span>
+                  <input name="endedAt" type="datetime-local" className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm" />
                 </label>
                 <Button type="submit" disabled={busy}>
                   Add
@@ -742,18 +742,18 @@ export default function AdminJobDetail({ jobId }: Props) {
               </form>
 
               {timeEntries.length === 0 ? (
-                <div className="mt-3 text-sm text-slate-700">No time logged yet.</div>
+                <div className="mt-3 text-sm text-[var(--muted-foreground)]">No time logged yet.</div>
               ) : (
                 <div className="mt-3 space-y-2">
                   {timeEntries.map((t) => (
-                    <div key={t.id} className="rounded-2xl border border-slate-200 bg-white p-3 text-sm">
+                    <div key={t.id} className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3 text-sm">
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div className="font-semibold text-slate-900">{t.engineerEmail || t.engineerId}</div>
-                        <div className="text-xs text-slate-600">
+                        <div className="font-semibold text-[var(--foreground)]">{t.engineerEmail || t.engineerId}</div>
+                        <div className="text-xs text-[var(--muted-foreground)]">
                           {new Date(t.startedAtISO).toLocaleString("en-GB")} → {t.endedAtISO ? new Date(t.endedAtISO).toLocaleString("en-GB") : "(running)"}
                         </div>
                       </div>
-                      {t.notes ? <div className="mt-1 text-xs text-slate-600">{t.notes}</div> : null}
+                      {t.notes ? <div className="mt-1 text-xs text-[var(--muted-foreground)]">{t.notes}</div> : null}
                     </div>
                   ))}
                 </div>
@@ -771,11 +771,11 @@ export default function AdminJobDetail({ jobId }: Props) {
                   event.preventDefault();
                   void addCostItem(event.currentTarget);
                 }}
-                className="flex flex-wrap items-end gap-2 rounded-2xl border border-slate-200 bg-white p-3"
+                className="flex flex-wrap items-end gap-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3"
               >
                 <label className="grid gap-1">
-                  <span className="text-xs font-semibold text-slate-700">Type</span>
-                  <select name="type" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">
+                  <span className="text-xs font-semibold text-[var(--muted-foreground)]">Type</span>
+                  <select name="type" className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm">
                     <option value="material">Material</option>
                     <option value="subcontractor">Subcontractor</option>
                     <option value="plant">Plant</option>
@@ -783,24 +783,24 @@ export default function AdminJobDetail({ jobId }: Props) {
                   </select>
                 </label>
                 <label className="grid gap-1">
-                  <span className="text-xs font-semibold text-slate-700">Description</span>
-                  <input name="description" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-400" placeholder="e.g. Cable, fittings" />
+                  <span className="text-xs font-semibold text-[var(--muted-foreground)]">Description</span>
+                  <input name="description" className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm placeholder:text-[var(--muted-foreground)]" placeholder="e.g. Cable, fittings" />
                 </label>
                 <label className="grid gap-1">
-                  <span className="text-xs font-semibold text-slate-700">Supplier</span>
-                  <input name="supplier" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-400" placeholder="Optional" />
+                  <span className="text-xs font-semibold text-[var(--muted-foreground)]">Supplier</span>
+                  <input name="supplier" className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm placeholder:text-[var(--muted-foreground)]" placeholder="Optional" />
                 </label>
                 <label className="grid gap-1">
-                  <span className="text-xs font-semibold text-slate-700">Quantity</span>
-                  <input name="quantity" type="number" step="0.01" defaultValue="1" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" />
+                  <span className="text-xs font-semibold text-[var(--muted-foreground)]">Quantity</span>
+                  <input name="quantity" type="number" step="0.01" defaultValue="1" className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm" />
                 </label>
                 <label className="grid gap-1">
-                  <span className="text-xs font-semibold text-slate-700">Unit cost (ex VAT)</span>
-                  <input name="unitCost" type="number" step="0.01" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" />
+                  <span className="text-xs font-semibold text-[var(--muted-foreground)]">Unit cost (ex VAT)</span>
+                  <input name="unitCost" type="number" step="0.01" className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm" />
                 </label>
                 <label className="grid gap-1">
-                  <span className="text-xs font-semibold text-slate-700">Stage</span>
-                  <select name="stageId" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">
+                  <span className="text-xs font-semibold text-[var(--muted-foreground)]">Stage</span>
+                  <select name="stageId" className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm">
                     <option value="">Unassigned</option>
                     {stages.map((stage) => (
                       <option key={stage.id} value={stage.id}>
@@ -810,8 +810,8 @@ export default function AdminJobDetail({ jobId }: Props) {
                   </select>
                 </label>
                 <label className="grid gap-1">
-                  <span className="text-xs font-semibold text-slate-700">Incurred date</span>
-                  <input name="incurredAt" type="date" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" />
+                  <span className="text-xs font-semibold text-[var(--muted-foreground)]">Incurred date</span>
+                  <input name="incurredAt" type="date" className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm" />
                 </label>
                 <Button type="submit" disabled={busy}>
                   Add
@@ -819,15 +819,15 @@ export default function AdminJobDetail({ jobId }: Props) {
               </form>
 
               {costItems.length === 0 ? (
-                <div className="mt-3 text-sm text-slate-700">No costs logged yet.</div>
+                <div className="mt-3 text-sm text-[var(--muted-foreground)]">No costs logged yet.</div>
               ) : (
                 <div className="mt-3 space-y-2">
                   {costItems.map((c) => (
-                    <div key={c.id} className="rounded-2xl border border-slate-200 bg-white p-3 text-sm">
+                    <div key={c.id} className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3 text-sm">
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <div className="min-w-0">
-                          <div className="font-semibold text-slate-900">{c.description}</div>
-                          <div className="mt-1 text-xs text-slate-600">
+                          <div className="font-semibold text-[var(--foreground)]">{c.description}</div>
+                          <div className="mt-1 text-xs text-[var(--muted-foreground)]">
                             {c.supplier ? `${c.supplier} • ` : ""}
                             {c.incurredAtISO ? `Incurred ${new Date(c.incurredAtISO).toLocaleDateString("en-GB")} • ` : ""}
                             {c.stageId ? `Stage ${stageLookup.get(c.stageId) || c.stageId} • ` : ""}
@@ -839,18 +839,18 @@ export default function AdminJobDetail({ jobId }: Props) {
                           {c.lockStatus ? <Badge>{c.lockStatus}</Badge> : null}
                         </div>
                       </div>
-                      <div className="mt-1 text-xs text-slate-600">
+                      <div className="mt-1 text-xs text-[var(--muted-foreground)]">
                         Qty {c.quantity} • Unit {pounds(c.unitCost)} • Total {pounds(c.totalCost || c.quantity * c.unitCost)}
                       </div>
                       {c.type === "subcontractor" ? (
                         <div className="mt-2">
-                          <div className="text-xs font-semibold text-slate-700">Attachments</div>
+                          <div className="text-xs font-semibold text-[var(--muted-foreground)]">Attachments</div>
                           {c.attachments && c.attachments.length > 0 ? (
                             <div className="mt-1 flex flex-wrap gap-2 text-xs">
                               {c.attachments.map((att) => (
                                 <a
                                   key={att.id}
-                                  className="rounded-full border border-slate-200 px-3 py-1 text-slate-700 hover:bg-slate-50"
+                                  className="rounded-full border border-[var(--border)] px-3 py-1 text-[var(--muted-foreground)] hover:bg-[var(--muted)]"
                                   href={`/api/admin/cost-items/${c.id}/attachments/${att.id}`}
                                   target="_blank"
                                   rel="noreferrer"
@@ -860,7 +860,7 @@ export default function AdminJobDetail({ jobId }: Props) {
                               ))}
                             </div>
                           ) : (
-                            <div className="mt-1 text-xs text-slate-500">No attachments yet.</div>
+                            <div className="mt-1 text-xs text-[var(--muted-foreground)]">No attachments yet.</div>
                           )}
                           <div className="mt-2">
                             <input
@@ -891,14 +891,14 @@ export default function AdminJobDetail({ jobId }: Props) {
             </CardHeader>
             <CardContent>
               {stages.length === 0 ? (
-                <div className="text-sm text-slate-700">No stages yet. Choose a template above.</div>
+                <div className="text-sm text-[var(--muted-foreground)]">No stages yet. Choose a template above.</div>
               ) : (
                 <div className="space-y-2">
                   {stages.map((s) => (
-                    <div key={s.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-slate-200 bg-white p-3">
+                    <div key={s.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3">
                       <div className="min-w-0">
-                        <div className="text-sm font-semibold text-slate-900">{s.name}</div>
-                        <div className="mt-0.5 text-xs text-slate-600">{s.status}</div>
+                        <div className="text-sm font-semibold text-[var(--foreground)]">{s.name}</div>
+                        <div className="mt-0.5 text-xs text-[var(--muted-foreground)]">{s.status}</div>
                       </div>
                       <div className="flex flex-wrap gap-2">
                         <Button type="button" variant="secondary" disabled={busy} onClick={() => setStageStatus(s.id, "not_started")}>Not started</Button>
@@ -917,57 +917,57 @@ export default function AdminJobDetail({ jobId }: Props) {
               <CardTitle>Snag items</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="rounded-2xl border border-slate-200 bg-white p-3">
+              <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3">
                 <div className="grid gap-2 sm:grid-cols-2">
                   <label className="grid gap-1 sm:col-span-2">
-                    <span className="text-xs font-semibold text-slate-700">Title</span>
+                    <span className="text-xs font-semibold text-[var(--muted-foreground)]">Title</span>
                     <input
                       value={snagTitle}
                       onChange={(e) => setSnagTitle(e.target.value)}
-                      className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-400"
+                      className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm placeholder:text-[var(--muted-foreground)]"
                       placeholder="e.g. Replace cracked socket"
                       disabled={snagBusy}
                     />
                   </label>
                   <label className="grid gap-1 sm:col-span-2">
-                    <span className="text-xs font-semibold text-slate-700">Details</span>
+                    <span className="text-xs font-semibold text-[var(--muted-foreground)]">Details</span>
                     <textarea
                       value={snagDescription}
                       onChange={(e) => setSnagDescription(e.target.value)}
-                      className="min-h-[90px] rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-400"
+                      className="min-h-[90px] rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm placeholder:text-[var(--muted-foreground)]"
                       placeholder="Location, parts needed, or any notes."
                       disabled={snagBusy}
                     />
                   </label>
                 </div>
                 <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-                  <div className="text-xs text-slate-600">Track site issues to close out before handover.</div>
+                  <div className="text-xs text-[var(--muted-foreground)]">Track site issues to close out before handover.</div>
                   <Button type="button" onClick={createSnag} disabled={snagBusy}>Add snag</Button>
                 </div>
               </div>
 
               {snagItems.length === 0 ? (
-                <div className="mt-3 text-sm text-slate-700">No snag items yet.</div>
+                <div className="mt-3 text-sm text-[var(--muted-foreground)]">No snag items yet.</div>
               ) : (
                 <div className="mt-3 space-y-2">
                   {snagItems.map((item) => (
-                    <div key={item.id} className="flex flex-wrap items-start justify-between gap-2 rounded-2xl border border-slate-200 bg-white p-3">
+                    <div key={item.id} className="flex flex-wrap items-start justify-between gap-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3">
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <div className="text-sm font-semibold text-slate-900">{item.title}</div>
+                          <div className="text-sm font-semibold text-[var(--foreground)]">{item.title}</div>
                           <Badge>{item.status.replace("_", " ")}</Badge>
                         </div>
                         {item.description ? (
-                          <div className="mt-1 text-xs text-slate-600">{item.description}</div>
+                          <div className="mt-1 text-xs text-[var(--muted-foreground)]">{item.description}</div>
                         ) : null}
-                        <div className="mt-1 text-xs text-slate-500">
+                        <div className="mt-1 text-xs text-[var(--muted-foreground)]">
                           Logged {new Date(item.createdAtISO).toLocaleString("en-GB")}
                           {item.resolvedAtISO ? ` • Resolved ${new Date(item.resolvedAtISO).toLocaleString("en-GB")}` : ""}
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <select
-                          className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs"
+                          className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-xs"
                           value={item.status}
                           disabled={snagUpdatingId === item.id}
                           onChange={(event) => updateSnagStatus(item.id, event.target.value as SnagItem["status"])}
@@ -989,15 +989,15 @@ export default function AdminJobDetail({ jobId }: Props) {
               <CardTitle>Variations</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="rounded-2xl border border-slate-200 bg-white p-3">
+              <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3">
                 <div className="grid gap-2 sm:grid-cols-4">
                   <label className="grid gap-1 sm:col-span-2">
-                    <span className="text-xs font-semibold text-slate-700">Title</span>
-                    <input value={varTitle} onChange={(e) => setVarTitle(e.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-400" placeholder="e.g. Extra sockets" />
+                    <span className="text-xs font-semibold text-[var(--muted-foreground)]">Title</span>
+                    <input value={varTitle} onChange={(e) => setVarTitle(e.target.value)} className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm placeholder:text-[var(--muted-foreground)]" placeholder="e.g. Extra sockets" />
                   </label>
                   <label className="grid gap-1 sm:col-span-2">
-                    <span className="text-xs font-semibold text-slate-700">Stage (optional)</span>
-                    <select value={varStageId} onChange={(e) => setVarStageId(e.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">
+                    <span className="text-xs font-semibold text-[var(--muted-foreground)]">Stage (optional)</span>
+                    <select value={varStageId} onChange={(e) => setVarStageId(e.target.value)} className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm">
                       <option value="">Unassigned</option>
                       {stages.map((stage) => (
                         <option key={stage.id} value={stage.id}>{stage.name}</option>
@@ -1005,33 +1005,33 @@ export default function AdminJobDetail({ jobId }: Props) {
                     </select>
                   </label>
                   <label className="grid gap-1 sm:col-span-2">
-                    <span className="text-xs font-semibold text-slate-700">Reason (optional)</span>
-                    <input value={varReason} onChange={(e) => setVarReason(e.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-400" placeholder="Client requested change" />
+                    <span className="text-xs font-semibold text-[var(--muted-foreground)]">Reason (optional)</span>
+                    <input value={varReason} onChange={(e) => setVarReason(e.target.value)} className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm placeholder:text-[var(--muted-foreground)]" placeholder="Client requested change" />
                   </label>
                 </div>
                 <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-                  <div className="text-xs text-slate-600">Creates a draft variation then opens the multi-line editor.</div>
+                  <div className="text-xs text-[var(--muted-foreground)]">Creates a draft variation then opens the multi-line editor.</div>
                   <Button type="button" onClick={createVariation} disabled={busy}>Create draft & edit</Button>
                 </div>
               </div>
 
               {variations.length === 0 ? (
-                <div className="mt-3 text-sm text-slate-700">No variations yet.</div>
+                <div className="mt-3 text-sm text-[var(--muted-foreground)]">No variations yet.</div>
               ) : (
                 <div className="mt-3 space-y-2">
                   {variations.map((v) => {
                     const stageName = v.stageId ? stageLookup.get(v.stageId) : undefined;
                     const billed = billedVariationIds.has(v.id);
                     return (
-                      <div key={v.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-slate-200 bg-white p-3">
+                      <div key={v.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3">
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
-                            <div className="text-sm font-semibold text-slate-900">{v.title}</div>
+                            <div className="text-sm font-semibold text-[var(--foreground)]">{v.title}</div>
                             <Badge>{v.status}</Badge>
                             {stageName ? <Badge>{stageName}</Badge> : null}
                             <Badge>{pounds(v.total)}</Badge>
                           </div>
-                          <div className="mt-0.5 text-xs text-slate-600">
+                          <div className="mt-0.5 text-xs text-[var(--muted-foreground)]">
                             Created {new Date(v.createdAtISO).toLocaleString("en-GB")}
                             {v.sentAtISO ? ` • Sent ${new Date(v.sentAtISO).toLocaleString("en-GB")}` : ""}
                             {v.approvedAtISO ? ` • Approved ${new Date(v.approvedAtISO).toLocaleString("en-GB")}` : ""}
@@ -1042,8 +1042,8 @@ export default function AdminJobDetail({ jobId }: Props) {
                           ) : null}
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
-                          <Link className="text-sm font-semibold text-slate-900 hover:underline" href={`/admin/variations/${v.id}`}>Open</Link>
-                          <a className="text-sm font-semibold text-slate-900 hover:underline" href={`/api/admin/variations/${v.id}/pdf`} target="_blank" rel="noreferrer">PDF</a>
+                          <Link className="text-sm font-semibold text-[var(--foreground)] hover:underline" href={`/admin/variations/${v.id}`}>Open</Link>
+                          <a className="text-sm font-semibold text-[var(--foreground)] hover:underline" href={`/api/admin/variations/${v.id}/pdf`} target="_blank" rel="noreferrer">PDF</a>
                           {v.status === "draft" ? (
                             <Button type="button" variant="secondary" disabled={busy} onClick={() => sendVariation(v.id)}>Send to client</Button>
                           ) : null}
@@ -1054,7 +1054,7 @@ export default function AdminJobDetail({ jobId }: Props) {
                             <Badge className="border-emerald-200 bg-emerald-50 text-emerald-700">Invoiced</Badge>
                           ) : null}
                           {v.token ? (
-                            <Link className="text-sm font-semibold text-slate-900 hover:underline" href={`/client/variations/${v.token}`} target="_blank">
+                            <Link className="text-sm font-semibold text-[var(--foreground)] hover:underline" href={`/client/variations/${v.token}`} target="_blank">
                               Client link
                             </Link>
                           ) : null}
@@ -1099,9 +1099,9 @@ export default function AdminJobDetail({ jobId }: Props) {
                 ) : null}
 
                 {nextActions.shouldNudgeCert ? (
-                  <div className="mt-3 rounded-2xl border border-slate-200 bg-white p-3 text-sm">
-                    <div className="font-semibold text-slate-900">Certificate recommended</div>
-                    <div className="mt-1 text-slate-700">A test/cert stage is done (or the job is completed) but no issued certificate exists yet.</div>
+                  <div className="mt-3 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3 text-sm">
+                    <div className="font-semibold text-[var(--foreground)]">Certificate recommended</div>
+                    <div className="mt-1 text-[var(--muted-foreground)]">A test/cert stage is done (or the job is completed) but no issued certificate exists yet.</div>
                     <div className="mt-2">
                       <Button type="button" variant="secondary" disabled={busy} onClick={() => createCert("EICR")}>Create EICR (prefill)</Button>
                     </div>
@@ -1116,11 +1116,11 @@ export default function AdminJobDetail({ jobId }: Props) {
               <CardTitle>Invoices (stages / final)</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="rounded-2xl border border-slate-200 bg-white p-3">
+              <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3">
                 <div className="grid gap-2 sm:grid-cols-4">
                   <label className="grid gap-1">
-                    <span className="text-xs font-semibold text-slate-700">Type</span>
-                    <select value={invoiceType || "stage"} onChange={(e) => setInvoiceType(e.target.value as Invoice["type"])} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">
+                    <span className="text-xs font-semibold text-[var(--muted-foreground)]">Type</span>
+                    <select value={invoiceType || "stage"} onChange={(e) => setInvoiceType(e.target.value as Invoice["type"])} className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm">
                       <option value="stage">Stage</option>
                       <option value="deposit">Deposit</option>
                       <option value="final">Final</option>
@@ -1128,12 +1128,12 @@ export default function AdminJobDetail({ jobId }: Props) {
                     </select>
                   </label>
                   <label className="grid gap-1 sm:col-span-2">
-                    <span className="text-xs font-semibold text-slate-700">Stage name (optional)</span>
-                    <input value={invoiceStageName} onChange={(e) => setInvoiceStageName(e.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-400" placeholder="e.g. First Fix" />
+                    <span className="text-xs font-semibold text-[var(--muted-foreground)]">Stage name (optional)</span>
+                    <input value={invoiceStageName} onChange={(e) => setInvoiceStageName(e.target.value)} className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm placeholder:text-[var(--muted-foreground)]" placeholder="e.g. First Fix" />
                   </label>
                   <label className="grid gap-1">
-                    <span className="text-xs font-semibold text-slate-700">Subtotal (ex VAT)</span>
-                    <input value={invoiceAmount} onChange={(e) => setInvoiceAmount(e.target.value)} type="number" step="0.01" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm" />
+                    <span className="text-xs font-semibold text-[var(--muted-foreground)]">Subtotal (ex VAT)</span>
+                    <input value={invoiceAmount} onChange={(e) => setInvoiceAmount(e.target.value)} type="number" step="0.01" className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm" />
                   </label>
                 </div>
                 <div className="mt-3">
@@ -1142,22 +1142,22 @@ export default function AdminJobDetail({ jobId }: Props) {
               </div>
 
               {invoices.length === 0 ? (
-                <div className="mt-3 text-sm text-slate-700">No invoices yet.</div>
+                <div className="mt-3 text-sm text-[var(--muted-foreground)]">No invoices yet.</div>
               ) : (
                 <div className="mt-3 space-y-2">
                   {invoices.map((inv) => (
-                    <div key={inv.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-slate-200 bg-white p-3">
+                    <div key={inv.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3">
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <div className="text-sm font-semibold text-slate-900">{inv.type || "stage"}{inv.stageName ? ` • ${inv.stageName}` : ""}</div>
+                          <div className="text-sm font-semibold text-[var(--foreground)]">{inv.type || "stage"}{inv.stageName ? ` • ${inv.stageName}` : ""}</div>
                           <Badge>{inv.status}</Badge>
                           <Badge>{pounds(inv.total)}</Badge>
                         </div>
-                        <div className="mt-0.5 text-xs text-slate-600">Created {new Date(inv.createdAtISO).toLocaleString("en-GB")}</div>
+                        <div className="mt-0.5 text-xs text-[var(--muted-foreground)]">Created {new Date(inv.createdAtISO).toLocaleString("en-GB")}</div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Link className="text-sm font-semibold text-slate-900 hover:underline" href={`/admin/invoices/${inv.id}`}>Open</Link>
-                        <Link className="text-sm font-semibold text-slate-900 hover:underline" href={`/client/invoices/${inv.token}`} target="_blank">Client</Link>
+                        <Link className="text-sm font-semibold text-[var(--foreground)] hover:underline" href={`/admin/invoices/${inv.id}`}>Open</Link>
+                        <Link className="text-sm font-semibold text-[var(--foreground)] hover:underline" href={`/client/invoices/${inv.token}`} target="_blank">Client</Link>
                       </div>
                     </div>
                   ))}
@@ -1179,31 +1179,31 @@ export default function AdminJobDetail({ jobId }: Props) {
             </CardHeader>
             <CardContent>
               {certs.length === 0 ? (
-                <div className="text-sm text-slate-700">No certificates yet.</div>
+                <div className="text-sm text-[var(--muted-foreground)]">No certificates yet.</div>
               ) : (
                 <div className="space-y-2">
                   {certs.map((c) => (
-                    <div key={c.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-slate-200 bg-white p-3">
+                    <div key={c.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3">
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <Link href={`/admin/certificates/${c.id}`} className="text-sm font-semibold text-slate-900 hover:underline">
+                          <Link href={`/admin/certificates/${c.id}`} className="text-sm font-semibold text-[var(--foreground)] hover:underline">
                             {c.type} • {c.id}
                           </Link>
                           <Badge>{c.status}</Badge>
                           {c.certificateNumber ? <Badge>{c.certificateNumber}</Badge> : null}
                         </div>
                         {c.issuedAtISO ? (
-                          <div className="mt-1 text-xs text-slate-600">Issued {new Date(c.issuedAtISO).toLocaleString("en-GB")}</div>
+                          <div className="mt-1 text-xs text-[var(--muted-foreground)]">Issued {new Date(c.issuedAtISO).toLocaleString("en-GB")}</div>
                         ) : c.completedAtISO ? (
-                          <div className="mt-1 text-xs text-slate-600">Completed {new Date(c.completedAtISO).toLocaleString("en-GB")}</div>
+                          <div className="mt-1 text-xs text-[var(--muted-foreground)]">Completed {new Date(c.completedAtISO).toLocaleString("en-GB")}</div>
                         ) : null}
                       </div>
                       {c.pdfKey ? (
-                        <a className="text-sm font-semibold text-slate-900 hover:underline" href={`/api/admin/certificates/${c.id}/pdf`} target="_blank" rel="noreferrer">
+                        <a className="text-sm font-semibold text-[var(--foreground)] hover:underline" href={`/api/admin/certificates/${c.id}/pdf`} target="_blank" rel="noreferrer">
                           PDF
                         </a>
                       ) : (
-                        <span className="text-xs text-slate-500">No PDF yet (issue to generate)</span>
+                        <span className="text-xs text-[var(--muted-foreground)]">No PDF yet (issue to generate)</span>
                       )}
                     </div>
                   ))}

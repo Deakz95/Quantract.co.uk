@@ -6,7 +6,7 @@ export default function EngineerLoading() {
       <LoadingSkeleton className="h-6 w-40" />
       <div className="space-y-3">
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="rounded-2xl border border-slate-200 bg-white p-4">
+          <div key={i} className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4">
             <div className="space-y-2">
               <LoadingSkeleton className="h-4 w-44" />
               <LoadingSkeleton className="h-3 w-64" />

@@ -66,7 +66,7 @@ export default function EngineerJobsPage() {
               <CardTitle>Nothing assigned yet</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-sm text-slate-600">Once you’re scheduled onto a job, it will appear here.</div>
+              <div className="text-sm text-[var(--muted-foreground)]">Once you’re scheduled onto a job, it will appear here.</div>
             </CardContent>
           </Card>
         ) : null}
@@ -78,10 +78,10 @@ export default function EngineerJobsPage() {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="text-sm font-extrabold">{j.title || "Job"}</div>
-                    <div className="mt-1 text-xs text-slate-600">{j.clientName}</div>
-                    <div className="mt-1 text-xs text-slate-600">{j.siteAddress || "—"}</div>
+                    <div className="mt-1 text-xs text-[var(--muted-foreground)]">{j.clientName}</div>
+                    <div className="mt-1 text-xs text-[var(--muted-foreground)]">{j.siteAddress || "—"}</div>
                     {j.scheduledAtISO ? (
-                      <div className="mt-1 text-xs text-slate-600">Scheduled: {new Date(j.scheduledAtISO).toLocaleString("en-GB")}</div>
+                      <div className="mt-1 text-xs text-[var(--muted-foreground)]">Scheduled: {new Date(j.scheduledAtISO).toLocaleString("en-GB")}</div>
                     ) : null}
                   </div>
                   <Badge>{j.status.replace("_", " ")}</Badge>

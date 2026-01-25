@@ -96,20 +96,20 @@ export function PasswordChangeCard() {
       </CardHeader>
       <CardContent className="space-y-4">
         {loading ? (
-          <div className="text-sm text-slate-600">Loading…</div>
+          <div className="text-sm text-[var(--muted-foreground)]">Loading…</div>
         ) : !me?.ok ? (
           <div className="text-sm text-red-600">Unable to load account details.</div>
         ) : (
           <>
-            <div className="text-sm text-slate-600">
-              Signed in as <span className="font-medium text-slate-900">{me.user?.email}</span> ({me.user?.role})
+            <div className="text-sm text-[var(--muted-foreground)]">
+              Signed in as <span className="font-medium text-[var(--foreground)]">{me.user?.email}</span> ({me.user?.role})
             </div>
 
             {needsCurrent && (
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-900">Current password</label>
+                <label className="text-sm font-medium text-[var(--foreground)]">Current password</label>
                 <input
-                  className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
+                  className="w-full rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)]"
                   type="password"
                   value={current}
                   onChange={(e) => setCurrent(e.target.value)}
@@ -120,23 +120,23 @@ export function PasswordChangeCard() {
 
             <div className="grid gap-3 md:grid-cols-2">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-900">
+                <label className="text-sm font-medium text-[var(--foreground)]">
                   {needsCurrent ? "New password" : "Set a password"}
                 </label>
                 <input
-                  className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
+                  className="w-full rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)]"
                   type="password"
                   value={next1}
                   onChange={(e) => setNext1(e.target.value)}
                   autoComplete="new-password"
                 />
-                <div className="text-xs text-slate-500">Minimum 8 characters.</div>
+                <div className="text-xs text-[var(--muted-foreground)]">Minimum 8 characters.</div>
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-900">Confirm password</label>
+                <label className="text-sm font-medium text-[var(--foreground)]">Confirm password</label>
                 <input
-                  className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
+                  className="w-full rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)]"
                   type="password"
                   value={next2}
                   onChange={(e) => setNext2(e.target.value)}

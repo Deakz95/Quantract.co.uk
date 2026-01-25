@@ -28,7 +28,7 @@ export function Select({ value, onValueChange, disabled, children }: SelectProps
 }
 
 export function SelectTrigger({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm", className)} {...props} />;
+  return <div className={cn("rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)]", className)} {...props} />;
 }
 
 export function SelectValue({ placeholder }: { placeholder?: string }) {
@@ -41,7 +41,7 @@ export function SelectContent({ className, ...props }: HTMLAttributes<HTMLDivEle
   return (
     <div className={cn("mt-2", className)}>
       <select
-        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+        className="w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)]"
         value={ctx.value || ""}
         onChange={(e) => ctx.onValueChange?.(e.target.value)}
         disabled={ctx.disabled}

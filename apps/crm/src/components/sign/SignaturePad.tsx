@@ -120,15 +120,15 @@ export default function SignaturePad({ value, onChange }: Props) {
   return (
     <div>
       <div className="flex items-center justify-between">
-        <div className="text-xs font-semibold text-slate-900">Draw your signature</div>
+        <div className="text-xs font-semibold text-[var(--foreground)]">Draw your signature</div>
         <Button variant="ghost" type="button" onClick={clear} disabled={!hasInk}>
           Clear
         </Button>
       </div>
-      <div className="mt-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
+      <div className="mt-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-2 shadow-sm">
         <canvas ref={canvasRef} className="h-40 w-full touch-none rounded-xl" aria-label="Signature pad" />
       </div>
-      <p className="mt-2 text-xs text-slate-500">Use your finger, mouse or stylus.</p>
+      <p className="mt-2 text-xs text-[var(--muted-foreground)]">Use your finger, mouse or stylus.</p>
     </div>
   );
 }

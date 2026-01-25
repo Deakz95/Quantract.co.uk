@@ -17,10 +17,10 @@ export function Stepper({
             key={s}
             className={cn(
               "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold",
-              on ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 bg-white text-slate-700"
+              on ? "border-[var(--primary)] bg-[var(--primary)] text-white" : "border-[var(--border)] bg-[var(--card)] text-[var(--muted-foreground)]"
             )}
           >
-            <span className={cn("inline-flex h-4 w-4 items-center justify-center rounded-full text-[10px]", on ? "bg-white/20" : "bg-slate-100")}>{i + 1}</span>
+            <span className={cn("inline-flex h-4 w-4 items-center justify-center rounded-full text-[10px]", on ? "bg-white/20" : "bg-[var(--muted)]")}>{i + 1}</span>
             {s}
           </div>
         );

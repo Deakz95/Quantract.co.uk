@@ -119,8 +119,8 @@ Any disputes will be resolved through negotiation in the first instance. If nece
   if (loading) {
     return (
       <AppShell role="admin" title="Terms & Payments" subtitle="Configure payment terms, auto-chase, and terms & conditions">
-        <div className="p-8 text-center text-slate-500">
-          <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+        <div className="p-8 text-center text-[var(--muted-foreground)]">
+          <div className="w-8 h-8 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           Loading settings...
         </div>
       </AppShell>
@@ -152,29 +152,29 @@ Any disputes will be resolved through negotiation in the first instance. If nece
           <CardContent>
             <div className="grid gap-4">
               <label className="grid gap-1">
-                <span className="text-sm font-medium text-slate-700">Default payment terms (days)</span>
+                <span className="text-sm font-medium text-[var(--muted-foreground)]">Default payment terms (days)</span>
                 <input
                   type="number"
                   min={1}
                   max={365}
-                  className="h-11 w-full max-w-xs rounded-xl border border-slate-200 px-4 text-sm"
+                  className="h-11 w-full max-w-xs rounded-xl border border-[var(--border)] bg-[var(--background)] px-4 text-sm text-[var(--foreground)]"
                   value={paymentTermsDays}
                   onChange={(e) => setPaymentTermsDays(Number(e.target.value))}
                 />
-                <span className="text-xs text-slate-500">Number of days from invoice date that payment is due</span>
+                <span className="text-xs text-[var(--muted-foreground)]">Number of days from invoice date that payment is due</span>
               </label>
 
               <label className="grid gap-1">
-                <span className="text-sm font-medium text-slate-700">Quote validity (days)</span>
+                <span className="text-sm font-medium text-[var(--muted-foreground)]">Quote validity (days)</span>
                 <input
                   type="number"
                   min={1}
                   max={365}
-                  className="h-11 w-full max-w-xs rounded-xl border border-slate-200 px-4 text-sm"
+                  className="h-11 w-full max-w-xs rounded-xl border border-[var(--border)] bg-[var(--background)] px-4 text-sm text-[var(--foreground)]"
                   value={quoteValidityDays}
                   onChange={(e) => setQuoteValidityDays(Number(e.target.value))}
                 />
-                <span className="text-xs text-slate-500">How long quotes remain valid before expiring</span>
+                <span className="text-xs text-[var(--muted-foreground)]">How long quotes remain valid before expiring</span>
               </label>
             </div>
           </CardContent>
@@ -195,16 +195,16 @@ Any disputes will be resolved through negotiation in the first instance. If nece
           </CardHeader>
           <CardContent>
             <div className="grid gap-4">
-              <label className="flex items-center gap-3 p-4 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer">
+              <label className="flex items-center gap-3 p-4 rounded-xl border border-[var(--border)] bg-[var(--muted)] cursor-pointer">
                 <input
                   type="checkbox"
                   checked={enableAutoChase}
                   onChange={(e) => setEnableAutoChase(e.target.checked)}
-                  className="w-5 h-5 rounded border-slate-300"
+                  className="w-5 h-5 rounded border-[var(--border)]"
                 />
                 <div>
-                  <span className="font-medium text-slate-900">Enable automatic payment reminders</span>
-                  <p className="text-xs text-slate-500 mt-1">
+                  <span className="font-medium text-[var(--foreground)]">Enable automatic payment reminders</span>
+                  <p className="text-xs text-[var(--muted-foreground)] mt-1">
                     Send automatic follow-up emails when invoices are overdue. Reminders stop when the invoice is marked as paid.
                   </p>
                 </div>
@@ -214,53 +214,53 @@ Any disputes will be resolved through negotiation in the first instance. If nece
               </label>
 
               {enableAutoChase && (
-                <div className="grid gap-4 p-4 rounded-xl border border-slate-200 bg-white">
-                  <div className="text-sm font-medium text-slate-700">Reminder schedule (days after due date):</div>
-                  
+                <div className="grid gap-4 p-4 rounded-xl border border-[var(--border)] bg-[var(--card)]">
+                  <div className="text-sm font-medium text-[var(--muted-foreground)]">Reminder schedule (days after due date):</div>
+
                   <div className="grid gap-3 sm:grid-cols-3">
                     <label className="grid gap-1">
-                      <span className="text-xs font-medium text-slate-600">First reminder</span>
+                      <span className="text-xs font-medium text-[var(--muted-foreground)]">First reminder</span>
                       <input
                         type="number"
                         min={1}
                         max={90}
-                        className="h-10 rounded-xl border border-slate-200 px-3 text-sm"
+                        className="h-10 rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 text-sm text-[var(--foreground)]"
                         value={autoChaseFirstDays}
                         onChange={(e) => setAutoChaseFirstDays(Number(e.target.value))}
                       />
-                      <span className="text-xs text-slate-500">days overdue</span>
+                      <span className="text-xs text-[var(--muted-foreground)]">days overdue</span>
                     </label>
 
                     <label className="grid gap-1">
-                      <span className="text-xs font-medium text-slate-600">Second reminder</span>
+                      <span className="text-xs font-medium text-[var(--muted-foreground)]">Second reminder</span>
                       <input
                         type="number"
                         min={1}
                         max={90}
-                        className="h-10 rounded-xl border border-slate-200 px-3 text-sm"
+                        className="h-10 rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 text-sm text-[var(--foreground)]"
                         value={autoChaseSecondDays}
                         onChange={(e) => setAutoChaseSecondDays(Number(e.target.value))}
                       />
-                      <span className="text-xs text-slate-500">days overdue</span>
+                      <span className="text-xs text-[var(--muted-foreground)]">days overdue</span>
                     </label>
 
                     <label className="grid gap-1">
-                      <span className="text-xs font-medium text-slate-600">Final reminder</span>
+                      <span className="text-xs font-medium text-[var(--muted-foreground)]">Final reminder</span>
                       <input
                         type="number"
                         min={1}
                         max={90}
-                        className="h-10 rounded-xl border border-slate-200 px-3 text-sm"
+                        className="h-10 rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 text-sm text-[var(--foreground)]"
                         value={autoChaseThirdDays}
                         onChange={(e) => setAutoChaseThirdDays(Number(e.target.value))}
                       />
-                      <span className="text-xs text-slate-500">days overdue</span>
+                      <span className="text-xs text-[var(--muted-foreground)]">days overdue</span>
                     </label>
                   </div>
 
-                  <div className="text-xs text-slate-500 p-3 rounded-lg bg-slate-50">
-                    <strong>How it works:</strong> When a client accepts a quote, a job is created. When you send an invoice, 
-                    the system tracks the due date. If payment isn't received, automatic reminders are sent at the intervals above. 
+                  <div className="text-xs text-[var(--muted-foreground)] p-3 rounded-lg bg-[var(--muted)]">
+                    <strong>How it works:</strong> When a client accepts a quote, a job is created. When you send an invoice,
+                    the system tracks the due date. If payment isn't received, automatic reminders are sent at the intervals above.
                     Reminders stop when you mark the job/invoice as paid or close it.
                   </div>
                 </div>
@@ -285,12 +285,12 @@ Any disputes will be resolved through negotiation in the first instance. If nece
           <CardContent>
             <div className="grid gap-4">
               <textarea
-                className="min-h-[400px] rounded-xl border border-slate-200 px-4 py-3 text-sm font-mono"
+                className="min-h-[400px] rounded-xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm font-mono text-[var(--foreground)]"
                 value={termsAndConditions}
                 onChange={(e) => setTermsAndConditions(e.target.value)}
                 placeholder="Enter your terms and conditions..."
               />
-              <div className="text-xs text-slate-500">
+              <div className="text-xs text-[var(--muted-foreground)]">
                 These terms will be included on your quotes and invoices. Customize them to match your business requirements.
               </div>
             </div>

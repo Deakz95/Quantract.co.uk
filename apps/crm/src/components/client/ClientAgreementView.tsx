@@ -107,10 +107,10 @@ export default function ClientAgreementView({ token }: { token: string }) {
         <CardHeader className="flex items-start justify-between gap-3 sm:flex-row">
           <div>
             <CardTitle>Works agreement</CardTitle>
-            <div className="mt-1 text-xs text-slate-600">
-              Status: <span className="font-semibold text-slate-900">{agreement.status}</span>
+            <div className="mt-1 text-xs text-[var(--muted-foreground)]">
+              Status: <span className="font-semibold text-[var(--foreground)]">{agreement.status}</span>
               {agreement.signedAtISO ? (
-                <span className="ml-2 text-slate-500">Signed: {new Date(agreement.signedAtISO).toLocaleString()}</span>
+                <span className="ml-2 text-[var(--muted-foreground)]">Signed: {new Date(agreement.signedAtISO).toLocaleString()}</span>
               ) : null}
             </div>
           </div>
@@ -129,26 +129,26 @@ export default function ClientAgreementView({ token }: { token: string }) {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="mb-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600">
+          <div className="mb-4 rounded-2xl border border-[var(--border)] bg-[var(--muted)] p-4 text-xs text-[var(--muted-foreground)]">
             This agreement uses a secure token link. Keep it private so only authorised signers can access it.
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-800">
-            <div className="text-xs font-semibold text-slate-700">Summary</div>
+          <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4 text-sm text-[var(--foreground)]">
+            <div className="text-xs font-semibold text-[var(--muted-foreground)]">Summary</div>
             <p className="mt-2">
               This agreement confirms Quantract will carry out the works described in the quote for <b>{q.clientName}</b>.
               By signing, you confirm you accept the scope and totals below.
             </p>
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
               <div>
-                <div className="text-xs font-semibold text-slate-700">Site</div>
-                <div className="mt-1 text-xs text-slate-600">{q.siteAddress || "—"}</div>
+                <div className="text-xs font-semibold text-[var(--muted-foreground)]">Site</div>
+                <div className="mt-1 text-xs text-[var(--muted-foreground)]">{q.siteAddress || "—"}</div>
               </div>
-              <div className="rounded-2xl border border-slate-200 bg-white p-3">
-                <div className="text-xs font-semibold text-slate-700">Totals</div>
+              <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3">
+                <div className="text-xs font-semibold text-[var(--muted-foreground)]">Totals</div>
                 <div className="mt-2 grid gap-1">
                   <div className="flex justify-between"><span>Subtotal</span><span>£{t.subtotal.toFixed(2)}</span></div>
                   <div className="flex justify-between"><span>VAT</span><span>£{t.vat.toFixed(2)}</span></div>
-                  <div className="flex justify-between font-semibold text-slate-900"><span>Total</span><span>£{t.total.toFixed(2)}</span></div>
+                  <div className="flex justify-between font-semibold text-[var(--foreground)]"><span>Total</span><span>£{t.total.toFixed(2)}</span></div>
                 </div>
               </div>
             </div>
@@ -156,7 +156,7 @@ export default function ClientAgreementView({ token }: { token: string }) {
             <div className="mt-4 overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-left text-xs text-slate-500">
+                  <tr className="text-left text-xs text-[var(--muted-foreground)]">
                     <th className="py-2 pr-3">Description</th>
                     <th className="py-2 pr-3">Qty</th>
                     <th className="py-2 pr-3">Unit</th>
@@ -165,7 +165,7 @@ export default function ClientAgreementView({ token }: { token: string }) {
                 </thead>
                 <tbody>
                   {q.items.map((it) => (
-                    <tr key={it.id} className="border-t border-slate-100">
+                    <tr key={it.id} className="border-t border-[var(--border)]">
                       <td className="py-3 pr-3">{it.description}</td>
                       <td className="py-3 pr-3">{it.qty}</td>
                       <td className="py-3 pr-3">£{it.unitPrice.toFixed(2)}</td>
@@ -174,7 +174,7 @@ export default function ClientAgreementView({ token }: { token: string }) {
                   ))}
                   {q.items.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="py-6 text-center text-slate-600">
+                      <td colSpan={4} className="py-6 text-center text-[var(--muted-foreground)]">
                         No items.
                       </td>
                     </tr>
@@ -185,8 +185,8 @@ export default function ClientAgreementView({ token }: { token: string }) {
 
             {q.notes ? (
               <div className="mt-4">
-                <div className="text-xs font-semibold text-slate-700">Notes</div>
-                <div className="mt-1 whitespace-pre-wrap rounded-2xl border border-slate-200 bg-white p-3 text-sm text-slate-800">
+                <div className="text-xs font-semibold text-[var(--muted-foreground)]">Notes</div>
+                <div className="mt-1 whitespace-pre-wrap rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3 text-sm text-[var(--foreground)]">
                   {q.notes}
                 </div>
               </div>
@@ -201,35 +201,35 @@ export default function ClientAgreementView({ token }: { token: string }) {
         </CardHeader>
         <CardContent>
           {agreement.status === "signed" ? (
-            <div className="space-y-2 text-sm text-slate-700">
+            <div className="space-y-2 text-sm text-[var(--muted-foreground)]">
               <div>
-                Signed by <span className="font-semibold text-slate-900">{agreement.signerName}</span>.
+                Signed by <span className="font-semibold text-[var(--foreground)]">{agreement.signerName}</span>.
               </div>
-              <div className="rounded-2xl border border-slate-200 bg-white p-3 text-xs text-slate-600">
+              <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3 text-xs text-[var(--muted-foreground)]">
                 Next up: download the signing certificate, and we’ll issue invoices when the job is scheduled.
               </div>
             </div>
           ) : (
             <div className="grid gap-3">
               <label className="grid gap-1">
-                <span className="text-xs font-semibold text-slate-700">Full name</span>
+                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Full name</span>
                 <input
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                  className="w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
                   value={signerName}
                   onChange={(e) => setSignerName(e.target.value)}
                 />
               </label>
 
               <label className="grid gap-1">
-                <span className="text-xs font-semibold text-slate-700">Email (optional)</span>
+                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Email (optional)</span>
                 <input
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                  className="w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
                   value={signerEmail}
                   onChange={(e) => setSignerEmail(e.target.value)}
                 />
               </label>
 
-              <label className="flex items-start gap-2 text-sm text-slate-700">
+              <label className="flex items-start gap-2 text-sm text-[var(--muted-foreground)]">
                 <input
                   type="checkbox"
                   checked={acceptedTerms}
@@ -249,7 +249,7 @@ export default function ClientAgreementView({ token }: { token: string }) {
                   Refresh
                 </Button>
               </div>
-              <div className="text-xs text-slate-600">
+              <div className="text-xs text-[var(--muted-foreground)]">
                 Signature is recorded with timestamp and stored in the audit trail. After signing, you can access the certificate and invoices.
               </div>
             </div>

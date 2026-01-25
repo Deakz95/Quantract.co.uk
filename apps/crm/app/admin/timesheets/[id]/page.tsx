@@ -44,7 +44,7 @@ export default async function Page({ params }: Props) {
           <CardTitle>Timesheet</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-sm text-slate-600">Not found.</div>
+          <div className="text-sm text-[var(--muted-foreground)]">Not found.</div>
         </CardContent>
       </Card>
     );
@@ -59,9 +59,9 @@ export default async function Page({ params }: Props) {
         <CardContent>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <div className="text-sm font-semibold text-slate-900">{sheet.engineerEmail || sheet.engineerId}</div>
-              <div className="mt-0.5 text-xs text-slate-600">Week starting: {new Date(sheet.weekStartISO).toLocaleDateString()}</div>
-              <div className="mt-0.5 text-xs text-slate-600">Status: {sheet.status}</div>
+              <div className="text-sm font-semibold text-[var(--foreground)]">{sheet.engineerEmail || sheet.engineerId}</div>
+              <div className="mt-0.5 text-xs text-[var(--muted-foreground)]">Week starting: {new Date(sheet.weekStartISO).toLocaleDateString()}</div>
+              <div className="mt-0.5 text-xs text-[var(--muted-foreground)]">Status: {sheet.status}</div>
             </div>
             <TimesheetActions id={sheet.id} status={sheet.status} />
           </div>

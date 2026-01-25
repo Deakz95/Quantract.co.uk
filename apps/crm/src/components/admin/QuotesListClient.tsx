@@ -64,7 +64,7 @@ export default function QuotesListClient() {
         <CardTitle>Quotes</CardTitle>
         <div className="flex items-center gap-2">
           <input
-            className="w-[240px] max-w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm"
+            className="w-[240px] max-w-full rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-sm text-[var(--foreground)]"
             placeholder="Search client, status…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -82,7 +82,7 @@ export default function QuotesListClient() {
         {busy ? (
           <div className="space-y-3">
             {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="grid grid-cols-4 items-center gap-4 border-b border-slate-100 py-3">
+              <div key={i} className="grid grid-cols-4 items-center gap-4 border-b border-[var(--border)] py-3">
                 <LoadingSkeleton className="h-5" />
                 <LoadingSkeleton className="h-5" />
                 <LoadingSkeleton className="h-5" />
@@ -106,7 +106,7 @@ export default function QuotesListClient() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs text-slate-600">
+                <tr className="text-left text-xs text-[var(--muted-foreground)]">
                   <th className="py-2">Client</th>
                   <th className="py-2">Status</th>
                   <th className="py-2">Total</th>
@@ -116,10 +116,10 @@ export default function QuotesListClient() {
               </thead>
               <tbody>
                 {filtered.map((q) => (
-                  <tr key={q.id} className="border-t border-slate-100">
+                  <tr key={q.id} className="border-t border-[var(--border)]">
                     <td className="py-3">
-                      <div className="font-semibold text-slate-900">{q.clientName}</div>
-                      <div className="text-xs text-slate-600">{q.clientEmail}</div>
+                      <div className="font-semibold text-[var(--foreground)]">{q.clientName}</div>
+                      <div className="text-xs text-[var(--muted-foreground)]">{q.clientEmail}</div>
                     </td>
                     <td className="py-3">
                       <span
@@ -128,14 +128,14 @@ export default function QuotesListClient() {
                             ? "bg-green-100 text-green-700"
                             : q.status === "sent"
                               ? "bg-blue-100 text-blue-700"
-                              : "bg-slate-100 text-slate-600"
+                              : "bg-[var(--muted)] text-[var(--muted-foreground)]"
                         }`}
                       >
                         {q.status}
                       </span>
                     </td>
-                    <td className="py-3 font-semibold text-slate-900">£{q.totals.total.toFixed(2)}</td>
-                    <td className="py-3 text-xs text-slate-600">{new Date(q.createdAtISO).toLocaleDateString("en-GB")}</td>
+                    <td className="py-3 font-semibold text-[var(--foreground)]">£{q.totals.total.toFixed(2)}</td>
+                    <td className="py-3 text-xs text-[var(--muted-foreground)]">{new Date(q.createdAtISO).toLocaleDateString("en-GB")}</td>
                     <td className="py-3 text-right">
                       <Link href={`/admin/quotes/${q.id}`}>
                         <Button variant="secondary" type="button">

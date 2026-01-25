@@ -14,7 +14,7 @@ export default function AdminLoading() {
               {Array.from({ length: 4 }).map((_, i) => (
                 <div
                   key={i}
-                  className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4"
+                  className="flex items-center justify-between gap-3 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4"
                 >
                   <div className="space-y-2">
                     <LoadingSkeleton className="h-4 w-40" />

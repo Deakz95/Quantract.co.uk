@@ -74,24 +74,24 @@ export default function SendQuoteModal({
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <div className="text-xs font-semibold text-slate-900">Recipient</div>
-                <div className="mt-1 text-sm text-slate-700">
+              <div className="rounded-2xl border border-[var(--border)] bg-[var(--muted)] p-4">
+                <div className="text-xs font-semibold text-[var(--foreground)]">Recipient</div>
+                <div className="mt-1 text-sm text-[var(--muted-foreground)]">
                   {clientEmail?.trim() ? clientEmail : "(enter client email on the quote first)"}
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                <div className="text-xs font-semibold text-slate-900">What gets sent</div>
-                <ul className="mt-2 space-y-1 text-sm text-slate-700">
+              <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4">
+                <div className="text-xs font-semibold text-[var(--foreground)]">What gets sent</div>
+                <ul className="mt-2 space-y-1 text-sm text-[var(--muted-foreground)]">
                   <li>• Quote PDF attachment</li>
                   <li>• Secure magic link to accept + sign</li>
                 </ul>
               </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                <div className="text-xs font-semibold text-slate-900">Magic link (demo)</div>
-                <div className="mt-2 rounded-2xl border border-slate-200 bg-slate-50 p-3 font-mono text-xs text-slate-900 break-all">
+              <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4">
+                <div className="text-xs font-semibold text-[var(--foreground)]">Magic link (demo)</div>
+                <div className="mt-2 rounded-2xl border border-[var(--border)] bg-[var(--muted)] p-3 font-mono text-xs text-[var(--foreground)] break-all">
                   {typeof window !== "undefined" ? window.location.origin + link : link}
                 </div>
                 <div className="mt-2 flex flex-wrap gap-2">
@@ -113,7 +113,7 @@ export default function SendQuoteModal({
                 </Button>
               </div>
 
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-[var(--muted-foreground)]">
                 Production note: the token should be one-time, expire quickly, and bind to quote + recipient email.
               </p>
             </div>

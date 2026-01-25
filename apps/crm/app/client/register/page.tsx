@@ -84,18 +84,18 @@ export default function ClientRegisterPage() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="text-sm text-slate-600">Loading…</div>
+            <div className="text-sm text-[var(--muted-foreground)]">Loading…</div>
           ) : error ? (
             <div className="text-sm text-red-600">{error}</div>
           ) : (
             <div className="grid gap-3">
-              <div className="text-xs text-slate-600">Email</div>
-              <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm">{email}</div>
+              <div className="text-xs text-[var(--muted-foreground)]">Email</div>
+              <div className="rounded-md border border-[var(--border)] bg-[var(--muted)] px-3 py-2 text-sm">{email}</div>
 
               <label className="grid gap-1">
-                <span className="text-xs font-semibold text-slate-700">Full name</span>
+                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Full name</span>
                 <input 
-                  className="h-9 rounded-md border border-slate-200 px-3 text-sm" 
+                  className="h-9 rounded-md border border-[var(--border)] px-3 text-sm" 
                   value={name} 
                   onChange={(e) => setName(e.target.value)}
                   disabled={submitting}
@@ -103,9 +103,9 @@ export default function ClientRegisterPage() {
               </label>
 
               <label className="grid gap-1">
-                <span className="text-xs font-semibold text-slate-700">Phone (optional)</span>
+                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Phone (optional)</span>
                 <input 
-                  className="h-9 rounded-md border border-slate-200 px-3 text-sm" 
+                  className="h-9 rounded-md border border-[var(--border)] px-3 text-sm" 
                   value={phone} 
                   onChange={(e) => setPhone(e.target.value)}
                   disabled={submitting}
@@ -115,7 +115,7 @@ export default function ClientRegisterPage() {
               <Button type="button" onClick={submit} disabled={submitting}>
                 {submitting ? "Registering..." : "Complete registration"}
               </Button>
-              <div className="text-xs text-slate-600">
+              <div className="text-xs text-[var(--muted-foreground)]">
                 After registering, we'll send you a magic link to log in - no password needed!
               </div>
             </div>

@@ -339,7 +339,7 @@ export default function QuoteCreateForm() {
               </div>
               <div>
                 <div className="font-semibold text-blue-400">Imported from Point Counter</div>
-                <div className="text-sm text-slate-400">Your point counts have been added below. Set your prices per point to complete the quote.</div>
+                <div className="text-sm text-[var(--muted-foreground)]">Your point counts have been added below. Set your prices per point to complete the quote.</div>
               </div>
             </div>
           </div>
@@ -353,9 +353,9 @@ export default function QuoteCreateForm() {
             <div className="grid gap-4">
               {mode === "edit" && (
                 <label className="grid gap-1">
-                  <span className="text-xs font-semibold text-slate-700">Select quote to edit</span>
+                  <span className="text-xs font-semibold text-[var(--muted-foreground)]">Select quote to edit</span>
                   <select
-                    className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                    className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm text-[var(--foreground)]"
                     value={selectedQuoteId}
                     onChange={(e) => setSelectedQuoteId(e.target.value)}
                   >
@@ -371,11 +371,11 @@ export default function QuoteCreateForm() {
 
               {mode === "new" && templates.length > 0 && (
                 <label className="grid gap-1">
-                  <span className="text-xs font-semibold text-slate-700">
+                  <span className="text-xs font-semibold text-[var(--muted-foreground)]">
                     Use template (optional)
                   </span>
                   <select
-                    className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                    className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm text-[var(--foreground)]"
                     value={selectedTemplateId}
                     onChange={(e) => setSelectedTemplateId(e.target.value)}
                   >
@@ -391,11 +391,11 @@ export default function QuoteCreateForm() {
 
               {mode === "new" && (
                 <label className="grid gap-1">
-                  <span className="text-xs font-semibold text-slate-700">
+                  <span className="text-xs font-semibold text-[var(--muted-foreground)]">
                     Select existing client (autofills details below)
                   </span>
                   <select
-                    className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium"
+                    className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm font-medium text-[var(--foreground)]"
                     value={clientId}
                     onChange={(e) => setClientId(e.target.value)}
                   >
@@ -411,9 +411,9 @@ export default function QuoteCreateForm() {
 
               {clientId && mode === "new" && (
                 <label className="grid gap-1">
-                  <span className="text-xs font-semibold text-slate-700">Select site (optional)</span>
+                  <span className="text-xs font-semibold text-[var(--muted-foreground)]">Select site (optional)</span>
                   <select
-                    className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                    className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm text-[var(--foreground)]"
                     value={siteId}
                     onChange={(e) => setSiteId(e.target.value)}
                   >
@@ -432,12 +432,12 @@ export default function QuoteCreateForm() {
               )}
 
               <label className="grid gap-1">
-                <span className="text-xs font-semibold text-slate-700">
+                <span className="text-xs font-semibold text-[var(--muted-foreground)]">
                   Client name <span className="text-red-500">*</span>
                 </span>
                 <input
-                  className={`rounded-2xl border px-4 py-3 text-sm ${
-                    errors.clientName ? "border-red-500 bg-red-50" : "border-slate-200 bg-white"
+                  className={`rounded-2xl border px-4 py-3 text-sm text-[var(--foreground)] ${
+                    errors.clientName ? "border-red-500 bg-red-50" : "border-[var(--border)] bg-[var(--background)]"
                   }`}
                   value={clientName}
                   onChange={(e) => {
@@ -454,13 +454,13 @@ export default function QuoteCreateForm() {
               </label>
 
               <label className="grid gap-1">
-                <span className="text-xs font-semibold text-slate-700">
+                <span className="text-xs font-semibold text-[var(--muted-foreground)]">
                   Client email <span className="text-red-500">*</span>
                 </span>
                 <input
                   type="email"
-                  className={`rounded-2xl border px-4 py-3 text-sm ${
-                    errors.clientEmail ? "border-red-500 bg-red-50" : "border-slate-200 bg-white"
+                  className={`rounded-2xl border px-4 py-3 text-sm text-[var(--foreground)] ${
+                    errors.clientEmail ? "border-red-500 bg-red-50" : "border-[var(--border)] bg-[var(--background)]"
                   }`}
                   value={clientEmail}
                   onChange={(e) => {
@@ -477,9 +477,9 @@ export default function QuoteCreateForm() {
               </label>
 
               <label className="grid gap-1">
-                <span className="text-xs font-semibold text-slate-700">Site address (optional)</span>
+                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Site address (optional)</span>
                 <input
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                  className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm text-[var(--foreground)]"
                   value={siteAddress}
                   onChange={(e) => setSiteAddress(e.target.value)}
                   disabled={!!siteId}
@@ -488,7 +488,7 @@ export default function QuoteCreateForm() {
               </label>
 
               <div className="grid gap-2">
-                <div className="text-xs font-semibold text-slate-700">
+                <div className="text-xs font-semibold text-[var(--muted-foreground)]">
                   Line items <span className="text-red-500">*</span>
                 </div>
                 <LineItemsEditor
@@ -507,9 +507,9 @@ export default function QuoteCreateForm() {
               </div>
 
               <label className="grid gap-1">
-                <span className="text-xs font-semibold text-slate-700">Notes (optional)</span>
+                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Notes (optional)</span>
                 <textarea
-                  className="min-h-[100px] rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                  className="min-h-[100px] rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm text-[var(--foreground)]"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Any assumptions / exclusions / access notes…"

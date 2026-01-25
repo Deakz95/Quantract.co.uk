@@ -194,7 +194,7 @@ export default function QuoteBuilder({ initialQuoteId }: { initialQuoteId?: stri
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <CardTitle>Quote Builder</CardTitle>
-              <div className="mt-1 text-xs text-slate-600">
+              <div className="mt-1 text-xs text-[var(--muted-foreground)]">
                 {quoteId}
                 {reference ? ` • Ref: ${reference}` : ""}
               </div>
@@ -236,41 +236,41 @@ export default function QuoteBuilder({ initialQuoteId }: { initialQuoteId?: stri
         <CardContent>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
-              <label className="text-xs font-semibold text-slate-900">Client name</label>
+              <label className="text-xs font-semibold text-[var(--foreground)]">Client name</label>
               <input
                 value={clientName}
                 onChange={(e) => setClientName(e.target.value)}
-                className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm shadow-sm focus:border-slate-400 focus:outline-none"
+                className="mt-1 w-full rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2.5 text-sm shadow-sm focus:border-[var(--border)] focus:outline-none"
                 placeholder="e.g. John Smith"
               />
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-slate-900">Client email</label>
+              <label className="text-xs font-semibold text-[var(--foreground)]">Client email</label>
               <input
                 value={clientEmail}
                 onChange={(e) => setClientEmail(e.target.value)}
-                className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm shadow-sm focus:border-slate-400 focus:outline-none"
+                className="mt-1 w-full rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2.5 text-sm shadow-sm focus:border-[var(--border)] focus:outline-none"
                 placeholder="e.g. john@domain.com"
               />
             </div>
 
             <div className="md:col-span-2">
-              <label className="text-xs font-semibold text-slate-900">Site address</label>
+              <label className="text-xs font-semibold text-[var(--foreground)]">Site address</label>
               <input
                 value={siteAddress}
                 onChange={(e) => setSiteAddress(e.target.value)}
-                className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm shadow-sm focus:border-slate-400 focus:outline-none"
+                className="mt-1 w-full rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2.5 text-sm shadow-sm focus:border-[var(--border)] focus:outline-none"
                 placeholder="e.g. 12 High Street, London, SW1A 1AA"
               />
             </div>
 
             <div className="md:col-span-2">
-              <label className="text-xs font-semibold text-slate-900">Reference / Notes</label>
+              <label className="text-xs font-semibold text-[var(--foreground)]">Reference / Notes</label>
               <input
                 value={reference}
                 onChange={(e) => setReference(e.target.value)}
-                className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm shadow-sm focus:border-slate-400 focus:outline-none"
+                className="mt-1 w-full rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2.5 text-sm shadow-sm focus:border-[var(--border)] focus:outline-none"
                 placeholder="e.g. Kitchen rewire"
               />
             </div>
@@ -292,7 +292,7 @@ export default function QuoteBuilder({ initialQuoteId }: { initialQuoteId?: stri
           <div className="overflow-x-auto">
             <table className="w-full min-w-[720px] text-sm">
               <thead>
-                <tr className="text-left text-xs font-semibold text-slate-600">
+                <tr className="text-left text-xs font-semibold text-[var(--muted-foreground)]">
                   <th className="py-2 pr-3">Description</th>
                   <th className="py-2 pr-3 w-20">Qty</th>
                   <th className="py-2 pr-3 w-24">Unit</th>
@@ -306,12 +306,12 @@ export default function QuoteBuilder({ initialQuoteId }: { initialQuoteId?: stri
                 {lines.map((l) => {
                   const lt = lineTotal(l);
                   return (
-                    <tr key={l.id} className="border-t border-slate-100">
+                    <tr key={l.id} className="border-t border-[var(--border)]">
                       <td className="py-3 pr-3">
                         <input
                           value={l.description}
                           onChange={(e) => updateLine(l.id, { description: e.target.value })}
-                          className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-slate-400 focus:outline-none"
+                          className="w-full rounded-2xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm shadow-sm focus:border-[var(--border)] focus:outline-none"
                           placeholder="e.g. Supply & fit 8 downlights"
                         />
                       </td>
@@ -321,7 +321,7 @@ export default function QuoteBuilder({ initialQuoteId }: { initialQuoteId?: stri
                           inputMode="decimal"
                           value={String(l.qty)}
                           onChange={(e) => updateLine(l.id, { qty: Number(e.target.value || 0) })}
-                          className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-slate-400 focus:outline-none"
+                          className="w-full rounded-2xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm shadow-sm focus:border-[var(--border)] focus:outline-none"
                         />
                       </td>
 
@@ -329,24 +329,24 @@ export default function QuoteBuilder({ initialQuoteId }: { initialQuoteId?: stri
                         <input
                           value={l.unit}
                           onChange={(e) => updateLine(l.id, { unit: e.target.value })}
-                          className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-slate-400 focus:outline-none"
+                          className="w-full rounded-2xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm shadow-sm focus:border-[var(--border)] focus:outline-none"
                           placeholder="each"
                         />
                       </td>
 
                       <td className="py-3 pr-3">
                         <div className="relative">
-                          <span className="pointer-events-none absolute left-3 top-2.5 text-slate-500">£</span>
+                          <span className="pointer-events-none absolute left-3 top-2.5 text-[var(--muted-foreground)]">£</span>
                           <input
                             inputMode="decimal"
                             value={String(l.rate)}
                             onChange={(e) => updateLine(l.id, { rate: Number(e.target.value || 0) })}
-                            className="w-full rounded-2xl border border-slate-200 bg-white pl-7 pr-3 py-2 text-sm shadow-sm focus:border-slate-400 focus:outline-none"
+                            className="w-full rounded-2xl border border-[var(--border)] bg-[var(--background)] pl-7 pr-3 py-2 text-sm shadow-sm focus:border-[var(--border)] focus:outline-none"
                           />
                         </div>
                       </td>
 
-                      <td className="py-3 pr-3 font-semibold text-slate-900">{formatGBP(lt)}</td>
+                      <td className="py-3 pr-3 font-semibold text-[var(--foreground)]">{formatGBP(lt)}</td>
 
                       <td className="py-3">
                         <Button
@@ -376,13 +376,13 @@ export default function QuoteBuilder({ initialQuoteId }: { initialQuoteId?: stri
               <div className="flex items-center gap-2">
                 {isLocked ? (
                   <>
-                    <Badge className="border-slate-900 bg-slate-900 text-white">
+                    <Badge className="border-[var(--primary)] bg-[var(--background)] text-white">
                       <Lock className="h-3.5 w-3.5" /> Agreed
                     </Badge>
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <span className="inline-flex h-8 w-8 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm">
+                          <span className="inline-flex h-8 w-8 items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--background)] text-[var(--muted-foreground)] shadow-sm">
                             <HelpCircle className="h-4 w-4" />
                           </span>
                         </TooltipTrigger>
@@ -401,13 +401,13 @@ export default function QuoteBuilder({ initialQuoteId }: { initialQuoteId?: stri
           </CardHeader>
 
           <CardContent>
-            <div className="text-sm text-slate-700">
+            <div className="text-sm text-[var(--muted-foreground)]">
               Set your deposit and (optionally) multi-stage payments. The last stage auto-balances so the total is 100%.
             </div>
 
             <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
               <div>
-                <label className="text-xs font-semibold text-slate-900">Deposit % (0–100)</label>
+                <label className="text-xs font-semibold text-[var(--foreground)]">Deposit % (0–100)</label>
                 <input
                   inputMode="numeric"
                   value={String(qSettings.depositPct)}
@@ -418,22 +418,22 @@ export default function QuoteBuilder({ initialQuoteId }: { initialQuoteId?: stri
                     upsertQuoteSettings({ ...next, quoteId });
                     setQSettings({ ...next, quoteId });
                   }}
-                  className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm shadow-sm focus:border-slate-400 focus:outline-none"
+                  className="mt-1 w-full rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2.5 text-sm shadow-sm focus:border-[var(--border)] focus:outline-none"
                 />
-                <p className="mt-2 text-xs text-slate-500">
+                <p className="mt-2 text-xs text-[var(--muted-foreground)]">
                   {isLocked
                     ? "This payment plan is locked. If anything needs changing, request a change."
                     : "This sets stage 1 and rebalances the last stage."}
                 </p>
               </div>
 
-              <div className="md:col-span-2 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <div className="md:col-span-2 rounded-2xl border border-[var(--border)] bg-[var(--muted)] p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
-                    <div className="text-xs font-semibold text-slate-900">Schedule</div>
-                    <div className="mt-1 text-xs text-slate-600">Total: {sumStagePct(qSettings.stages)}%</div>
+                    <div className="text-xs font-semibold text-[var(--foreground)]">Schedule</div>
+                    <div className="mt-1 text-xs text-[var(--muted-foreground)]">Total: {sumStagePct(qSettings.stages)}%</div>
                     {isLocked ? (
-                      <div className="mt-1 inline-flex items-center gap-2 text-xs text-slate-600">
+                      <div className="mt-1 inline-flex items-center gap-2 text-xs text-[var(--muted-foreground)]">
                         <Lock className="h-3.5 w-3.5" />
                         <span>Agreed plan</span>
                       </div>
@@ -477,7 +477,7 @@ export default function QuoteBuilder({ initialQuoteId }: { initialQuoteId?: stri
                             upsertQuoteSettings(next);
                             setQSettings(next);
                           }}
-                          className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-slate-400 focus:outline-none"
+                          className="w-full rounded-2xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm shadow-sm focus:border-[var(--border)] focus:outline-none"
                           placeholder={i === 0 ? "Deposit" : i === qSettings.stages.length - 1 ? "Final" : "Stage"}
                         />
                       </div>
@@ -500,7 +500,7 @@ export default function QuoteBuilder({ initialQuoteId }: { initialQuoteId?: stri
                             upsertQuoteSettings(next);
                             setQSettings(next);
                           }}
-                          className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-slate-400 focus:outline-none"
+                          className="w-full rounded-2xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm shadow-sm focus:border-[var(--border)] focus:outline-none"
                         />
                       </div>
 
@@ -516,7 +516,7 @@ export default function QuoteBuilder({ initialQuoteId }: { initialQuoteId?: stri
                             upsertQuoteSettings(next);
                             setQSettings(next);
                           }}
-                          className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-slate-400 focus:outline-none"
+                          className="w-full rounded-2xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm shadow-sm focus:border-[var(--border)] focus:outline-none"
                           placeholder="Due: e.g. On booking / On first fix / On completion"
                         />
                       </div>
@@ -547,7 +547,7 @@ export default function QuoteBuilder({ initialQuoteId }: { initialQuoteId?: stri
                   ))}
                 </div>
 
-                <p className="mt-3 text-xs text-slate-500">
+                <p className="mt-3 text-xs text-[var(--muted-foreground)]">
                   Once signed, invoices are created step-by-step from this plan. Next stage is raised only after the previous is marked paid.
                 </p>
               </div>
@@ -562,26 +562,26 @@ export default function QuoteBuilder({ initialQuoteId }: { initialQuoteId?: stri
           <CardContent>
             <div className="space-y-2 text-sm">
               <div className="flex items-center justify-between">
-                <span className="text-slate-600">Subtotal</span>
-                <span className="font-semibold text-slate-900">{formatGBP(sub)}</span>
+                <span className="text-[var(--muted-foreground)]">Subtotal</span>
+                <span className="font-semibold text-[var(--foreground)]">{formatGBP(sub)}</span>
               </div>
 
               <div className="flex items-center justify-between">
-                <span className="text-slate-600">VAT (20%)</span>
-                <span className="font-semibold text-slate-900">{formatGBP(vat)}</span>
+                <span className="text-[var(--muted-foreground)]">VAT (20%)</span>
+                <span className="font-semibold text-[var(--foreground)]">{formatGBP(vat)}</span>
               </div>
 
-              <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-                <span className="text-slate-600">Total</span>
-                <span className="text-base font-extrabold text-slate-900">{formatGBP(total)}</span>
+              <div className="pt-2 border-t border-[var(--border)] flex items-center justify-between">
+                <span className="text-[var(--muted-foreground)]">Total</span>
+                <span className="text-base font-extrabold text-[var(--foreground)]">{formatGBP(total)}</span>
               </div>
 
-              <label className="mt-3 flex items-center gap-2 text-xs text-slate-700">
+              <label className="mt-3 flex items-center gap-2 text-xs text-[var(--muted-foreground)]">
                 <input
                   type="checkbox"
                   checked={vatEnabled}
                   onChange={(e) => setVatEnabled(e.target.checked)}
-                  className="h-4 w-4 rounded border-slate-300"
+                  className="h-4 w-4 rounded border-[var(--border)]"
                 />
                 VAT enabled
               </label>
@@ -604,7 +604,7 @@ export default function QuoteBuilder({ initialQuoteId }: { initialQuoteId?: stri
                 </Button>
               </div>
 
-              <p className="mt-3 text-xs text-slate-500">
+              <p className="mt-3 text-xs text-[var(--muted-foreground)]">
                 Flow: client signs → status Signed → stage invoice created from schedule. Next stage only after previous is paid.
               </p>
             </div>

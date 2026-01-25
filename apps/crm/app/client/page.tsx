@@ -30,19 +30,19 @@ export default function ClientHome() {
       </CardHeader>
       <CardContent>
         <div className="space-y-2">
-          <div className="text-sm text-slate-700">Choose a section:</div>
+          <div className="text-sm text-[var(--muted-foreground)]">Choose a section:</div>
           <div className="flex flex-wrap gap-3">
-            <Link className="text-sm font-semibold text-slate-900 hover:underline" href="/client/quotes">
+            <Link className="text-sm font-semibold text-[var(--foreground)] hover:underline" href="/client/quotes">
               Quotes
             </Link>
-            <Link className="text-sm font-semibold text-slate-900 hover:underline" href="/client/invoices">
+            <Link className="text-sm font-semibold text-[var(--foreground)] hover:underline" href="/client/invoices">
               Invoices
             </Link>
-            <Link className="text-sm font-semibold text-slate-900 hover:underline" href="/client/certificates">
+            <Link className="text-sm font-semibold text-[var(--foreground)] hover:underline" href="/client/certificates">
               Certificates
             </Link>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600">
+          <div className="rounded-2xl border border-[var(--border)] bg-[var(--muted)] p-4 text-xs text-[var(--muted-foreground)]">
             What happens next: review your quote, accept it, sign the agreement, then use invoices here to pay or download receipts.
             Secure token links still work if you aren't logged in.
           </div>

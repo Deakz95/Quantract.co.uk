@@ -40,7 +40,7 @@ export default async function Page({ params }: Props) {
           <CardTitle>Client not found</CardTitle>
         </CardHeader>
         <CardContent>
-          <Link href="/admin/clients" className="text-sm font-semibold text-slate-700 underline">
+          <Link href="/admin/clients" className="text-sm font-semibold text-[var(--muted-foreground)] underline">
             Back to clients
           </Link>
         </CardContent>
@@ -70,9 +70,9 @@ export default async function Page({ params }: Props) {
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <CardTitle>{client.name}</CardTitle>
-              <div className="mt-1 text-sm text-slate-700">{client.email}</div>
-              {client.phone ? <div className="mt-1 text-xs text-slate-600">{client.phone}</div> : null}
-              {address ? <div className="mt-2 text-xs text-slate-600">{address}</div> : null}
+              <div className="mt-1 text-sm text-[var(--muted-foreground)]">{client.email}</div>
+              {client.phone ? <div className="mt-1 text-xs text-[var(--muted-foreground)]">{client.phone}</div> : null}
+              {address ? <div className="mt-2 text-xs text-[var(--muted-foreground)]">{address}</div> : null}
             </div>
 
             <div className="flex items-center gap-2">
@@ -96,12 +96,12 @@ export default async function Page({ params }: Props) {
           </CardHeader>
           <CardContent>
             {quotes.length === 0 ? (
-              <div className="text-sm text-slate-600">No quotes for this client yet.</div>
+              <div className="text-sm text-[var(--muted-foreground)]">No quotes for this client yet.</div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="text-left text-xs text-slate-600">
+                    <tr className="text-left text-xs text-[var(--muted-foreground)]">
                       <th className="py-2">Quote</th>
                       <th className="py-2">Status</th>
                       <th className="py-2">Total</th>
@@ -116,20 +116,20 @@ export default async function Page({ params }: Props) {
                       const ag = agreementByQuote.get(q.id);
 
                       return (
-                        <tr key={q.id} className="border-t border-slate-100">
+                        <tr key={q.id} className="border-t border-[var(--border)]">
                           <td className="py-3">
-                            <div className="font-semibold text-slate-900">{q.id.slice(0, 8)}</div>
-                            <div className="mt-0.5 text-xs text-slate-600">{formatDate(q.createdAtISO)}</div>
+                            <div className="font-semibold text-[var(--foreground)]">{q.id.slice(0, 8)}</div>
+                            <div className="mt-0.5 text-xs text-[var(--muted-foreground)]">{formatDate(q.createdAtISO)}</div>
                           </td>
 
                           <td className="py-3">
                             <Badge>{q.status}</Badge>
                           </td>
 
-                          <td className="py-3 font-semibold text-slate-900">{formatGBP(total)}</td>
+                          <td className="py-3 font-semibold text-[var(--foreground)]">{formatGBP(total)}</td>
 
                           <td className="py-3">
-                            {ag ? <Badge>{ag.status}</Badge> : <span className="text-xs text-slate-500">—</span>}
+                            {ag ? <Badge>{ag.status}</Badge> : <span className="text-xs text-[var(--muted-foreground)]">—</span>}
                           </td>
 
                           <td className="py-3 text-right">
@@ -155,12 +155,12 @@ export default async function Page({ params }: Props) {
           </CardHeader>
           <CardContent>
             {invoices.length === 0 ? (
-              <div className="text-sm text-slate-600">No invoices for this client yet.</div>
+              <div className="text-sm text-[var(--muted-foreground)]">No invoices for this client yet.</div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="text-left text-xs text-slate-600">
+                    <tr className="text-left text-xs text-[var(--muted-foreground)]">
                       <th className="py-2">Invoice</th>
                       <th className="py-2">Status</th>
                       <th className="py-2">Total</th>
@@ -169,11 +169,11 @@ export default async function Page({ params }: Props) {
                   </thead>
                   <tbody>
                     {invoices.map((inv) => (
-                      <tr key={inv.id} className="border-t border-slate-100">
+                      <tr key={inv.id} className="border-t border-[var(--border)]">
                         <td className="py-3">
-                          <div className="font-semibold text-slate-900">{inv.id.slice(0, 8)}</div>
+                          <div className="font-semibold text-[var(--foreground)]">{inv.id.slice(0, 8)}</div>
                           {inv.quoteId ? (
-                            <div className="mt-0.5 text-xs text-slate-600">Quote: {inv.quoteId.slice(0, 8)}</div>
+                            <div className="mt-0.5 text-xs text-[var(--muted-foreground)]">Quote: {inv.quoteId.slice(0, 8)}</div>
                           ) : null}
                         </td>
 
@@ -181,7 +181,7 @@ export default async function Page({ params }: Props) {
                           <Badge>{inv.status}</Badge>
                         </td>
 
-                        <td className="py-3 font-semibold text-slate-900">{formatGBP(inv.total)}</td>
+                        <td className="py-3 font-semibold text-[var(--foreground)]">{formatGBP(inv.total)}</td>
 
                         <td className="py-3 text-right">
                           <Link href={`/admin/invoices/${inv.id}`}>
@@ -206,12 +206,12 @@ export default async function Page({ params }: Props) {
         </CardHeader>
         <CardContent>
           {agreements.length === 0 ? (
-            <div className="text-sm text-slate-600">No agreements yet.</div>
+            <div className="text-sm text-[var(--muted-foreground)]">No agreements yet.</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-left text-xs text-slate-600">
+                  <tr className="text-left text-xs text-[var(--muted-foreground)]">
                     <th className="py-2">Agreement</th>
                     <th className="py-2">Quote</th>
                     <th className="py-2">Status</th>
@@ -221,9 +221,9 @@ export default async function Page({ params }: Props) {
                 </thead>
                 <tbody>
                   {agreements.map((a) => (
-                    <tr key={a.id} className="border-t border-slate-100">
+                    <tr key={a.id} className="border-t border-[var(--border)]">
                       <td className="py-3">
-                        <div className="font-semibold text-slate-900">{a.id.slice(0, 8)}</div>
+                        <div className="font-semibold text-[var(--foreground)]">{a.id.slice(0, 8)}</div>
                       </td>
 
                       <td className="py-3">
@@ -234,7 +234,7 @@ export default async function Page({ params }: Props) {
                         <Badge>{a.status}</Badge>
                       </td>
 
-                      <td className="py-3 text-slate-700">{formatDate(a.signedAtISO)}</td>
+                      <td className="py-3 text-[var(--muted-foreground)]">{formatDate(a.signedAtISO)}</td>
 
                       <td className="py-3 text-right">
                         <Link href={`/admin/quotes/${a.quoteId}`}>
@@ -258,7 +258,7 @@ export default async function Page({ params }: Props) {
         </CardHeader>
         <CardContent>
           {siteHistory.length === 0 ? (
-            <div className="text-sm text-slate-600">No sites recorded for this client yet.</div>
+            <div className="text-sm text-[var(--muted-foreground)]">No sites recorded for this client yet.</div>
           ) : (
             <div className="space-y-4">
               {siteHistory.map(({ site, certificates }) => {
@@ -266,29 +266,29 @@ export default async function Page({ params }: Props) {
                   .filter(Boolean)
                   .join(", ");
                 return (
-                  <div key={site.id} className="rounded-2xl border border-slate-200 bg-white p-4">
-                    <div className="text-sm font-semibold text-slate-900">{site.name || "Site"}</div>
-                    {siteAddress ? <div className="mt-1 text-xs text-slate-600">{siteAddress}</div> : null}
+                  <div key={site.id} className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4">
+                    <div className="text-sm font-semibold text-[var(--foreground)]">{site.name || "Site"}</div>
+                    {siteAddress ? <div className="mt-1 text-xs text-[var(--muted-foreground)]">{siteAddress}</div> : null}
                     {certificates.length === 0 ? (
-                      <div className="mt-3 text-sm text-slate-600">No certificates yet.</div>
+                      <div className="mt-3 text-sm text-[var(--muted-foreground)]">No certificates yet.</div>
                     ) : (
                       <div className="mt-3 space-y-2">
                         {certificates.map((cert) => (
-                          <div key={cert.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                          <div key={cert.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--border)] bg-[var(--muted)] p-3">
                             <div className="min-w-0">
-                              <div className="text-sm font-semibold text-slate-900">{cert.type} • {cert.id}</div>
-                              <div className="mt-1 text-xs text-slate-600">
+                              <div className="text-sm font-semibold text-[var(--foreground)]">{cert.type} • {cert.id}</div>
+                              <div className="mt-1 text-xs text-[var(--muted-foreground)]">
                                 Status: {cert.status}
                                 {cert.issuedAtISO ? ` • Issued ${formatDate(cert.issuedAtISO)}` : ""}
                                 {!cert.issuedAtISO && cert.completedAtISO ? ` • Completed ${formatDate(cert.completedAtISO)}` : ""}
                               </div>
                             </div>
                             <div className="flex items-center gap-2 text-xs">
-                              <Link href={`/admin/certificates/${cert.id}`} className="font-semibold text-slate-900 hover:underline">
+                              <Link href={`/admin/certificates/${cert.id}`} className="font-semibold text-[var(--foreground)] hover:underline">
                                 Open
                               </Link>
                               {cert.pdfKey ? (
-                                <a href={`/api/admin/certificates/${cert.id}/pdf`} className="font-semibold text-slate-900 hover:underline" target="_blank" rel="noreferrer">
+                                <a href={`/api/admin/certificates/${cert.id}/pdf`} className="font-semibold text-[var(--foreground)] hover:underline" target="_blank" rel="noreferrer">
                                   PDF
                                 </a>
                               ) : null}

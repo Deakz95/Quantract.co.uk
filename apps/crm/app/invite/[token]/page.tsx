@@ -124,7 +124,7 @@ export default function InviteAcceptPage() {
   }, [invite, next]);
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+    <div className="min-h-screen bg-[var(--muted)] flex items-center justify-center p-6">
       <Card className="w-full max-w-xl">
         <CardHeader>
           <CardTitle>{done ? "Invite accepted" : "You're invited"}</CardTitle>
@@ -133,10 +133,10 @@ export default function InviteAcceptPage() {
           {loading ? (
             <div className="space-y-3">
               <div className="animate-pulse">
-                <div className="h-4 bg-slate-200 rounded w-3/4 mb-3"></div>
-                <div className="h-4 bg-slate-200 rounded w-1/2"></div>
+                <div className="h-4 bg-[var(--muted)] rounded w-3/4 mb-3"></div>
+                <div className="h-4 bg-[var(--muted)] rounded w-1/2"></div>
               </div>
-              <div className="text-sm text-slate-600">Loading your invitation...</div>
+              <div className="text-sm text-[var(--muted-foreground)]">Loading your invitation...</div>
             </div>
           ) : error ? (
             <div className="space-y-4">
@@ -145,15 +145,15 @@ export default function InviteAcceptPage() {
                 <div className="text-sm text-rose-800">{error}</div>
               </div>
               {error.includes("expired") || error.includes("Expired") ? (
-                <div className="text-sm text-slate-700">
+                <div className="text-sm text-[var(--muted-foreground)]">
                   This invitation link has expired. Please contact your administrator to request a new invitation.
                 </div>
               ) : error.includes("used") || error.includes("Already used") ? (
-                <div className="text-sm text-slate-700">
+                <div className="text-sm text-[var(--muted-foreground)]">
                   This invitation has already been accepted. You can <Link href="/client/login" className="underline text-blue-600">sign in here</Link>.
                 </div>
               ) : (
-                <div className="text-sm text-slate-700">
+                <div className="text-sm text-[var(--muted-foreground)]">
                   If you continue to experience issues, please contact support or request a new invitation link.
                 </div>
               )}
@@ -166,7 +166,7 @@ export default function InviteAcceptPage() {
                   This invitation link is invalid or has been removed.
                 </div>
               </div>
-              <div className="text-sm text-slate-700">
+              <div className="text-sm text-[var(--muted-foreground)]">
                 Please contact your administrator to request a new invitation.
               </div>
             </div>
@@ -175,81 +175,81 @@ export default function InviteAcceptPage() {
               <div className="rounded-md bg-emerald-50 border border-emerald-200 p-3 text-sm text-emerald-900">
                 Account setup complete for <strong>{invite.email}</strong> ({roleLabel(invite.role)} at <strong>{invite.company.name}</strong>).
               </div>
-              <div className="text-sm text-slate-700">
+              <div className="text-sm text-[var(--muted-foreground)]">
                 Next step: sign in to your portal.
               </div>
               <div className="flex flex-col gap-2">
                 <Link href={postAcceptHref}>
                   <Button className="w-full">Continue to sign in</Button>
                 </Link>
-                <Link className="text-sm underline text-slate-600 text-center" href="/support">
+                <Link className="text-sm underline text-[var(--muted-foreground)] text-center" href="/support">
                   Need help?
                 </Link>
               </div>
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="rounded-md border bg-white p-3 text-sm text-slate-700">
+              <div className="rounded-md border bg-[var(--background)] p-3 text-sm text-[var(--muted-foreground)]">
                 <div>
-                  <span className="text-slate-500">Company:</span> <strong>{invite.company.name}</strong>
+                  <span className="text-[var(--muted-foreground)]">Company:</span> <strong>{invite.company.name}</strong>
                 </div>
                 <div>
-                  <span className="text-slate-500">Role:</span> <strong>{roleLabel(invite.role)}</strong>
+                  <span className="text-[var(--muted-foreground)]">Role:</span> <strong>{roleLabel(invite.role)}</strong>
                 </div>
                 <div>
-                  <span className="text-slate-500">Email:</span> <strong>{invite.email}</strong>
+                  <span className="text-[var(--muted-foreground)]">Email:</span> <strong>{invite.email}</strong>
                 </div>
                 {invite.expiresAtISO ? (
                   <div>
-                    <span className="text-slate-500">Expires:</span> {new Date(invite.expiresAtISO).toLocaleString()}
+                    <span className="text-[var(--muted-foreground)]">Expires:</span> {new Date(invite.expiresAtISO).toLocaleString()}
                   </div>
                 ) : null}
               </div>
 
               <form onSubmit={onAccept} className="space-y-3">
                 <div>
-                  <label className="text-sm font-medium text-slate-700">Your name</label>
+                  <label className="text-sm font-medium text-[var(--muted-foreground)]">Your name</label>
                   <input
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
+                    className="mt-1 w-full rounded-md border border-[var(--border)] px-3 py-2 text-sm"
                     placeholder="Jane Doe"
                     autoComplete="name"
                   />
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-slate-700">Phone (optional)</label>
+                  <label className="text-sm font-medium text-[var(--muted-foreground)]">Phone (optional)</label>
                   <input
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
+                    className="mt-1 w-full rounded-md border border-[var(--border)] px-3 py-2 text-sm"
                     placeholder="+44 …"
                     autoComplete="tel"
                   />
                 </div>
 
-                <div className="rounded-md bg-slate-50 border border-slate-200 p-3">
-                  <div className="text-sm font-medium text-slate-800">Set a password (optional)</div>
-                  <div className="text-xs text-slate-600">You can also sign in via magic link later.</div>
+                <div className="rounded-md bg-[var(--muted)] border border-[var(--border)] p-3">
+                  <div className="text-sm font-medium text-[var(--foreground)]">Set a password (optional)</div>
+                  <div className="text-xs text-[var(--muted-foreground)]">You can also sign in via magic link later.</div>
                   <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="text-sm font-medium text-slate-700">Password</label>
+                      <label className="text-sm font-medium text-[var(--muted-foreground)]">Password</label>
                       <input
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
+                        className="mt-1 w-full rounded-md border border-[var(--border)] px-3 py-2 text-sm"
                         placeholder="••••••••"
                         type="password"
                         autoComplete="new-password"
                       />
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-slate-700">Confirm</label>
+                      <label className="text-sm font-medium text-[var(--muted-foreground)]">Confirm</label>
                       <input
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
+                        className="mt-1 w-full rounded-md border border-[var(--border)] px-3 py-2 text-sm"
                         placeholder="••••••••"
                         type="password"
                         autoComplete="new-password"
@@ -266,7 +266,7 @@ export default function InviteAcceptPage() {
                   {busy ? "Accepting…" : "Accept invite"}
                 </Button>
 
-                <div className="text-sm text-slate-600 flex justify-between">
+                <div className="text-sm text-[var(--muted-foreground)] flex justify-between">
                   <Link className="underline" href="/">
                     Back
                   </Link>

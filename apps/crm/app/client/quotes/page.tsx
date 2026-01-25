@@ -49,21 +49,21 @@ export default function ClientQuotes() {
         <CardTitle>My Quotes</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+        <div className="rounded-2xl border border-[var(--border)] bg-[var(--muted)] p-4 text-sm text-[var(--muted-foreground)]">
           Review your quotes, download PDFs, and accept the scope. Once accepted, you’ll be guided to the secure agreement signing page.
         </div>
 
         {loading ? (
-          <div className="mt-4 text-sm text-slate-700">Loading…</div>
+          <div className="mt-4 text-sm text-[var(--muted-foreground)]">Loading…</div>
         ) : quotes.length === 0 ? (
-          <div className="mt-4 text-sm text-slate-700">No quotes yet. We’ll email you when a new quote is ready.</div>
+          <div className="mt-4 text-sm text-[var(--muted-foreground)]">No quotes yet. We’ll email you when a new quote is ready.</div>
         ) : (
           <div className="mt-4 space-y-3">
             {quotes.map((q) => (
-              <div key={q.id} className="flex flex-col justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4 sm:flex-row sm:items-center">
+              <div key={q.id} className="flex flex-col justify-between gap-3 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4 sm:flex-row sm:items-center">
                 <div>
-                  <div className="text-sm font-semibold text-slate-900">{q.id}</div>
-                  <div className="mt-0.5 text-xs text-slate-600">
+                  <div className="text-sm font-semibold text-[var(--foreground)]">{q.id}</div>
+                  <div className="mt-0.5 text-xs text-[var(--muted-foreground)]">
                     {new Date(q.createdAtISO).toLocaleString("en-GB")} • Total: £{q.totals.total.toFixed(2)}
                   </div>
                 </div>

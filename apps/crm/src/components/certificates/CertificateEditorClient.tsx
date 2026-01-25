@@ -267,9 +267,9 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
       <Breadcrumbs />
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="min-w-0">
-          <div className="text-sm font-semibold text-slate-900">Certificate {certificateId}</div>
+          <div className="text-sm font-semibold text-[var(--foreground)]">Certificate {certificateId}</div>
           {cert?.jobId ? (
-            <div className="mt-1 text-xs text-slate-600">
+            <div className="mt-1 text-xs text-[var(--muted-foreground)]">
               Job:{" "}
               <Link className="hover:underline" href={mode === "admin" ? `/admin/jobs/${cert.jobId}` : `/engineer/jobs/${cert.jobId}`}>
                 {cert.jobId}
@@ -288,9 +288,9 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
       </div>
 
       {loading ? (
-        <div className="text-sm text-slate-700">Loading…</div>
+        <div className="text-sm text-[var(--muted-foreground)]">Loading…</div>
       ) : !cert || !data ? (
-        <div className="text-sm text-slate-700">Not found.</div>
+        <div className="text-sm text-[var(--muted-foreground)]">Not found.</div>
       ) : (
         <>
           <Card>
@@ -300,7 +300,7 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge>{cert.status}</Badge>
                   {cert.pdfKey && mode === "admin" ? (
-                    <a className="text-sm font-semibold text-slate-900 hover:underline" href={`/api/admin/certificates/${certificateId}/pdf`} target="_blank" rel="noreferrer">
+                    <a className="text-sm font-semibold text-[var(--foreground)] hover:underline" href={`/api/admin/certificates/${certificateId}/pdf`} target="_blank" rel="noreferrer">
                       View PDF
                     </a>
                   ) : null}
@@ -320,9 +320,9 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
             <CardContent>
               <div className="grid gap-3 sm:grid-cols-2">
                 <label className="grid gap-1">
-                  <span className="text-xs font-semibold text-slate-700">Type</span>
+                  <span className="text-xs font-semibold text-[var(--muted-foreground)]">Type</span>
                   <select
-                    className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                    className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm"
                     value={cert.type}
                     onChange={(e) => {
                       const nextType = e.target.value as CertificateType;
@@ -338,9 +338,9 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
                 </label>
 
                 <label className="grid gap-1">
-                  <span className="text-xs font-semibold text-slate-700">Certificate number (optional)</span>
+                  <span className="text-xs font-semibold text-[var(--muted-foreground)]">Certificate number (optional)</span>
                   <input
-                    className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                    className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm"
                     value={cert.certificateNumber || ""}
                     onChange={(e) => setCert((p) => (p ? { ...p, certificateNumber: e.target.value } : p))}
                     placeholder="e.g. EIC-2026-0001"
@@ -349,9 +349,9 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
                 </label>
 
                 <label className="grid gap-1">
-                  <span className="text-xs font-semibold text-slate-700">Inspector name</span>
+                  <span className="text-xs font-semibold text-[var(--muted-foreground)]">Inspector name</span>
                   <input
-                    className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                    className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm"
                     value={cert.inspectorName || ""}
                     onChange={(e) => setCert((p) => (p ? { ...p, inspectorName: e.target.value } : p))}
                     placeholder="e.g. Callum Deakin"
@@ -360,9 +360,9 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
                 </label>
 
                 <label className="grid gap-1">
-                  <span className="text-xs font-semibold text-slate-700">Inspector email</span>
+                  <span className="text-xs font-semibold text-[var(--muted-foreground)]">Inspector email</span>
                   <input
-                    className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                    className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm"
                     value={cert.inspectorEmail || ""}
                     onChange={(e) => setCert((p) => (p ? { ...p, inspectorEmail: e.target.value } : p))}
                     placeholder="inspector@example.com"
@@ -372,7 +372,7 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
               </div>
 
               <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
-                <div className="text-xs text-slate-600">
+                <div className="text-xs text-[var(--muted-foreground)]">
                   {saving ? "Saving changes…" : lastSavedAt ? `Autosaved at ${lastSavedAt}` : "Autosave enabled."}
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -393,7 +393,7 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
               </div>
 
               {!readiness.ok ? (
-                <div className="mt-2 text-xs text-slate-600">
+                <div className="mt-2 text-xs text-[var(--muted-foreground)]">
                   Missing: {readiness.missing.join(", ")}.
                 </div>
               ) : null}
@@ -406,54 +406,54 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
             </CardHeader>
             <CardContent className="grid gap-3 sm:grid-cols-2">
               <label className="grid gap-1 sm:col-span-1">
-                <span className="text-xs font-semibold text-slate-700">Job reference</span>
+                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Job reference</span>
                 <input
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                  className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm"
                   value={data.overview.jobReference || ""}
                   onChange={(e) => updateDataField(["overview", "jobReference"], e.target.value)}
                   disabled={busy || !canEdit}
                 />
               </label>
               <label className="grid gap-1 sm:col-span-1">
-                <span className="text-xs font-semibold text-slate-700">Site name</span>
+                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Site name</span>
                 <input
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                  className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm"
                   value={data.overview.siteName || ""}
                   onChange={(e) => updateDataField(["overview", "siteName"], e.target.value)}
                   disabled={busy || !canEdit}
                 />
               </label>
               <label className="grid gap-1 sm:col-span-2">
-                <span className="text-xs font-semibold text-slate-700">Installation address</span>
+                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Installation address</span>
                 <textarea
-                  className="min-h-[90px] rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                  className="min-h-[90px] rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm"
                   value={data.overview.installationAddress || ""}
                   onChange={(e) => updateDataField(["overview", "installationAddress"], e.target.value)}
                   disabled={busy || !canEdit}
                 />
               </label>
               <label className="grid gap-1 sm:col-span-1">
-                <span className="text-xs font-semibold text-slate-700">Client name</span>
+                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Client name</span>
                 <input
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                  className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm"
                   value={data.overview.clientName || ""}
                   onChange={(e) => updateDataField(["overview", "clientName"], e.target.value)}
                   disabled={busy || !canEdit}
                 />
               </label>
               <label className="grid gap-1 sm:col-span-1">
-                <span className="text-xs font-semibold text-slate-700">Client email</span>
+                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Client email</span>
                 <input
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                  className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm"
                   value={data.overview.clientEmail || ""}
                   onChange={(e) => updateDataField(["overview", "clientEmail"], e.target.value)}
                   disabled={busy || !canEdit}
                 />
               </label>
               <label className="grid gap-1 sm:col-span-2">
-                <span className="text-xs font-semibold text-slate-700">Job description</span>
+                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Job description</span>
                 <textarea
-                  className="min-h-[90px] rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                  className="min-h-[90px] rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm"
                   value={data.overview.jobDescription || ""}
                   onChange={(e) => updateDataField(["overview", "jobDescription"], e.target.value)}
                   disabled={busy || !canEdit}
@@ -468,45 +468,45 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
             </CardHeader>
             <CardContent className="grid gap-3 sm:grid-cols-2">
               <label className="grid gap-1 sm:col-span-2">
-                <span className="text-xs font-semibold text-slate-700">Description of work</span>
+                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Description of work</span>
                 <textarea
-                  className="min-h-[90px] rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                  className="min-h-[90px] rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm"
                   value={data.installation.descriptionOfWork || ""}
                   onChange={(e) => updateDataField(["installation", "descriptionOfWork"], e.target.value)}
                   disabled={busy || !canEdit}
                 />
               </label>
               <label className="grid gap-1">
-                <span className="text-xs font-semibold text-slate-700">Supply type</span>
+                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Supply type</span>
                 <input
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                  className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm"
                   value={data.installation.supplyType || ""}
                   onChange={(e) => updateDataField(["installation", "supplyType"], e.target.value)}
                   disabled={busy || !canEdit}
                 />
               </label>
               <label className="grid gap-1">
-                <span className="text-xs font-semibold text-slate-700">Earthing arrangement</span>
+                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Earthing arrangement</span>
                 <input
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                  className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm"
                   value={data.installation.earthingArrangement || ""}
                   onChange={(e) => updateDataField(["installation", "earthingArrangement"], e.target.value)}
                   disabled={busy || !canEdit}
                 />
               </label>
               <label className="grid gap-1">
-                <span className="text-xs font-semibold text-slate-700">Distribution type</span>
+                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Distribution type</span>
                 <input
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                  className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm"
                   value={data.installation.distributionType || ""}
                   onChange={(e) => updateDataField(["installation", "distributionType"], e.target.value)}
                   disabled={busy || !canEdit}
                 />
               </label>
               <label className="grid gap-1">
-                <span className="text-xs font-semibold text-slate-700">Max demand</span>
+                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Max demand</span>
                 <input
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                  className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm"
                   value={data.installation.maxDemand || ""}
                   onChange={(e) => updateDataField(["installation", "maxDemand"], e.target.value)}
                   disabled={busy || !canEdit}
@@ -521,28 +521,28 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
             </CardHeader>
             <CardContent className="grid gap-3 sm:grid-cols-2">
               <label className="grid gap-1 sm:col-span-2">
-                <span className="text-xs font-semibold text-slate-700">Limitations</span>
+                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Limitations</span>
                 <textarea
-                  className="min-h-[90px] rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                  className="min-h-[90px] rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm"
                   value={data.inspection.limitations || ""}
                   onChange={(e) => updateDataField(["inspection", "limitations"], e.target.value)}
                   disabled={busy || !canEdit}
                 />
               </label>
               <label className="grid gap-1 sm:col-span-2">
-                <span className="text-xs font-semibold text-slate-700">Observations</span>
+                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Observations</span>
                 <textarea
-                  className="min-h-[90px] rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                  className="min-h-[90px] rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm"
                   value={data.inspection.observations || ""}
                   onChange={(e) => updateDataField(["inspection", "observations"], e.target.value)}
                   disabled={busy || !canEdit}
                 />
               </label>
               <label className="grid gap-1">
-                <span className="text-xs font-semibold text-slate-700">Next inspection date</span>
+                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Next inspection date</span>
                 <input
                   type="date"
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                  className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm"
                   value={data.inspection.nextInspectionDate || ""}
                   onChange={(e) => updateDataField(["inspection", "nextInspectionDate"], e.target.value)}
                   disabled={busy || !canEdit}
@@ -551,18 +551,18 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
               {cert.type === "EICR" ? (
                 <>
                   <label className="grid gap-1">
-                    <span className="text-xs font-semibold text-slate-700">Overall assessment</span>
+                    <span className="text-xs font-semibold text-[var(--muted-foreground)]">Overall assessment</span>
                     <input
-                      className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                      className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm"
                       value={data.assessment.overallAssessment || ""}
                       onChange={(e) => updateDataField(["assessment", "overallAssessment"], e.target.value)}
                       disabled={busy || !canEdit}
                     />
                   </label>
                   <label className="grid gap-1 sm:col-span-2">
-                    <span className="text-xs font-semibold text-slate-700">Recommendations</span>
+                    <span className="text-xs font-semibold text-[var(--muted-foreground)]">Recommendations</span>
                     <textarea
-                      className="min-h-[90px] rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                      className="min-h-[90px] rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm"
                       value={data.assessment.recommendations || ""}
                       onChange={(e) => updateDataField(["assessment", "recommendations"], e.target.value)}
                       disabled={busy || !canEdit}
@@ -579,27 +579,27 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
             </CardHeader>
             <CardContent className="grid gap-3 sm:grid-cols-2">
               <label className="grid gap-1">
-                <span className="text-xs font-semibold text-slate-700">Extent of work</span>
+                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Extent of work</span>
                 <input
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                  className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm"
                   value={data.declarations.extentOfWork || ""}
                   onChange={(e) => updateDataField(["declarations", "extentOfWork"], e.target.value)}
                   disabled={busy || !canEdit}
                 />
               </label>
               <label className="grid gap-1">
-                <span className="text-xs font-semibold text-slate-700">Works tested</span>
+                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Works tested</span>
                 <input
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                  className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm"
                   value={data.declarations.worksTested || ""}
                   onChange={(e) => updateDataField(["declarations", "worksTested"], e.target.value)}
                   disabled={busy || !canEdit}
                 />
               </label>
               <label className="grid gap-1 sm:col-span-2">
-                <span className="text-xs font-semibold text-slate-700">Comments</span>
+                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Comments</span>
                 <textarea
-                  className="min-h-[90px] rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                  className="min-h-[90px] rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm"
                   value={data.declarations.comments || ""}
                   onChange={(e) => updateDataField(["declarations", "comments"], e.target.value)}
                   disabled={busy || !canEdit}
@@ -613,27 +613,27 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
               <CardTitle>Signatures</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2 rounded-2xl border border-slate-200 bg-white p-4">
-                <div className="text-sm font-semibold text-slate-900">Engineer signature</div>
+              <div className="space-y-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4">
+                <div className="text-sm font-semibold text-[var(--foreground)]">Engineer signature</div>
                 <label className="grid gap-1">
-                  <span className="text-xs font-semibold text-slate-700">Engineer name</span>
+                  <span className="text-xs font-semibold text-[var(--muted-foreground)]">Engineer name</span>
                   <input
-                    className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                    className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
                     value={data.signatures?.engineer?.name || ""}
                     onChange={(e) => updateDataField(["signatures", "engineer", "name"], e.target.value)}
                     disabled={busy || !canEdit}
                   />
                 </label>
                 <label className="grid gap-1">
-                  <span className="text-xs font-semibold text-slate-700">Signature text</span>
+                  <span className="text-xs font-semibold text-[var(--muted-foreground)]">Signature text</span>
                   <input
-                    className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                    className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
                     value={data.signatures?.engineer?.signatureText || ""}
                     onChange={(e) => updateDataField(["signatures", "engineer", "signatureText"], e.target.value)}
                     disabled={busy || !canEdit}
                   />
                 </label>
-                <div className="flex items-center justify-between text-xs text-slate-600">
+                <div className="flex items-center justify-between text-xs text-[var(--muted-foreground)]">
                   <span>{data.signatures?.engineer?.signedAtISO ? new Date(data.signatures.engineer.signedAtISO).toLocaleString("en-GB") : "Not signed yet"}</span>
                   <Button type="button" variant="secondary" onClick={() => sign("engineer")} disabled={busy || !canEdit}>
                     Sign
@@ -641,27 +641,27 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
                 </div>
               </div>
 
-              <div className="space-y-2 rounded-2xl border border-slate-200 bg-white p-4">
-                <div className="text-sm font-semibold text-slate-900">Customer signature</div>
+              <div className="space-y-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4">
+                <div className="text-sm font-semibold text-[var(--foreground)]">Customer signature</div>
                 <label className="grid gap-1">
-                  <span className="text-xs font-semibold text-slate-700">Customer name</span>
+                  <span className="text-xs font-semibold text-[var(--muted-foreground)]">Customer name</span>
                   <input
-                    className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                    className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
                     value={data.signatures?.customer?.name || ""}
                     onChange={(e) => updateDataField(["signatures", "customer", "name"], e.target.value)}
                     disabled={busy || !canEdit}
                   />
                 </label>
                 <label className="grid gap-1">
-                  <span className="text-xs font-semibold text-slate-700">Signature text</span>
+                  <span className="text-xs font-semibold text-[var(--muted-foreground)]">Signature text</span>
                   <input
-                    className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                    className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
                     value={data.signatures?.customer?.signatureText || ""}
                     onChange={(e) => updateDataField(["signatures", "customer", "signatureText"], e.target.value)}
                     disabled={busy || !canEdit}
                   />
                 </label>
-                <div className="flex items-center justify-between text-xs text-slate-600">
+                <div className="flex items-center justify-between text-xs text-[var(--muted-foreground)]">
                   <span>{data.signatures?.customer?.signedAtISO ? new Date(data.signatures.customer.signedAtISO).toLocaleString("en-GB") : "Not signed yet"}</span>
                   <Button type="button" variant="secondary" onClick={() => sign("customer")} disabled={busy || !canEdit}>
                     Sign
@@ -670,7 +670,7 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
               </div>
 
               {!signatureIsPresent(data.signatures?.engineer) || !signatureIsPresent(data.signatures?.customer) ? (
-                <div className="sm:col-span-2 text-xs text-slate-600">
+                <div className="sm:col-span-2 text-xs text-[var(--muted-foreground)]">
                   Both signatures are required before completion.
                 </div>
               ) : null}
@@ -688,16 +688,16 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
             </CardHeader>
             <CardContent>
               {rows.length === 0 ? (
-                <div className="text-sm text-slate-700">No test results yet.</div>
+                <div className="text-sm text-[var(--muted-foreground)]">No test results yet.</div>
               ) : (
                 <div className="space-y-2">
                   {rows.map((r, i) => (
-                    <div key={r.id || i} className="rounded-2xl border border-slate-200 bg-white p-3">
+                    <div key={r.id || i} className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3">
                       <div className="grid gap-2 sm:grid-cols-12">
                         <label className="grid gap-1 sm:col-span-3">
-                          <span className="text-xs font-semibold text-slate-700">Circuit ref</span>
+                          <span className="text-xs font-semibold text-[var(--muted-foreground)]">Circuit ref</span>
                           <input
-                            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                            className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
                             value={r.circuitRef || ""}
                             onChange={(e) => setRow(i, { circuitRef: e.target.value })}
                             placeholder="e.g. L1"
@@ -706,13 +706,13 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
                         </label>
 
                         <div className="grid gap-2 sm:col-span-8">
-                          <div className="text-xs font-semibold text-slate-700">Results</div>
+                          <div className="text-xs font-semibold text-[var(--muted-foreground)]">Results</div>
                           {cert.type === "EICR" ? (
                             <div className="grid gap-2 sm:grid-cols-3">
                               <label className="grid gap-1">
-                                <span className="text-xs font-semibold text-slate-600">Code</span>
+                                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Code</span>
                                 <select
-                                  className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                                  className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
                                   value={getStr(r.data?.code)}
                                   onChange={(e) => setRow(i, { data: { ...(r.data || {}), code: e.target.value } })}
                                   disabled={busy || !canEdit}
@@ -725,9 +725,9 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
                                 </select>
                               </label>
                               <label className="grid gap-1 sm:col-span-2">
-                                <span className="text-xs font-semibold text-slate-600">Observation</span>
+                                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Observation</span>
                                 <input
-                                  className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                                  className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
                                   value={getStr(r.data?.observation)}
                                   onChange={(e) => setRow(i, { data: { ...(r.data || {}), observation: e.target.value } })}
                                   placeholder="Describe the issue / note"
@@ -738,36 +738,36 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
                           ) : (
                             <div className="grid gap-2 sm:grid-cols-5">
                               <label className="grid gap-1">
-                                <span className="text-xs font-semibold text-slate-600">R1+R2 (Ω)</span>
+                                <span className="text-xs font-semibold text-[var(--muted-foreground)]">R1+R2 (Ω)</span>
                                 <input
-                                  className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                                  className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
                                   value={getStr(r.data?.r1r2)}
                                   onChange={(e) => setRow(i, { data: { ...(r.data || {}), r1r2: e.target.value } })}
                                   disabled={busy || !canEdit}
                                 />
                               </label>
                               <label className="grid gap-1">
-                                <span className="text-xs font-semibold text-slate-600">Zs (Ω)</span>
+                                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Zs (Ω)</span>
                                 <input
-                                  className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                                  className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
                                   value={getStr(r.data?.zs)}
                                   onChange={(e) => setRow(i, { data: { ...(r.data || {}), zs: e.target.value } })}
                                   disabled={busy || !canEdit}
                                 />
                               </label>
                               <label className="grid gap-1">
-                                <span className="text-xs font-semibold text-slate-600">IR (MΩ)</span>
+                                <span className="text-xs font-semibold text-[var(--muted-foreground)]">IR (MΩ)</span>
                                 <input
-                                  className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                                  className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
                                   value={getStr(r.data?.ir_mohm)}
                                   onChange={(e) => setRow(i, { data: { ...(r.data || {}), ir_mohm: e.target.value } })}
                                   disabled={busy || !canEdit}
                                 />
                               </label>
                               <label className="grid gap-1">
-                                <span className="text-xs font-semibold text-slate-600">RCD (ms)</span>
+                                <span className="text-xs font-semibold text-[var(--muted-foreground)]">RCD (ms)</span>
                                 <input
-                                  className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                                  className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
                                   value={getStr(r.data?.rcd_trip_ms)}
                                   onChange={(e) => setRow(i, { data: { ...(r.data || {}), rcd_trip_ms: e.target.value } })}
                                   disabled={busy || !canEdit}
@@ -781,12 +781,12 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
                                   onChange={(e) => setRow(i, { data: { ...(r.data || {}), polarity: e.target.checked } })}
                                   disabled={busy || !canEdit}
                                 />
-                                <span className="text-xs font-semibold text-slate-600">Polarity OK</span>
+                                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Polarity OK</span>
                               </label>
                             </div>
                           )}
 
-                          <div className="text-xs text-slate-500">Stored as JSON under the hood; this UI keeps it consistent.</div>
+                          <div className="text-xs text-[var(--muted-foreground)]">Stored as JSON under the hood; this UI keeps it consistent.</div>
                         </div>
 
                         <div className="sm:col-span-1 flex items-end justify-end">

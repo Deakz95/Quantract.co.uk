@@ -87,7 +87,7 @@ const colorPalettes = [
     accent: "#94a3b8",
     bg: "#f1f5f9",
     text: "#0f172a",
-    preview: "from-sky-500 to-slate-400",
+    preview: "from-sky-500 to-[var(--muted-foreground)]",
   },
 ];
 

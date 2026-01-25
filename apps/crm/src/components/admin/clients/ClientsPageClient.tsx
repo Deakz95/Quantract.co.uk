@@ -271,7 +271,7 @@ export default function ClientsPageClient() {
               <CardTitle>Clients</CardTitle>
               <div className="flex items-center gap-2">
                 <input
-                  className="w-[260px] max-w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm"
+                  className="w-[260px] max-w-full rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-[var(--foreground)] text-sm"
                   placeholder="Search name, email, postcode…"
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
@@ -315,7 +315,7 @@ export default function ClientsPageClient() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="text-left text-xs text-slate-600">
+                    <tr className="text-left text-xs text-[var(--muted-foreground)]">
                       <th className="py-2">Name</th>
                       <th className="py-2">Email</th>
                       <th className="py-2">Address</th>
@@ -325,16 +325,16 @@ export default function ClientsPageClient() {
                   </thead>
                   <tbody>
                     {filtered.map((c) => (
-                      <tr key={c.id} className="border-t border-slate-100">
+                      <tr key={c.id} className="border-t border-[var(--border)]">
                         <td className="py-3">
-                          <div className="font-semibold text-slate-900">{c.name}</div>
-                          {c.phone ? <div className="mt-0.5 text-xs text-slate-600">{c.phone}</div> : null}
+                          <div className="font-semibold text-[var(--foreground)]">{c.name}</div>
+                          {c.phone ? <div className="mt-0.5 text-xs text-[var(--muted-foreground)]">{c.phone}</div> : null}
                         </td>
                         <td className="py-3">
-                          <div className="text-slate-900">{c.email}</div>
+                          <div className="text-[var(--foreground)]">{c.email}</div>
                         </td>
                         <td className="py-3">
-                          <div className="text-slate-700">{displayAddress(c) || "—"}</div>
+                          <div className="text-[var(--muted-foreground)]">{displayAddress(c) || "—"}</div>
                         </td>
                         <td className="py-3">
                           <Badge>{new Date(c.updatedAtISO).toLocaleDateString("en-GB")}</Badge>
@@ -378,27 +378,27 @@ export default function ClientsPageClient() {
           <CardContent>
             <div className="grid gap-3">
               <label className="grid gap-1">
-                <span className="text-xs font-semibold text-slate-700">Name</span>
+                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Name</span>
                 <input
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm"
+                  className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-[var(--foreground)].5 text-sm"
                   value={form.name ?? ""}
                   onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
                 />
               </label>
 
               <label className="grid gap-1">
-                <span className="text-xs font-semibold text-slate-700">Email</span>
+                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Email</span>
                 <input
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm"
+                  className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-[var(--foreground)].5 text-sm"
                   value={form.email ?? ""}
                   onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
                 />
               </label>
 
               <label className="grid gap-1">
-                <span className="text-xs font-semibold text-slate-700">Phone</span>
+                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Phone</span>
                 <input
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm"
+                  className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-[var(--foreground)].5 text-sm"
                   value={form.phone ?? ""}
                   onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))}
                 />
@@ -406,52 +406,52 @@ export default function ClientsPageClient() {
 
               <div className="grid grid-cols-1 gap-3">
                 <label className="grid gap-1">
-                  <span className="text-xs font-semibold text-slate-700">Address line 1</span>
+                  <span className="text-xs font-semibold text-[var(--muted-foreground)]">Address line 1</span>
                   <input
-                    className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm"
+                    className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-[var(--foreground)].5 text-sm"
                     value={form.address1 ?? ""}
                     onChange={(e) => setForm((p) => ({ ...p, address1: e.target.value }))}
                   />
                 </label>
 
                 <label className="grid gap-1">
-                  <span className="text-xs font-semibold text-slate-700">Address line 2</span>
+                  <span className="text-xs font-semibold text-[var(--muted-foreground)]">Address line 2</span>
                   <input
-                    className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm"
+                    className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-[var(--foreground)].5 text-sm"
                     value={form.address2 ?? ""}
                     onChange={(e) => setForm((p) => ({ ...p, address2: e.target.value }))}
                   />
                 </label>
 
                 <label className="grid gap-1">
-                    <span className="text-xs font-semibold text-slate-700">City</span>
+                    <span className="text-xs font-semibold text-[var(--muted-foreground)]">City</span>
                     <input
-                      className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm"
+                      className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-[var(--foreground)].5 text-sm"
                       value={form.city ?? ""}
                       onChange={(e) => setForm((p) => ({ ...p, city: e.target.value }))}
                     />
                   </label>
                   <label className="grid gap-1">
-                    <span className="text-xs font-semibold text-slate-700">County</span>
+                    <span className="text-xs font-semibold text-[var(--muted-foreground)]">County</span>
                     <input
-                      className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm"
+                      className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-[var(--foreground)].5 text-sm"
                       value={form.county ?? ""}
                       onChange={(e) => setForm((p) => ({ ...p, county: e.target.value }))}
                     />
                   </label>
 
                 <label className="grid gap-1">
-                    <span className="text-xs font-semibold text-slate-700">Postcode</span>
+                    <span className="text-xs font-semibold text-[var(--muted-foreground)]">Postcode</span>
                     <input
-                      className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm"
+                      className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-[var(--foreground)].5 text-sm"
                       value={form.postcode ?? ""}
                       onChange={(e) => setForm((p) => ({ ...p, postcode: e.target.value }))}
                     />
                   </label>
                   <label className="grid gap-1">
-                    <span className="text-xs font-semibold text-slate-700">Country</span>
+                    <span className="text-xs font-semibold text-[var(--muted-foreground)]">Country</span>
                     <input
-                      className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm"
+                      className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-[var(--foreground)].5 text-sm"
                       value={form.country ?? ""}
                       onChange={(e) => setForm((p) => ({ ...p, country: e.target.value }))}
                     />
@@ -459,11 +459,11 @@ export default function ClientsPageClient() {
               </div>
 
               <label className="grid gap-1">
-                <span className="text-xs font-semibold text-slate-700">Payment terms (days)</span>
+                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Payment terms (days)</span>
                 <input
                   type="number"
                   min={0}
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm"
+                  className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-[var(--foreground)].5 text-sm"
                   value={form.paymentTermsDays ?? ""}
                   onChange={(e) =>
                     setForm((p) => ({
@@ -475,19 +475,19 @@ export default function ClientsPageClient() {
                 />
               </label>
 
-              <label className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm">
+              <label className="flex items-center gap-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-[var(--foreground)].5 text-sm">
                 <input
                   type="checkbox"
                   checked={Boolean(form.disableAutoChase)}
                   onChange={(e) => setForm((p) => ({ ...p, disableAutoChase: e.target.checked }))}
                 />
-                <span className="text-slate-800">Disable auto-chase</span>
+                <span className="text-[var(--foreground)]">Disable auto-chase</span>
               </label>
 
               <label className="grid gap-1">
-                <span className="text-xs font-semibold text-slate-700">Notes</span>
+                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Notes</span>
                 <textarea
-                  className="min-h-[80px] rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm"
+                  className="min-h-[80px] rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-[var(--foreground)].5 text-sm"
                   value={form.notes ?? ""}
                   onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))}
                 />
@@ -525,10 +525,10 @@ export default function ClientsPageClient() {
           <DialogBody>
             <div className="grid gap-3">
               <label className="grid gap-1">
-                <span className="text-xs font-semibold text-slate-700">New password</span>
+                <span className="text-xs font-semibold text-[var(--muted-foreground)]">New password</span>
                 <input
                   type="password"
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm"
+                  className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-[var(--foreground)].5 text-sm"
                   value={pw}
                   onChange={(e) => setPw(e.target.value)}
                   placeholder="Min 8 characters"
@@ -536,10 +536,10 @@ export default function ClientsPageClient() {
               </label>
 
               <label className="grid gap-1">
-                <span className="text-xs font-semibold text-slate-700">Confirm password</span>
+                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Confirm password</span>
                 <input
                   type="password"
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm"
+                  className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-[var(--foreground)].5 text-sm"
                   value={pw2}
                   onChange={(e) => setPw2(e.target.value)}
                   placeholder="Repeat password"

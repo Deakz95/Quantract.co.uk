@@ -143,9 +143,9 @@ export default function InvitesPage() {
               <h3 className="text-lg font-semibold mb-4">Create New Invite</h3>
               <div className="grid gap-4">
                 <div>
-                  <label className="text-sm font-medium text-slate-700">Role</label>
+                  <label className="text-sm font-medium text-[var(--muted-foreground)]">Role</label>
                   <select
-                    className="mt-1 w-full h-10 rounded-xl border border-slate-200 px-3 text-sm"
+                    className="mt-1 w-full h-10 rounded-xl border border-[var(--border)] px-3 text-sm"
                     value={role}
                     onChange={(e) => setRole(e.target.value as any)}
                   >
@@ -155,9 +155,9 @@ export default function InvitesPage() {
                 </div>
                 
                 <div>
-                  <label className="text-sm font-medium text-slate-700">Name (optional)</label>
+                  <label className="text-sm font-medium text-[var(--muted-foreground)]">Name (optional)</label>
                   <input
-                    className="mt-1 w-full h-10 rounded-xl border border-slate-200 px-3 text-sm"
+                    className="mt-1 w-full h-10 rounded-xl border border-[var(--border)] px-3 text-sm"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="e.g. John Smith"
@@ -165,9 +165,9 @@ export default function InvitesPage() {
                 </div>
                 
                 <div>
-                  <label className="text-sm font-medium text-slate-700">Email *</label>
+                  <label className="text-sm font-medium text-[var(--muted-foreground)]">Email *</label>
                   <input
-                    className="mt-1 w-full h-10 rounded-xl border border-slate-200 px-3 text-sm"
+                    className="mt-1 w-full h-10 rounded-xl border border-[var(--border)] px-3 text-sm"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="name@example.com"
@@ -175,7 +175,7 @@ export default function InvitesPage() {
                   />
                 </div>
                 
-                <div className="text-xs text-slate-500">
+                <div className="text-xs text-[var(--muted-foreground)]">
                   Creates a 14-day invite link. The link will be copied to your clipboard.
                 </div>
                 
@@ -225,7 +225,7 @@ export default function InvitesPage() {
                       </div>
                       <div>
                         <p className="font-medium text-[var(--foreground)]">{invite.email}</p>
-                        {invite.name && <p className="text-xs text-slate-500">{invite.name}</p>}
+                        {invite.name && <p className="text-xs text-[var(--muted-foreground)]">{invite.name}</p>}
                         <div className="flex items-center gap-2 mt-1">
                           {getRoleBadge(invite.role)}
                           <Badge variant={invite.usedAt ? "success" : "secondary"}>

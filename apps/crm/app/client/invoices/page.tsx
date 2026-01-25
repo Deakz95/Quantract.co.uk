@@ -43,26 +43,26 @@ export default function ClientInvoices() {
         <CardTitle>My Invoices</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="mb-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+        <div className="mb-4 rounded-2xl border border-[var(--border)] bg-[var(--muted)] p-4 text-sm text-[var(--muted-foreground)]">
           Open an invoice to pay securely, download the PDF, or view receipts once payment is complete.
         </div>
         {loading ? (
-          <div className="text-sm text-slate-700">Loading…</div>
+          <div className="text-sm text-[var(--muted-foreground)]">Loading…</div>
         ) : invoices.length === 0 ? (
-          <div className="text-sm text-slate-700">No invoices yet.</div>
+          <div className="text-sm text-[var(--muted-foreground)]">No invoices yet.</div>
         ) : (
           <div className="space-y-3">
             {invoices.map((inv) => (
-              <div key={inv.id} className="flex flex-col justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4 sm:flex-row sm:items-center">
+              <div key={inv.id} className="flex flex-col justify-between gap-3 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4 sm:flex-row sm:items-center">
                 <div>
-                  <div className="text-sm font-semibold text-slate-900">{inv.id}</div>
-                  <div className="mt-0.5 text-xs text-slate-600">
+                  <div className="text-sm font-semibold text-[var(--foreground)]">{inv.id}</div>
+                  <div className="mt-0.5 text-xs text-[var(--muted-foreground)]">
                     {inv.quoteId ? `Quote: ${inv.quoteId}` : "Manual"} • {new Date(inv.createdAtISO).toLocaleString("en-GB")}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge>{inv.status}</Badge>
-                  <div className="text-sm font-semibold text-slate-900">£{inv.total.toFixed(2)}</div>
+                  <div className="text-sm font-semibold text-[var(--foreground)]">£{inv.total.toFixed(2)}</div>
                   <Link href={`/client/invoices/${inv.token}`}>
                     <Button variant="secondary">Open</Button>
                   </Link>

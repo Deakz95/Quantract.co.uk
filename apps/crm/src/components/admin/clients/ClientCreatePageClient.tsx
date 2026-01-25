@@ -65,18 +65,18 @@ if (!e || !e.includes("@")) {
         <CardContent>
           <div className="grid gap-4">
             <label className="grid gap-1">
-              <span className="text-xs font-semibold text-slate-700">Full name</span>
-              <input className="h-10 rounded-md border border-slate-200 px-3 text-sm" value={name} onChange={(e) => setName(e.target.value)} name="name" placeholder="e.g. Jane Doe" />
+              <span className="text-xs font-semibold text-[var(--muted-foreground)]">Full name</span>
+              <input className="h-10 rounded-md border border-[var(--border)] bg-[var(--background)] px-3 text-sm text-[var(--foreground)]" value={name} onChange={(e) => setName(e.target.value)} name="name" placeholder="e.g. Jane Doe" />
             </label>
 
             <label className="grid gap-1">
-              <span className="text-xs font-semibold text-slate-700">Email</span>
-              <input className="h-10 rounded-md border border-slate-200 px-3 text-sm" value={email} onChange={(e) => setEmail(e.target.value)} name="email" placeholder="jane@example.com" />
+              <span className="text-xs font-semibold text-[var(--muted-foreground)]">Email</span>
+              <input className="h-10 rounded-md border border-[var(--border)] bg-[var(--background)] px-3 text-sm text-[var(--foreground)]" value={email} onChange={(e) => setEmail(e.target.value)} name="email" placeholder="jane@example.com" />
             </label>
 
             <label className="grid gap-1">
-              <span className="text-xs font-semibold text-slate-700">Phone (optional)</span>
-              <input className="h-10 rounded-md border border-slate-200 px-3 text-sm" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="07…" />
+              <span className="text-xs font-semibold text-[var(--muted-foreground)]">Phone (optional)</span>
+              <input className="h-10 rounded-md border border-[var(--border)] bg-[var(--background)] px-3 text-sm text-[var(--foreground)]" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="07…" />
             </label>
 
             <div className="flex items-center gap-2">
@@ -88,7 +88,7 @@ if (!e || !e.includes("@")) {
               </Button>
             </div>
 
-            <div className="text-xs text-slate-600">
+            <div className="text-xs text-[var(--muted-foreground)]">
               Next: you can add quotes, jobs, and invoices from the client detail page.
             </div>
           </div>

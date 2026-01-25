@@ -33,7 +33,7 @@ export default function AdminAIPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-sm text-slate-600">
+              <div className="text-sm text-[var(--muted-foreground)]">
                 The assistant opens in the bottom-right. It can read your workspace data via the app APIs and will cite sources where possible.
               </div>
 
@@ -46,14 +46,14 @@ export default function AdminAIPage() {
                       openAI();
                       navigator.clipboard?.writeText?.(s.prompt).catch(() => null);
                     }}
-                    className="rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:bg-slate-50"
+                    className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4 text-left shadow-sm transition hover:bg-[var(--muted)]"
                   >
                     <div className="flex items-center justify-between gap-3">
-                      <div className="text-sm font-semibold text-slate-900">{s.title}</div>
+                      <div className="text-sm font-semibold text-[var(--foreground)]">{s.title}</div>
                       <Badge>Try</Badge>
                     </div>
-                    <div className="mt-2 text-xs text-slate-600">{s.prompt}</div>
-                    <div className="mt-3 text-[11px] text-slate-500">Tip: prompt copied to clipboard.</div>
+                    <div className="mt-2 text-xs text-[var(--muted-foreground)]">{s.prompt}</div>
+                    <div className="mt-3 text-[11px] text-[var(--muted-foreground)]">Tip: prompt copied to clipboard.</div>
                   </button>
                 ))}
               </div>
@@ -67,18 +67,18 @@ export default function AdminAIPage() {
               <CardTitle>Best results</CardTitle>
             </CardHeader>
             <CardContent>
-              <ul className="space-y-3 text-sm text-slate-700">
-                <li className="rounded-2xl border border-slate-200 bg-white p-4">
-                  <div className="font-semibold text-slate-900">Be specific</div>
-                  <div className="mt-1 text-xs text-slate-600">Include job ID, client name/email, or date ranges when possible.</div>
+              <ul className="space-y-3 text-sm text-[var(--muted-foreground)]">
+                <li className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4">
+                  <div className="font-semibold text-[var(--foreground)]">Be specific</div>
+                  <div className="mt-1 text-xs text-[var(--muted-foreground)]">Include job ID, client name/email, or date ranges when possible.</div>
                 </li>
-                <li className="rounded-2xl border border-slate-200 bg-white p-4">
-                  <div className="font-semibold text-slate-900">Ask for outputs</div>
-                  <div className="mt-1 text-xs text-slate-600">Example: “Draft a payment chaser email for invoice INV-102.”</div>
+                <li className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4">
+                  <div className="font-semibold text-[var(--foreground)]">Ask for outputs</div>
+                  <div className="mt-1 text-xs text-[var(--muted-foreground)]">Example: “Draft a payment chaser email for invoice INV-102.”</div>
                 </li>
-                <li className="rounded-2xl border border-slate-200 bg-white p-4">
-                  <div className="font-semibold text-slate-900">Sanity-check actions</div>
-                  <div className="mt-1 text-xs text-slate-600">You stay in control—use it for summaries, drafts and insights.</div>
+                <li className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4">
+                  <div className="font-semibold text-[var(--foreground)]">Sanity-check actions</div>
+                  <div className="mt-1 text-xs text-[var(--muted-foreground)]">You stay in control—use it for summaries, drafts and insights.</div>
                 </li>
               </ul>
             </CardContent>

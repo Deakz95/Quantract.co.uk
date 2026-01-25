@@ -27,7 +27,7 @@ export default async function Page({ params }: Props) {
             <CardTitle>Certificate not found</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-slate-600">This link is invalid or has been revoked.</p>
+            <p className="text-sm text-[var(--muted-foreground)]">This link is invalid or has been revoked.</p>
           </CardContent>
         </Card>
       </div>
@@ -42,7 +42,7 @@ export default async function Page({ params }: Props) {
             <CardTitle>Not signed yet</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-slate-600">The agreement must be signed before a certificate is available.</p>
+            <p className="text-sm text-[var(--muted-foreground)]">The agreement must be signed before a certificate is available.</p>
             <div className="mt-4">
               <Link href={`/client/agreements/${token}`}>
                 <Button>Back to agreement</Button>
@@ -61,7 +61,7 @@ export default async function Page({ params }: Props) {
           <CardTitle>Signature certificate</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="mb-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600">
+          <div className="mb-4 rounded-2xl border border-[var(--border)] bg-[var(--muted)] p-4 text-xs text-[var(--muted-foreground)]">
             This certificate is tied to a private signing link. Keep it secure if you share it with third parties.
           </div>
           <div className="space-y-2 text-sm">
@@ -75,7 +75,7 @@ export default async function Page({ params }: Props) {
             {a.certificateHash ? (
               <div className="pt-2">
                 <div className="font-semibold">Certificate hash (SHA-256)</div>
-                <div className="mt-1 break-all rounded-xl border border-slate-200 bg-slate-50 p-3 font-mono text-xs text-slate-800">
+                <div className="mt-1 break-all rounded-xl border border-[var(--border)] bg-[var(--muted)] p-3 font-mono text-xs text-[var(--foreground)]">
                   {a.certificateHash}
                 </div>
               </div>

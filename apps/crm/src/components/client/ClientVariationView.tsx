@@ -99,7 +99,7 @@ export default function ClientVariationView({ token }: { token: string }) {
         <CardHeader className="flex items-start justify-between gap-3 sm:flex-row">
           <div>
             <CardTitle>Variation</CardTitle>
-            <div className="mt-1 text-xs text-slate-600">{variation.title}</div>
+            <div className="mt-1 text-xs text-[var(--muted-foreground)]">{variation.title}</div>
           </div>
           <div className="flex items-center gap-2">
             <Badge>{variation.status}</Badge>
@@ -107,37 +107,37 @@ export default function ClientVariationView({ token }: { token: string }) {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="mb-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <div className="text-xs font-semibold text-slate-600">Status</div>
-            <div className="mt-1 text-sm font-semibold text-slate-900">
+          <div className="mb-4 rounded-2xl border border-[var(--border)] bg-[var(--muted)] p-4">
+            <div className="text-xs font-semibold text-[var(--muted-foreground)]">Status</div>
+            <div className="mt-1 text-sm font-semibold text-[var(--foreground)]">
               {variation.status === "sent" ? "Awaiting your decision" : variation.status === "approved" ? "Approved" : variation.status === "rejected" ? "Rejected" : "Draft"}
             </div>
-            <div className="mt-2 grid gap-2 text-xs text-slate-600 sm:grid-cols-3">
+            <div className="mt-2 grid gap-2 text-xs text-[var(--muted-foreground)] sm:grid-cols-3">
               <div>Sent: {formatDate(variation.sentAtISO)}</div>
               <div>Approved: {formatDate(variation.approvedAtISO)}</div>
               <div>Rejected: {formatDate(variation.rejectedAtISO)}</div>
             </div>
-            {variation.approvedBy ? <div className="mt-2 text-xs text-slate-600">Approved by {variation.approvedBy}</div> : null}
+            {variation.approvedBy ? <div className="mt-2 text-xs text-[var(--muted-foreground)]">Approved by {variation.approvedBy}</div> : null}
           </div>
           {variation.reason ? (
-            <div className="mb-4 rounded-2xl border border-slate-200 bg-white p-3">
-              <div className="text-xs font-semibold text-slate-700">Reason</div>
-              <div className="mt-1 text-sm text-slate-800">{variation.reason}</div>
+            <div className="mb-4 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3">
+              <div className="text-xs font-semibold text-[var(--muted-foreground)]">Reason</div>
+              <div className="mt-1 text-sm text-[var(--foreground)]">{variation.reason}</div>
             </div>
           ) : null}
 
           <div className="grid gap-3 sm:grid-cols-3">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <div className="text-xs font-semibold text-slate-600">Subtotal (ex VAT)</div>
-              <div className="mt-1 text-sm font-semibold text-slate-900">{pounds(variation.subtotal)}</div>
+            <div className="rounded-2xl border border-[var(--border)] bg-[var(--muted)] p-4">
+              <div className="text-xs font-semibold text-[var(--muted-foreground)]">Subtotal (ex VAT)</div>
+              <div className="mt-1 text-sm font-semibold text-[var(--foreground)]">{pounds(variation.subtotal)}</div>
             </div>
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <div className="text-xs font-semibold text-slate-600">VAT</div>
-              <div className="mt-1 text-sm font-semibold text-slate-900">{pounds(variation.vat)}</div>
+            <div className="rounded-2xl border border-[var(--border)] bg-[var(--muted)] p-4">
+              <div className="text-xs font-semibold text-[var(--muted-foreground)]">VAT</div>
+              <div className="mt-1 text-sm font-semibold text-[var(--foreground)]">{pounds(variation.vat)}</div>
             </div>
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <div className="text-xs font-semibold text-slate-600">Total</div>
-              <div className="mt-1 text-sm font-semibold text-slate-900">{pounds(variation.total)}</div>
+            <div className="rounded-2xl border border-[var(--border)] bg-[var(--muted)] p-4">
+              <div className="text-xs font-semibold text-[var(--muted-foreground)]">Total</div>
+              <div className="mt-1 text-sm font-semibold text-[var(--foreground)]">{pounds(variation.total)}</div>
             </div>
           </div>
 
@@ -152,7 +152,7 @@ export default function ClientVariationView({ token }: { token: string }) {
               Reject variation
             </Button>
             {variation.status === "draft" ? (
-              <div className="text-xs text-slate-500">Decisions are available once the variation has been sent.</div>
+              <div className="text-xs text-[var(--muted-foreground)]">Decisions are available once the variation has been sent.</div>
             ) : null}
           </div>
         </CardContent>

@@ -44,18 +44,18 @@ Thanks`
           </div>
         </DialogHeader>
         <DialogBody>
-          <p className="text-sm text-slate-700">No worries — tell us what you’d like changed and we’ll sort it.</p>
+          <p className="text-sm text-[var(--muted-foreground)]">No worries — tell us what you’d like changed and we’ll sort it.</p>
 
           <div className="mt-4">
-            <label className="text-xs font-semibold text-slate-900">Message</label>
+            <label className="text-xs font-semibold text-[var(--foreground)]">Message</label>
             <textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               rows={5}
               placeholder="e.g. Can we change the deposit to 20% and move the start date to next Monday?"
-              className="mt-1 w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-sm focus:border-slate-400 focus:outline-none"
+              className="mt-1 w-full resize-none rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm shadow-sm focus:border-[var(--border)] focus:outline-none"
             />
-            <p className="mt-2 text-xs text-slate-500">This opens your email app with a pre-filled message.</p>
+            <p className="mt-2 text-xs text-[var(--muted-foreground)]">This opens your email app with a pre-filled message.</p>
           </div>
 
           <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">

@@ -127,16 +127,16 @@ export default function AdminJobNewPage() {
             <CardContent>
               <div className="grid gap-3">
                 <label className="grid gap-1">
-                  <span className="text-xs font-semibold text-slate-700">Quote ID</span>
+                  <span className="text-xs font-semibold text-[var(--muted-foreground)]">Quote ID</span>
                   <input
-                    className="h-11 rounded-2xl border border-slate-200 bg-white px-4 text-sm placeholder:text-slate-400"
+                    className="h-11 rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)]"
                     placeholder="e.g. 8f3c…"
                     value={quoteId}
                     onChange={(e) => setQuoteId(e.target.value)}
                   />
                 </label>
 
-                <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3 text-xs text-slate-600">
+                <div className="rounded-2xl border border-[var(--border)] bg-[var(--muted)] p-3 text-xs text-[var(--muted-foreground)]">
                   Tip: copy the quote ID from Quotes → Open → header.
                 </div>
 
@@ -157,13 +157,13 @@ export default function AdminJobNewPage() {
             <CardContent>
               <div className="grid gap-3">
                 <label className="grid gap-1">
-                  <span className="text-xs font-semibold text-slate-700">Client *</span>
+                  <span className="text-xs font-semibold text-[var(--muted-foreground)]">Client *</span>
                   <select
-                    className="h-11 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700"
+                    className="h-11 rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 text-sm text-[var(--foreground)]"
                     value={selectedClientId}
                     onChange={(e) => setSelectedClientId(e.target.value)}
                   >
-                    <option value="" className="text-slate-400">Select a client...</option>
+                    <option value="" className="text-[var(--muted-foreground)]">Select a client...</option>
                     {clients.map((c) => (
                       <option key={c.id} value={c.id}>{c.name} ({c.email})</option>
                     ))}
@@ -171,9 +171,9 @@ export default function AdminJobNewPage() {
                 </label>
 
                 <label className="grid gap-1">
-                  <span className="text-xs font-semibold text-slate-700">Job Title *</span>
+                  <span className="text-xs font-semibold text-[var(--muted-foreground)]">Job Title *</span>
                   <input
-                    className="h-11 rounded-2xl border border-slate-200 bg-white px-4 text-sm placeholder:text-slate-400"
+                    className="h-11 rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)]"
                     placeholder="e.g. Kitchen rewire"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
@@ -181,9 +181,9 @@ export default function AdminJobNewPage() {
                 </label>
 
                 <label className="grid gap-1">
-                  <span className="text-xs font-semibold text-slate-700">Site Address</span>
+                  <span className="text-xs font-semibold text-[var(--muted-foreground)]">Site Address</span>
                   <input
-                    className="h-11 rounded-2xl border border-slate-200 bg-white px-4 text-sm placeholder:text-slate-400"
+                    className="h-11 rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)]"
                     placeholder="e.g. 10 Downing Street, London"
                     value={siteAddress}
                     onChange={(e) => setSiteAddress(e.target.value)}
@@ -191,9 +191,9 @@ export default function AdminJobNewPage() {
                 </label>
 
                 <label className="grid gap-1">
-                  <span className="text-xs font-semibold text-slate-700">Description</span>
+                  <span className="text-xs font-semibold text-[var(--muted-foreground)]">Description</span>
                   <textarea
-                    className="min-h-[80px] rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm placeholder:text-slate-400"
+                    className="min-h-[80px] rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2.5 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)]"
                     placeholder="Job details..."
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
@@ -216,10 +216,10 @@ export default function AdminJobNewPage() {
             <CardTitle>What happens next</CardTitle>
           </CardHeader>
           <CardContent>
-            <ul className="space-y-2 text-sm text-slate-700">
-              <li className="rounded-2xl border border-slate-200 bg-white p-3">Assign an engineer & schedule the job.</li>
-              <li className="rounded-2xl border border-slate-200 bg-white p-3">Track costs & time as work progresses.</li>
-              <li className="rounded-2xl border border-slate-200 bg-white p-3">Issue staged invoices from the job page.</li>
+            <ul className="space-y-2 text-sm text-[var(--foreground)]">
+              <li className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3">Assign an engineer & schedule the job.</li>
+              <li className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3">Track costs & time as work progresses.</li>
+              <li className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3">Issue staged invoices from the job page.</li>
             </ul>
           </CardContent>
         </Card>

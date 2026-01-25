@@ -350,7 +350,7 @@ export default function EngineersPageClient() {
               <CardTitle>Engineers</CardTitle>
               <div className="flex flex-wrap items-center gap-2">
                 <input
-                  className="w-[240px] max-w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm"
+                  className="w-[240px] max-w-full rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-sm text-[var(--foreground)]"
                   placeholder="Search email, name…"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
@@ -385,7 +385,7 @@ export default function EngineersPageClient() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="text-left text-xs text-slate-600">
+                    <tr className="text-left text-xs text-[var(--muted-foreground)]">
                       <th className="py-2">Engineer</th>
                       <th className="py-2">Status</th>
                       <th className="py-2">Updated</th>
@@ -396,16 +396,16 @@ export default function EngineersPageClient() {
                     {filtered.map((e) => (
                       <tr
                         key={e.id}
-                        className={`border-t border-slate-100 ${selectedId === e.id ? "bg-slate-50" : ""}`}
+                        className={`border-t border-[var(--border)] ${selectedId === e.id ? "bg-[var(--muted)]" : ""}`}
                       >
                         <td className="py-3">
-                          <div className="font-semibold text-slate-900">{e.name || e.email}</div>
-                          <div className="text-xs text-slate-600">{e.email}</div>
+                          <div className="font-semibold text-[var(--foreground)]">{e.name || e.email}</div>
+                          <div className="text-xs text-[var(--muted-foreground)]">{e.email}</div>
                         </td>
                         <td className="py-3">
                           <Badge>{e.isActive === false ? "Inactive" : "Active"}</Badge>
                         </td>
-                        <td className="py-3 text-xs text-slate-600">{new Date(e.updatedAtISO).toLocaleDateString("en-GB")}</td>
+                        <td className="py-3 text-xs text-[var(--muted-foreground)]">{new Date(e.updatedAtISO).toLocaleDateString("en-GB")}</td>
                         <td className="py-3 text-right space-x-2">
                           <Button variant="secondary" type="button" onClick={() => toggleActive(e)}>
                             {e.isActive === false ? "Activate" : "Deactivate"}
@@ -436,9 +436,9 @@ export default function EngineersPageClient() {
           <CardContent>
             <div className="grid gap-3">
               <label className="grid gap-1">
-                <span className="text-xs font-semibold text-slate-700">Name</span>
+                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Name</span>
                 <input
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm"
+                  className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2.5 text-sm text-[var(--foreground)]"
                   placeholder="Engineer name"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
@@ -446,9 +446,9 @@ export default function EngineersPageClient() {
               </label>
 
               <label className="grid gap-1">
-                <span className="text-xs font-semibold text-slate-700">Email *</span>
+                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Email *</span>
                 <input
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm"
+                  className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2.5 text-sm text-[var(--foreground)]"
                   placeholder="engineer@example.com"
                   type="email"
                   value={newEmail}
@@ -457,9 +457,9 @@ export default function EngineersPageClient() {
               </label>
 
               <label className="grid gap-1">
-                <span className="text-xs font-semibold text-slate-700">Phone</span>
+                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Phone</span>
                 <input
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm"
+                  className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2.5 text-sm text-[var(--foreground)]"
                   placeholder="Phone number"
                   value={newPhone}
                   onChange={(e) => setNewPhone(e.target.value)}
@@ -484,39 +484,39 @@ export default function EngineersPageClient() {
             ) : (
               <div className="grid gap-3 text-sm">
                 <div>
-                  <div className="text-xs font-semibold text-slate-600">Name</div>
-                  <div className="font-semibold text-slate-900">{selected.name || "—"}</div>
+                  <div className="text-xs font-semibold text-[var(--muted-foreground)]">Name</div>
+                  <div className="font-semibold text-[var(--foreground)]">{selected.name || "—"}</div>
                 </div>
                 <div>
-                  <div className="text-xs font-semibold text-slate-600">Email</div>
-                  <div className="text-slate-900">{selected.email}</div>
+                  <div className="text-xs font-semibold text-[var(--muted-foreground)]">Email</div>
+                  <div className="text-[var(--foreground)]">{selected.email}</div>
                 </div>
                 {selected.phone ? (
                   <div>
-                    <div className="text-xs font-semibold text-slate-600">Phone</div>
-                    <div className="text-slate-900">{selected.phone}</div>
+                    <div className="text-xs font-semibold text-[var(--muted-foreground)]">Phone</div>
+                    <div className="text-[var(--foreground)]">{selected.phone}</div>
                   </div>
                 ) : null}
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <div className="text-xs font-semibold text-slate-600">Cost rate</div>
-                    <div className="text-slate-900">
+                    <div className="text-xs font-semibold text-[var(--muted-foreground)]">Cost rate</div>
+                    <div className="text-[var(--foreground)]">
                       {typeof selected.costRatePerHour === "number" ? `£${selected.costRatePerHour.toFixed(2)}/hr` : "—"}
                     </div>
                   </div>
                   <div>
-                    <div className="text-xs font-semibold text-slate-600">Charge rate</div>
-                    <div className="text-slate-900">
+                    <div className="text-xs font-semibold text-[var(--muted-foreground)]">Charge rate</div>
+                    <div className="text-[var(--foreground)]">
                       {typeof selected.chargeRatePerHour === "number" ? `£${selected.chargeRatePerHour.toFixed(2)}/hr` : "—"}
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <div className="text-xs font-semibold text-slate-600">Rate card</div>
+                  <div className="text-xs font-semibold text-[var(--muted-foreground)]">Rate card</div>
                   <select
-                    className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                    className="mt-1 w-full rounded-2xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)]"
                     value={selected.rateCardId ?? ""}
                     onChange={(e) => updateEngineerRateCard(selected.id, e.target.value)}
                   >
@@ -529,7 +529,7 @@ export default function EngineersPageClient() {
                   </select>
 
                   {selected.rateCardName ? (
-                    <div className="mt-1 text-xs text-slate-600">
+                    <div className="mt-1 text-xs text-[var(--muted-foreground)]">
                       {selected.rateCardName} • Cost £{(selected.rateCardCostRate ?? 0).toFixed(2)}/hr • Charge £
                       {(selected.rateCardChargeRate ?? 0).toFixed(2)}/hr
                     </div>
@@ -537,23 +537,23 @@ export default function EngineersPageClient() {
                 </div>
 
                 <div>
-                  <div className="text-xs font-semibold text-slate-600">Status</div>
+                  <div className="text-xs font-semibold text-[var(--muted-foreground)]">Status</div>
                   <Badge>{selected.isActive === false ? "Inactive" : "Active"}</Badge>
                 </div>
 
-                <div className="text-xs text-slate-500">Created {new Date(selected.createdAtISO).toLocaleDateString("en-GB")}</div>
+                <div className="text-xs text-[var(--muted-foreground)]">Created {new Date(selected.createdAtISO).toLocaleDateString("en-GB")}</div>
               </div>
             )}
 
-            <div className="mt-6 border-t border-slate-200 pt-5 space-y-3">
-              <div className="text-sm font-semibold text-slate-900">Set portal password</div>
-              <div className="text-xs text-slate-600">
+            <div className="mt-6 border-t border-[var(--border)] pt-5 space-y-3">
+              <div className="text-sm font-semibold text-[var(--foreground)]">Set portal password</div>
+              <div className="text-xs text-[var(--muted-foreground)]">
                 Use this if someone requests a password reset by email. (Magic-link login still works.)
               </div>
 
               <div className="grid gap-3">
                 <input
-                  className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
+                  className="w-full rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)]"
                   type="password"
                   placeholder="New password (min 8 chars)"
                   value={pw}
@@ -561,7 +561,7 @@ export default function EngineersPageClient() {
                   autoComplete="new-password"
                 />
                 <input
-                  className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
+                  className="w-full rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)]"
                   type="password"
                   placeholder="Confirm new password"
                   value={pw2}
@@ -588,7 +588,7 @@ export default function EngineersPageClient() {
             <div className="space-y-3 text-sm">
               <div className="grid gap-2">
                 <input
-                  className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                  className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)]"
                   placeholder="Rate card name"
                   value={rateName}
                   onChange={(e) => setRateName(e.target.value)}
@@ -596,7 +596,7 @@ export default function EngineersPageClient() {
 
                 <div className="grid grid-cols-2 gap-2">
                   <input
-                    className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                    className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)]"
                     placeholder="Cost rate"
                     type="number"
                     step="0.01"
@@ -604,7 +604,7 @@ export default function EngineersPageClient() {
                     onChange={(e) => setRateCost(e.target.value)}
                   />
                   <input
-                    className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                    className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)]"
                     placeholder="Charge rate"
                     type="number"
                     step="0.01"
@@ -613,7 +613,7 @@ export default function EngineersPageClient() {
                   />
                 </div>
 
-                <label className="flex items-center gap-2 text-xs text-slate-600">
+                <label className="flex items-center gap-2 text-xs text-[var(--muted-foreground)]">
                   <input type="checkbox" checked={rateDefault} onChange={(e) => setRateDefault(e.target.checked)} />
                   Set as default
                 </label>
@@ -624,16 +624,16 @@ export default function EngineersPageClient() {
               </div>
 
               {rateCards.length === 0 ? (
-                <div className="text-xs text-slate-600">No rate cards yet.</div>
+                <div className="text-xs text-[var(--muted-foreground)]">No rate cards yet.</div>
               ) : (
                 <div className="space-y-2">
                   {rateCards.map((card) => (
-                    <div key={card.id} className="rounded-2xl border border-slate-200 bg-white p-3">
+                    <div key={card.id} className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3">
                       <div className="flex items-center justify-between">
-                        <div className="font-semibold text-slate-900">{card.name}</div>
+                        <div className="font-semibold text-[var(--foreground)]">{card.name}</div>
                         {card.isDefault ? <Badge>Default</Badge> : null}
                       </div>
-                      <div className="mt-1 text-xs text-slate-600">
+                      <div className="mt-1 text-xs text-[var(--muted-foreground)]">
                         Cost £{card.costRatePerHour.toFixed(2)}/hr • Charge £{card.chargeRatePerHour.toFixed(2)}/hr
                       </div>
                     </div>

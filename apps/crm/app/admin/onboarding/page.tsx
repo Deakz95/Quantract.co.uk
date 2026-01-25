@@ -31,21 +31,21 @@ export default function AdminOnboarding() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50">
+    <div className="min-h-screen flex items-center justify-center p-6 bg-[var(--background)]">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow-xl mb-4">
             <span className="text-white font-bold text-2xl">Q</span>
           </div>
-          <h1 className="text-2xl font-bold text-slate-900">Welcome to Quantract</h1>
-          <p className="text-slate-600 mt-1">Let's finish setting up your profile</p>
+          <h1 className="text-2xl font-bold text-[var(--foreground)]">Welcome to Quantract</h1>
+          <p className="text-[var(--muted-foreground)] mt-1">Let's finish setting up your profile</p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-lg p-6 space-y-6">
+        <div className="bg-[var(--card)] rounded-2xl shadow-lg p-6 space-y-6 border border-[var(--border)]">
           <div className="text-center">
-            <h2 className="text-lg font-semibold text-slate-900">Create Your Profile</h2>
-            <p className="text-sm text-slate-500">Enter your name to get started</p>
+            <h2 className="text-lg font-semibold text-[var(--foreground)]">Create Your Profile</h2>
+            <p className="text-sm text-[var(--muted-foreground)]">Enter your name to get started</p>
           </div>
 
           {err && (
@@ -56,10 +56,10 @@ export default function AdminOnboarding() {
           )}
 
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-slate-700">Your Name</label>
+            <label className="text-sm font-medium text-[var(--muted-foreground)]">Your Name</label>
             <input
               type="text"
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+              className="w-full px-4 py-3 rounded-xl border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
               placeholder="Enter your full name"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -81,7 +81,7 @@ export default function AdminOnboarding() {
             )}
           </button>
 
-          <p className="text-xs text-slate-500 text-center">
+          <p className="text-xs text-[var(--muted-foreground)] text-center">
             You'll be able to update this later in settings
           </p>
         </div>

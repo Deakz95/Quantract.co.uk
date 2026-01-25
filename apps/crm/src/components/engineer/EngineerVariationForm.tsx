@@ -68,9 +68,9 @@ export default function EngineerVariationForm({ jobId, stages }: { jobId: string
         <form className="space-y-4" onSubmit={submit}>
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="grid gap-1 sm:col-span-2">
-              <span className="text-xs font-semibold text-slate-700">Title</span>
+              <span className="text-xs font-semibold text-[var(--muted-foreground)]">Title</span>
               <input
-                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="e.g. Additional consumer unit"
@@ -78,9 +78,9 @@ export default function EngineerVariationForm({ jobId, stages }: { jobId: string
               />
             </label>
             <label className="grid gap-1 sm:col-span-2">
-              <span className="text-xs font-semibold text-slate-700">Notes</span>
+              <span className="text-xs font-semibold text-[var(--muted-foreground)]">Notes</span>
               <textarea
-                className="min-h-[110px] rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                className="min-h-[110px] rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Explain the change, context, or client request."
@@ -88,9 +88,9 @@ export default function EngineerVariationForm({ jobId, stages }: { jobId: string
               />
             </label>
             <label className="grid gap-1">
-              <span className="text-xs font-semibold text-slate-700">Stage (optional)</span>
+              <span className="text-xs font-semibold text-[var(--muted-foreground)]">Stage (optional)</span>
               <select
-                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm"
                 value={stageId}
                 onChange={(e) => setStageId(e.target.value)}
                 disabled={busy}
@@ -104,21 +104,21 @@ export default function EngineerVariationForm({ jobId, stages }: { jobId: string
               </select>
             </label>
             <label className="grid gap-1">
-              <span className="text-xs font-semibold text-slate-700">Photos</span>
+              <span className="text-xs font-semibold text-[var(--muted-foreground)]">Photos</span>
               <input
                 key={fileKey}
                 type="file"
                 accept="image/*"
                 multiple
-                className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm"
+                className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-sm"
                 onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
                 disabled={busy}
               />
             </label>
           </div>
           {files.length ? (
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
-              <div className="font-semibold text-slate-700">Selected photos</div>
+            <div className="rounded-2xl border border-[var(--border)] bg-[var(--muted)] p-3 text-xs text-[var(--muted-foreground)]">
+              <div className="font-semibold text-[var(--muted-foreground)]">Selected photos</div>
               <ul className="mt-2 list-disc pl-5">
                 {files.map((file) => (
                   <li key={`${file.name}-${file.size}`}>{file.name}</li>
@@ -127,7 +127,7 @@ export default function EngineerVariationForm({ jobId, stages }: { jobId: string
             </div>
           ) : null}
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="text-xs text-slate-600">Photos and notes help admin approve and price the variation quickly.</div>
+            <div className="text-xs text-[var(--muted-foreground)]">Photos and notes help admin approve and price the variation quickly.</div>
             <Button type="submit" disabled={busy}>Submit variation</Button>
           </div>
         </form>

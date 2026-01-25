@@ -60,14 +60,14 @@ export function Shell({
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-20 md:pb-0">
+    <div className="min-h-screen bg-[var(--muted)] pb-20 md:pb-0">
       {/* Top bar */}
-      <div className="border-b border-slate-200 bg-white">
+      <div className="border-b border-[var(--border)] bg-[var(--background)]">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <Link href="/" className="font-extrabold tracking-tight">
             QUANTRACT
           </Link>
-          <div className="text-xs font-semibold text-slate-600">{role.toUpperCase()}</div>
+          <div className="text-xs font-semibold text-[var(--muted-foreground)]">{role.toUpperCase()}</div>
         </div>
       </div>
 
@@ -75,7 +75,7 @@ export function Shell({
         <div className="grid grid-cols-1 gap-6 md:grid-cols-12">
           {/* Sidebar */}
           <aside className="hidden md:block md:col-span-3">
-            <div className="rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
+            <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-2 shadow-sm">
               {items.filter(it => !it.section).map((it) => {
                 const active = pathname === it.href || pathname.startsWith(it.href + "/");
                 return (
@@ -84,7 +84,7 @@ export function Shell({
                     href={it.href}
                     className={cn(
                       "block rounded-xl px-3 py-2 text-sm font-semibold",
-                      active ? "bg-slate-900 text-white" : "text-slate-700 hover:bg-slate-50"
+                      active ? "bg-[var(--background)] text-white" : "text-[var(--muted-foreground)] hover:bg-[var(--muted)]"
                     )}
                   >
                     {it.label}
@@ -95,8 +95,8 @@ export function Shell({
               {/* Portal access section (admin only) */}
               {role === "admin" && items.some(it => it.section === "portals") && (
                 <>
-                  <div className="mt-2 border-t border-slate-100 pt-2 px-3">
-                    <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
+                  <div className="mt-2 border-t border-[var(--border)] pt-2 px-3">
+                    <div className="text-xs font-semibold text-[var(--muted-foreground)] uppercase tracking-wide mb-1">
                       Access Other Portals
                     </div>
                   </div>
@@ -118,11 +118,11 @@ export function Shell({
                 </>
               )}
 
-              <div className="mt-2 border-t border-slate-100 pt-2">
+              <div className="mt-2 border-t border-[var(--border)] pt-2">
                 <button
                   type="button"
                   onClick={logout}
-                  className="block w-full rounded-xl px-3 py-2 text-left text-sm text-slate-600 hover:bg-slate-50"
+                  className="block w-full rounded-xl px-3 py-2 text-left text-sm text-[var(--muted-foreground)] hover:bg-[var(--muted)]"
                 >
                   Log out
                 </button>
@@ -132,10 +132,10 @@ export function Shell({
 
           {/* Main */}
           <main className="md:col-span-9">
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-5 shadow-sm">
               <div className="mb-5">
                 <div className="text-2xl font-extrabold">{title}</div>
-                {subtitle ? <div className="mt-1 text-sm text-slate-600">{subtitle}</div> : null}
+                {subtitle ? <div className="mt-1 text-sm text-[var(--muted-foreground)]">{subtitle}</div> : null}
               </div>
               {children}
             </div>
@@ -144,7 +144,7 @@ export function Shell({
       </div>
 
       {/* Mobile bottom nav */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 border-t border-slate-200 bg-white">
+      <nav className="md:hidden fixed bottom-0 inset-x-0 border-t border-[var(--border)] bg-[var(--background)]">
         <div className="mx-auto flex max-w-4xl justify-around px-2 py-2">
           {items.filter(it => !it.section).slice(0, 4).map((it) => {
             const active = pathname === it.href || pathname.startsWith(it.href + "/");
@@ -154,7 +154,7 @@ export function Shell({
                 href={it.href}
                 className={cn(
                   "flex flex-1 flex-col items-center justify-center rounded-xl px-2 py-2 text-xs font-semibold",
-                  active ? "text-slate-900" : "text-slate-500"
+                  active ? "text-[var(--foreground)]" : "text-[var(--muted-foreground)]"
                 )}
               >
                 {it.label}
@@ -165,7 +165,7 @@ export function Shell({
           <button
             type="button"
             onClick={logout}
-            className="flex flex-1 flex-col items-center justify-center rounded-xl px-2 py-2 text-xs font-semibold text-slate-500"
+            className="flex flex-1 flex-col items-center justify-center rounded-xl px-2 py-2 text-xs font-semibold text-[var(--muted-foreground)]"
           >
             Logout
           </button>

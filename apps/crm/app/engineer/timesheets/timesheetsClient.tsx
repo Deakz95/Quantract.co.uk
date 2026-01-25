@@ -48,7 +48,7 @@ export function TimesheetsClient() {
   function renderStatusBadge(status?: string) {
     const label = status || "draft";
     const styles: Record<string, string> = {
-      draft: "border-slate-200 bg-slate-50 text-slate-700",
+      draft: "border-[var(--border)] bg-[var(--muted)] text-[var(--muted-foreground)]",
       submitted: "border-blue-200 bg-blue-50 text-blue-700",
       approved: "border-emerald-200 bg-emerald-50 text-emerald-700",
       rejected: "border-rose-200 bg-rose-50 text-rose-700",
@@ -132,15 +132,15 @@ export function TimesheetsClient() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-end gap-3">
         <div>
-          <div className="text-xs font-semibold text-slate-700">Week starting (Mon)</div>
+          <div className="text-xs font-semibold text-[var(--muted-foreground)]">Week starting (Mon)</div>
           <Input type="date" value={weekStart} onChange={(e) => setWeekStart(e.target.value)} disabled={loading} />
         </div>
-        <div className="text-sm text-slate-700">Status: {renderStatusBadge(timesheet?.status)}</div>
+        <div className="text-sm text-[var(--muted-foreground)]">Status: {renderStatusBadge(timesheet?.status)}</div>
         {timesheet?.submittedAtISO ? (
-          <div className="text-xs text-slate-600">Submitted {new Date(timesheet.submittedAtISO).toLocaleString()}</div>
+          <div className="text-xs text-[var(--muted-foreground)]">Submitted {new Date(timesheet.submittedAtISO).toLocaleString()}</div>
         ) : null}
         {timesheet?.approvedAtISO ? (
-          <div className="text-xs text-slate-600">Approved {new Date(timesheet.approvedAtISO).toLocaleString()}</div>
+          <div className="text-xs text-[var(--muted-foreground)]">Approved {new Date(timesheet.approvedAtISO).toLocaleString()}</div>
         ) : null}
         <Button type="button" onClick={submit} disabled={loading || locked}>
           Submit week
@@ -153,11 +153,11 @@ export function TimesheetsClient() {
         </div>
       ) : null}
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="text-sm font-bold text-slate-900">Add time entry</div>
+      <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4 shadow-sm">
+        <div className="text-sm font-bold text-[var(--foreground)]">Add time entry</div>
         <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
-            <div className="text-xs font-semibold text-slate-700">Job</div>
+            <div className="text-xs font-semibold text-[var(--muted-foreground)]">Job</div>
             <Select value={jobId} onValueChange={setJobId} disabled={loading || locked}>
               <SelectTrigger>
                 <SelectValue placeholder="Select job" />
@@ -173,22 +173,22 @@ export function TimesheetsClient() {
           </div>
 
           <div>
-            <div className="text-xs font-semibold text-slate-700">Break (minutes)</div>
+            <div className="text-xs font-semibold text-[var(--muted-foreground)]">Break (minutes)</div>
             <Input value={breakMinutes} onChange={(e) => setBreakMinutes(e.target.value)} disabled={loading || locked} />
           </div>
 
           <div>
-            <div className="text-xs font-semibold text-slate-700">Start</div>
+            <div className="text-xs font-semibold text-[var(--muted-foreground)]">Start</div>
             <Input type="datetime-local" value={startedAtISO} onChange={(e) => setStartedAtISO(e.target.value)} disabled={loading || locked} />
           </div>
 
           <div>
-            <div className="text-xs font-semibold text-slate-700">End</div>
+            <div className="text-xs font-semibold text-[var(--muted-foreground)]">End</div>
             <Input type="datetime-local" value={endedAtISO} onChange={(e) => setEndedAtISO(e.target.value)} disabled={loading || locked} />
           </div>
 
           <div className="sm:col-span-2">
-            <div className="text-xs font-semibold text-slate-700">Notes</div>
+            <div className="text-xs font-semibold text-[var(--muted-foreground)]">Notes</div>
             <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional" disabled={loading || locked} />
           </div>
         </div>
@@ -199,10 +199,10 @@ export function TimesheetsClient() {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="text-sm font-bold text-slate-900">Entries</div>
+      <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4 shadow-sm">
+        <div className="text-sm font-bold text-[var(--foreground)]">Entries</div>
         <div className="mt-3">
-          {entries.length === 0 ? <div className="text-sm text-slate-600">No entries logged for this week yet.</div> : null}
+          {entries.length === 0 ? <div className="text-sm text-[var(--muted-foreground)]">No entries logged for this week yet.</div> : null}
           <Table>
             <TableHeader>
               <TableRow>

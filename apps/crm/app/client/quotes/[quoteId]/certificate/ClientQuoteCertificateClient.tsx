@@ -51,14 +51,14 @@ export default function SigningCertificate({ quoteId }: Props) {
 
         <CardContent>
           {!quoteId ? (
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <div className="text-sm font-semibold text-slate-900">Loading…</div>
-              <div className="mt-1 text-sm text-slate-700">Fetching quote id…</div>
+            <div className="rounded-2xl border border-[var(--border)] bg-[var(--muted)] p-4">
+              <div className="text-sm font-semibold text-[var(--foreground)]">Loading…</div>
+              <div className="mt-1 text-sm text-[var(--muted-foreground)]">Fetching quote id…</div>
             </div>
           ) : !rec ? (
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <div className="text-sm font-semibold text-slate-900">No signing record found</div>
-              <div className="mt-1 text-sm text-slate-700">This quote may not be signed yet.</div>
+            <div className="rounded-2xl border border-[var(--border)] bg-[var(--muted)] p-4">
+              <div className="text-sm font-semibold text-[var(--foreground)]">No signing record found</div>
+              <div className="mt-1 text-sm text-[var(--muted-foreground)]">This quote may not be signed yet.</div>
               <div className="mt-3">
                 <Link href={`/client/quotes/${quoteId}/sign`}>
                   <Button>Go to signing</Button>
@@ -68,49 +68,49 @@ export default function SigningCertificate({ quoteId }: Props) {
           ) : (
             <div className="space-y-5">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                  <div className="text-xs font-semibold text-slate-900">Signer</div>
-                  <div className="mt-1 text-sm text-slate-700">{rec.signerName}</div>
+                <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4">
+                  <div className="text-xs font-semibold text-[var(--foreground)]">Signer</div>
+                  <div className="mt-1 text-sm text-[var(--muted-foreground)]">{rec.signerName}</div>
                 </div>
 
-                <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                  <div className="text-xs font-semibold text-slate-900">Signed at</div>
-                  <div className="mt-1 text-sm text-slate-700">{new Date(rec.signedAtISO).toLocaleString()}</div>
+                <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4">
+                  <div className="text-xs font-semibold text-[var(--foreground)]">Signed at</div>
+                  <div className="mt-1 text-sm text-[var(--muted-foreground)]">{new Date(rec.signedAtISO).toLocaleString()}</div>
                 </div>
 
-                <div className="rounded-2xl border border-slate-200 bg-white p-4 md:col-span-2">
-                  <div className="text-xs font-semibold text-slate-900">Document hash (demo)</div>
-                  <div className="mt-2 rounded-2xl border border-slate-200 bg-slate-50 p-3 font-mono text-xs text-slate-900 break-all">
+                <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4 md:col-span-2">
+                  <div className="text-xs font-semibold text-[var(--foreground)]">Document hash (demo)</div>
+                  <div className="mt-2 rounded-2xl border border-[var(--border)] bg-[var(--muted)] p-3 font-mono text-xs text-[var(--foreground)] break-all">
                     {hash ?? "…"}
                   </div>
-                  <p className="mt-2 text-xs text-slate-500">
+                  <p className="mt-2 text-xs text-[var(--muted-foreground)]">
                     In production, generate this on the server from the exact PDF bytes + store immutably.
                   </p>
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                <div className="text-xs font-semibold text-slate-900">Signature image</div>
+              <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4">
+                <div className="text-xs font-semibold text-[var(--foreground)]">Signature image</div>
                 {rec.signatureDataUrl ? (
-                  <div className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                  <div className="mt-3 rounded-2xl border border-[var(--border)] bg-[var(--muted)] p-3">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img alt="Signature" src={rec.signatureDataUrl} className="max-h-28" />
                   </div>
                 ) : (
-                  <div className="mt-2 text-sm text-slate-700">Typed signature used</div>
+                  <div className="mt-2 text-sm text-[var(--muted-foreground)]">Typed signature used</div>
                 )}
               </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                <div className="text-xs font-semibold text-slate-900">Technical</div>
+              <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4">
+                <div className="text-xs font-semibold text-[var(--foreground)]">Technical</div>
                 <div className="mt-2 grid grid-cols-1 gap-3 md:grid-cols-2">
                   <div>
-                    <div className="text-xs text-slate-600">User agent</div>
-                    <div className="mt-1 text-xs text-slate-900 break-all">{rec.userAgent || "(not captured)"}</div>
+                    <div className="text-xs text-[var(--muted-foreground)]">User agent</div>
+                    <div className="mt-1 text-xs text-[var(--foreground)] break-all">{rec.userAgent || "(not captured)"}</div>
                   </div>
                   <div>
-                    <div className="text-xs text-slate-600">IP address</div>
-                    <div className="mt-1 text-xs text-slate-900">{rec.ip || "(server will set)"}</div>
+                    <div className="text-xs text-[var(--muted-foreground)]">IP address</div>
+                    <div className="mt-1 text-xs text-[var(--foreground)]">{rec.ip || "(server will set)"}</div>
                   </div>
                 </div>
               </div>

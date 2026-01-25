@@ -282,7 +282,7 @@ export default function CertificatesPage() {
         {/* Footer */}
         <div style={{ textAlign: "center", paddingTop: "24px", borderTop: "1px solid #2D3B52" }}>
           <a
-            href="https://quantract.co.uk"
+            href="https://www.quantract.co.uk/admin/dashboard"
             style={{
               display: "inline-flex",
               alignItems: "center",

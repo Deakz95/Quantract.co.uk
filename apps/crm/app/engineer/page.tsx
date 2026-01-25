@@ -28,7 +28,7 @@ export default function EngineerHome() {
         <CardTitle>My Jobs</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="text-sm text-slate-700">Assigned jobs will appear here.</div>
+        <div className="text-sm text-[var(--muted-foreground)]">Assigned jobs will appear here.</div>
       </CardContent>
     </Card>
   );

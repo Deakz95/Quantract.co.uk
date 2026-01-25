@@ -57,8 +57,8 @@ export default async function Page({ params }: Props) {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="text-sm text-slate-700">
-            <div className="font-semibold text-slate-900">Status: {job.status}</div>
+          <div className="text-sm text-[var(--muted-foreground)]">
+            <div className="font-semibold text-[var(--foreground)]">Status: {job.status}</div>
             <div className="mt-2">
               {job.siteName || job.siteAddress ? (
                 <div>
@@ -75,7 +75,7 @@ export default async function Page({ params }: Props) {
                 <div className="mt-1"><span className="font-semibold">Notes:</span> {job.notes}</div>
               ) : null}
             </div>
-            <div className="mt-3 text-slate-600">
+            <div className="mt-3 text-[var(--muted-foreground)]">
               Checklist, photos, notes, and completion actions can be added next (Pack C2/C3).
             </div>
           </div>
@@ -98,7 +98,7 @@ export default async function Page({ params }: Props) {
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="text-left text-xs text-slate-500">
+                      <tr className="text-left text-xs text-[var(--muted-foreground)]">
                         <th className="py-2 pr-3">Description</th>
                         <th className="py-2 pr-3">Qty</th>
                         <th className="py-2 pr-3">Unit</th>
@@ -107,7 +107,7 @@ export default async function Page({ params }: Props) {
                     </thead>
                     <tbody>
                       {quote.items.map((item) => (
-                        <tr key={item.id} className="border-t border-slate-100">
+                        <tr key={item.id} className="border-t border-[var(--border)]">
                           <td className="py-3 pr-3">{item.description}</td>
                           <td className="py-3 pr-3">{item.qty}</td>
                           <td className="py-3 pr-3">{pounds(item.unitPrice)}</td>
@@ -118,19 +118,19 @@ export default async function Page({ params }: Props) {
                   </table>
                 </div>
               ) : (
-                <div className="text-sm text-slate-600">No scope items captured yet.</div>
+                <div className="text-sm text-[var(--muted-foreground)]">No scope items captured yet.</div>
               )}
               {quote.notes ? (
                 <div>
-                  <div className="text-xs font-semibold text-slate-700">Notes</div>
-                  <div className="mt-1 whitespace-pre-wrap rounded-2xl border border-slate-200 bg-white p-3 text-sm text-slate-800">
+                  <div className="text-xs font-semibold text-[var(--muted-foreground)]">Notes</div>
+                  <div className="mt-1 whitespace-pre-wrap rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3 text-sm text-[var(--foreground)]">
                     {quote.notes}
                   </div>
                 </div>
               ) : null}
             </div>
           ) : (
-            <div className="text-sm text-slate-600">Scope details are not available yet.</div>
+            <div className="text-sm text-[var(--muted-foreground)]">Scope details are not available yet.</div>
           )}
         </CardContent>
       </Card>
@@ -141,24 +141,24 @@ export default async function Page({ params }: Props) {
         </CardHeader>
         <CardContent>
           <div className="space-y-2 text-sm">
-            <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-slate-200 bg-white p-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3">
               <div>
-                <div className="font-semibold text-slate-900">Quote PDF</div>
-                <div className="text-xs text-slate-600">{quote ? "Ready" : "Not available"}</div>
+                <div className="font-semibold text-[var(--foreground)]">Quote PDF</div>
+                <div className="text-xs text-[var(--muted-foreground)]">{quote ? "Ready" : "Not available"}</div>
               </div>
               {quote?.token ? (
-                <a className="text-sm font-semibold text-slate-900 hover:underline" href={`/api/client/quotes/${quote.token}/pdf`} target="_blank" rel="noreferrer">
+                <a className="text-sm font-semibold text-[var(--foreground)] hover:underline" href={`/api/client/quotes/${quote.token}/pdf`} target="_blank" rel="noreferrer">
                   Open
                 </a>
               ) : null}
             </div>
-            <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-slate-200 bg-white p-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3">
               <div>
-                <div className="font-semibold text-slate-900">Agreement</div>
-                <div className="text-xs text-slate-600">{agreement ? `Status: ${agreement.status}` : "Not created"}</div>
+                <div className="font-semibold text-[var(--foreground)]">Agreement</div>
+                <div className="text-xs text-[var(--muted-foreground)]">{agreement ? `Status: ${agreement.status}` : "Not created"}</div>
               </div>
               {agreement?.token ? (
-                <a className="text-sm font-semibold text-slate-900 hover:underline" href={`/api/client/agreements/${agreement.token}/pdf`} target="_blank" rel="noreferrer">
+                <a className="text-sm font-semibold text-[var(--foreground)] hover:underline" href={`/api/client/agreements/${agreement.token}/pdf`} target="_blank" rel="noreferrer">
                   Open
                 </a>
               ) : null}
@@ -173,12 +173,12 @@ export default async function Page({ params }: Props) {
         </CardHeader>
         <CardContent>
           {stages.length === 0 ? (
-            <div className="text-sm text-slate-600">No stages set up yet.</div>
+            <div className="text-sm text-[var(--muted-foreground)]">No stages set up yet.</div>
           ) : (
             <div className="space-y-2">
               {stages.map((stage) => (
-                <div key={stage.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-slate-200 bg-white p-3 text-sm">
-                  <div className="font-semibold text-slate-900">{stage.name}</div>
+                <div key={stage.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3 text-sm">
+                  <div className="font-semibold text-[var(--foreground)]">{stage.name}</div>
                   <Badge>{stage.status.replace("_", " ")}</Badge>
                 </div>
               ))}
@@ -193,14 +193,14 @@ export default async function Page({ params }: Props) {
         </CardHeader>
         <CardContent>
           {variations.length === 0 ? (
-            <div className="text-sm text-slate-600">No variations raised yet.</div>
+            <div className="text-sm text-[var(--muted-foreground)]">No variations raised yet.</div>
           ) : (
             <div className="space-y-2">
               {variations.map((variation) => (
-                <div key={variation.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-slate-200 bg-white p-3 text-sm">
+                <div key={variation.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3 text-sm">
                   <div className="min-w-0">
-                    <div className="font-semibold text-slate-900">{variation.title}</div>
-                    <div className="mt-0.5 text-xs text-slate-600">
+                    <div className="font-semibold text-[var(--foreground)]">{variation.title}</div>
+                    <div className="mt-0.5 text-xs text-[var(--muted-foreground)]">
                       {variation.stageName ? `${variation.stageName} • ` : ""}{variation.status} • {pounds(variation.total)}
                     </div>
                   </div>
@@ -222,21 +222,21 @@ export default async function Page({ params }: Props) {
         </CardHeader>
         <CardContent>
           {certs.length === 0 ? (
-            <div className="text-sm text-slate-600">No certificates assigned yet.</div>
+            <div className="text-sm text-[var(--muted-foreground)]">No certificates assigned yet.</div>
           ) : (
             <div className="space-y-2">
               {certs.map((cert) => (
-                <div key={cert.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-slate-200 bg-white p-3">
+                <div key={cert.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <div className="text-sm font-semibold text-slate-900">{cert.type} • {cert.id}</div>
+                      <div className="text-sm font-semibold text-[var(--foreground)]">{cert.type} • {cert.id}</div>
                       <Badge>{cert.status}</Badge>
                     </div>
                     {cert.completedAtISO ? (
-                      <div className="mt-1 text-xs text-slate-600">Completed {new Date(cert.completedAtISO).toLocaleString("en-GB")}</div>
+                      <div className="mt-1 text-xs text-[var(--muted-foreground)]">Completed {new Date(cert.completedAtISO).toLocaleString("en-GB")}</div>
                     ) : null}
                   </div>
-                  <Link className="text-sm font-semibold text-slate-900 hover:underline" href={`/engineer/certificates/${cert.id}`}>
+                  <Link className="text-sm font-semibold text-[var(--foreground)] hover:underline" href={`/engineer/certificates/${cert.id}`}>
                     Open
                   </Link>
                 </div>

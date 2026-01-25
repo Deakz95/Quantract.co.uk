@@ -48,9 +48,9 @@ export default function AdminIntelligencePage() {
             <CardContent>
               <div className="grid gap-3 sm:grid-cols-2">
                 {blocks.map((b) => (
-                  <div key={b.title} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                    <div className="text-sm font-semibold text-slate-900">{b.title}</div>
-                    <div className="mt-1 text-xs text-slate-600">{b.description}</div>
+                  <div key={b.title} className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4 shadow-sm">
+                    <div className="text-sm font-semibold text-[var(--foreground)]">{b.title}</div>
+                    <div className="mt-1 text-xs text-[var(--muted-foreground)]">{b.description}</div>
                     <div className="mt-4">
                       {b.href.startsWith("/") ? (
                         <Link href={b.href}>
@@ -76,41 +76,41 @@ export default function AdminIntelligencePage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                <section id="cost-to-complete" className="rounded-2xl border border-slate-200 bg-white p-4">
+                <section id="cost-to-complete" className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4">
                   <div className="flex items-center justify-between gap-3">
-                    <div className="text-sm font-semibold text-slate-900">Cost-to-complete</div>
+                    <div className="text-sm font-semibold text-[var(--foreground)]">Cost-to-complete</div>
                     <Badge>Coming next</Badge>
                   </div>
                   <div className="mt-3 grid gap-3">
-                    <div className="h-10 rounded-xl border border-dashed border-slate-300 bg-slate-50" />
-                    <div className="h-24 rounded-xl border border-dashed border-slate-300 bg-slate-50" />
-                    <div className="h-16 rounded-xl border border-dashed border-slate-300 bg-slate-50" />
+                    <div className="h-10 rounded-xl border border-dashed border-[var(--border)] bg-[var(--muted)]" />
+                    <div className="h-24 rounded-xl border border-dashed border-[var(--border)] bg-[var(--muted)]" />
+                    <div className="h-16 rounded-xl border border-dashed border-[var(--border)] bg-[var(--muted)]" />
                   </div>
-                  <div className="mt-3 text-xs text-slate-600">Hook: rates + remaining hours + open costs → projected completion cost.</div>
+                  <div className="mt-3 text-xs text-[var(--muted-foreground)]">Hook: rates + remaining hours + open costs → projected completion cost.</div>
                 </section>
 
-                <section id="forecasts" className="rounded-2xl border border-slate-200 bg-white p-4">
+                <section id="forecasts" className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4">
                   <div className="flex items-center justify-between gap-3">
-                    <div className="text-sm font-semibold text-slate-900">Live forecasts</div>
+                    <div className="text-sm font-semibold text-[var(--foreground)]">Live forecasts</div>
                     <Badge>Wireframe</Badge>
                   </div>
                   <div className="mt-3 grid gap-3">
-                    <div className="h-28 rounded-xl border border-dashed border-slate-300 bg-slate-50" />
-                    <div className="h-10 rounded-xl border border-dashed border-slate-300 bg-slate-50" />
+                    <div className="h-28 rounded-xl border border-dashed border-[var(--border)] bg-[var(--muted)]" />
+                    <div className="h-10 rounded-xl border border-dashed border-[var(--border)] bg-[var(--muted)]" />
                   </div>
-                  <div className="mt-3 text-xs text-slate-600">Shows next 7/30/90 day revenue + margin based on scheduled jobs and stage invoices.</div>
+                  <div className="mt-3 text-xs text-[var(--muted-foreground)]">Shows next 7/30/90 day revenue + margin based on scheduled jobs and stage invoices.</div>
                 </section>
 
-                <section id="expenses" className="rounded-2xl border border-slate-200 bg-white p-4">
+                <section id="expenses" className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4">
                   <div className="flex items-center justify-between gap-3">
-                    <div className="text-sm font-semibold text-slate-900">Monthly expense report</div>
+                    <div className="text-sm font-semibold text-[var(--foreground)]">Monthly expense report</div>
                     <Badge>Wireframe</Badge>
                   </div>
                   <div className="mt-3 grid gap-3">
-                    <div className="h-28 rounded-xl border border-dashed border-slate-300 bg-slate-50" />
-                    <div className="h-28 rounded-xl border border-dashed border-slate-300 bg-slate-50" />
+                    <div className="h-28 rounded-xl border border-dashed border-[var(--border)] bg-[var(--muted)]" />
+                    <div className="h-28 rounded-xl border border-dashed border-[var(--border)] bg-[var(--muted)]" />
                   </div>
-                  <div className="mt-3 text-xs text-slate-600">Breakdown: labour, materials, subcontract, other.</div>
+                  <div className="mt-3 text-xs text-[var(--muted-foreground)]">Breakdown: labour, materials, subcontract, other.</div>
                 </section>
               </div>
             </CardContent>

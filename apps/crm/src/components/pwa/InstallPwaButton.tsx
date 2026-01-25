@@ -79,7 +79,7 @@ export default function InstallPwaButton({
 
   if (installed) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-700">
+      <div className="rounded-2xl border border-[var(--border)] bg-[var(--muted)] px-4 py-3 text-xs text-[var(--muted-foreground)]">
         ✅ Installed
       </div>
     );
@@ -88,8 +88,8 @@ export default function InstallPwaButton({
   // iOS has no install prompt event — show instructions instead
   if (ios && !deferred) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-700">
-        <div className="font-semibold text-slate-900">Install on iPhone/iPad</div>
+      <div className="rounded-2xl border border-[var(--border)] bg-[var(--muted)] p-4 text-xs text-[var(--muted-foreground)]">
+        <div className="font-semibold text-[var(--foreground)]">Install on iPhone/iPad</div>
         <div className="mt-1">
           Tap <span className="font-semibold">Share</span> →{" "}
           <span className="font-semibold">Add to Home Screen</span>.

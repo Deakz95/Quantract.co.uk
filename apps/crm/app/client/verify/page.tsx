@@ -4,7 +4,7 @@ import VerifyClient from "./VerifyClient";
 
 export default function VerifyPage() {
   return (
-    <Suspense fallback={<div className="p-6 text-sm text-slate-700">Loading…</div>}>
+    <Suspense fallback={<div className="p-6 text-sm text-[var(--muted-foreground)]">Loading…</div>}>
       <VerifyClient />
     </Suspense>
   );

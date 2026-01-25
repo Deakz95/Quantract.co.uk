@@ -105,13 +105,13 @@ export function CreateMenu({
     >
       <div className="flex items-start justify-between gap-4">
         <div>
-          <div className="text-base font-bold text-slate-900">{title}</div>
-          <div className="mt-1 text-sm text-slate-600">{subtitle}</div>
+          <div className="text-base font-bold text-[var(--foreground)]">{title}</div>
+          <div className="mt-1 text-sm text-[var(--muted-foreground)]">{subtitle}</div>
         </div>
         <button
           type="button"
           onClick={onClose}
-          className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50"
+          className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm font-semibold text-[var(--foreground)] hover:bg-[var(--muted)]"
         >
           Close
         </button>
@@ -128,26 +128,26 @@ export function CreateMenu({
             onClick={onClose}
             onFocus={() => setActiveIndex(idx)}
             className={cn(
-              "group block rounded-2xl border border-slate-200 bg-white p-4 shadow-sm outline-none transition",
+              "group block rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4 shadow-sm outline-none transition",
               "hover:-translate-y-0.5 hover:shadow-md",
-              "focus-visible:ring-2 focus-visible:ring-slate-400",
-              idx === activeIndex ? "ring-1 ring-slate-300" : ""
+              "focus-visible:ring-2 focus-visible:ring-[var(--primary)]",
+              idx === activeIndex ? "ring-1 ring-[var(--primary)]" : ""
             )}
           >
             <div className="flex items-start gap-3">
               <span
                 className={cn(
-                  "mdi text-xl leading-none text-slate-800",
+                  "mdi text-xl leading-none text-[var(--foreground)]",
                   action.icon,
                   "transition-transform duration-150 group-hover:scale-110"
                 )}
                 aria-hidden
               />
               <div className="min-w-0">
-                <div className="text-sm font-bold text-slate-900">
+                <div className="text-sm font-bold text-[var(--foreground)]">
                   {action.label}
                 </div>
-                <div className="mt-0.5 text-xs text-slate-600">
+                <div className="mt-0.5 text-xs text-[var(--muted-foreground)]">
                   {action.description}
                 </div>
               </div>
@@ -157,12 +157,12 @@ export function CreateMenu({
       </div>
 
       {visibleActions.length === 0 ? (
-        <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+        <div className="mt-4 rounded-2xl border border-[var(--border)] bg-[var(--muted)] p-4 text-sm text-[var(--muted-foreground)]">
           No create actions available for your account.
         </div>
       ) : null}
 
-      <div className="mt-4 text-xs text-slate-500">
+      <div className="mt-4 text-xs text-[var(--muted-foreground)]">
         Tip: use arrow keys to move, Enter to open, Esc to close.
       </div>
     </div>

@@ -63,28 +63,28 @@ export default function LineItemsEditor(props: {
   return (
     <div className="grid gap-4">
       {items.map((it, i) => (
-        <div key={i} className="rounded-2xl border border-slate-200 bg-white p-4">
+        <div key={i} className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4">
           {/* Row 1: Preset dropdown + Description text area */}
           <div className="grid gap-2">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-slate-600 w-20">Prefix</span>
+              <span className="text-xs font-semibold text-[var(--muted-foreground)] w-20">Prefix</span>
               <div className="relative flex-1">
                 <button
                   type="button"
-                  className="w-full h-10 px-3 text-left text-sm bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl flex items-center justify-between"
+                  className="w-full h-10 px-3 text-left text-sm bg-[var(--muted)] hover:bg-[var(--muted)]/80 border border-[var(--border)] rounded-xl flex items-center justify-between text-[var(--foreground)]"
                   onClick={() => setOpenDropdown(openDropdown === i ? null : i)}
                   disabled={disabled}
                 >
-                  <span className="text-slate-600">Select quick phrase...</span>
-                  <span className="text-slate-400">▼</span>
+                  <span className="text-[var(--muted-foreground)]">Select quick phrase...</span>
+                  <span className="text-[var(--muted-foreground)]">▼</span>
                 </button>
                 {openDropdown === i && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-20 max-h-60 overflow-auto">
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-lg z-20 max-h-60 overflow-auto">
                     {DESCRIPTION_PRESETS.map((preset, pi) => (
                       <button
                         key={pi}
                         type="button"
-                        className="w-full text-left px-4 py-2.5 text-sm hover:bg-blue-50 border-b border-slate-100 last:border-0"
+                        className="w-full text-left px-4 py-2.5 text-sm text-[var(--foreground)] hover:bg-[var(--primary)]/10 border-b border-[var(--border)] last:border-0"
                         onClick={() => applyPreset(i, preset)}
                       >
                         {preset}
@@ -94,11 +94,11 @@ export default function LineItemsEditor(props: {
                 )}
               </div>
             </div>
-            
+
             <div className="flex items-start gap-2">
-              <span className="text-xs font-semibold text-slate-600 w-20 pt-2">Description</span>
+              <span className="text-xs font-semibold text-[var(--muted-foreground)] w-20 pt-2">Description</span>
               <textarea
-                className="flex-1 min-h-[80px] rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm resize-y"
+                className="flex-1 min-h-[80px] rounded-xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm text-[var(--foreground)] resize-y placeholder:text-[var(--muted-foreground)]"
                 value={it.description}
                 onChange={(e) => setItem(i, { description: e.target.value })}
                 placeholder="Enter full description of work..."
@@ -110,10 +110,10 @@ export default function LineItemsEditor(props: {
           {/* Row 2: Qty, Unit Price, Line Total, Remove */}
           <div className="mt-4 flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-slate-600">Qty</span>
+              <span className="text-xs font-semibold text-[var(--muted-foreground)]">Qty</span>
               <input
                 type="number"
-                className="w-20 h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-center"
+                className="w-20 h-10 rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 text-sm text-center text-[var(--foreground)]"
                 value={it.qty}
                 onChange={(e) => setItem(i, { qty: Number(e.target.value) })}
                 min={0}
@@ -123,10 +123,10 @@ export default function LineItemsEditor(props: {
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-slate-600">Unit £</span>
+              <span className="text-xs font-semibold text-[var(--muted-foreground)]">Unit £</span>
               <input
                 type="number"
-                className="w-28 h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm"
+                className="w-28 h-10 rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 text-sm text-[var(--foreground)]"
                 value={it.unitPrice}
                 onChange={(e) => setItem(i, { unitPrice: Number(e.target.value) })}
                 min={0}
@@ -136,8 +136,8 @@ export default function LineItemsEditor(props: {
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-slate-600">Line</span>
-              <span className="text-sm font-bold text-slate-900 min-w-[80px]">
+              <span className="text-xs font-semibold text-[var(--muted-foreground)]">Line</span>
+              <span className="text-sm font-bold text-[var(--foreground)] min-w-[80px]">
                 {fmtGBP(Number(it.qty || 0) * Number(it.unitPrice || 0))}
               </span>
             </div>
@@ -148,7 +148,7 @@ export default function LineItemsEditor(props: {
                 variant="ghost"
                 onClick={() => removeItem(i)}
                 disabled={disabled || items.length === 1}
-                className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                className="text-red-500 hover:text-red-700 hover:bg-red-500/10"
               >
                 Remove
               </Button>
@@ -158,7 +158,7 @@ export default function LineItemsEditor(props: {
       ))}
 
       {items.length === 0 && (
-        <div className="text-center py-8 text-slate-500">
+        <div className="text-center py-8 text-[var(--muted-foreground)]">
           No line items. Click "Add item" to start.
         </div>
       )}
@@ -168,8 +168,8 @@ export default function LineItemsEditor(props: {
           Add item
         </Button>
         {props.showTotals && (
-          <div className="text-sm text-slate-700">
-            Subtotal: <span className="font-bold text-slate-900 text-base">{fmtGBP(subtotal)}</span>
+          <div className="text-sm text-[var(--muted-foreground)]">
+            Subtotal: <span className="font-bold text-[var(--foreground)] text-base">{fmtGBP(subtotal)}</span>
           </div>
         )}
       </div>

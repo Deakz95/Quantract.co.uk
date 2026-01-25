@@ -9,7 +9,7 @@ export default function EngineerTimesheetsPage() {
           <CardTitle>Timesheets</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-[var(--muted-foreground)]">
             Log your time against jobs and submit your weekly timesheet for approval. Approved entries are locked.
           </p>
         </CardContent>

@@ -127,11 +127,11 @@ export default function InvitesPageClient() {
       </CardHeader>
 
       <CardContent>
-        <div className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 md:grid-cols-4">
+        <div className="grid gap-3 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4 md:grid-cols-4">
           <div className="md:col-span-1">
-            <label className="text-xs font-semibold text-slate-700">Role</label>
+            <label className="text-xs font-semibold text-[var(--muted-foreground)]">Role</label>
             <select
-              className="mt-1 h-9 w-full rounded-md border border-slate-200 bg-white px-3 text-sm"
+              className="mt-1 h-9 w-full rounded-md border border-[var(--border)] bg-[var(--background)] px-3 text-sm"
               value={role}
               onChange={(e) => setRole(e.target.value as any)}
             >
@@ -141,9 +141,9 @@ export default function InvitesPageClient() {
           </div>
 
           <div className="md:col-span-1">
-            <label className="text-xs font-semibold text-slate-700">Name (optional)</label>
+            <label className="text-xs font-semibold text-[var(--muted-foreground)]">Name (optional)</label>
             <input
-              className="mt-1 h-9 w-full rounded-md border border-slate-200 px-3 text-sm"
+              className="mt-1 h-9 w-full rounded-md border border-[var(--border)] px-3 text-sm"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. John Smith"
@@ -151,10 +151,10 @@ export default function InvitesPageClient() {
           </div>
 
           <div className="md:col-span-2">
-            <label className="text-xs font-semibold text-slate-700">Email</label>
+            <label className="text-xs font-semibold text-[var(--muted-foreground)]">Email</label>
             <div className="mt-1 flex gap-2">
               <input
-                className="h-9 flex-1 rounded-md border border-slate-200 px-3 text-sm"
+                className="h-9 flex-1 rounded-md border border-[var(--border)] px-3 text-sm"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@example.com"
@@ -163,14 +163,14 @@ export default function InvitesPageClient() {
                 Create invite
               </Button>
             </div>
-            <div className="mt-2 text-xs text-slate-600">Creates a 14-day link and copies it to your clipboard.</div>
+            <div className="mt-2 text-xs text-[var(--muted-foreground)]">Creates a 14-day link and copies it to your clipboard.</div>
           </div>
         </div>
 
         <div className="mt-4 overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-xs text-slate-600">
+              <tr className="text-left text-xs text-[var(--muted-foreground)]">
                 <th className="py-2">Email</th>
                 <th className="py-2">Role</th>
                 <th className="py-2">Status</th>
@@ -182,22 +182,22 @@ export default function InvitesPageClient() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td className="py-6 text-slate-600" colSpan={5}>
+                  <td className="py-6 text-[var(--muted-foreground)]" colSpan={5}>
                     Loading…
                   </td>
                 </tr>
               ) : rows.length === 0 ? (
                 <tr>
-                  <td className="py-6 text-slate-600" colSpan={5}>
+                  <td className="py-6 text-[var(--muted-foreground)]" colSpan={5}>
                     No invites yet.
                   </td>
                 </tr>
               ) : (
                 rows.map((i) => (
-                  <tr key={i.id} className="border-t border-slate-100">
+                  <tr key={i.id} className="border-t border-[var(--border)]">
                     <td className="py-3">
-                      <div className="font-semibold text-slate-900">{i.email}</div>
-                      {i.name ? <div className="text-xs text-slate-600">{i.name}</div> : null}
+                      <div className="font-semibold text-[var(--foreground)]">{i.email}</div>
+                      {i.name ? <div className="text-xs text-[var(--muted-foreground)]">{i.name}</div> : null}
                     </td>
 
                     <td className="py-3">
@@ -208,7 +208,7 @@ export default function InvitesPageClient() {
                       <Badge>{i.usedAt ? "Used" : "Active"}</Badge>
                     </td>
 
-                    <td className="py-3 text-xs text-slate-600">{new Date(i.createdAt).toLocaleDateString("en-GB")}</td>
+                    <td className="py-3 text-xs text-[var(--muted-foreground)]">{new Date(i.createdAt).toLocaleDateString("en-GB")}</td>
 
                     <td className="py-3 text-right space-x-2">
                       <Button

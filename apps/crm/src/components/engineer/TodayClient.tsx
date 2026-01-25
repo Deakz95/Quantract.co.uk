@@ -141,7 +141,7 @@ export default function TodayClient() {
     }
   }
 
-  if (loading) return <div className="text-sm text-slate-600">Loading…</div>;
+  if (loading) return <div className="text-sm text-[var(--muted-foreground)]">Loading…</div>;
 
   return (
     <div className="grid gap-6">
@@ -161,35 +161,35 @@ export default function TodayClient() {
         </CardHeader>
         <CardContent>
           <div className="grid gap-3 md:grid-cols-3">
-            <div className="rounded-xl border border-slate-200 bg-white p-4">
-              <div className="text-xs font-semibold text-slate-600">Scheduled today</div>
-              <div className="mt-2 text-2xl font-semibold text-slate-900">{entries.length}</div>
-              <div className="mt-1 text-xs text-slate-600">{summary.totalMinutes > 0 ? `${summary.totalMinutes} mins booked` : "No hours booked"}</div>
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--background)] p-4">
+              <div className="text-xs font-semibold text-[var(--muted-foreground)]">Scheduled today</div>
+              <div className="mt-2 text-2xl font-semibold text-[var(--foreground)]">{entries.length}</div>
+              <div className="mt-1 text-xs text-[var(--muted-foreground)]">{summary.totalMinutes > 0 ? `${summary.totalMinutes} mins booked` : "No hours booked"}</div>
             </div>
-            <div className="rounded-xl border border-slate-200 bg-white p-4">
-              <div className="text-xs font-semibold text-slate-600">Next job</div>
-              <div className="mt-2 text-sm font-semibold text-slate-900">
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--background)] p-4">
+              <div className="text-xs font-semibold text-[var(--muted-foreground)]">Next job</div>
+              <div className="mt-2 text-sm font-semibold text-[var(--foreground)]">
                 {summary.next ? jobs.find((j) => j.id === summary.next?.jobId)?.title || "Job" : "None"}
               </div>
-              <div className="mt-1 text-xs text-slate-600">
+              <div className="mt-1 text-xs text-[var(--muted-foreground)]">
                 {summary.next
                   ? new Date(summary.next.startAtISO).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
                   : "You're clear for now"}
               </div>
             </div>
-            <div className="rounded-xl border border-slate-200 bg-white p-4">
-              <div className="text-xs font-semibold text-slate-600">Assigned jobs</div>
-              <div className="mt-2 text-2xl font-semibold text-slate-900">{jobs.length}</div>
-              <div className="mt-1 text-xs text-slate-600">Check your jobs list for updates</div>
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--background)] p-4">
+              <div className="text-xs font-semibold text-[var(--muted-foreground)]">Assigned jobs</div>
+              <div className="mt-2 text-2xl font-semibold text-[var(--foreground)]">{jobs.length}</div>
+              <div className="mt-1 text-xs text-[var(--muted-foreground)]">Check your jobs list for updates</div>
             </div>
           </div>
 
           <div className="mt-4">
             {active ? (
-              <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--border)] bg-[var(--muted)] p-4">
                 <div>
-                  <div className="text-sm font-semibold text-slate-900">Active timer</div>
-                  <div className="mt-1 text-xs text-slate-600">
+                  <div className="text-sm font-semibold text-[var(--foreground)]">Active timer</div>
+                  <div className="mt-1 text-xs text-[var(--muted-foreground)]">
                     Started {new Date(active.startedAtISO).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
                   </div>
                 </div>
@@ -203,7 +203,7 @@ export default function TodayClient() {
                 </div>
               </div>
             ) : (
-              <div className="text-sm text-slate-600">No active timer. Start one from a job below.</div>
+              <div className="text-sm text-[var(--muted-foreground)]">No active timer. Start one from a job below.</div>
             )}
           </div>
         </CardContent>
@@ -216,13 +216,13 @@ export default function TodayClient() {
         <CardContent>
           <div className="grid gap-3">
             {todaysJobs.length === 0 ? (
-              <div className="text-sm text-slate-600">No jobs assigned yet.</div>
+              <div className="text-sm text-[var(--muted-foreground)]">No jobs assigned yet.</div>
             ) : null}
             {todaysJobs.map((j) => (
-              <div key={j.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white p-4">
+              <div key={j.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--border)] bg-[var(--background)] p-4">
                 <div>
-                  <div className="text-sm font-semibold text-slate-900">{j.title || "Job"}</div>
-                  <div className="mt-1 text-xs text-slate-600">
+                  <div className="text-sm font-semibold text-[var(--foreground)]">{j.title || "Job"}</div>
+                  <div className="mt-1 text-xs text-[var(--muted-foreground)]">
                     {j.clientName ? `${j.clientName} • ` : ""}{j.siteAddress || ""}
                   </div>
                 </div>

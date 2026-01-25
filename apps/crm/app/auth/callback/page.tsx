@@ -46,13 +46,13 @@ export default function AuthCallback() {
 
   if (error) {
     return (
-      <main className="min-h-screen flex items-center justify-center p-4 bg-slate-900">
+      <main className="min-h-screen flex items-center justify-center p-4 bg-[var(--background)]">
         <div className="w-full max-w-md text-center">
           <div className="w-16 h-16 mx-auto rounded-2xl bg-red-500/20 flex items-center justify-center mb-4">
             <span className="text-red-500 text-2xl">!</span>
           </div>
           <h1 className="text-xl font-bold text-white mb-2">Authentication Error</h1>
-          <p className="text-slate-400 mb-6">{error}</p>
+          <p className="text-[var(--muted-foreground)] mb-6">{error}</p>
           <a
             href="/auth/sign-in"
             className="inline-block px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
@@ -65,13 +65,13 @@ export default function AuthCallback() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-4 bg-slate-900">
+    <main className="min-h-screen flex items-center justify-center p-4 bg-[var(--background)]">
       <div className="w-full max-w-md text-center">
         <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center mb-4 animate-pulse">
           <span className="text-white font-bold text-2xl">Q</span>
         </div>
         <h1 className="text-xl font-bold text-white mb-2">Setting up your account</h1>
-        <p className="text-slate-400">{status}</p>
+        <p className="text-[var(--muted-foreground)]">{status}</p>
         <div className="mt-6">
           <div className="w-8 h-8 mx-auto border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
         </div>

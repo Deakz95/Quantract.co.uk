@@ -81,7 +81,7 @@ export default function InvoiceAdminDetail({ invoiceId }: { invoiceId: string })
           <CardTitle>Invoice</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-sm text-slate-700">Loading…</div>
+          <div className="text-sm text-[var(--muted-foreground)]">Loading…</div>
         </CardContent>
       </Card>
     );
@@ -113,7 +113,7 @@ export default function InvoiceAdminDetail({ invoiceId }: { invoiceId: string })
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <CardTitle>Invoice</CardTitle>
-              <div className="mt-1 text-xs text-slate-600">ID: {inv.id}</div>
+              <div className="mt-1 text-xs text-[var(--muted-foreground)]">ID: {inv.id}</div>
             </div>
             <div className="flex items-center gap-2">
               <Badge>{STATUS_LABEL[inv.status]}</Badge>
@@ -124,31 +124,31 @@ export default function InvoiceAdminDetail({ invoiceId }: { invoiceId: string })
 
         <CardContent>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <div className="rounded-2xl border border-slate-200 bg-white p-4">
-              <div className="text-xs font-semibold text-slate-600">Client</div>
-              <div className="mt-1 text-sm font-semibold text-slate-900">{inv.clientName}</div>
-              <div className="mt-1 text-xs text-slate-600">{inv.clientEmail}</div>
-              {inv.quoteId ? <div className="mt-2 text-xs text-slate-500">Quote: {inv.quoteId}</div> : null}
+            <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4">
+              <div className="text-xs font-semibold text-[var(--muted-foreground)]">Client</div>
+              <div className="mt-1 text-sm font-semibold text-[var(--foreground)]">{inv.clientName}</div>
+              <div className="mt-1 text-xs text-[var(--muted-foreground)]">{inv.clientEmail}</div>
+              {inv.quoteId ? <div className="mt-2 text-xs text-[var(--muted-foreground)]">Quote: {inv.quoteId}</div> : null}
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-white p-4">
-              <div className="text-xs font-semibold text-slate-600">Totals</div>
+            <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4">
+              <div className="text-xs font-semibold text-[var(--muted-foreground)]">Totals</div>
               <div className="mt-2 flex items-center justify-between text-sm">
-                <span className="text-slate-600">Subtotal</span>
-                <span className="font-semibold text-slate-900">£{inv.subtotal.toFixed(2)}</span>
+                <span className="text-[var(--muted-foreground)]">Subtotal</span>
+                <span className="font-semibold text-[var(--foreground)]">£{inv.subtotal.toFixed(2)}</span>
               </div>
               <div className="mt-2 flex items-center justify-between text-sm">
-                <span className="text-slate-600">VAT</span>
-                <span className="font-semibold text-slate-900">£{inv.vat.toFixed(2)}</span>
+                <span className="text-[var(--muted-foreground)]">VAT</span>
+                <span className="font-semibold text-[var(--foreground)]">£{inv.vat.toFixed(2)}</span>
               </div>
               <div className="mt-2 flex items-center justify-between text-sm">
-                <span className="text-slate-600">Total</span>
-                <span className="font-semibold text-slate-900">£{inv.total.toFixed(2)}</span>
+                <span className="text-[var(--muted-foreground)]">Total</span>
+                <span className="font-semibold text-[var(--foreground)]">£{inv.total.toFixed(2)}</span>
               </div>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-white p-4">
-              <div className="text-xs font-semibold text-slate-600">Links</div>
+            <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4">
+              <div className="text-xs font-semibold text-[var(--muted-foreground)]">Links</div>
               <div className="mt-2 flex flex-wrap gap-2">
                 <Link href={`/api/client/invoices/${inv.token}/pdf`} target="_blank">
                   <Button variant="secondary" type="button">PDF</Button>
@@ -157,9 +157,9 @@ export default function InvoiceAdminDetail({ invoiceId }: { invoiceId: string })
                   <Button variant="secondary" type="button">Client view</Button>
                 </Link>
               </div>
-              <div className="mt-2 text-xs text-slate-500">Client URL: {clientLink}</div>
+              <div className="mt-2 text-xs text-[var(--muted-foreground)]">Client URL: {clientLink}</div>
               {inv.paymentUrl ? (
-                <div className="mt-2 text-xs text-slate-500 break-all">Payment URL: {inv.paymentUrl}</div>
+                <div className="mt-2 text-xs text-[var(--muted-foreground)] break-all">Payment URL: {inv.paymentUrl}</div>
               ) : null}
             </div>
           </div>
@@ -174,7 +174,7 @@ export default function InvoiceAdminDetail({ invoiceId }: { invoiceId: string })
             </Button>
           </div>
 
-          <p className="mt-4 text-xs text-slate-500">
+          <p className="mt-4 text-xs text-[var(--muted-foreground)]">
             {isPaid ? "Paid." : isPayable ? "Awaiting payment." : "Not issued yet."}
           </p>
         </CardContent>
