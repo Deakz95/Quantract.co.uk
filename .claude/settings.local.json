@@ -26,7 +26,8 @@
       "Bash(/c/Users/user/bin/render.exe workspace list:*)",
       "Bash(/c/Users/user/bin/render.exe workspace set:*)",
       "Bash(python:*)",
-      "Bash(node -e:*)"
+      "Bash(node -e:*)",
+      "Bash(npm run build:crm:*)"
     ]
   }
 }
