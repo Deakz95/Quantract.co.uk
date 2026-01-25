@@ -5,7 +5,7 @@ import { setSession, setUserEmail, setCompanyId, setProfileComplete } from "@/li
 
 function redirectTo(req: Request, path: string) {
   const url = new URL(req.url);
-  const base = `${url.protocol}//${url.host}`;
+  const base = process.env.NEXT_PUBLIC_APP_URL || `${url.protocol}//${url.host}`;
   return NextResponse.redirect(new URL(path, base));
 }
 
