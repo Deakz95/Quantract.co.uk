@@ -49,6 +49,7 @@ export async function POST(req: Request) {
           role: "admin",
           neonAuthUserId: user.id,
           profileComplete: true, // Profile is complete for tools/certs usage
+          updatedAt: new Date(),
         },
       });
     } else if (!dbUser.neonAuthUserId) {
@@ -139,6 +140,7 @@ export async function GET(req: Request) {
           role: "admin",
           neonAuthUserId: user.id,
           profileComplete: true, // Profile is complete for tools/certs usage
+          updatedAt: new Date(),
         },
       });
     } else if (!dbUser.neonAuthUserId) {

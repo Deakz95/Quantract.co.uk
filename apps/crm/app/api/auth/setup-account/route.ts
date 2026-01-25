@@ -83,6 +83,7 @@ export async function POST(req: Request) {
         role: "admin",
         neonAuthUserId: user.id,
         profileComplete: true, // Profile is complete since we collected company name
+        updatedAt: new Date(),
       },
     });
 
