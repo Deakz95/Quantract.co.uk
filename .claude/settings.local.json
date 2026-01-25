@@ -8,7 +8,8 @@
       "Bash(git add:*)",
       "Bash(git commit -m \"$\\(cat <<''EOF''\nMonorepo restructure: marketing/crm/certificates/tools + shared package\n\n- apps/marketing \\(www.quantract.co.uk, port 3001\\)\n- apps/crm \\(crm.quantract.co.uk, port 3000\\)  \n- apps/certificates \\(certificates.quantract.co.uk, port 3002\\)\n- apps/tools \\(apps.quantract.co.uk, port 3003\\)\n- packages/shared \\(@quantract/shared utilities\\)\n- infra/render \\(Render Blueprint\\)\n- infra/db \\(Database docs\\)\n\nPrisma configured for Neon with pooled DATABASE_URL + direct DIRECT_URL.\nHealth endpoints at /api/health for all apps.\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
       "Bash(git commit -m \"$\\(cat <<''EOF''\nAdd quantract.co.uk → www.quantract.co.uk redirect\n\nPrevents duplicate SEO content by redirecting apex domain to www.\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(npm install:*)"
     ]
   }
 }
