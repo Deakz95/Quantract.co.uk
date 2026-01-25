@@ -110,7 +110,7 @@ export async function GET() {
 
     return NextResponse.json({
       ok: true,
-      companies: companies.map(c => ({
+      companies: companies.map((c: any) => ({
         id: c.id,
         name: c.name,
         slug: c.slug,
