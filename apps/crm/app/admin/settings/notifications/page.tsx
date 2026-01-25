@@ -4,11 +4,9 @@ import { useState, useEffect } from 'react';
 import { AppShell } from "@/components/AppShell";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { ArrowLeft, Bell, Mail, MessageSquare } from "lucide-react";
+import { ArrowLeft, Mail, Settings, FileText } from "lucide-react";
 import Link from "next/link";
-import { useToast } from "@/components/ui/toast";
+import { useToast } from "@/components/ui/useToast";
 
 interface NotificationSettings {
   emailNewJob: boolean;
@@ -108,13 +106,14 @@ export default function NotificationsSettingsPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  <Label htmlFor="notifyEmail">Email Address</Label>
-                  <Input
+                  <label htmlFor="notifyEmail" className="text-sm font-medium text-[var(--foreground)]">Email Address</label>
+                  <input
                     id="notifyEmail"
                     type="email"
                     value={settings.notifyEmail}
                     onChange={(e) => setSettings(prev => ({ ...prev, notifyEmail: e.target.value }))}
                     placeholder="notifications@yourcompany.com"
+                    className="w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-4 py-2.5 text-sm text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
                   />
                 </div>
               </CardContent>
@@ -125,7 +124,7 @@ export default function NotificationsSettingsPage() {
               <CardHeader>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center">
-                    <Bell className="w-5 h-5 text-white" />
+                    <Settings className="w-5 h-5 text-white" />
                   </div>
                   <div>
                     <CardTitle>Job Notifications</CardTitle>
@@ -229,7 +228,7 @@ export default function NotificationsSettingsPage() {
               <CardHeader>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center">
-                    <MessageSquare className="w-5 h-5 text-white" />
+                    <FileText className="w-5 h-5 text-white" />
                   </div>
                   <div>
                     <CardTitle>Digest Emails</CardTitle>

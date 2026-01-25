@@ -5,7 +5,7 @@ import { AppShell } from "@/components/AppShell";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Briefcase, Zap, Receipt, AlertCircle, Users, FileText, Settings, Globe } from "lucide-react";
+import { Briefcase, Zap, Receipt, AlertCircle, Users, FileText, Settings } from "lucide-react";
 import Link from "next/link";
 
 export default function SettingsPage() {
@@ -142,7 +142,7 @@ export default function SettingsPage() {
             <Link href="/admin/settings/subdomain">
               <Card variant="interactive" className="cursor-pointer h-full">
                 <CardContent className="p-5 flex items-center gap-4">
-                  <Globe className="w-6 h-6 text-[var(--primary)]" />
+                  <Settings className="w-6 h-6 text-[var(--primary)]" />
                   <div>
                     <p className="font-medium text-[var(--foreground)]">Custom Domain</p>
                     <p className="text-xs text-[var(--muted-foreground)]">Branded portal URL</p>

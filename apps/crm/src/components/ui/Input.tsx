@@ -1,50 +1,25 @@
-import type { InputHTMLAttributes } from "react";
+"use client";
+
+import * as React from "react";
 import { cn } from "@/lib/cn";
 
-type InputProps = InputHTMLAttributes<HTMLInputElement> & {
-  type?: string;
-  value?: string | number | readonly string[];
-};
+export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {}
 
-export function Input({ className, type = "text", ...props }: InputProps) {
-  return (
-    <input
-      type={type}
-      className={cn(
-        "w-full rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 py-2.5 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] transition-all duration-200",
-        "focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent",
-        "hover:border-[var(--primary)]/50",
-        "disabled:opacity-50 disabled:cursor-not-allowed",
-        className
-      )}
-      {...props}
-    />
-  );
-}
+const Input = React.forwardRef<HTMLInputElement, InputProps>(
+  ({ className, type, ...props }, ref) => {
+    return (
+      <input
+        type={type}
+        className={cn(
+          "flex h-10 w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-[var(--muted-foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+          className
+        )}
+        ref={ref}
+        {...props}
+      />
+    );
+  }
+);
+Input.displayName = "Input";
 
-export function Textarea({ className, ...props }: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return (
-    <textarea
-      className={cn(
-        "w-full rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 py-2.5 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] transition-all duration-200 min-h-[100px] resize-y",
-        "focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent",
-        "hover:border-[var(--primary)]/50",
-        "disabled:opacity-50 disabled:cursor-not-allowed",
-        className
-      )}
-      {...props}
-    />
-  );
-}
-
-export function Label({ className, ...props }: React.LabelHTMLAttributes<HTMLLabelElement>) {
-  return (
-    <label
-      className={cn(
-        "block text-sm font-medium text-[var(--foreground)] mb-1.5",
-        className
-      )}
-      {...props}
-    />
-  );
-}
+export { Input };

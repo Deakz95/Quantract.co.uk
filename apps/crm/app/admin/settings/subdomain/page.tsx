@@ -4,12 +4,10 @@ import { useState, useEffect } from 'react';
 import { AppShell } from "@/components/AppShell";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Globe, CheckCircle, AlertCircle, ExternalLink, Copy, Info } from "lucide-react";
+import { ArrowLeft, Settings, CheckCircle, AlertCircle, ArrowUpRight, FileText } from "lucide-react";
 import Link from "next/link";
-import { useToast } from "@/components/ui/toast";
+import { useToast } from "@/components/ui/useToast";
 
 export default function SubdomainSettingsPage() {
   const [subdomain, setSubdomain] = useState('');
@@ -83,7 +81,7 @@ export default function SubdomainSettingsPage() {
               <CardHeader>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
-                    <Globe className="w-5 h-5 text-white" />
+                    <Settings className="w-5 h-5 text-white" />
                   </div>
                   <div>
                     <CardTitle>Subdomain</CardTitle>
@@ -93,14 +91,14 @@ export default function SubdomainSettingsPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="subdomain">Subdomain</Label>
+                  <label htmlFor="subdomain" className="text-sm font-medium text-[var(--foreground)]">Subdomain</label>
                   <div className="flex items-center gap-2">
-                    <Input
+                    <input
                       id="subdomain"
                       value={subdomain}
                       onChange={(e) => setSubdomain(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
                       placeholder="yourcompany"
-                      className="max-w-[200px]"
+                      className="max-w-[200px] rounded-xl border border-[var(--border)] bg-[var(--background)] px-4 py-2.5 text-sm text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
                     />
                     <span className="text-[var(--muted-foreground)]">.quantract.co.uk</span>
                   </div>
@@ -118,13 +116,13 @@ export default function SubdomainSettingsPage() {
                       </div>
                       <div className="flex items-center gap-2">
                         <Button variant="ghost" size="sm" onClick={() => copyToClipboard(portalUrl)}>
-                          <Copy className="w-4 h-4" />
+                          <FileText className="w-4 h-4" />
                         </Button>
-                        <Button variant="ghost" size="sm" asChild>
-                          <a href={portalUrl} target="_blank" rel="noopener noreferrer">
-                            <ExternalLink className="w-4 h-4" />
-                          </a>
-                        </Button>
+                        <a href={portalUrl} target="_blank" rel="noopener noreferrer">
+                          <Button variant="ghost" size="sm">
+                            <ArrowUpRight className="w-4 h-4" />
+                          </Button>
+                        </a>
                       </div>
                     </div>
                   </div>
@@ -138,7 +136,7 @@ export default function SubdomainSettingsPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center">
-                      <Globe className="w-5 h-5 text-white" />
+                      <Settings className="w-5 h-5 text-white" />
                     </div>
                     <div>
                       <CardTitle className="flex items-center gap-2">
@@ -154,7 +152,7 @@ export default function SubdomainSettingsPage() {
                 {!isPro ? (
                   <div className="p-4 bg-[var(--muted)] rounded-lg border border-[var(--border)]">
                     <div className="flex items-start gap-3">
-                      <Info className="w-5 h-5 text-[var(--primary)] flex-shrink-0 mt-0.5" />
+                      <AlertCircle className="w-5 h-5 text-[var(--primary)] flex-shrink-0 mt-0.5" />
                       <div>
                         <p className="text-sm font-medium text-[var(--foreground)]">Pro Feature</p>
                         <p className="text-sm text-[var(--muted-foreground)]">
@@ -171,12 +169,13 @@ export default function SubdomainSettingsPage() {
                 ) : (
                   <>
                     <div className="space-y-2">
-                      <Label htmlFor="customDomain">Custom Domain</Label>
-                      <Input
+                      <label htmlFor="customDomain" className="text-sm font-medium text-[var(--foreground)]">Custom Domain</label>
+                      <input
                         id="customDomain"
                         value={customDomain}
                         onChange={(e) => setCustomDomain(e.target.value.toLowerCase())}
                         placeholder="portal.yourcompany.com"
+                        className="w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-4 py-2.5 text-sm text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
                       />
                     </div>
 
@@ -192,7 +191,7 @@ export default function SubdomainSettingsPage() {
                               {customDomain.split('.')[0]} CNAME proxy.quantract.co.uk
                             </span>
                             <Button variant="ghost" size="sm" onClick={() => copyToClipboard(`${customDomain.split('.')[0]} CNAME proxy.quantract.co.uk`)}>
-                              <Copy className="w-4 h-4" />
+                              <FileText className="w-4 h-4" />
                             </Button>
                           </div>
                         </div>
