@@ -34,14 +34,14 @@ export async function getAISessionFromRequest(_req?: Request): Promise<AISession
     if (client) {
       const companyUser = await client.companyUser.findFirst({
         where: { email },
-        select: { companyId: true, role: true, userId: true },
+        select: { companyId: true, role: true, id: true },
       }).catch(() => null);
 
       if (companyUser) {
         return {
           role: (companyUser.role || "admin") as AIRole,
           companyId: companyUser.companyId,
-          userId: companyUser.userId ?? undefined,
+          userId: companyUser.id,
           userEmail: email,
         };
       }

@@ -102,7 +102,7 @@ export async function getMfaChallenge(challengeToken: string) {
   const db = getPrisma();
   const session = await db.mfaSession.findUnique({
     where: { challengeToken },
-    include: { user: true },
+    include: { User: true },
   });
 
   if (!session) return { ok: false as const, error: "Invalid challenge" };
@@ -111,7 +111,7 @@ export async function getMfaChallenge(challengeToken: string) {
     return { ok: false as const, error: "Challenge expired" };
   }
 
-  return { ok: true as const, session };
+  return { ok: true as const, session: { ...session, user: session.User } };
 }
 
 /**

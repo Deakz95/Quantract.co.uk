@@ -105,10 +105,10 @@ export async function getSession(sessionId: string) {
   const db = getPrisma();
   const session = await db.authSession.findUnique({
     where: { id: sessionId },
-    include: { user: true },
+    include: { User: true },
   });
   if (!session) return null;
   if (session.revokedAt) return null;
   if (session.expiresAt.getTime() < Date.now()) return null;
-  return session;
+  return { ...session, user: session.User };
 }
