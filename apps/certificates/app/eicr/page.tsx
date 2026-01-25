@@ -143,32 +143,19 @@ export default function EICRPage() {
   };
 
   return (
-    <main style={{ minHeight: "100vh", background: "#0A0F1C", color: "#F8FAFC" }}>
+    <main className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
       {/* Header */}
-      <header style={{
-        borderBottom: "1px solid #2D3B52",
-        background: "#111827",
-        position: "sticky",
-        top: 0,
-        zIndex: 10,
-      }}>
-        <div style={{
-          maxWidth: "1600px",
-          margin: "0 auto",
-          padding: "16px 24px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-            <Link href="/" style={{ color: "#94A3B8", display: "flex", alignItems: "center" }}>
-              <svg style={{ width: 20, height: 20 }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <header className="border-b border-[var(--border)] bg-[var(--card)] sticky top-0 z-10">
+        <div className="max-w-[1600px] mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Link href="/" className="text-[var(--muted-foreground)] hover:text-[var(--foreground)]">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
             </Link>
             <div>
-              <h1 style={{ fontSize: "20px", fontWeight: 700, margin: 0 }}>Electrical Installation Condition Report</h1>
-              <p style={{ fontSize: "12px", color: "#94A3B8", margin: 0 }}>BS 7671:2018+A2:2022 | EICR</p>
+              <h1 className="text-xl font-bold">Electrical Installation Condition Report</h1>
+              <p className="text-xs text-[var(--muted-foreground)]">BS 7671:2018+A2:2022 | EICR</p>
             </div>
           </div>
           <Button onClick={handleDownload} disabled={isGenerating}>
@@ -178,62 +165,39 @@ export default function EICRPage() {
       </header>
 
       {/* Tab Navigation */}
-      <div style={{
-        maxWidth: "1600px",
-        margin: "0 auto",
-        padding: "24px 24px 0",
-      }}>
-        <div style={{
-          display: "flex",
-          gap: "4px",
-          background: "#1A2235",
-          padding: "4px",
-          borderRadius: "12px",
-          width: "fit-content",
-        }}>
+      <div className="max-w-[1600px] mx-auto px-6 pt-6">
+        <div className="flex gap-1 bg-[var(--muted)] p-1 rounded-xl w-fit">
           <button
             onClick={() => setActiveTab("boards")}
-            style={{
-              padding: "10px 20px",
-              borderRadius: "8px",
-              border: "none",
-              background: activeTab === "boards" ? "#3B82F6" : "transparent",
-              color: activeTab === "boards" ? "#fff" : "#94A3B8",
-              fontWeight: 600,
-              cursor: "pointer",
-              fontSize: "14px",
-              transition: "all 0.2s",
-            }}
+            className={`px-5 py-2.5 rounded-lg font-semibold text-sm transition-all ${
+              activeTab === "boards"
+                ? "bg-[var(--primary)] text-white"
+                : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+            }`}
           >
             Distribution Boards
           </button>
           <button
             onClick={() => setActiveTab("details")}
-            style={{
-              padding: "10px 20px",
-              borderRadius: "8px",
-              border: "none",
-              background: activeTab === "details" ? "#3B82F6" : "transparent",
-              color: activeTab === "details" ? "#fff" : "#94A3B8",
-              fontWeight: 600,
-              cursor: "pointer",
-              fontSize: "14px",
-              transition: "all 0.2s",
-            }}
+            className={`px-5 py-2.5 rounded-lg font-semibold text-sm transition-all ${
+              activeTab === "details"
+                ? "bg-[var(--primary)] text-white"
+                : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+            }`}
           >
             Certificate Details
           </button>
         </div>
       </div>
 
-      <div style={{ maxWidth: "1600px", margin: "0 auto", padding: "24px" }}>
+      <div className="max-w-[1600px] mx-auto px-6 py-6">
         {/* Boards Tab */}
         {activeTab === "boards" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div className="flex flex-col gap-8">
+            <div className="flex items-center justify-between">
               <div>
-                <h2 style={{ fontSize: "24px", fontWeight: 700, margin: "0 0 8px" }}>Distribution Boards</h2>
-                <p style={{ color: "#94A3B8", margin: 0 }}>Visual and table views of circuit schedules and test results</p>
+                <h2 className="text-2xl font-bold mb-2">Distribution Boards</h2>
+                <p className="text-[var(--muted-foreground)]">Visual and table views of circuit schedules and test results</p>
               </div>
               <Button variant="secondary">+ Add Board</Button>
             </div>
@@ -246,7 +210,7 @@ export default function EICRPage() {
 
         {/* Details Tab */}
         {activeTab === "details" && (
-          <div style={{ maxWidth: "900px", display: "flex", flexDirection: "column", gap: "24px" }}>
+          <div className="max-w-[900px] flex flex-col gap-6">
             {/* Overview Section */}
             <Card>
               <CardHeader>
@@ -492,7 +456,7 @@ export default function EICRPage() {
                     id="polarityConfirmed"
                     checked={data.testResults.polarityConfirmed}
                     onChange={(e) => updateTests("polarityConfirmed", e.target.checked)}
-                    className="w-5 h-5 rounded"
+                    className="w-5 h-5 rounded border-[var(--border)] bg-[var(--background)] accent-[var(--primary)]"
                   />
                   <Label htmlFor="polarityConfirmed" className="mb-0">Polarity confirmed</Label>
                 </div>

@@ -69,32 +69,19 @@ export default function EmergencyLightingPage() {
   };
 
   return (
-    <main style={{ minHeight: "100vh", background: "#0A0F1C", color: "#F8FAFC" }}>
+    <main className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
       {/* Header */}
-      <header style={{
-        borderBottom: "1px solid #2D3B52",
-        background: "#111827",
-        position: "sticky",
-        top: 0,
-        zIndex: 10,
-      }}>
-        <div style={{
-          maxWidth: "1200px",
-          margin: "0 auto",
-          padding: "16px 24px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-            <Link href="/" style={{ color: "#94A3B8", display: "flex", alignItems: "center" }}>
-              <svg style={{ width: 20, height: 20 }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <header className="border-b border-[var(--border)] bg-[var(--card)] sticky top-0 z-10">
+        <div className="max-w-[1200px] mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Link href="/" className="text-[var(--muted-foreground)] hover:text-[var(--foreground)]">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
             </Link>
             <div>
-              <h1 style={{ fontSize: "20px", fontWeight: 700, margin: 0 }}>Emergency Lighting Certificate</h1>
-              <p style={{ fontSize: "12px", color: "#94A3B8", margin: 0 }}>BS 5266 | Emergency Lighting</p>
+              <h1 className="text-xl font-bold">Emergency Lighting Certificate</h1>
+              <p className="text-xs text-[var(--muted-foreground)]">BS 5266 | Emergency Lighting</p>
             </div>
           </div>
           <Button onClick={handleDownload} disabled={isGenerating}>
@@ -103,10 +90,10 @@ export default function EmergencyLightingPage() {
         </div>
       </header>
 
-      <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "24px" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: "24px" }}>
+      <div className="max-w-[1200px] mx-auto px-6 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6">
           {/* Main Content */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+          <div className="flex flex-col gap-6">
             {/* Installation Details */}
             <Card>
               <CardHeader>
@@ -239,7 +226,7 @@ export default function EmergencyLightingPage() {
                       id="escapeLighting"
                       checked={data.systemDetails.escapeLighting}
                       onChange={(e) => updateSystemDetails("escapeLighting", e.target.checked)}
-                      className="w-5 h-5 rounded"
+                      className="w-5 h-5 rounded border-[var(--border)] bg-[var(--background)] accent-[var(--primary)]"
                     />
                     <Label htmlFor="escapeLighting" className="mb-0">Escape Route Lighting</Label>
                   </div>
@@ -249,7 +236,7 @@ export default function EmergencyLightingPage() {
                       id="standbyLighting"
                       checked={data.systemDetails.standbyLighting}
                       onChange={(e) => updateSystemDetails("standbyLighting", e.target.checked)}
-                      className="w-5 h-5 rounded"
+                      className="w-5 h-5 rounded border-[var(--border)] bg-[var(--background)] accent-[var(--primary)]"
                     />
                     <Label htmlFor="standbyLighting" className="mb-0">Standby Lighting</Label>
                   </div>
@@ -259,7 +246,7 @@ export default function EmergencyLightingPage() {
                       id="highRiskTaskLighting"
                       checked={data.systemDetails.highRiskTaskLighting}
                       onChange={(e) => updateSystemDetails("highRiskTaskLighting", e.target.checked)}
-                      className="w-5 h-5 rounded"
+                      className="w-5 h-5 rounded border-[var(--border)] bg-[var(--background)] accent-[var(--primary)]"
                     />
                     <Label htmlFor="highRiskTaskLighting" className="mb-0">High Risk Task Lighting</Label>
                   </div>
@@ -282,22 +269,15 @@ export default function EmergencyLightingPage() {
               </CardHeader>
               <CardContent>
                 {data.luminaires.length === 0 ? (
-                  <p className="text-sm text-[var(--muted-foreground)]">No luminaires added. Click "Add Luminaire" to begin.</p>
+                  <p className="text-sm text-[var(--muted-foreground)]">No luminaires added. Click &quot;Add Luminaire&quot; to begin.</p>
                 ) : (
                   <div className="space-y-3">
                     {data.luminaires.map((lum, index) => (
                       <div
                         key={index}
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns: "1fr 120px 140px 80px 100px auto",
-                          gap: "12px",
-                          padding: "12px",
-                          background: "#1A2235",
-                          borderRadius: "8px",
-                          alignItems: "end",
-                          borderLeft: lum.status === "pass" ? "3px solid #10B981" : lum.status === "fail" ? "3px solid #EF4444" : "3px solid #2D3B52",
-                        }}
+                        className={`grid grid-cols-[1fr_120px_140px_80px_100px_auto] gap-3 p-3 bg-[var(--muted)] rounded-lg items-end border-l-[3px] ${
+                          lum.status === "pass" ? "border-l-[var(--success)]" : lum.status === "fail" ? "border-l-[var(--error)]" : "border-l-[var(--border)]"
+                        }`}
                       >
                         <div>
                           <Label className="text-xs">Location</Label>
@@ -358,15 +338,9 @@ export default function EmergencyLightingPage() {
                         </div>
                         <button
                           onClick={() => removeLuminaire(index)}
-                          style={{
-                            background: "transparent",
-                            border: "none",
-                            color: "#EF4444",
-                            cursor: "pointer",
-                            padding: "8px",
-                          }}
+                          className="text-[var(--error)] p-2 hover:opacity-70 bg-transparent border-none cursor-pointer"
                         >
-                          <svg style={{ width: 16, height: 16 }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                           </svg>
                         </button>
@@ -435,7 +409,7 @@ export default function EmergencyLightingPage() {
                         id="allLuminairesFunctional"
                         checked={data.testResults.allLuminairesFunctional}
                         onChange={(e) => updateTestResults("allLuminairesFunctional", e.target.checked)}
-                        className="w-5 h-5 rounded"
+                        className="w-5 h-5 rounded border-[var(--border)] bg-[var(--background)] accent-[var(--primary)]"
                       />
                       <Label htmlFor="allLuminairesFunctional" className="mb-0">All luminaires functional</Label>
                     </div>
@@ -445,7 +419,7 @@ export default function EmergencyLightingPage() {
                         id="exitSignsVisible"
                         checked={data.testResults.exitSignsVisible}
                         onChange={(e) => updateTestResults("exitSignsVisible", e.target.checked)}
-                        className="w-5 h-5 rounded"
+                        className="w-5 h-5 rounded border-[var(--border)] bg-[var(--background)] accent-[var(--primary)]"
                       />
                       <Label htmlFor="exitSignsVisible" className="mb-0">Exit signs visible and legible</Label>
                     </div>
@@ -457,7 +431,7 @@ export default function EmergencyLightingPage() {
                         id="illuminationAdequate"
                         checked={data.testResults.illuminationAdequate}
                         onChange={(e) => updateTestResults("illuminationAdequate", e.target.checked)}
-                        className="w-5 h-5 rounded"
+                        className="w-5 h-5 rounded border-[var(--border)] bg-[var(--background)] accent-[var(--primary)]"
                       />
                       <Label htmlFor="illuminationAdequate" className="mb-0">Illumination adequate</Label>
                     </div>
@@ -467,7 +441,7 @@ export default function EmergencyLightingPage() {
                         id="logBookAvailable"
                         checked={data.testResults.logBookAvailable}
                         onChange={(e) => updateTestResults("logBookAvailable", e.target.checked)}
-                        className="w-5 h-5 rounded"
+                        className="w-5 h-5 rounded border-[var(--border)] bg-[var(--background)] accent-[var(--primary)]"
                       />
                       <Label htmlFor="logBookAvailable" className="mb-0">Log book available</Label>
                     </div>
@@ -510,33 +484,26 @@ export default function EmergencyLightingPage() {
           </div>
 
           {/* Sidebar */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          <div className="flex flex-col gap-4">
             {/* Luminaire Stats */}
-            <div
-              style={{
-                background: "#111827",
-                border: "1px solid #2D3B52",
-                borderRadius: "12px",
-                padding: "20px",
-              }}
-            >
-              <h3 style={{ fontSize: "14px", fontWeight: 600, marginBottom: "16px", color: "#94A3B8" }}>
+            <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5">
+              <h3 className="text-sm font-semibold mb-4 text-[var(--muted-foreground)]">
                 Luminaire Summary
               </h3>
-              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: "13px", color: "#94A3B8" }}>Total Luminaires</span>
-                  <span style={{ fontSize: "20px", fontWeight: 700, fontFamily: "monospace" }}>{luminaireStats.total}</span>
+              <div className="flex flex-col gap-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-[var(--muted-foreground)]">Total Luminaires</span>
+                  <span className="text-xl font-bold font-mono">{luminaireStats.total}</span>
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: "13px", color: "#10B981" }}>Passed</span>
-                  <span style={{ fontSize: "20px", fontWeight: 700, fontFamily: "monospace", color: "#10B981" }}>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-[var(--success)]">Passed</span>
+                  <span className="text-xl font-bold font-mono text-[var(--success)]">
                     {luminaireStats.pass}
                   </span>
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: "13px", color: "#EF4444" }}>Failed</span>
-                  <span style={{ fontSize: "20px", fontWeight: 700, fontFamily: "monospace", color: "#EF4444" }}>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-[var(--error)]">Failed</span>
+                  <span className="text-xl font-bold font-mono text-[var(--error)]">
                     {luminaireStats.fail}
                   </span>
                 </div>
@@ -544,35 +511,28 @@ export default function EmergencyLightingPage() {
             </div>
 
             {/* Quick Reference */}
-            <div
-              style={{
-                background: "#111827",
-                border: "1px solid #2D3B52",
-                borderRadius: "12px",
-                padding: "20px",
-              }}
-            >
-              <h3 style={{ fontSize: "14px", fontWeight: 600, marginBottom: "12px", color: "#94A3B8" }}>
+            <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5">
+              <h3 className="text-sm font-semibold mb-3 text-[var(--muted-foreground)]">
                 BS 5266 Testing
               </h3>
-              <div style={{ fontSize: "12px", color: "#64748B", lineHeight: 1.6 }}>
-                <div style={{ marginBottom: "12px" }}>
-                  <span style={{ color: "#F8FAFC", fontWeight: 600 }}>Monthly</span>
+              <div className="text-xs text-[var(--muted-foreground)] leading-relaxed space-y-3">
+                <div>
+                  <span className="text-[var(--foreground)] font-semibold">Monthly</span>
                   <div>Brief functional test (flick test)</div>
                 </div>
-                <div style={{ marginBottom: "12px" }}>
-                  <span style={{ color: "#F8FAFC", fontWeight: 600 }}>6-Monthly</span>
+                <div>
+                  <span className="text-[var(--foreground)] font-semibold">6-Monthly</span>
                   <div>1/4 duration test (central battery)</div>
                 </div>
                 <div>
-                  <span style={{ color: "#F8FAFC", fontWeight: 600 }}>Annual</span>
+                  <span className="text-[var(--foreground)] font-semibold">Annual</span>
                   <div>Full rated duration test</div>
                 </div>
               </div>
             </div>
 
             {/* Download Button */}
-            <Button onClick={handleDownload} disabled={isGenerating} size="lg" style={{ width: "100%" }}>
+            <Button onClick={handleDownload} disabled={isGenerating} size="lg" className="w-full">
               {isGenerating ? "Generating..." : "Download Certificate"}
             </Button>
           </div>

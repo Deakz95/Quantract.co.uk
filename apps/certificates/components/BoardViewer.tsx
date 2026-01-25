@@ -2,19 +2,19 @@
 
 import { useState } from "react";
 
-// Phase colors
+// Phase colors - kept as is since they're semantic (L1=red, L2=yellow/black, L3=blue)
 const PHASE_COLORS = {
   L1: "#EF4444",
   L2: "#F59E0B",
   L3: "#3B82F6",
 };
 
-// Status colors
+// Status colors reference CSS variables
 const STATUS_COLORS = {
-  pass: "#10B981",
-  fail: "#EF4444",
-  warning: "#F59E0B",
-  untested: "#64748B",
+  pass: "var(--success)",
+  fail: "var(--error)",
+  warning: "var(--warning)",
+  untested: "var(--muted-foreground)",
 };
 
 export interface Circuit {
@@ -67,29 +67,33 @@ export function BoardViewer({ board, onCircuitClick }: BoardViewerProps) {
   };
 
   return (
-    <div style={styles.boardContainer}>
+    <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-8 mb-8">
       {/* Header */}
-      <div style={styles.boardHeader}>
+      <div className="flex justify-between items-center mb-6">
         <div>
-          <div style={styles.boardTitle}>
-            <div style={styles.boardTitleIcon}>
-              <svg style={{ width: 18, height: 18 }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="text-lg font-bold flex items-center gap-3 text-[var(--foreground)]">
+            <div className="w-9 h-9 bg-[var(--muted)] rounded-xl flex items-center justify-center text-[var(--warning)]">
+              <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
             {board.name}
           </div>
-          <div style={styles.boardMeta}>{board.description}</div>
+          <div className="text-[var(--muted-foreground)] text-sm mt-1">{board.description}</div>
         </div>
-        <div style={styles.viewToggle}>
+        <div className="flex bg-[var(--muted)] rounded-xl p-1">
           <button
-            style={{ ...styles.viewBtn, ...(viewMode === "visual" ? styles.viewBtnActive : {}) }}
+            className={`px-4 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all border-none ${
+              viewMode === "visual" ? "bg-[var(--primary)] text-white" : "bg-transparent text-[var(--muted-foreground)]"
+            }`}
             onClick={() => setViewMode("visual")}
           >
             Visual
           </button>
           <button
-            style={{ ...styles.viewBtn, ...(viewMode === "table" ? styles.viewBtnActive : {}) }}
+            className={`px-4 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all border-none ${
+              viewMode === "table" ? "bg-[var(--primary)] text-white" : "bg-transparent text-[var(--muted-foreground)]"
+            }`}
             onClick={() => setViewMode("table")}
           >
             Table
@@ -99,22 +103,24 @@ export function BoardViewer({ board, onCircuitClick }: BoardViewerProps) {
 
       {/* Visual View */}
       {viewMode === "visual" && (
-        <div style={styles.visualBoard}>
-          <div style={styles.boardLabel}>{board.type === "three-phase" ? "400V 3-PHASE TP&N" : "230V SINGLE PHASE"}</div>
+        <div className="bg-[var(--muted)] border-2 border-[var(--border)] rounded-2xl p-6 relative">
+          <div className="absolute -top-3 left-6 bg-[var(--card)] px-3 py-1 text-xs font-semibold text-[var(--warning)] rounded-md border border-[var(--border)]">
+            {board.type === "three-phase" ? "400V 3-PHASE TP&N" : "230V SINGLE PHASE"}
+          </div>
 
           {/* Phase Legend for 3-phase */}
           {board.type === "three-phase" && (
-            <div style={styles.phaseLegend}>
-              <div style={styles.phaseIndicator}>
-                <div style={{ ...styles.phaseDot, background: PHASE_COLORS.L1 }} />
+            <div className="flex gap-6 mb-6 justify-center">
+              <div className="flex items-center gap-2 text-sm font-semibold text-[var(--foreground)]">
+                <div className="w-4 h-4 rounded-full" style={{ background: PHASE_COLORS.L1 }} />
                 <span>L1 (Brown)</span>
               </div>
-              <div style={styles.phaseIndicator}>
-                <div style={{ ...styles.phaseDot, background: PHASE_COLORS.L2 }} />
+              <div className="flex items-center gap-2 text-sm font-semibold text-[var(--foreground)]">
+                <div className="w-4 h-4 rounded-full" style={{ background: PHASE_COLORS.L2 }} />
                 <span>L2 (Black)</span>
               </div>
-              <div style={styles.phaseIndicator}>
-                <div style={{ ...styles.phaseDot, background: PHASE_COLORS.L3 }} />
+              <div className="flex items-center gap-2 text-sm font-semibold text-[var(--foreground)]">
+                <div className="w-4 h-4 rounded-full" style={{ background: PHASE_COLORS.L3 }} />
                 <span>L3 (Grey)</span>
               </div>
             </div>
@@ -122,20 +128,24 @@ export function BoardViewer({ board, onCircuitClick }: BoardViewerProps) {
 
           {/* Main Incomer */}
           {board.mainSwitch && (
-            <div style={styles.mainIncomer}>
-              <div style={styles.incomerUnit}>
-                <div style={styles.incomerLabel}>Main {board.mainSwitch.type}</div>
-                <div style={styles.incomerRating}>{board.mainSwitch.rating}</div>
+            <div className="flex justify-center mb-6 pb-6 border-b-2 border-dashed border-[var(--border)]">
+              <div className="bg-[var(--card)] border-[3px] border-[var(--warning)] rounded-xl px-8 py-4 text-center shadow-[0_0_20px_rgba(245,158,11,0.3)]">
+                <div className="text-[10px] text-[var(--warning)] font-semibold uppercase tracking-wider mb-2">
+                  Main {board.mainSwitch.type}
+                </div>
+                <div className="font-mono text-[28px] font-bold text-[var(--foreground)]">
+                  {board.mainSwitch.rating}
+                </div>
               </div>
             </div>
           )}
 
           {/* Busbar for 3-phase */}
           {board.type === "three-phase" && (
-            <div style={styles.busbarContainer}>
-              <div style={{ ...styles.busbar, background: PHASE_COLORS.L1 }} />
-              <div style={{ ...styles.busbar, background: PHASE_COLORS.L2 }} />
-              <div style={{ ...styles.busbar, background: PHASE_COLORS.L3 }} />
+            <div className="flex justify-center gap-1 mb-4">
+              <div className="h-2 flex-1 max-w-[800px] rounded" style={{ background: PHASE_COLORS.L1 }} />
+              <div className="h-2 flex-1 max-w-[800px] rounded" style={{ background: PHASE_COLORS.L2 }} />
+              <div className="h-2 flex-1 max-w-[800px] rounded" style={{ background: PHASE_COLORS.L3 }} />
             </div>
           )}
 
@@ -147,34 +157,34 @@ export function BoardViewer({ board, onCircuitClick }: BoardViewerProps) {
           )}
 
           {/* Stats Bar */}
-          <div style={styles.statsBar}>
-            <div style={styles.statItem}>
-              <div style={{ ...styles.statDot, background: STATUS_COLORS.pass }} />
-              <span style={styles.statText}>
-                <strong>{stats.pass}</strong> Pass
+          <div className="flex gap-6 mt-6 py-4 px-6 bg-[var(--card)] rounded-xl justify-center">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-[var(--success)]" />
+              <span className="text-sm text-[var(--muted-foreground)]">
+                <strong className="text-[var(--foreground)]">{stats.pass}</strong> Pass
               </span>
             </div>
             {stats.warning > 0 && (
-              <div style={styles.statItem}>
-                <div style={{ ...styles.statDot, background: STATUS_COLORS.warning }} />
-                <span style={styles.statText}>
-                  <strong>{stats.warning}</strong> C3
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-[var(--warning)]" />
+                <span className="text-sm text-[var(--muted-foreground)]">
+                  <strong className="text-[var(--foreground)]">{stats.warning}</strong> C3
                 </span>
               </div>
             )}
             {stats.fail > 0 && (
-              <div style={styles.statItem}>
-                <div style={{ ...styles.statDot, background: STATUS_COLORS.fail }} />
-                <span style={styles.statText}>
-                  <strong>{stats.fail}</strong> C2
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-[var(--error)]" />
+                <span className="text-sm text-[var(--muted-foreground)]">
+                  <strong className="text-[var(--foreground)]">{stats.fail}</strong> C2
                 </span>
               </div>
             )}
             {stats.spare > 0 && (
-              <div style={styles.statItem}>
-                <div style={{ ...styles.statDot, background: STATUS_COLORS.untested }} />
-                <span style={styles.statText}>
-                  <strong>{stats.spare}</strong> Spare
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-[var(--muted-foreground)]" />
+                <span className="text-sm text-[var(--muted-foreground)]">
+                  <strong className="text-[var(--foreground)]">{stats.spare}</strong> Spare
                 </span>
               </div>
             )}
@@ -184,28 +194,30 @@ export function BoardViewer({ board, onCircuitClick }: BoardViewerProps) {
 
       {/* Table View */}
       {viewMode === "table" && (
-        <div style={styles.tableContainer}>
-          <div style={styles.tableLabel}>SCHEDULE OF CIRCUIT DETAILS</div>
-          <div style={styles.tableScroll}>
-            <table style={styles.dataTable}>
+        <div className="bg-[var(--muted)] border-2 border-[var(--border)] rounded-2xl overflow-hidden relative">
+          <div className="absolute -top-3 left-6 bg-[var(--card)] px-3 py-1 text-xs font-semibold text-[var(--primary)] rounded-md border border-[var(--border)] z-[1]">
+            SCHEDULE OF CIRCUIT DETAILS
+          </div>
+          <div className="overflow-x-auto max-h-[500px] overflow-y-auto mt-3">
+            <table className="w-full border-collapse text-sm">
               <thead>
                 <tr>
-                  <th style={styles.th}>Cct</th>
-                  {board.type === "three-phase" && <th style={styles.th}>Phase</th>}
-                  <th style={styles.th}>Description</th>
-                  <th style={styles.th}>Type</th>
-                  <th style={styles.th}>Rating</th>
-                  <th style={styles.th}>BSen</th>
-                  <th style={styles.th}>Cable mm2</th>
-                  <th style={styles.th}>CPC mm2</th>
-                  <th style={styles.th}>Max Zs</th>
-                  <th style={styles.th}>Zs</th>
-                  <th style={styles.th}>R1+R2</th>
-                  <th style={styles.th}>Ins M</th>
-                  <th style={styles.th}>RCD mA</th>
-                  <th style={styles.th}>RCD ms</th>
-                  <th style={styles.th}>Status</th>
-                  <th style={styles.th}>Code</th>
+                  <th className="p-3.5 text-left font-semibold text-[var(--muted-foreground)] text-xs uppercase tracking-wide border-b-2 border-[var(--border)] whitespace-nowrap bg-[var(--card)] sticky top-0">Cct</th>
+                  {board.type === "three-phase" && <th className="p-3.5 text-left font-semibold text-[var(--muted-foreground)] text-xs uppercase tracking-wide border-b-2 border-[var(--border)] whitespace-nowrap bg-[var(--card)] sticky top-0">Phase</th>}
+                  <th className="p-3.5 text-left font-semibold text-[var(--muted-foreground)] text-xs uppercase tracking-wide border-b-2 border-[var(--border)] whitespace-nowrap bg-[var(--card)] sticky top-0">Description</th>
+                  <th className="p-3.5 text-left font-semibold text-[var(--muted-foreground)] text-xs uppercase tracking-wide border-b-2 border-[var(--border)] whitespace-nowrap bg-[var(--card)] sticky top-0">Type</th>
+                  <th className="p-3.5 text-left font-semibold text-[var(--muted-foreground)] text-xs uppercase tracking-wide border-b-2 border-[var(--border)] whitespace-nowrap bg-[var(--card)] sticky top-0">Rating</th>
+                  <th className="p-3.5 text-left font-semibold text-[var(--muted-foreground)] text-xs uppercase tracking-wide border-b-2 border-[var(--border)] whitespace-nowrap bg-[var(--card)] sticky top-0">BSen</th>
+                  <th className="p-3.5 text-left font-semibold text-[var(--muted-foreground)] text-xs uppercase tracking-wide border-b-2 border-[var(--border)] whitespace-nowrap bg-[var(--card)] sticky top-0">Cable mm2</th>
+                  <th className="p-3.5 text-left font-semibold text-[var(--muted-foreground)] text-xs uppercase tracking-wide border-b-2 border-[var(--border)] whitespace-nowrap bg-[var(--card)] sticky top-0">CPC mm2</th>
+                  <th className="p-3.5 text-left font-semibold text-[var(--muted-foreground)] text-xs uppercase tracking-wide border-b-2 border-[var(--border)] whitespace-nowrap bg-[var(--card)] sticky top-0">Max Zs</th>
+                  <th className="p-3.5 text-left font-semibold text-[var(--muted-foreground)] text-xs uppercase tracking-wide border-b-2 border-[var(--border)] whitespace-nowrap bg-[var(--card)] sticky top-0">Zs</th>
+                  <th className="p-3.5 text-left font-semibold text-[var(--muted-foreground)] text-xs uppercase tracking-wide border-b-2 border-[var(--border)] whitespace-nowrap bg-[var(--card)] sticky top-0">R1+R2</th>
+                  <th className="p-3.5 text-left font-semibold text-[var(--muted-foreground)] text-xs uppercase tracking-wide border-b-2 border-[var(--border)] whitespace-nowrap bg-[var(--card)] sticky top-0">Ins M</th>
+                  <th className="p-3.5 text-left font-semibold text-[var(--muted-foreground)] text-xs uppercase tracking-wide border-b-2 border-[var(--border)] whitespace-nowrap bg-[var(--card)] sticky top-0">RCD mA</th>
+                  <th className="p-3.5 text-left font-semibold text-[var(--muted-foreground)] text-xs uppercase tracking-wide border-b-2 border-[var(--border)] whitespace-nowrap bg-[var(--card)] sticky top-0">RCD ms</th>
+                  <th className="p-3.5 text-left font-semibold text-[var(--muted-foreground)] text-xs uppercase tracking-wide border-b-2 border-[var(--border)] whitespace-nowrap bg-[var(--card)] sticky top-0">Status</th>
+                  <th className="p-3.5 text-left font-semibold text-[var(--muted-foreground)] text-xs uppercase tracking-wide border-b-2 border-[var(--border)] whitespace-nowrap bg-[var(--card)] sticky top-0">Code</th>
                 </tr>
               </thead>
               <tbody>
@@ -214,35 +226,35 @@ export function BoardViewer({ board, onCircuitClick }: BoardViewerProps) {
                   .map((circuit) => (
                     <tr
                       key={circuit.id}
-                      style={{ ...styles.tr, ...(circuit.phase === "TPN" ? styles.trTpn : {}) }}
+                      className={`transition-colors cursor-pointer hover:bg-[var(--card)] ${circuit.phase === "TPN" ? "bg-[var(--card)]" : ""}`}
                       onClick={() => onCircuitClick?.(circuit)}
                     >
-                      <td style={{ ...styles.td, ...styles.circuitNum }}>{circuit.num}</td>
+                      <td className="p-3 border-b border-[var(--border)] font-mono text-xs text-[var(--warning)] font-bold">{circuit.num}</td>
                       {board.type === "three-phase" && (
-                        <td style={styles.td}>
+                        <td className="p-3 border-b border-[var(--border)]">
                           <PhaseBadge phase={circuit.phase} />
                         </td>
                       )}
-                      <td style={{ ...styles.td, ...styles.description }}>{circuit.description}</td>
-                      <td style={styles.td}>{circuit.type}</td>
-                      <td style={styles.td}>{circuit.rating}</td>
-                      <td style={styles.td}>{circuit.bsen || "-"}</td>
-                      <td style={styles.td}>{circuit.cableMm2 || "-"}</td>
-                      <td style={styles.td}>{circuit.cpcMm2 || "-"}</td>
-                      <td style={styles.td}>{circuit.maxZs || "-"}</td>
-                      <td style={styles.td}>{circuit.zs || "-"}</td>
-                      <td style={styles.td}>{circuit.r1r2 || "-"}</td>
-                      <td style={styles.td}>{circuit.insMohm || "-"}</td>
-                      <td style={{ ...styles.td, color: circuit.rcdMa ? "inherit" : "#64748B" }}>
+                      <td className="p-3 border-b border-[var(--border)] text-xs text-[var(--foreground)] font-medium">{circuit.description}</td>
+                      <td className="p-3 border-b border-[var(--border)] font-mono text-xs text-[var(--foreground)]">{circuit.type}</td>
+                      <td className="p-3 border-b border-[var(--border)] font-mono text-xs text-[var(--foreground)]">{circuit.rating}</td>
+                      <td className="p-3 border-b border-[var(--border)] font-mono text-xs text-[var(--foreground)]">{circuit.bsen || "-"}</td>
+                      <td className="p-3 border-b border-[var(--border)] font-mono text-xs text-[var(--foreground)]">{circuit.cableMm2 || "-"}</td>
+                      <td className="p-3 border-b border-[var(--border)] font-mono text-xs text-[var(--foreground)]">{circuit.cpcMm2 || "-"}</td>
+                      <td className="p-3 border-b border-[var(--border)] font-mono text-xs text-[var(--foreground)]">{circuit.maxZs || "-"}</td>
+                      <td className="p-3 border-b border-[var(--border)] font-mono text-xs text-[var(--foreground)]">{circuit.zs || "-"}</td>
+                      <td className="p-3 border-b border-[var(--border)] font-mono text-xs text-[var(--foreground)]">{circuit.r1r2 || "-"}</td>
+                      <td className="p-3 border-b border-[var(--border)] font-mono text-xs text-[var(--foreground)]">{circuit.insMohm || "-"}</td>
+                      <td className={`p-3 border-b border-[var(--border)] font-mono text-xs ${circuit.rcdMa ? "text-[var(--foreground)]" : "text-[var(--muted-foreground)]"}`}>
                         {circuit.rcdMa || "N/A"}
                       </td>
-                      <td style={{ ...styles.td, color: circuit.rcdMs ? "inherit" : "#64748B" }}>
+                      <td className={`p-3 border-b border-[var(--border)] font-mono text-xs ${circuit.rcdMs ? "text-[var(--foreground)]" : "text-[var(--muted-foreground)]"}`}>
                         {circuit.rcdMs || "N/A"}
                       </td>
-                      <td style={styles.td}>
+                      <td className="p-3 border-b border-[var(--border)]">
                         <StatusBadge status={circuit.status} />
                       </td>
-                      <td style={styles.td}>
+                      <td className="p-3 border-b border-[var(--border)]">
                         <CodeBadge code={circuit.code} />
                       </td>
                     </tr>
@@ -265,26 +277,30 @@ function SinglePhaseGrid({
   onCircuitClick?: (circuit: Circuit) => void;
 }) {
   return (
-    <div style={styles.singlePhaseGrid}>
+    <div className="flex gap-2 flex-wrap justify-center">
       {circuits.map((circuit) => (
         <div
           key={circuit.id}
+          className={`w-[72px] bg-[var(--card)] border-2 rounded-xl p-2.5 text-center cursor-pointer transition-all ${
+            circuit.isEmpty ? "border-dashed border-[var(--border)] opacity-50" : ""
+          }`}
           style={{
-            ...styles.circuit,
-            borderColor: circuit.isEmpty ? "#2D3B52" : STATUS_COLORS[circuit.status],
-            opacity: circuit.isEmpty ? 0.5 : 1,
+            borderColor: circuit.isEmpty ? undefined : STATUS_COLORS[circuit.status],
             borderStyle: circuit.isEmpty ? "dashed" : "solid",
           }}
           onClick={() => !circuit.isEmpty && onCircuitClick?.(circuit)}
         >
-          <div style={styles.circuitRating}>{circuit.isEmpty ? "-" : circuit.rating}</div>
-          <div style={styles.circuitType}>{circuit.isEmpty ? "-" : circuit.type}</div>
+          <div className="font-mono text-base font-bold text-[var(--foreground)]">{circuit.isEmpty ? "-" : circuit.rating}</div>
+          <div className="text-xs text-[var(--muted-foreground)] font-semibold mb-1.5">{circuit.isEmpty ? "-" : circuit.type}</div>
           {!circuit.isEmpty && (
-            <div style={{ ...styles.circuitStatus, background: STATUS_COLORS[circuit.status] }}>
+            <div
+              className="w-5 h-5 rounded-full mx-auto mb-1.5 flex items-center justify-center text-[10px] font-bold text-white"
+              style={{ background: STATUS_COLORS[circuit.status] }}
+            >
               {circuit.status === "pass" ? "✓" : circuit.status === "fail" ? "✗" : "!"}
             </div>
           )}
-          <div style={styles.circuitName}>{circuit.isEmpty ? "Spare" : circuit.description}</div>
+          <div className="text-[9px] text-[var(--muted-foreground)] font-medium leading-tight">{circuit.isEmpty ? "Spare" : circuit.description}</div>
         </div>
       ))}
     </div>
@@ -305,11 +321,11 @@ function ThreePhaseGrid({
   const tpnCircuits = circuits.filter((c) => c.phase === "TPN");
 
   return (
-    <div style={styles.threePhaseLayout}>
+    <div className="flex flex-col gap-2">
       {/* L1 Row */}
-      <div style={styles.phaseRow}>
-        <div style={{ ...styles.phaseLabel, background: PHASE_COLORS.L1 }}>L1</div>
-        <div style={styles.phaseCircuits}>
+      <div className="flex items-center gap-2">
+        <div className="w-10 font-mono text-sm font-bold text-center p-2 rounded-lg shrink-0 text-white" style={{ background: PHASE_COLORS.L1 }}>L1</div>
+        <div className="flex gap-1.5 flex-1 overflow-x-auto py-1">
           {l1Circuits.map((circuit) => (
             <Circuit3P key={circuit.id} circuit={circuit} onClick={onCircuitClick} />
           ))}
@@ -317,9 +333,9 @@ function ThreePhaseGrid({
       </div>
 
       {/* L2 Row */}
-      <div style={styles.phaseRow}>
-        <div style={{ ...styles.phaseLabel, background: PHASE_COLORS.L2, color: "#000" }}>L2</div>
-        <div style={styles.phaseCircuits}>
+      <div className="flex items-center gap-2">
+        <div className="w-10 font-mono text-sm font-bold text-center p-2 rounded-lg shrink-0 text-black" style={{ background: PHASE_COLORS.L2 }}>L2</div>
+        <div className="flex gap-1.5 flex-1 overflow-x-auto py-1">
           {l2Circuits.map((circuit) => (
             <Circuit3P key={circuit.id} circuit={circuit} onClick={onCircuitClick} />
           ))}
@@ -327,9 +343,9 @@ function ThreePhaseGrid({
       </div>
 
       {/* L3 Row */}
-      <div style={styles.phaseRow}>
-        <div style={{ ...styles.phaseLabel, background: PHASE_COLORS.L3 }}>L3</div>
-        <div style={styles.phaseCircuits}>
+      <div className="flex items-center gap-2">
+        <div className="w-10 font-mono text-sm font-bold text-center p-2 rounded-lg shrink-0 text-white" style={{ background: PHASE_COLORS.L3 }}>L3</div>
+        <div className="flex gap-1.5 flex-1 overflow-x-auto py-1">
           {l3Circuits.map((circuit) => (
             <Circuit3P key={circuit.id} circuit={circuit} onClick={onCircuitClick} />
           ))}
@@ -338,29 +354,30 @@ function ThreePhaseGrid({
 
       {/* TPN Section */}
       {tpnCircuits.length > 0 && (
-        <div style={styles.tpnSection}>
-          <div style={styles.tpnTitle}>3-Phase (TP&N) Circuits</div>
-          <div style={styles.tpnCircuits}>
+        <div className="mt-8 pt-6 border-t-2 border-dashed border-[var(--border)]">
+          <div className="text-xs text-[var(--muted-foreground)] uppercase tracking-wider mb-4 text-center">3-Phase (TP&N) Circuits</div>
+          <div className="flex gap-3 justify-center flex-wrap">
             {tpnCircuits.map((circuit) => (
               <div
                 key={circuit.id}
-                style={{
-                  ...styles.circuitTpn,
-                  borderColor: STATUS_COLORS[circuit.status],
-                }}
+                className="bg-[var(--card)] border-2 rounded-xl p-4 text-center cursor-pointer transition-all min-w-[100px]"
+                style={{ borderColor: STATUS_COLORS[circuit.status] }}
                 onClick={() => onCircuitClick?.(circuit)}
               >
-                <div style={styles.phaseIndicators}>
-                  <div style={{ ...styles.phaseMini, background: PHASE_COLORS.L1 }} />
-                  <div style={{ ...styles.phaseMini, background: PHASE_COLORS.L2 }} />
-                  <div style={{ ...styles.phaseMini, background: PHASE_COLORS.L3 }} />
+                <div className="flex gap-1 justify-center mb-2">
+                  <div className="w-3 h-3 rounded-full" style={{ background: PHASE_COLORS.L1 }} />
+                  <div className="w-3 h-3 rounded-full" style={{ background: PHASE_COLORS.L2 }} />
+                  <div className="w-3 h-3 rounded-full" style={{ background: PHASE_COLORS.L3 }} />
                 </div>
-                <div style={{ ...styles.circuitRating, fontSize: "20px" }}>{circuit.rating}</div>
-                <div style={styles.circuitType}>{circuit.type}</div>
-                <div style={{ ...styles.circuitStatus, background: STATUS_COLORS[circuit.status] }}>
+                <div className="font-mono text-xl font-bold text-[var(--foreground)]">{circuit.rating}</div>
+                <div className="text-xs text-[var(--muted-foreground)] font-semibold">{circuit.type}</div>
+                <div
+                  className="w-5 h-5 rounded-full mx-auto my-1.5 flex items-center justify-center text-[10px] font-bold text-white"
+                  style={{ background: STATUS_COLORS[circuit.status] }}
+                >
                   {circuit.status === "pass" ? "✓" : circuit.status === "fail" ? "✗" : "!"}
                 </div>
-                <div style={{ ...styles.circuitName, marginTop: "4px" }}>{circuit.description}</div>
+                <div className="text-[9px] text-[var(--muted-foreground)] font-medium mt-1">{circuit.description}</div>
               </div>
             ))}
           </div>
@@ -374,22 +391,26 @@ function ThreePhaseGrid({
 function Circuit3P({ circuit, onClick }: { circuit: Circuit; onClick?: (circuit: Circuit) => void }) {
   return (
     <div
+      className={`min-w-[64px] bg-[var(--card)] border-2 rounded-lg py-2 px-1 text-center cursor-pointer transition-all shrink-0 ${
+        circuit.isEmpty ? "border-dashed border-[var(--border)] opacity-50" : ""
+      }`}
       style={{
-        ...styles.circuit3p,
-        borderColor: circuit.isEmpty ? "#2D3B52" : STATUS_COLORS[circuit.status],
-        opacity: circuit.isEmpty ? 0.5 : 1,
+        borderColor: circuit.isEmpty ? undefined : STATUS_COLORS[circuit.status],
         borderStyle: circuit.isEmpty ? "dashed" : "solid",
       }}
       onClick={() => !circuit.isEmpty && onClick?.(circuit)}
     >
-      <div style={{ ...styles.circuitRating, fontSize: "14px" }}>{circuit.isEmpty ? "-" : circuit.rating}</div>
-      <div style={{ ...styles.circuitType, fontSize: "10px" }}>{circuit.isEmpty ? "-" : circuit.type}</div>
+      <div className="font-mono text-sm font-bold text-[var(--foreground)]">{circuit.isEmpty ? "-" : circuit.rating}</div>
+      <div className="text-[10px] text-[var(--muted-foreground)] font-semibold mb-1">{circuit.isEmpty ? "-" : circuit.type}</div>
       {!circuit.isEmpty && (
-        <div style={{ ...styles.circuitStatus, width: "16px", height: "16px", fontSize: "8px", background: STATUS_COLORS[circuit.status] }}>
+        <div
+          className="w-4 h-4 rounded-full mx-auto mb-1 flex items-center justify-center text-[8px] font-bold text-white"
+          style={{ background: STATUS_COLORS[circuit.status] }}
+        >
           {circuit.status === "pass" ? "✓" : circuit.status === "fail" ? "✗" : "!"}
         </div>
       )}
-      <div style={{ ...styles.circuitName, fontSize: "8px" }}>{circuit.isEmpty ? "Spare" : circuit.description}</div>
+      <div className="text-[8px] text-[var(--muted-foreground)] font-medium">{circuit.isEmpty ? "Spare" : circuit.description}</div>
     </div>
   );
 }
@@ -412,25 +433,12 @@ function StatusBadge({ status }: { status: Circuit["status"] }) {
 
   return (
     <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: "6px",
-        padding: "4px 10px",
-        borderRadius: "20px",
-        fontSize: "11px",
-        fontWeight: 600,
-        background: bgColors[status],
-        color: STATUS_COLORS[status],
-      }}
+      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-2xl text-[11px] font-semibold"
+      style={{ background: bgColors[status], color: STATUS_COLORS[status] }}
     >
       <span
-        style={{
-          width: "6px",
-          height: "6px",
-          borderRadius: "50%",
-          background: STATUS_COLORS[status],
-        }}
+        className="w-1.5 h-1.5 rounded-full"
+        style={{ background: STATUS_COLORS[status] }}
       />
       {labels[status]}
     </span>
@@ -441,34 +449,19 @@ function StatusBadge({ status }: { status: Circuit["status"] }) {
 function CodeBadge({ code }: { code?: string }) {
   if (!code || code === "-") {
     return (
-      <span
-        style={{
-          padding: "2px 8px",
-          borderRadius: "4px",
-          fontSize: "11px",
-          fontWeight: 700,
-          background: "#232D42",
-          color: "#64748B",
-        }}
-      >
+      <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-[var(--muted)] text-[var(--muted-foreground)]">
         -
       </span>
     );
   }
 
-  const bgColor = code === "C1" || code === "C2" ? "#EF4444" : code === "C3" ? "#F59E0B" : "#232D42";
+  const bgColor = code === "C1" || code === "C2" ? "var(--error)" : code === "C3" ? "var(--warning)" : "var(--muted)";
   const textColor = code === "C3" ? "#000" : "#fff";
 
   return (
     <span
-      style={{
-        padding: "2px 8px",
-        borderRadius: "4px",
-        fontSize: "11px",
-        fontWeight: 700,
-        background: bgColor,
-        color: textColor,
-      }}
+      className="px-2 py-0.5 rounded text-[11px] font-bold"
+      style={{ background: bgColor, color: textColor }}
     >
       {code}
     </span>
@@ -480,400 +473,25 @@ function PhaseBadge({ phase }: { phase?: Circuit["phase"] }) {
   if (phase === "TPN") {
     return (
       <span
-        style={{
-          display: "inline-block",
-          padding: "0 8px",
-          height: "24px",
-          lineHeight: "24px",
-          borderRadius: "6px",
-          fontSize: "11px",
-          fontWeight: 700,
-          background: `linear-gradient(90deg, ${PHASE_COLORS.L1}, ${PHASE_COLORS.L2}, ${PHASE_COLORS.L3})`,
-          color: "#fff",
-        }}
+        className="inline-block px-2 h-6 leading-6 rounded-md text-[11px] font-bold text-white"
+        style={{ background: `linear-gradient(90deg, ${PHASE_COLORS.L1}, ${PHASE_COLORS.L2}, ${PHASE_COLORS.L3})` }}
       >
         3P
       </span>
     );
   }
 
-  const color = phase ? PHASE_COLORS[phase] : "#64748B";
+  const color = phase ? PHASE_COLORS[phase] : "var(--muted-foreground)";
   const textColor = phase === "L2" ? "#000" : "#fff";
 
   return (
     <span
-      style={{
-        display: "inline-block",
-        width: "24px",
-        height: "24px",
-        lineHeight: "24px",
-        borderRadius: "6px",
-        textAlign: "center",
-        fontSize: "11px",
-        fontWeight: 700,
-        background: color,
-        color: textColor,
-      }}
+      className="inline-block w-6 h-6 leading-6 rounded-md text-center text-[11px] font-bold"
+      style={{ background: color, color: textColor }}
     >
       {phase || "-"}
     </span>
   );
 }
-
-// Styles
-const styles: { [key: string]: React.CSSProperties } = {
-  boardContainer: {
-    background: "#111827",
-    border: "1px solid #2D3B52",
-    borderRadius: "20px",
-    padding: "32px",
-    marginBottom: "32px",
-  },
-  boardHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: "24px",
-  },
-  boardTitle: {
-    fontSize: "18px",
-    fontWeight: 700,
-    display: "flex",
-    alignItems: "center",
-    gap: "12px",
-    color: "#F8FAFC",
-  },
-  boardTitleIcon: {
-    width: "36px",
-    height: "36px",
-    background: "#232D42",
-    borderRadius: "10px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    color: "#F59E0B",
-  },
-  boardMeta: {
-    color: "#94A3B8",
-    fontSize: "14px",
-    marginTop: "4px",
-  },
-  viewToggle: {
-    display: "flex",
-    background: "#232D42",
-    borderRadius: "10px",
-    padding: "4px",
-  },
-  viewBtn: {
-    padding: "8px 16px",
-    borderRadius: "8px",
-    fontSize: "13px",
-    fontWeight: 500,
-    cursor: "pointer",
-    transition: "all 0.2s",
-    border: "none",
-    background: "transparent",
-    color: "#94A3B8",
-    fontFamily: "inherit",
-  },
-  viewBtnActive: {
-    background: "#3B82F6",
-    color: "#fff",
-  },
-  visualBoard: {
-    background: "#1A2235",
-    border: "2px solid #2D3B52",
-    borderRadius: "16px",
-    padding: "24px",
-    position: "relative" as const,
-  },
-  boardLabel: {
-    position: "absolute" as const,
-    top: "-12px",
-    left: "24px",
-    background: "#111827",
-    padding: "4px 12px",
-    fontSize: "12px",
-    fontWeight: 600,
-    color: "#F59E0B",
-    borderRadius: "6px",
-    border: "1px solid #2D3B52",
-  },
-  phaseLegend: {
-    display: "flex",
-    gap: "24px",
-    marginBottom: "24px",
-    justifyContent: "center",
-  },
-  phaseIndicator: {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    fontSize: "13px",
-    fontWeight: 600,
-    color: "#F8FAFC",
-  },
-  phaseDot: {
-    width: "16px",
-    height: "16px",
-    borderRadius: "50%",
-  },
-  mainIncomer: {
-    display: "flex",
-    justifyContent: "center",
-    marginBottom: "24px",
-    paddingBottom: "24px",
-    borderBottom: "2px dashed #2D3B52",
-  },
-  incomerUnit: {
-    background: "#232D42",
-    border: "3px solid #F59E0B",
-    borderRadius: "12px",
-    padding: "16px 32px",
-    textAlign: "center" as const,
-    boxShadow: "0 0 20px rgba(245, 158, 11, 0.3)",
-  },
-  incomerLabel: {
-    fontSize: "10px",
-    color: "#F59E0B",
-    fontWeight: 600,
-    textTransform: "uppercase" as const,
-    letterSpacing: "1px",
-    marginBottom: "8px",
-  },
-  incomerRating: {
-    fontFamily: "monospace",
-    fontSize: "28px",
-    fontWeight: 700,
-    color: "#F8FAFC",
-  },
-  busbarContainer: {
-    display: "flex",
-    justifyContent: "center",
-    gap: "4px",
-    marginBottom: "16px",
-  },
-  busbar: {
-    height: "8px",
-    flex: 1,
-    maxWidth: "800px",
-    borderRadius: "4px",
-  },
-  singlePhaseGrid: {
-    display: "flex",
-    gap: "8px",
-    flexWrap: "wrap" as const,
-    justifyContent: "center",
-  },
-  circuit: {
-    width: "72px",
-    background: "#232D42",
-    border: "2px solid",
-    borderRadius: "10px",
-    padding: "10px 6px",
-    textAlign: "center" as const,
-    cursor: "pointer",
-    transition: "all 0.2s",
-  },
-  circuitRating: {
-    fontFamily: "monospace",
-    fontSize: "16px",
-    fontWeight: 700,
-    color: "#F8FAFC",
-  },
-  circuitType: {
-    fontSize: "12px",
-    color: "#64748B",
-    fontWeight: 600,
-    marginBottom: "6px",
-  },
-  circuitStatus: {
-    width: "20px",
-    height: "20px",
-    borderRadius: "50%",
-    margin: "0 auto 6px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: "10px",
-    fontWeight: "bold",
-    color: "#fff",
-  },
-  circuitName: {
-    fontSize: "9px",
-    color: "#94A3B8",
-    fontWeight: 500,
-    lineHeight: 1.2,
-  },
-  statsBar: {
-    display: "flex",
-    gap: "24px",
-    marginTop: "24px",
-    padding: "16px 24px",
-    background: "#232D42",
-    borderRadius: "12px",
-    justifyContent: "center",
-  },
-  statItem: {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-  },
-  statDot: {
-    width: "12px",
-    height: "12px",
-    borderRadius: "50%",
-  },
-  statText: {
-    fontSize: "13px",
-    color: "#94A3B8",
-  },
-  threePhaseLayout: {
-    display: "flex",
-    flexDirection: "column" as const,
-    gap: "8px",
-  },
-  phaseRow: {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-  },
-  phaseLabel: {
-    width: "40px",
-    fontFamily: "monospace",
-    fontSize: "14px",
-    fontWeight: 700,
-    textAlign: "center" as const,
-    padding: "8px",
-    borderRadius: "8px",
-    flexShrink: 0,
-    color: "#fff",
-  },
-  phaseCircuits: {
-    display: "flex",
-    gap: "6px",
-    flex: 1,
-    overflowX: "auto" as const,
-    padding: "4px 0",
-  },
-  circuit3p: {
-    minWidth: "64px",
-    background: "#232D42",
-    border: "2px solid",
-    borderRadius: "8px",
-    padding: "8px 4px",
-    textAlign: "center" as const,
-    cursor: "pointer",
-    transition: "all 0.2s",
-    flexShrink: 0,
-  },
-  tpnSection: {
-    marginTop: "32px",
-    paddingTop: "24px",
-    borderTop: "2px dashed #2D3B52",
-  },
-  tpnTitle: {
-    fontSize: "12px",
-    color: "#94A3B8",
-    textTransform: "uppercase" as const,
-    letterSpacing: "1px",
-    marginBottom: "16px",
-    textAlign: "center" as const,
-  },
-  tpnCircuits: {
-    display: "flex",
-    gap: "12px",
-    justifyContent: "center",
-    flexWrap: "wrap" as const,
-  },
-  circuitTpn: {
-    background: "#232D42",
-    border: "2px solid",
-    borderRadius: "12px",
-    padding: "16px",
-    textAlign: "center" as const,
-    cursor: "pointer",
-    transition: "all 0.2s",
-    minWidth: "100px",
-  },
-  phaseIndicators: {
-    display: "flex",
-    gap: "4px",
-    justifyContent: "center",
-    marginBottom: "8px",
-  },
-  phaseMini: {
-    width: "12px",
-    height: "12px",
-    borderRadius: "50%",
-  },
-  tableContainer: {
-    background: "#1A2235",
-    border: "2px solid #2D3B52",
-    borderRadius: "16px",
-    overflow: "hidden",
-    position: "relative" as const,
-  },
-  tableLabel: {
-    position: "absolute" as const,
-    top: "-12px",
-    left: "24px",
-    background: "#111827",
-    padding: "4px 12px",
-    fontSize: "12px",
-    fontWeight: 600,
-    color: "#3B82F6",
-    borderRadius: "6px",
-    border: "1px solid #2D3B52",
-    zIndex: 1,
-  },
-  tableScroll: {
-    overflowX: "auto" as const,
-    maxHeight: "500px",
-    overflowY: "auto" as const,
-    marginTop: "12px",
-  },
-  dataTable: {
-    width: "100%",
-    borderCollapse: "collapse" as const,
-    fontSize: "13px",
-  },
-  th: {
-    padding: "14px 12px",
-    textAlign: "left" as const,
-    fontWeight: 600,
-    color: "#94A3B8",
-    fontSize: "11px",
-    textTransform: "uppercase" as const,
-    letterSpacing: "0.5px",
-    borderBottom: "2px solid #2D3B52",
-    whiteSpace: "nowrap" as const,
-    background: "#232D42",
-    position: "sticky" as const,
-    top: 0,
-  },
-  tr: {
-    transition: "background 0.2s",
-    cursor: "pointer",
-  },
-  trTpn: {
-    background: "#232D42",
-  },
-  td: {
-    padding: "12px",
-    borderBottom: "1px solid #2D3B52",
-    fontFamily: "monospace",
-    fontSize: "12px",
-    color: "#F8FAFC",
-  },
-  circuitNum: {
-    fontWeight: 700,
-    color: "#F59E0B",
-  },
-  description: {
-    fontFamily: "inherit",
-    fontWeight: 500,
-  },
-};
 
 export default BoardViewer;
