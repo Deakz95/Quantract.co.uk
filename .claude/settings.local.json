@@ -29,7 +29,8 @@
       "Bash(node -e:*)",
       "Bash(npm run build:crm:*)",
       "Bash(npm ls:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(npm run build:*)"
     ]
   }
 }
