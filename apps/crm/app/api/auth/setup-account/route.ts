@@ -68,6 +68,7 @@ export async function POST(req: Request) {
         themeAccent: "#38bdf8",
         themeBg: "#ffffff",
         themeText: "#0f172a",
+        updatedAt: new Date(),
       },
     });
 
