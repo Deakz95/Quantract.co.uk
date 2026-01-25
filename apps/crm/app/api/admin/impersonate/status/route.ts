@@ -77,19 +77,20 @@ export async function GET() {
     if (error?.status === 401 || error?.status === 403) {
       return NextResponse.json(
         {
+          ok: false,
           isBeingImpersonated: false,
           impersonatedBy: null,
           isImpersonating: false,
           impersonatingUser: null,
           impersonationId: null,
         },
-        { status: error.status }
+        { status: error.status, headers: { "Content-Type": "application/json" } }
       );
     }
     console.error("Impersonation status error:", error);
     return NextResponse.json(
-      { error: "Failed to fetch impersonation status" },
-      { status: 500 }
+      { ok: false, error: "Failed to fetch impersonation status" },
+      { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }
 }

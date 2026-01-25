@@ -39,18 +39,33 @@ export function useImpersonation(): UseImpersonationReturn {
     try {
       setLoading(true);
       setError(null);
-      
+
       const response = await fetch('/api/admin/impersonate/status');
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch impersonation status');
+      const contentType = response.headers.get('content-type') || '';
+
+      if (!response.ok || !contentType.includes('application/json')) {
+        // Not authenticated or non-JSON response - treat as not impersonating
+        setStatus({
+          isBeingImpersonated: false,
+          impersonatedBy: null,
+          isImpersonating: false,
+          impersonatingUser: null,
+          impersonationId: null,
+        });
+        return;
       }
-      
+
       const data = await response.json();
       setStatus(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
-      console.error('Failed to fetch impersonation status:', err);
+      // On any error, assume not impersonating rather than throwing
+      setStatus({
+        isBeingImpersonated: false,
+        impersonatedBy: null,
+        isImpersonating: false,
+        impersonatingUser: null,
+        impersonationId: null,
+      });
     } finally {
       setLoading(false);
     }
