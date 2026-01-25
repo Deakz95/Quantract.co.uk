@@ -7,15 +7,59 @@ import { randomUUID } from "crypto";
 
 export type Role = "admin" | "client" | "engineer";
 
-// Used by middleware (Edge) for page protection only.
-const ROLE_COOKIE = "qt_session_v1";
-// Used by API route handlers (server) for real auth.
-const SID_COOKIE = "qt_sid_v1";
+// ============================================================================
+// COOKIE CONFIGURATION - Centralized security settings
+// ============================================================================
 
-const EMAIL_COOKIE = "qt_user_email";
-const COMPANY_COOKIE = "qt_company_id";
-const PROFILE_COOKIE = "qt_profile_complete";
+const IS_PRODUCTION = process.env.NODE_ENV === "production";
+
+/**
+ * Cookie names - using __Host- prefix in production for maximum security.
+ * __Host- prefix requirements: Secure, no Domain, Path=/.
+ * This prevents cookie injection attacks via subdomains.
+ */
+const ROLE_COOKIE = IS_PRODUCTION ? "__Host-qt_session_v1" : "qt_session_v1";
+const SID_COOKIE = IS_PRODUCTION ? "__Host-qt_sid_v1" : "qt_sid_v1";
+const EMAIL_COOKIE = IS_PRODUCTION ? "__Host-qt_user_email" : "qt_user_email";
+const COMPANY_COOKIE = IS_PRODUCTION ? "__Host-qt_company_id" : "qt_company_id";
+const PROFILE_COOKIE = IS_PRODUCTION ? "__Host-qt_profile_complete" : "qt_profile_complete";
+// Tenant cookie cannot use __Host- because it may need to work across subdomains
 const TENANT_COOKIE = "qt_tenant_subdomain";
+
+/**
+ * Centralized secure cookie options generator.
+ * Ensures consistent security settings across all auth cookies.
+ *
+ * @param maxAge - Cookie lifetime in seconds. Default: 7 days (604800s)
+ */
+export function getSecureCookieOptions(maxAge: number = 60 * 60 * 24 * 7): {
+  httpOnly: boolean;
+  secure: boolean;
+  sameSite: "lax" | "strict" | "none";
+  path: string;
+  maxAge: number;
+} {
+  return {
+    httpOnly: true,
+    secure: IS_PRODUCTION, // Always secure in production (Render terminates TLS)
+    sameSite: "lax",       // Protects against CSRF while allowing normal navigation
+    path: "/",             // Required for __Host- prefix
+    maxAge,
+  };
+}
+
+/**
+ * Cookie options for clearing/expiring a cookie
+ */
+function getClearCookieOptions() {
+  return {
+    httpOnly: true,
+    secure: IS_PRODUCTION,
+    sameSite: "lax" as const,
+    path: "/",
+    maxAge: 0,
+  };
+}
 
 export { getSession }; // ✅ fixes imports like: import { getSession } from "@/lib/serverAuth"
 
@@ -41,10 +85,12 @@ export async function getTenantSubdomain(): Promise<string | null> {
 
 export async function clearSession() {
   const jar = await cookies();
-  jar.set(ROLE_COOKIE, "", { httpOnly: true, sameSite: "lax", path: "/", maxAge: 0 });
-  jar.set(SID_COOKIE, "", { httpOnly: true, sameSite: "lax", path: "/", maxAge: 0 });
-  jar.set(EMAIL_COOKIE, "", { httpOnly: true, sameSite: "lax", path: "/", maxAge: 0 });
-  jar.set(COMPANY_COOKIE, "", { httpOnly: true, sameSite: "lax", path: "/", maxAge: 0 });
+  const clearOpts = getClearCookieOptions();
+  jar.set(ROLE_COOKIE, "", clearOpts);
+  jar.set(SID_COOKIE, "", clearOpts);
+  jar.set(EMAIL_COOKIE, "", clearOpts);
+  jar.set(COMPANY_COOKIE, "", clearOpts);
+  jar.set(PROFILE_COOKIE, "", clearOpts);
 }
 
 /**
@@ -52,31 +98,33 @@ export async function clearSession() {
  */
 export async function setSession(role: Role, opts?: { sessionId?: string | null }) {
   const jar = await cookies();
-  jar.set(ROLE_COOKIE, `role:${role}`, { httpOnly: true, sameSite: "lax", path: "/" });
+  const cookieOpts = getSecureCookieOptions();
+  jar.set(ROLE_COOKIE, `role:${role}`, cookieOpts);
   if (opts?.sessionId) {
-    jar.set(SID_COOKIE, opts.sessionId, { httpOnly: true, sameSite: "lax", path: "/" });
+    jar.set(SID_COOKIE, opts.sessionId, cookieOpts);
   }
 }
 
 export async function setUserEmail(email: string) {
   const jar = await cookies();
-  jar.set(EMAIL_COOKIE, email, { httpOnly: true, sameSite: "lax", path: "/" });
+  jar.set(EMAIL_COOKIE, email, getSecureCookieOptions());
 }
 
 export async function setCompanyId(companyId: string) {
   const jar = await cookies();
-  jar.set(COMPANY_COOKIE, companyId, { httpOnly: true, sameSite: "lax", path: "/" });
+  jar.set(COMPANY_COOKIE, companyId, getSecureCookieOptions());
 }
 
 export async function setProfileComplete(isComplete: boolean) {
   const jar = await cookies();
-  jar.set(PROFILE_COOKIE, isComplete ? "1" : "0", { httpOnly: true, sameSite: "lax", path: "/" });
+  jar.set(PROFILE_COOKIE, isComplete ? "1" : "0", getSecureCookieOptions());
 }
 
 export async function getProfileCompleteFromCookie(): Promise<boolean | null> {
   try {
     const jar = await cookies();
-    const v = jar.get(PROFILE_COOKIE)?.value;
+    // Check both prefixed and non-prefixed for migration compatibility
+    const v = jar.get(PROFILE_COOKIE)?.value ?? jar.get("qt_profile_complete")?.value;
     if (v === "1") return true;
     if (v === "0") return false;
     return null;
@@ -88,7 +136,8 @@ export async function getProfileCompleteFromCookie(): Promise<boolean | null> {
 export async function getRoleFromCookie(): Promise<Role | null> {
   try {
     const jar = await cookies();
-    const raw = jar.get(ROLE_COOKIE)?.value || "";
+    // Check both prefixed and non-prefixed for migration compatibility
+    const raw = jar.get(ROLE_COOKIE)?.value || jar.get("qt_session_v1")?.value || "";
     if (raw === "role:admin") return "admin";
     if (raw === "role:client") return "client";
     if (raw === "role:engineer") return "engineer";
@@ -101,7 +150,8 @@ export async function getRoleFromCookie(): Promise<Role | null> {
 export async function getCompanyIdFromCookie(): Promise<string | null> {
   try {
     const jar = await cookies();
-    return jar.get(COMPANY_COOKIE)?.value || null;
+    // Check both prefixed and non-prefixed for migration compatibility
+    return jar.get(COMPANY_COOKIE)?.value || jar.get("qt_company_id")?.value || null;
   } catch {
     return null;
   }
@@ -110,7 +160,8 @@ export async function getCompanyIdFromCookie(): Promise<string | null> {
 export async function getEmailFromCookie(): Promise<string | null> {
   try {
     const jar = await cookies();
-    return jar.get(EMAIL_COOKIE)?.value || null;
+    // Check both prefixed and non-prefixed for migration compatibility
+    return jar.get(EMAIL_COOKIE)?.value || jar.get("qt_user_email")?.value || null;
   } catch {
     return null;
   }
@@ -126,7 +177,8 @@ export type AuthContext = {
 
 export async function getAuthContext(): Promise<AuthContext | null> {
   const jar = await cookies();
-  const sid = jar.get(SID_COOKIE)?.value || "";
+  // Check both prefixed and non-prefixed for migration compatibility
+  const sid = jar.get(SID_COOKIE)?.value || jar.get("qt_sid_v1")?.value || "";
   if (!sid) return null;
   const session = await getSession(sid);
   if (!session) return null;

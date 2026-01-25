@@ -6,9 +6,14 @@ function makeId() {
 }
 
 const ROLE_COOKIE = "qt_session_v1";
+const ROLE_COOKIE_PREFIXED = "__Host-qt_session_v1";
 const COMPANY_COOKIE = "qt_company_id";
+const COMPANY_COOKIE_PREFIXED = "__Host-qt_company_id";
 const PROFILE_COOKIE = "qt_profile_complete";
+const PROFILE_COOKIE_PREFIXED = "__Host-qt_profile_complete";
 const TENANT_COOKIE = "qt_tenant_subdomain";
+
+const IS_PRODUCTION = process.env.NODE_ENV === "production";
 
 // Reserved subdomains that should not be treated as tenant subdomains
 const RESERVED_SUBDOMAINS = ["www", "api", "app", "admin", "mail", "email", "ftp", "ssl", "cdn", "static", "assets"];
@@ -115,9 +120,24 @@ function loginUrlForRole(role: "admin" | "client" | "engineer") {
 }
 
 export async function middleware(req: NextRequest) {
-  const requestId = req.headers.get("x-request-id") ?? makeId();
   const { pathname } = req.nextUrl;
   const hostname = req.headers.get("host") || "";
+
+  // =========================================================================
+  // HTTPS Redirect (Proxy-aware for Render)
+  // Render terminates TLS and forwards X-Forwarded-Proto header
+  // =========================================================================
+  const forwardedProto = req.headers.get("x-forwarded-proto");
+  const isHttps = forwardedProto === "https" || req.nextUrl.protocol === "https:";
+
+  // Only redirect in production, and only if we're behind a proxy (has x-forwarded-proto)
+  if (IS_PRODUCTION && forwardedProto && !isHttps) {
+    const httpsUrl = req.nextUrl.clone();
+    httpsUrl.protocol = "https:";
+    return NextResponse.redirect(httpsUrl, 301);
+  }
+
+  const requestId = req.headers.get("x-request-id") ?? makeId();
 
   // Extract subdomain for multi-tenant routing
   const subdomain = extractSubdomain(hostname);
@@ -144,7 +164,9 @@ export async function middleware(req: NextRequest) {
   const needed = requiredRoleForPath(pathname);
   if (!needed) return res;
 
-  const raw = req.cookies.get(ROLE_COOKIE)?.value ?? "";
+  // Check both prefixed and non-prefixed cookies for migration compatibility
+  const raw = req.cookies.get(ROLE_COOKIE_PREFIXED)?.value
+    ?? req.cookies.get(ROLE_COOKIE)?.value ?? "";
   const role = raw.startsWith("role:") ? (raw.slice("role:".length) as any) : null;
 
   if (!role) {
@@ -183,7 +205,9 @@ export async function middleware(req: NextRequest) {
 
 
   // Company gating (session should always have a companyId for client/engineer, and usually for admin)
-  const companyId = req.cookies.get(COMPANY_COOKIE)?.value || "";
+  // Check both prefixed and non-prefixed cookies for migration compatibility
+  const companyId = req.cookies.get(COMPANY_COOKIE_PREFIXED)?.value
+    || req.cookies.get(COMPANY_COOKIE)?.value || "";
   if ((role === "client" || role === "engineer") && !companyId) {
     const url = req.nextUrl.clone();
     url.pathname = loginUrlForRole(role);
@@ -192,7 +216,9 @@ export async function middleware(req: NextRequest) {
   }
 
   // Profile completion gating (Edge-safe via cookie set at login)
-  const pc = req.cookies.get(PROFILE_COOKIE)?.value || "";
+  // Check both prefixed and non-prefixed cookies for migration compatibility
+  const pc = req.cookies.get(PROFILE_COOKIE_PREFIXED)?.value
+    || req.cookies.get(PROFILE_COOKIE)?.value || "";
   const isComplete = pc === "1";
   if (!isComplete && !isOnboardingPath(pathname) && !isProfileApi(pathname)) {
     const url = req.nextUrl.clone();

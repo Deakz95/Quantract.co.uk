@@ -55,6 +55,7 @@
     "postcss": "^8.4.0",
     "react": "19.2.0",
     "react-dom": "19.2.0",
+    "redis": "^4.7.0",
     "resend": "^4.8.0",
     "stripe": "^16.12.0",
     "tailwind-merge": "^3.4.0",
