@@ -3,27 +3,53 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import Link from "next/link";
 
-// Standard electrical point types
-const POINT_TYPES = [
-  { id: "socket", name: "Socket Outlet", color: "#3b82f6", shortcut: "1" },
-  { id: "double-socket", name: "Double Socket", color: "#2563eb", shortcut: "2" },
-  { id: "light", name: "Light Point", color: "#f59e0b", shortcut: "3" },
-  { id: "switch", name: "Switch", color: "#10b981", shortcut: "4" },
-  { id: "2-way-switch", name: "2-Way Switch", color: "#059669", shortcut: "5" },
-  { id: "fcu", name: "FCU/Spur", color: "#8b5cf6", shortcut: "6" },
-  { id: "cooker", name: "Cooker Point", color: "#ef4444", shortcut: "7" },
-  { id: "shower", name: "Shower Point", color: "#06b6d4", shortcut: "8" },
-  { id: "smoke-detector", name: "Smoke Detector", color: "#f97316", shortcut: "9" },
-  { id: "data", name: "Data Point", color: "#6366f1", shortcut: "0" },
-] as const;
+// CRM base URL
+const CRM_URL = process.env.NEXT_PUBLIC_CRM_URL || "https://quantract.co.uk";
 
-type PointType = (typeof POINT_TYPES)[number]["id"];
+// Point type categories
+type PointCategory = "domestic" | "commercial" | "custom";
+
+interface PointTypeConfig {
+  id: string;
+  name: string;
+  color: string;
+  shortcut: string;
+  category: PointCategory;
+  isCustom?: boolean;
+}
+
+// Standard electrical point types with categories - using high-contrast colors
+const DEFAULT_POINT_TYPES: PointTypeConfig[] = [
+  // Domestic Points
+  { id: "socket", name: "Socket Outlet", color: "#00D4FF", shortcut: "1", category: "domestic" },
+  { id: "double-socket", name: "Double Socket", color: "#00A8CC", shortcut: "2", category: "domestic" },
+  { id: "light", name: "Light Point", color: "#FFD700", shortcut: "3", category: "domestic" },
+  { id: "switch", name: "Switch", color: "#00FF88", shortcut: "4", category: "domestic" },
+  { id: "2-way-switch", name: "2-Way Switch", color: "#00CC6A", shortcut: "5", category: "domestic" },
+  { id: "fcu", name: "FCU/Spur", color: "#FF00FF", shortcut: "6", category: "domestic" },
+  { id: "cooker", name: "Cooker Point", color: "#FF3333", shortcut: "7", category: "domestic" },
+  { id: "shower", name: "Shower Point", color: "#00FFFF", shortcut: "8", category: "domestic" },
+  { id: "smoke-detector", name: "Smoke Detector", color: "#FF8800", shortcut: "9", category: "domestic" },
+  { id: "data", name: "Data Point", color: "#AA66FF", shortcut: "0", category: "domestic" },
+
+  // Commercial/Industrial Points
+  { id: "3-phase", name: "3-Phase Supply", color: "#FF0066", shortcut: "", category: "commercial" },
+  { id: "busbar", name: "Busbar/Trunking", color: "#CCFF00", shortcut: "", category: "commercial" },
+  { id: "motor", name: "Motor Point", color: "#FF6600", shortcut: "", category: "commercial" },
+  { id: "isolator", name: "Isolator", color: "#00FF00", shortcut: "", category: "commercial" },
+  { id: "emergency-light", name: "Emergency Light", color: "#FFFF00", shortcut: "", category: "commercial" },
+  { id: "fire-alarm", name: "Fire Alarm", color: "#FF0000", shortcut: "", category: "commercial" },
+  { id: "access-control", name: "Access Control", color: "#0088FF", shortcut: "", category: "commercial" },
+  { id: "cctv", name: "CCTV Point", color: "#8800FF", shortcut: "", category: "commercial" },
+  { id: "ev-charger", name: "EV Charger", color: "#00FF44", shortcut: "", category: "commercial" },
+  { id: "distribution-board", name: "Distribution Board", color: "#FF4488", shortcut: "", category: "commercial" },
+];
 
 interface Point {
   id: string;
   x: number;
   y: number;
-  type: PointType;
+  type: string;
 }
 
 // PDF.js library types
@@ -46,10 +72,28 @@ interface PDFPage {
   render: (opts: { canvasContext: CanvasRenderingContext2D; viewport: { width: number; height: number } }) => { promise: Promise<void> };
 }
 
+// Preset colors for custom points
+const CUSTOM_COLOR_PRESETS = [
+  "#FF1493", // Deep Pink
+  "#00CED1", // Dark Turquoise
+  "#32CD32", // Lime Green
+  "#FF4500", // Orange Red
+  "#9400D3", // Dark Violet
+  "#FFD700", // Gold
+  "#00BFFF", // Deep Sky Blue
+  "#FF69B4", // Hot Pink
+  "#ADFF2F", // Green Yellow
+  "#FF6347", // Tomato
+  "#7B68EE", // Medium Slate Blue
+  "#20B2AA", // Light Sea Green
+];
+
 export default function PointCounterPage() {
+  const [pointTypes, setPointTypes] = useState<PointTypeConfig[]>(DEFAULT_POINT_TYPES);
   const [imageData, setImageData] = useState<string | null>(null);
   const [points, setPoints] = useState<Point[]>([]);
-  const [selectedType, setSelectedType] = useState<PointType>("socket");
+  const [selectedType, setSelectedType] = useState<string>("socket");
+  const [selectedCategory, setSelectedCategory] = useState<PointCategory>("domestic");
   const [history, setHistory] = useState<Point[][]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [scale, setScale] = useState(1);
@@ -62,11 +106,19 @@ export default function PointCounterPage() {
   const [pdfDoc, setPdfDoc] = useState<PDFDocument | null>(null);
   const [fileName, setFileName] = useState<string>("");
 
+  // Custom point modal state
+  const [showCustomModal, setShowCustomModal] = useState(false);
+  const [customPointName, setCustomPointName] = useState("");
+  const [customPointColor, setCustomPointColor] = useState(CUSTOM_COLOR_PRESETS[0]);
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageDimensionsRef = useRef<{ width: number; height: number }>({ width: 0, height: 0 });
+
+  // Get point types for current category
+  const currentCategoryTypes = pointTypes.filter((t) => t.category === selectedCategory);
 
   // Load PDF.js library
   useEffect(() => {
@@ -235,40 +287,64 @@ export default function PointCounterPage() {
 
     // Draw points
     points.forEach((point) => {
-      const pointConfig = POINT_TYPES.find((p) => p.id === point.type);
+      const pointConfig = pointTypes.find((p) => p.id === point.type);
       if (!pointConfig) return;
 
       const x = imgX + point.x;
       const y = imgY + point.y;
-      const radius = 10 / scale;
+      const radius = 12 / scale;
 
-      // Shadow
-      ctx.shadowColor = "rgba(0,0,0,0.4)";
-      ctx.shadowBlur = 4 / scale;
+      // Shadow for better visibility
+      ctx.shadowColor = "rgba(0,0,0,0.6)";
+      ctx.shadowBlur = 6 / scale;
       ctx.shadowOffsetX = 0;
       ctx.shadowOffsetY = 2 / scale;
 
-      // Outer circle
+      // Outer circle with thick dark border for contrast
+      ctx.beginPath();
+      ctx.arc(x, y, radius + 2 / scale, 0, Math.PI * 2);
+      ctx.fillStyle = "#000000";
+      ctx.fill();
+
+      // Main colored circle
+      ctx.shadowColor = "transparent";
       ctx.beginPath();
       ctx.arc(x, y, radius, 0, Math.PI * 2);
       ctx.fillStyle = pointConfig.color;
       ctx.fill();
 
-      // Reset shadow for border
-      ctx.shadowColor = "transparent";
+      // White border
       ctx.strokeStyle = "#ffffff";
       ctx.lineWidth = 2 / scale;
       ctx.stroke();
 
-      // Inner dot
+      // Inner bright dot
       ctx.beginPath();
       ctx.arc(x, y, radius / 3, 0, Math.PI * 2);
       ctx.fillStyle = "#ffffff";
       ctx.fill();
+
+      // Get type index within all types for numbering
+      const typeIndex = pointTypes.findIndex((t) => t.id === point.type);
+      const label = (typeIndex + 1).toString();
+
+      // Draw number label below point
+      ctx.font = `bold ${10 / scale}px sans-serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+
+      // Label background
+      const labelWidth = ctx.measureText(label).width + 6 / scale;
+      ctx.fillStyle = "rgba(0,0,0,0.8)";
+      ctx.fillRect(x - labelWidth / 2, y + radius + 4 / scale, labelWidth, 12 / scale);
+
+      // Label text
+      ctx.fillStyle = "#ffffff";
+      ctx.fillText(label, x, y + radius + 5 / scale);
     });
 
     ctx.restore();
-  }, [imageData, points, scale, offset]);
+  }, [imageData, points, scale, offset, pointTypes]);
 
   // Handle canvas click
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -340,10 +416,11 @@ export default function PointCounterPage() {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Number keys for point type selection
+      // Number keys for point type selection (domestic category only)
       const shortcut = e.key;
-      const pointType = POINT_TYPES.find((p) => p.shortcut === shortcut);
+      const pointType = pointTypes.find((p) => p.shortcut === shortcut && p.category === "domestic");
       if (pointType) {
+        setSelectedCategory("domestic");
         setSelectedType(pointType.id);
         return;
       }
@@ -372,21 +449,22 @@ export default function PointCounterPage() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [history, historyIndex]);
+  }, [history, historyIndex, pointTypes]);
 
   // Count points by type
-  const pointCounts = POINT_TYPES.map((type) => ({
+  const pointCounts = pointTypes.map((type, index) => ({
     ...type,
+    index: index + 1,
     count: points.filter((p) => p.type === type.id).length,
   }));
 
   // Export to CSV
   const exportCSV = () => {
     const rows = [
-      ["Point Type", "Count"],
-      ...pointCounts.filter((p) => p.count > 0).map((p) => [p.name, p.count.toString()]),
-      ["", ""],
-      ["Total Points", points.length.toString()],
+      ["#", "Point Type", "Category", "Count"],
+      ...pointCounts.filter((p) => p.count > 0).map((p, i) => [(i + 1).toString(), p.name, p.category, p.count.toString()]),
+      ["", "", "", ""],
+      ["", "Total Points", "", points.length.toString()],
     ];
 
     const csv = rows.map((row) => row.join(",")).join("\n");
@@ -414,6 +492,80 @@ export default function PointCounterPage() {
     } else if (historyIndex === 0) {
       setPoints([]);
       setHistoryIndex(-1);
+    }
+  };
+
+  // Add custom point type
+  const addCustomPointType = () => {
+    if (!customPointName.trim()) return;
+
+    const newId = `custom-${Date.now()}`;
+    const newType: PointTypeConfig = {
+      id: newId,
+      name: customPointName.trim(),
+      color: customPointColor,
+      shortcut: "",
+      category: "custom",
+      isCustom: true,
+    };
+
+    setPointTypes([...pointTypes, newType]);
+    setSelectedCategory("custom");
+    setSelectedType(newId);
+    setShowCustomModal(false);
+    setCustomPointName("");
+    setCustomPointColor(CUSTOM_COLOR_PRESETS[0]);
+  };
+
+  // Delete custom point type
+  const deleteCustomPointType = (typeId: string) => {
+    setPointTypes(pointTypes.filter((t) => t.id !== typeId));
+    // Remove points of this type
+    setPoints(points.filter((p) => p.type !== typeId));
+    // Reset selection if needed
+    if (selectedType === typeId) {
+      setSelectedType("socket");
+      setSelectedCategory("domestic");
+    }
+  };
+
+  // Create Quote - send to CRM
+  const [showQuoteModal, setShowQuoteModal] = useState(false);
+  const [quoteSending, setQuoteSending] = useState(false);
+  const [quoteError, setQuoteError] = useState<string | null>(null);
+
+  const createQuote = async () => {
+    // Build query params with point counts
+    const itemsWithCounts = pointCounts.filter((p) => p.count > 0);
+    if (itemsWithCounts.length === 0) {
+      setQuoteError("No points to send. Mark some points first.");
+      return;
+    }
+
+    setQuoteSending(true);
+    setQuoteError(null);
+
+    // Encode items as URL params: type:count,type:count
+    const itemsParam = itemsWithCounts.map((p) => `${encodeURIComponent(p.name)}:${p.count}`).join(",");
+    const sourceParam = fileName ? encodeURIComponent(fileName) : "Point Counter";
+
+    // Redirect to CRM quote page with pre-filled items
+    const quoteUrl = `${CRM_URL}/admin/quotes/new?from=point-counter&items=${itemsParam}&source=${sourceParam}`;
+
+    // Open in new tab
+    window.open(quoteUrl, "_blank");
+    setQuoteSending(false);
+    setShowQuoteModal(false);
+  };
+
+  const getCategoryLabel = (cat: PointCategory) => {
+    switch (cat) {
+      case "domestic":
+        return "Domestic";
+      case "commercial":
+        return "Commercial / Industrial";
+      case "custom":
+        return "Custom Points";
     }
   };
 
@@ -502,26 +654,275 @@ export default function PointCounterPage() {
                   padding: "6px 12px",
                   fontSize: "13px",
                   fontWeight: 500,
-                  background: "var(--primary)",
-                  border: "none",
+                  background: "transparent",
+                  border: "1px solid var(--border)",
                   borderRadius: "6px",
-                  color: "#fff",
+                  color: "var(--foreground)",
                   cursor: "pointer",
                   transition: "all 0.2s",
                 }}
               >
                 Export CSV
               </button>
+              <button
+                onClick={() => setShowQuoteModal(true)}
+                style={{
+                  padding: "6px 12px",
+                  fontSize: "13px",
+                  fontWeight: 500,
+                  background: "var(--primary)",
+                  border: "none",
+                  borderRadius: "6px",
+                  color: "#fff",
+                  cursor: "pointer",
+                  transition: "all 0.2s",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                }}
+              >
+                <svg style={{ width: 14, height: 14 }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Create Quote
+              </button>
             </>
           )}
         </div>
       </header>
 
+      {/* Quote Modal */}
+      {showQuoteModal && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.6)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+          }}
+          onClick={() => setShowQuoteModal(false)}
+        >
+          <div
+            style={{
+              background: "var(--card)",
+              borderRadius: "12px",
+              padding: "24px",
+              maxWidth: "420px",
+              width: "90%",
+              border: "1px solid var(--border)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 style={{ fontSize: "18px", fontWeight: 700, margin: "0 0 8px" }}>Create Quote in CRM</h2>
+            <p style={{ fontSize: "13px", color: "var(--muted-foreground)", margin: "0 0 16px" }}>
+              Send your point counts to Quantract CRM to create a quote. You'll be redirected to complete the quote details.
+            </p>
+
+            {/* Point summary */}
+            <div
+              style={{
+                background: "var(--muted)",
+                borderRadius: "8px",
+                padding: "12px",
+                marginBottom: "16px",
+                maxHeight: "200px",
+                overflowY: "auto",
+              }}
+            >
+              <div style={{ fontSize: "11px", fontWeight: 600, textTransform: "uppercase", color: "var(--muted-foreground)", marginBottom: "8px" }}>
+                Items to send
+              </div>
+              {pointCounts.filter((p) => p.count > 0).length === 0 ? (
+                <p style={{ fontSize: "13px", color: "var(--muted-foreground)", margin: 0 }}>No points marked</p>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                  {pointCounts.filter((p) => p.count > 0).map((type) => (
+                    <div key={type.id} style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", alignItems: "center" }}>
+                      <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <span
+                          style={{
+                            width: "10px",
+                            height: "10px",
+                            borderRadius: "50%",
+                            background: type.color,
+                            border: "1px solid rgba(255,255,255,0.3)",
+                          }}
+                        />
+                        {type.index}. {type.name}
+                      </span>
+                      <span style={{ fontWeight: 600 }}>×{type.count}</span>
+                    </div>
+                  ))}
+                  <div style={{ borderTop: "1px solid var(--border)", marginTop: "8px", paddingTop: "8px", display: "flex", justifyContent: "space-between", fontWeight: 600 }}>
+                    <span>Total Points</span>
+                    <span>{points.length}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {quoteError && (
+              <div style={{ background: "rgba(239, 68, 68, 0.1)", border: "1px solid var(--error)", borderRadius: "6px", padding: "8px 12px", marginBottom: "16px", fontSize: "13px", color: "var(--error)" }}>
+                {quoteError}
+              </div>
+            )}
+
+            <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+              <button
+                onClick={() => setShowQuoteModal(false)}
+                style={{
+                  padding: "8px 16px",
+                  fontSize: "13px",
+                  fontWeight: 500,
+                  background: "transparent",
+                  border: "1px solid var(--border)",
+                  borderRadius: "6px",
+                  color: "var(--foreground)",
+                  cursor: "pointer",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={createQuote}
+                disabled={quoteSending || pointCounts.filter((p) => p.count > 0).length === 0}
+                style={{
+                  padding: "8px 16px",
+                  fontSize: "13px",
+                  fontWeight: 500,
+                  background: pointCounts.filter((p) => p.count > 0).length === 0 ? "var(--muted)" : "var(--primary)",
+                  border: "none",
+                  borderRadius: "6px",
+                  color: "#fff",
+                  cursor: pointCounts.filter((p) => p.count > 0).length === 0 ? "not-allowed" : "pointer",
+                  opacity: quoteSending ? 0.7 : 1,
+                }}
+              >
+                {quoteSending ? "Opening CRM..." : "Open in CRM"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Point Modal */}
+      {showCustomModal && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.6)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+          }}
+          onClick={() => setShowCustomModal(false)}
+        >
+          <div
+            style={{
+              background: "var(--card)",
+              borderRadius: "12px",
+              padding: "24px",
+              maxWidth: "380px",
+              width: "90%",
+              border: "1px solid var(--border)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 style={{ fontSize: "18px", fontWeight: 700, margin: "0 0 16px" }}>Add Custom Point Type</h2>
+
+            <div style={{ marginBottom: "16px" }}>
+              <label style={{ fontSize: "13px", fontWeight: 500, display: "block", marginBottom: "6px" }}>
+                Point Name
+              </label>
+              <input
+                type="text"
+                value={customPointName}
+                onChange={(e) => setCustomPointName(e.target.value)}
+                placeholder="e.g., Underfloor Heating"
+                style={{
+                  width: "100%",
+                  padding: "10px 12px",
+                  fontSize: "14px",
+                  border: "1px solid var(--border)",
+                  borderRadius: "6px",
+                  background: "var(--muted)",
+                  color: "var(--foreground)",
+                  outline: "none",
+                }}
+              />
+            </div>
+
+            <div style={{ marginBottom: "20px" }}>
+              <label style={{ fontSize: "13px", fontWeight: 500, display: "block", marginBottom: "8px" }}>
+                Select Color
+              </label>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                {CUSTOM_COLOR_PRESETS.map((color) => (
+                  <button
+                    key={color}
+                    onClick={() => setCustomPointColor(color)}
+                    style={{
+                      width: "32px",
+                      height: "32px",
+                      borderRadius: "6px",
+                      background: color,
+                      border: customPointColor === color ? "3px solid #fff" : "2px solid transparent",
+                      cursor: "pointer",
+                      boxShadow: customPointColor === color ? `0 0 0 2px ${color}` : "none",
+                      transition: "all 0.15s",
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+              <button
+                onClick={() => setShowCustomModal(false)}
+                style={{
+                  padding: "8px 16px",
+                  fontSize: "13px",
+                  fontWeight: 500,
+                  background: "transparent",
+                  border: "1px solid var(--border)",
+                  borderRadius: "6px",
+                  color: "var(--foreground)",
+                  cursor: "pointer",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={addCustomPointType}
+                disabled={!customPointName.trim()}
+                style={{
+                  padding: "8px 16px",
+                  fontSize: "13px",
+                  fontWeight: 500,
+                  background: !customPointName.trim() ? "var(--muted)" : "var(--primary)",
+                  border: "none",
+                  borderRadius: "6px",
+                  color: "#fff",
+                  cursor: !customPointName.trim() ? "not-allowed" : "pointer",
+                }}
+              >
+                Add Point Type
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
         {/* Sidebar */}
         <aside
           style={{
-            width: "260px",
+            width: "280px",
             borderRight: "1px solid var(--border)",
             background: "var(--card)",
             padding: "16px",
@@ -531,7 +932,7 @@ export default function PointCounterPage() {
             overflowY: "auto",
           }}
         >
-          {/* Point Type Selector */}
+          {/* Category Dropdown */}
           <div>
             <div
               style={{
@@ -543,60 +944,178 @@ export default function PointCounterPage() {
                 marginBottom: "8px",
               }}
             >
-              Point Type
+              Category
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-              {POINT_TYPES.map((type) => (
+            <select
+              value={selectedCategory}
+              onChange={(e) => {
+                const cat = e.target.value as PointCategory;
+                setSelectedCategory(cat);
+                // Select first point in category
+                const firstType = pointTypes.find((t) => t.category === cat);
+                if (firstType) setSelectedType(firstType.id);
+              }}
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                fontSize: "13px",
+                fontWeight: 500,
+                border: "1px solid var(--border)",
+                borderRadius: "6px",
+                background: "var(--muted)",
+                color: "var(--foreground)",
+                cursor: "pointer",
+                outline: "none",
+              }}
+            >
+              <option value="domestic">Domestic</option>
+              <option value="commercial">Commercial / Industrial</option>
+              <option value="custom">Custom Points</option>
+            </select>
+          </div>
+
+          {/* Point Type Selector */}
+          <div>
+            <div
+              style={{
+                fontSize: "11px",
+                fontWeight: 600,
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+                color: "var(--muted-foreground)",
+                marginBottom: "8px",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <span>Point Types</span>
+              {selectedCategory === "custom" && (
                 <button
-                  key={type.id}
-                  onClick={() => setSelectedType(type.id)}
+                  onClick={() => setShowCustomModal(true)}
                   style={{
+                    fontSize: "11px",
+                    fontWeight: 600,
+                    color: "var(--primary)",
+                    background: "transparent",
+                    border: "none",
+                    cursor: "pointer",
                     display: "flex",
                     alignItems: "center",
-                    gap: "10px",
-                    padding: "8px 10px",
-                    borderRadius: "6px",
-                    border: "none",
-                    background: selectedType === type.id ? "rgba(59, 130, 246, 0.15)" : "transparent",
-                    cursor: "pointer",
-                    transition: "all 0.15s",
-                    textAlign: "left",
+                    gap: "4px",
                   }}
                 >
-                  <span
-                    style={{
-                      width: "12px",
-                      height: "12px",
-                      borderRadius: "50%",
-                      background: type.color,
-                      flexShrink: 0,
-                      boxShadow: selectedType === type.id ? `0 0 0 2px ${type.color}40` : "none",
-                    }}
-                  />
-                  <span
-                    style={{
-                      flex: 1,
-                      fontSize: "13px",
-                      fontWeight: selectedType === type.id ? 600 : 400,
-                      color: selectedType === type.id ? "var(--primary)" : "var(--foreground)",
-                    }}
-                  >
-                    {type.name}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: "11px",
-                      color: "var(--muted-foreground)",
-                      fontFamily: "var(--font-mono)",
-                      background: "var(--muted)",
-                      padding: "2px 6px",
-                      borderRadius: "4px",
-                    }}
-                  >
-                    {type.shortcut}
-                  </span>
+                  <svg style={{ width: 12, height: 12 }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Add
                 </button>
-              ))}
+              )}
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+              {currentCategoryTypes.length === 0 ? (
+                <p style={{ fontSize: "13px", color: "var(--muted-foreground)", padding: "8px", textAlign: "center" }}>
+                  No custom points yet. Click "Add" to create one.
+                </p>
+              ) : (
+                currentCategoryTypes.map((type) => {
+                  const globalIndex = pointTypes.findIndex((t) => t.id === type.id) + 1;
+                  return (
+                    <div
+                      key={type.id}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                      }}
+                    >
+                      <button
+                        onClick={() => setSelectedType(type.id)}
+                        style={{
+                          flex: 1,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "10px",
+                          padding: "8px 10px",
+                          borderRadius: "6px",
+                          border: "none",
+                          background: selectedType === type.id ? "rgba(59, 130, 246, 0.15)" : "transparent",
+                          cursor: "pointer",
+                          transition: "all 0.15s",
+                          textAlign: "left",
+                        }}
+                      >
+                        <span
+                          style={{
+                            minWidth: "24px",
+                            height: "24px",
+                            borderRadius: "50%",
+                            background: type.color,
+                            flexShrink: 0,
+                            boxShadow: selectedType === type.id ? `0 0 0 2px ${type.color}40` : "none",
+                            border: "2px solid rgba(255,255,255,0.3)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: "10px",
+                            fontWeight: 700,
+                            color: "#000",
+                            textShadow: "0 0 2px rgba(255,255,255,0.5)",
+                          }}
+                        >
+                          {globalIndex}
+                        </span>
+                        <span
+                          style={{
+                            flex: 1,
+                            fontSize: "13px",
+                            fontWeight: selectedType === type.id ? 600 : 400,
+                            color: selectedType === type.id ? "var(--primary)" : "var(--foreground)",
+                          }}
+                        >
+                          {globalIndex}. {type.name}
+                        </span>
+                        {type.shortcut && (
+                          <span
+                            style={{
+                              fontSize: "11px",
+                              color: "var(--muted-foreground)",
+                              fontFamily: "var(--font-mono)",
+                              background: "var(--muted)",
+                              padding: "2px 6px",
+                              borderRadius: "4px",
+                            }}
+                          >
+                            {type.shortcut}
+                          </span>
+                        )}
+                      </button>
+                      {type.isCustom && (
+                        <button
+                          onClick={() => deleteCustomPointType(type.id)}
+                          style={{
+                            width: "24px",
+                            height: "24px",
+                            borderRadius: "4px",
+                            border: "none",
+                            background: "transparent",
+                            cursor: "pointer",
+                            color: "var(--muted-foreground)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                          title="Delete custom point type"
+                        >
+                          <svg style={{ width: 14, height: 14 }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
 
@@ -619,6 +1138,8 @@ export default function PointCounterPage() {
                 background: "var(--muted)",
                 borderRadius: "8px",
                 padding: "12px",
+                maxHeight: "200px",
+                overflowY: "auto",
               }}
             >
               {pointCounts.filter((p) => p.count > 0).length === 0 ? (
@@ -636,19 +1157,20 @@ export default function PointCounterPage() {
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "space-between",
-                          fontSize: "13px",
+                          fontSize: "12px",
                         }}
                       >
                         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                           <span
                             style={{
-                              width: "8px",
-                              height: "8px",
+                              width: "10px",
+                              height: "10px",
                               borderRadius: "50%",
                               background: type.color,
+                              border: "1px solid rgba(255,255,255,0.3)",
                             }}
                           />
-                          <span>{type.name}</span>
+                          <span>{type.index}. {type.name}</span>
                         </div>
                         <span style={{ fontWeight: 600, fontFamily: "var(--font-mono)" }}>{type.count}</span>
                       </div>
@@ -694,7 +1216,7 @@ export default function PointCounterPage() {
               }}
             >
               <div>Click to add point</div>
-              <div>0-9 to switch type</div>
+              <div>0-9 domestic types</div>
               <div>Scroll to zoom</div>
               <div>Shift+drag to pan</div>
               <div>Ctrl+Z undo, Ctrl+Y redo</div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -53,9 +53,11 @@ function displayAddress(c: Client) {
 
 export default function QuoteCreateForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const [busy, setBusy] = useState(false);
   const [mode, setMode] = useState<"new" | "edit">("new");
+  const [fromPointCounter, setFromPointCounter] = useState(false);
 
   // Existing quotes for edit mode
   const [existingQuotes, setExistingQuotes] = useState<Quote[]>([]);
@@ -133,6 +135,42 @@ export default function QuoteCreateForm() {
     loadQuotes();
     loadTemplates();
   }, [loadClients, loadQuotes, loadTemplates]);
+
+  // Handle incoming data from Point Counter tool
+  useEffect(() => {
+    const from = searchParams.get("from");
+    const itemsParam = searchParams.get("items");
+    const source = searchParams.get("source");
+
+    if (from === "point-counter" && itemsParam) {
+      setFromPointCounter(true);
+
+      // Parse items: "Socket Outlet:5,Light Point:10,..."
+      const parsedItems: LineItem[] = itemsParam.split(",").map((itemStr: string) => {
+        const [name, count] = itemStr.split(":");
+        return {
+          description: decodeURIComponent(name || ""),
+          qty: parseInt(count, 10) || 1,
+          unitPrice: 0, // User will fill in prices
+        };
+      }).filter((item: LineItem) => item.description && item.qty > 0);
+
+      if (parsedItems.length > 0) {
+        setItems(parsedItems);
+
+        // Add source as note
+        if (source) {
+          setNotes(`Point count from: ${decodeURIComponent(source)}\n\nPlease add your prices per point above.`);
+        }
+
+        toast({
+          title: "Points imported",
+          description: `${parsedItems.length} point types imported from Point Counter. Add your prices below.`,
+          variant: "success",
+        });
+      }
+    }
+  }, [searchParams, toast]);
 
   // Handle template selection
   useEffect(() => {
@@ -290,6 +328,22 @@ export default function QuoteCreateForm() {
             Edit Existing
           </Button>
         </div>
+
+        {fromPointCounter && (
+          <div className="mb-4 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center text-white">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <div>
+                <div className="font-semibold text-blue-400">Imported from Point Counter</div>
+                <div className="text-sm text-slate-400">Your point counts have been added below. Set your prices per point to complete the quote.</div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <Card>
           <CardHeader>
