@@ -69,7 +69,7 @@ export async function consumeMagicLink(tokenRaw: string) {
   const tokenHash = sha256(tokenRaw);
   const token = await db.magicLinkToken.findUnique({
     where: { tokenHash },
-    include: { user: true },
+    include: { User: true },
   });
   if (!token) return { ok: false as const, error: "Invalid link" };
   if (token.usedAt) return { ok: false as const, error: "Link already used" };
@@ -80,7 +80,7 @@ export async function consumeMagicLink(tokenRaw: string) {
     data: { usedAt: new Date() },
   });
 
-  return { ok: true as const, user: token.user };
+  return { ok: true as const, user: token.User };
 }
 
 export async function createSession(userId: string, rememberMe: boolean = false) {
