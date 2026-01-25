@@ -466,9 +466,9 @@ function toEngineer(row: any): Engineer {
     costRatePerHour: row.costRatePerHour != null ? Number(row.costRatePerHour) : undefined,
     chargeRatePerHour: row.chargeRatePerHour != null ? Number(row.chargeRatePerHour) : undefined,
     rateCardId: row.rateCardId ?? undefined,
-    rateCardName: row.rateCard?.name ?? undefined,
-    rateCardCostRate: row.rateCard?.costRatePerHour != null ? Number(row.rateCard.costRatePerHour) : undefined,
-    rateCardChargeRate: row.rateCard?.chargeRatePerHour != null ? Number(row.rateCard.chargeRatePerHour) : undefined,
+    rateCardName: row.RateCard?.name ?? undefined,
+    rateCardCostRate: row.RateCard?.costRatePerHour != null ? Number(row.RateCard.costRatePerHour) : undefined,
+    rateCardChargeRate: row.RateCard?.chargeRatePerHour != null ? Number(row.RateCard.chargeRatePerHour) : undefined,
     isActive: row.isActive ?? undefined,
     createdAtISO: new Date(row.createdAt).toISOString(),
     updatedAtISO: new Date(row.updatedAt).toISOString(),
@@ -2048,13 +2048,13 @@ async function ensureEngineerByEmail(email: string): Promise<Engineer | null> {
   if (!client) return null;
   const e = String(email || "").trim().toLowerCase();
   if (!e) return null;
-  const existing = await client.engineer.findFirst({ where: { email: e }, include: { rateCard: true } }).catch(() => null);
+  const existing = await client.engineer.findFirst({ where: { email: e }, include: { RateCard: true } }).catch(() => null);
   if (existing) return toEngineer(existing);
   const defaultCost = process.env.QT_DEFAULT_COST_RATE_PER_HOUR ? Number(process.env.QT_DEFAULT_COST_RATE_PER_HOUR) : undefined;
   const companyId = await requireCompanyIdForPrisma();
   const defaultRateCard = await client.rateCard.findFirst({ where: { companyId, isDefault: true } }).catch(() => null);
   const row = await client.engineer
-    .create({ data: { companyId, email: e, costRatePerHour: defaultCost ?? null, rateCardId: defaultRateCard?.id ?? null, isActive: true }, include: { rateCard: true } })
+    .create({ data: { companyId, email: e, costRatePerHour: defaultCost ?? null, rateCardId: defaultRateCard?.id ?? null, isActive: true }, include: { RateCard: true } })
     .catch(() => null);
   return row ? toEngineer(row) : null;
 }
@@ -2067,7 +2067,12 @@ export async function listEngineers(): Promise<Engineer[]> {
     const emails = raw.split(",").map((s) => s.trim()).filter(Boolean);
     return emails.map((email) => ({ id: email, email, createdAtISO: new Date().toISOString(), updatedAtISO: new Date().toISOString() })) as any;
   }
-  const rows = await client.engineer.findMany({ where: { isActive: true }, orderBy: { createdAt: "desc" }, include: { rateCard: true } });
+  const companyId = await getCompanyId();
+  const rows = await client.engineer.findMany({
+    where: { isActive: true, ...(companyId ? { companyId } : {}) },
+    orderBy: { createdAt: "desc" },
+    include: { RateCard: true }
+  });
   return rows.map(toEngineer);
 }
 
@@ -2078,7 +2083,7 @@ export async function createEngineer(data: { email: string; name?: string; phone
   if (!email) return null;
 
   // Check if engineer already exists
-  const existing = await client.engineer.findFirst({ where: { email }, include: { rateCard: true } }).catch(() => null);
+  const existing = await client.engineer.findFirst({ where: { email }, include: { RateCard: true } }).catch(() => null);
   if (existing) return toEngineer(existing);
 
   const companyId = await requireCompanyIdForPrisma();
@@ -2094,7 +2099,7 @@ export async function createEngineer(data: { email: string; name?: string; phone
         rateCardId: defaultRateCard?.id ?? null,
         isActive: true,
       },
-      include: { rateCard: true },
+      include: { RateCard: true },
     })
     .catch(() => null);
 
@@ -2136,7 +2141,7 @@ export async function setEngineerRateCard(engineerId: string, rateCardId?: strin
   const client = p();
   if (!client) return null;
   const row = await client.engineer
-    .update({ where: { id: engineerId }, data: { rateCardId: rateCardId || null }, include: { rateCard: true } })
+    .update({ where: { id: engineerId }, data: { rateCardId: rateCardId || null }, include: { RateCard: true } })
     .catch(() => null);
   return row ? toEngineer(row) : null;
 }
@@ -3162,7 +3167,7 @@ function hoursBetween(startedAt: Date, endedAt: Date, breakMinutes: number) {
 async function createLabourCostItemsForTimesheetTx(timesheetId: string, tx: Tx) {
   const entries = await tx.timeEntry.findMany({
     where: { timesheetId },
-    include: { engineer: { include: { rateCard: true } } },
+    include: { engineer: { include: { RateCard: true } } },
   }).catch(() => [] as any[]);
 
   for (const entry of entries) {
