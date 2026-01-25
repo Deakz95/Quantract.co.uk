@@ -10,24 +10,29 @@ function redirectTo(req: Request, path: string) {
 }
 
 export const GET = withRequestLogging(async function GET(req: Request) {
-  const url = new URL(req.url);
-  const token = url.searchParams.get("token") || "";
-  const rememberMe = url.searchParams.get("remember") === "1";
-  if (!token) return redirectTo(req, "/auth/error?reason=missing");
+  try {
+    const url = new URL(req.url);
+    const token = url.searchParams.get("token") || "";
+    const rememberMe = url.searchParams.get("remember") === "1";
+    if (!token) return redirectTo(req, "/auth/error?reason=missing");
 
-  const result = await consumeMagicLink(token);
-  if (!result.ok) return redirectTo(req, `/auth/error?reason=${encodeURIComponent(result.error)}`);
+    const result = await consumeMagicLink(token);
+    if (!result.ok) return redirectTo(req, `/auth/error?reason=${encodeURIComponent(result.error)}`);
 
-  const user = result.user;
-  const session = await createSession(user.id, rememberMe);
+    const user = result.user;
+    const session = await createSession(user.id, rememberMe);
 
-  await setSession(user.role as any, { sessionId: session.id });
-  await setUserEmail(user.email);
-  if (user.companyId) await setCompanyId(user.companyId);
-  await setProfileComplete(Boolean((user as any).profileComplete));
+    await setSession(user.role as any, { sessionId: session.id });
+    await setUserEmail(user.email);
+    if (user.companyId) await setCompanyId(user.companyId);
+    await setProfileComplete(Boolean((user as any).profileComplete));
 
-  const role = user.role;
-  if (role === "admin") return redirectTo(req, "/admin/dashboard");
-  if (role === "engineer") return redirectTo(req, "/engineer");
-  return redirectTo(req, "/client");
+    const role = user.role;
+    if (role === "admin") return redirectTo(req, "/admin/dashboard");
+    if (role === "engineer") return redirectTo(req, "/engineer");
+    return redirectTo(req, "/client");
+  } catch (e) {
+    console.error("[magic-link/verify] Error:", e);
+    return redirectTo(req, "/auth/error?reason=server_error");
+  }
 });
