@@ -42,9 +42,10 @@ export function useImpersonation(): UseImpersonationReturn {
 
       const response = await fetch('/api/admin/impersonate/status');
       const contentType = response.headers.get('content-type') || '';
+      const isJson = contentType.includes('application/json');
 
-      if (!response.ok || !contentType.includes('application/json')) {
-        // Not authenticated or non-JSON response - treat as not impersonating
+      if (!isJson) {
+        // Non-JSON response (e.g. HTML redirect) - silent fallback
         setStatus({
           isBeingImpersonated: false,
           impersonatedBy: null,
@@ -56,6 +57,20 @@ export function useImpersonation(): UseImpersonationReturn {
       }
 
       const data = await response.json();
+
+      if (!response.ok) {
+        // JSON error response - set error once
+        setError(data.error || 'Failed to fetch impersonation status');
+        setStatus({
+          isBeingImpersonated: false,
+          impersonatedBy: null,
+          isImpersonating: false,
+          impersonatingUser: null,
+          impersonationId: null,
+        });
+        return;
+      }
+
       setStatus(data);
     } catch (err) {
       // On any error, assume not impersonating rather than throwing
