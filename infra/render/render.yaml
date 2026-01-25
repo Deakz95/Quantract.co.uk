@@ -1,5 +1,8 @@
 # Render Blueprint for Quantract Monorepo
 # https://render.com/docs/blueprint-spec
+#
+# NOTE: All services build from repo root (no rootDir) because npm workspaces
+# requires package-lock.json at root level for npm ci to work.
 
 services:
   # CRM Application
@@ -7,9 +10,8 @@ services:
     name: quantract-crm
     runtime: node
     region: frankfurt
-    rootDir: apps/crm
-    buildCommand: npm ci && npm run build
-    startCommand: npm run prisma:migrate:deploy && npm run start
+    buildCommand: npm ci && npm run build:crm
+    startCommand: cd apps/crm && npm run prisma:migrate:deploy && npm run start
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
@@ -45,9 +47,8 @@ services:
     name: quantract-marketing
     runtime: node
     region: frankfurt
-    rootDir: apps/marketing
-    buildCommand: npm ci && npm run build
-    startCommand: npm run start
+    buildCommand: npm ci && npm run build:marketing
+    startCommand: cd apps/marketing && npm run start
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
@@ -60,9 +61,8 @@ services:
     name: quantract-certificates
     runtime: node
     region: frankfurt
-    rootDir: apps/certificates
-    buildCommand: npm ci && npm run build
-    startCommand: npm run start
+    buildCommand: npm ci && npm run build:certificates
+    startCommand: cd apps/certificates && npm run start
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
@@ -75,9 +75,8 @@ services:
     name: quantract-tools
     runtime: node
     region: frankfurt
-    rootDir: apps/tools
-    buildCommand: npm ci && npm run build
-    startCommand: npm run start
+    buildCommand: npm ci && npm run build:tools
+    startCommand: cd apps/tools && npm run start
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
