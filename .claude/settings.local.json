@@ -30,7 +30,11 @@
       "Bash(npm run build:crm:*)",
       "Bash(npm ls:*)",
       "Bash(npx tsc:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(xargs:*)",
+      "Bash(npm run build:tools:*)",
+      "Bash(npm run build:certificates:*)",
+      "Bash(grep:*)"
     ]
   }
 }

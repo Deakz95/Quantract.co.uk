@@ -76,7 +76,7 @@ export async function POST(req: Request) {
     } else if (!dbUser.profileComplete) {
       redirectTo = `/${role}/onboarding`;
     } else {
-      redirectTo = `/${role}`;
+      redirectTo = role === "admin" ? "/admin/dashboard" : `/${role}`;
     }
 
     return NextResponse.json({
@@ -167,7 +167,7 @@ export async function GET(req: Request) {
     } else if (!dbUser.profileComplete) {
       redirectTo = `/${role}/onboarding`;
     } else {
-      redirectTo = next || `/${role}`;
+      redirectTo = next || (role === "admin" ? "/admin/dashboard" : `/${role}`);
     }
 
     return NextResponse.redirect(new URL(redirectTo, req.url));

@@ -27,7 +27,7 @@ export const GET = withRequestLogging(async function GET(req: Request) {
   await setProfileComplete(Boolean((user as any).profileComplete));
 
   const role = user.role;
-  if (role === "admin") return redirectTo(req, "/admin");
+  if (role === "admin") return redirectTo(req, "/admin/dashboard");
   if (role === "engineer") return redirectTo(req, "/engineer");
   return redirectTo(req, "/client");
 });

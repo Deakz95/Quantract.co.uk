@@ -22,7 +22,7 @@ const passwordSchema = magicSchema.extend({
 
 export default function AdminLogin() {
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") || "/admin";
+  const next = searchParams.get("next") || "/admin/dashboard";
   const [mode, setMode] = useState<"magic" | "password">("magic");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

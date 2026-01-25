@@ -35,7 +35,7 @@ export default function AuthCallback() {
         setStatus("Redirecting...");
 
         // Redirect to the appropriate page
-        router.replace(data.redirectTo || "/admin");
+        router.replace(data.redirectTo || "/admin/dashboard");
       } catch (err) {
         setError(err instanceof Error ? err.message : "An error occurred");
       }

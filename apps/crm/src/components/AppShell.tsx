@@ -26,6 +26,7 @@ import {
   Plus,
   Inbox,
 } from "lucide-react";
+
 import { ImpersonationBanner } from "@/components/ImpersonationBanner";
 
 const BRAND_NAME = process.env.NEXT_PUBLIC_QT_BRAND_NAME || "Quantract";
@@ -90,6 +91,7 @@ export function AppShell({
   const pathname = usePathname();
   const [supportOpen, setSupportOpen] = useState(false);
   const [newOpen, setNewOpen] = useState(false);
+  const [toolsOpen, setToolsOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   useEffect(() => {
@@ -163,6 +165,72 @@ export function AppShell({
 
           {/* Right: Actions */}
           <div className="flex items-center gap-2">
+            {role === "admin" && (
+              <div className="relative">
+                <Button variant="ghost" size="sm" onClick={() => setToolsOpen(!toolsOpen)}>
+                  <Settings className="w-4 h-4 mr-1.5" />
+                  <span className="hidden sm:inline">Tools</span>
+                </Button>
+                {toolsOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setToolsOpen(false)} />
+                    <div className="absolute right-0 mt-2 w-64 bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-xl z-50 animate-fade-in overflow-hidden">
+                      <div className="p-2">
+                        <div className="px-3 py-2 text-xs font-semibold text-[var(--muted-foreground)] uppercase tracking-wider">
+                          Contractor Tools
+                        </div>
+                        <a
+                          href="https://apps.quantract.co.uk/point-counter"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[var(--muted)] transition-colors group"
+                          onClick={() => setToolsOpen(false)}
+                        >
+                          <ChevronRight className="w-4 h-4 text-[var(--primary)]" />
+                          <div className="flex-1">
+                            <div className="text-sm font-medium text-[var(--foreground)]">Point Counter</div>
+                            <div className="text-xs text-[var(--muted-foreground)]">Count points from drawings</div>
+                          </div>
+                          <ChevronRight className="w-3 h-3 opacity-0 group-hover:opacity-50" />
+                        </a>
+                        <a
+                          href="https://apps.quantract.co.uk/cable-calculator"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[var(--muted)] transition-colors group"
+                          onClick={() => setToolsOpen(false)}
+                        >
+                          <Settings className="w-4 h-4 text-[var(--accent)]" />
+                          <div className="flex-1">
+                            <div className="text-sm font-medium text-[var(--foreground)]">Cable Calculator</div>
+                            <div className="text-xs text-[var(--muted-foreground)]">BS 7671 voltage drop</div>
+                          </div>
+                          <ChevronRight className="w-3 h-3 opacity-0 group-hover:opacity-50" />
+                        </a>
+                        <div className="my-2 border-t border-[var(--border)]" />
+                        <div className="px-3 py-2 text-xs font-semibold text-[var(--muted-foreground)] uppercase tracking-wider">
+                          Certificates
+                        </div>
+                        <a
+                          href="https://certificates.quantract.co.uk"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[var(--muted)] transition-colors group"
+                          onClick={() => setToolsOpen(false)}
+                        >
+                          <BadgeCheck className="w-4 h-4 text-[var(--success)]" />
+                          <div className="flex-1">
+                            <div className="text-sm font-medium text-[var(--foreground)]">BS 7671 Certificates</div>
+                            <div className="text-xs text-[var(--muted-foreground)]">EIC, EICR, MWC generator</div>
+                          </div>
+                          <ChevronRight className="w-3 h-3 opacity-0 group-hover:opacity-50" />
+                        </a>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
             <Button variant="ghost" size="sm" onClick={() => setSupportOpen(true)}>
               <Sparkles className="w-4 h-4 mr-1.5" />
               <span className="hidden sm:inline">Support</span>

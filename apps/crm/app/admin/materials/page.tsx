@@ -5,7 +5,9 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, ArrowLeft, Settings } from "lucide-react";
+import { Input } from "@/components/ui/Input";
+import { DialogContent } from "@/components/ui/Dialog";
+import { Plus, ArrowLeft, Settings, X } from "lucide-react";
 import Link from "next/link";
 
 type StockItem = {
@@ -23,8 +25,19 @@ export default function MaterialsPage() {
   const [items, setItems] = useState<StockItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'tools' | 'materials'>('all');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editingItem, setEditingItem] = useState<StockItem | null>(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    sku: '',
+    unit: 'each',
+    defaultCost: '',
+    reorderLevel: '',
+    category: 'materials',
+  });
+  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
+  const fetchItems = () => {
     fetch('/api/admin/materials/stock-items')
       .then(r => r.json())
       .then(j => {
@@ -32,7 +45,62 @@ export default function MaterialsPage() {
         setLoading(false);
       })
       .catch(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchItems();
   }, []);
+
+  const openAddModal = () => {
+    setEditingItem(null);
+    setFormData({ name: '', sku: '', unit: 'each', defaultCost: '', reorderLevel: '', category: 'materials' });
+    setShowAddModal(true);
+  };
+
+  const openEditModal = (item: StockItem) => {
+    setEditingItem(item);
+    setFormData({
+      name: item.name,
+      sku: item.sku || '',
+      unit: item.unit,
+      defaultCost: item.defaultCost ? (item.defaultCost / 100).toString() : '',
+      reorderLevel: item.reorderLevel?.toString() || '',
+      category: item.category || 'materials',
+    });
+    setShowAddModal(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const body = {
+        name: formData.name,
+        sku: formData.sku || undefined,
+        unit: formData.unit,
+        defaultCost: formData.defaultCost ? Math.round(parseFloat(formData.defaultCost) * 100) : undefined,
+        reorderLevel: formData.reorderLevel ? parseInt(formData.reorderLevel) : undefined,
+        category: formData.category,
+      };
+
+      const res = await fetch('/api/admin/materials/stock-items', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editingItem ? { ...body, id: editingItem.id } : body),
+      });
+
+      if (res.ok) {
+        setShowAddModal(false);
+        fetchItems();
+      } else {
+        alert('Failed to save stock item');
+      }
+    } catch (err) {
+      alert('Error saving stock item');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const tools = items.filter(i => i.name.toLowerCase().includes('tool') || i.name.toLowerCase().includes('drill') || i.name.toLowerCase().includes('saw'));
   const materials = items.filter(i => !tools.includes(i));
@@ -51,7 +119,7 @@ export default function MaterialsPage() {
             </Button>
           </Link>
 
-          <Button size="sm">
+          <Button size="sm" onClick={openAddModal}>
             <Plus className="w-4 h-4 mr-2" />
             Add Stock Item
           </Button>
@@ -149,7 +217,7 @@ export default function MaterialsPage() {
                 <Settings className="empty-state-icon" />
                 <div className="empty-state-title">No stock items found</div>
                 <p className="empty-state-description">Get started by adding your first stock item.</p>
-                <Button size="sm">
+                <Button size="sm" onClick={openAddModal}>
                   <Plus className="w-4 h-4 mr-2" />
                   Add Your First Item
                 </Button>
@@ -199,7 +267,7 @@ export default function MaterialsPage() {
                           </Badge>
                         </td>
                         <td className="py-3 px-4 text-right">
-                          <Button variant="ghost" size="sm">Edit</Button>
+                          <Button variant="ghost" size="sm" onClick={() => openEditModal(item)}>Edit</Button>
                         </td>
                       </tr>
                     ))}
@@ -210,6 +278,114 @@ export default function MaterialsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Add/Edit Stock Item Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setShowAddModal(false)}>
+          <div onClick={(e) => e.stopPropagation()} className="w-full max-w-md animate-fade-in">
+            <DialogContent>
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <div className="text-lg font-bold text-[var(--foreground)]">
+                    {editingItem ? 'Edit Stock Item' : 'Add Stock Item'}
+                  </div>
+                  <div className="mt-1 text-sm text-[var(--muted-foreground)]">
+                    {editingItem ? 'Update the item details below.' : 'Add a new item to your inventory.'}
+                  </div>
+                </div>
+                <Button variant="ghost" size="icon" onClick={() => setShowAddModal(false)}>
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+
+              <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-[var(--foreground)] mb-1.5">Name *</label>
+                  <Input
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="e.g. 2.5mm Twin & Earth Cable"
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-[var(--foreground)] mb-1.5">SKU</label>
+                    <Input
+                      value={formData.sku}
+                      onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
+                      placeholder="e.g. CAB-TE-25"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[var(--foreground)] mb-1.5">Unit *</label>
+                    <select
+                      value={formData.unit}
+                      onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+                      className="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 py-2.5 text-sm"
+                      required
+                    >
+                      <option value="each">Each</option>
+                      <option value="metre">Metre</option>
+                      <option value="box">Box</option>
+                      <option value="pack">Pack</option>
+                      <option value="roll">Roll</option>
+                      <option value="kg">Kilogram</option>
+                      <option value="litre">Litre</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-[var(--foreground)] mb-1.5">Default Cost (£)</label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={formData.defaultCost}
+                      onChange={(e) => setFormData({ ...formData, defaultCost: e.target.value })}
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[var(--foreground)] mb-1.5">Reorder Level</label>
+                    <Input
+                      type="number"
+                      value={formData.reorderLevel}
+                      onChange={(e) => setFormData({ ...formData, reorderLevel: e.target.value })}
+                      placeholder="10"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-[var(--foreground)] mb-1.5">Category</label>
+                  <select
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    className="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 py-2.5 text-sm"
+                  >
+                    <option value="materials">Materials</option>
+                    <option value="tools">Tools</option>
+                    <option value="consumables">Consumables</option>
+                    <option value="equipment">Equipment</option>
+                  </select>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4">
+                  <Button type="button" variant="secondary" onClick={() => setShowAddModal(false)}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={saving}>
+                    {saving ? 'Saving...' : editingItem ? 'Update Item' : 'Add Item'}
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </div>
+        </div>
+      )}
     </AppShell>
   );
 }
