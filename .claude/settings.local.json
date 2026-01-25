@@ -28,7 +28,8 @@
       "Bash(python:*)",
       "Bash(node -e:*)",
       "Bash(npm run build:crm:*)",
-      "Bash(npm ls:*)"
+      "Bash(npm ls:*)",
+      "Bash(npx tsc:*)"
     ]
   }
 }
