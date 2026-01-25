@@ -2,7 +2,6 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { Button, Card, CardHeader, CardTitle, CardContent, CardDescription, Input, Label, NativeSelect } from "@quantract/ui";
 
 // BS 7671 Cable data - mV/A/m values at 70°C conductor temperature
 // Reference: BS 7671 Appendix 4, Table 4Ab (voltage drop)
@@ -176,300 +175,414 @@ export default function CableCalculatorPage() {
     };
   }, [current, length, cableType, phaseType, circuitType, ambientTemp, grouping, insulation, maxVoltageDrop, supplyVoltage]);
 
+  const inputStyle: React.CSSProperties = {
+    width: "100%",
+    padding: "8px 12px",
+    fontSize: "13px",
+    background: "var(--muted)",
+    border: "1px solid var(--border)",
+    borderRadius: "6px",
+    color: "var(--foreground)",
+    outline: "none",
+    transition: "border-color 0.2s",
+  };
+
+  const labelStyle: React.CSSProperties = {
+    display: "block",
+    fontSize: "12px",
+    fontWeight: 500,
+    color: "var(--muted-foreground)",
+    marginBottom: "4px",
+  };
+
+  const cardStyle: React.CSSProperties = {
+    background: "var(--card)",
+    border: "1px solid var(--border)",
+    borderRadius: "8px",
+    overflow: "hidden",
+  };
+
+  const cardHeaderStyle: React.CSSProperties = {
+    padding: "12px 16px",
+    borderBottom: "1px solid var(--border)",
+  };
+
+  const cardContentStyle: React.CSSProperties = {
+    padding: "16px",
+  };
+
   return (
-    <main className="min-h-screen">
+    <main
+      style={{
+        minHeight: "100vh",
+        background: "var(--background)",
+        color: "var(--foreground)",
+      }}
+    >
       {/* Header */}
-      <header className="border-b border-[var(--border)] bg-[var(--card)]">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-4">
-          <Link href="/" className="text-[var(--muted-foreground)] hover:text-[var(--foreground)]">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-          </Link>
-          <h1 className="text-xl font-bold">Cable Calculator</h1>
-          <span className="text-sm text-[var(--muted-foreground)]">BS 7671</span>
+      <header
+        style={{
+          borderBottom: "1px solid var(--border)",
+          background: "var(--card)",
+          padding: "12px 20px",
+          display: "flex",
+          alignItems: "center",
+          gap: "16px",
+        }}
+      >
+        <Link
+          href="/"
+          style={{
+            color: "var(--muted-foreground)",
+            display: "flex",
+            alignItems: "center",
+            transition: "color 0.2s",
+          }}
+        >
+          <svg style={{ width: 18, height: 18 }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+        </Link>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <h1 style={{ fontSize: "16px", fontWeight: 700, margin: 0 }}>Cable Calculator</h1>
+          <span
+            style={{
+              fontSize: "11px",
+              color: "var(--muted-foreground)",
+              background: "var(--muted)",
+              padding: "2px 8px",
+              borderRadius: "4px",
+            }}
+          >
+            BS 7671
+          </span>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="grid lg:grid-cols-2 gap-8">
+      <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "24px 20px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
           {/* Input Section */}
-          <div className="space-y-6">
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             {/* Basic Parameters */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Circuit Parameters</CardTitle>
-                <CardDescription>Enter the basic circuit details</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+            <div style={cardStyle}>
+              <div style={cardHeaderStyle}>
+                <h2 style={{ fontSize: "14px", fontWeight: 600, margin: 0 }}>Circuit Parameters</h2>
+              </div>
+              <div style={cardContentStyle}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
                   <div>
-                    <Label htmlFor="current">Design Current (A)</Label>
-                    <Input
-                      id="current"
+                    <label style={labelStyle}>Design Current (A)</label>
+                    <input
                       type="number"
                       value={current}
                       onChange={(e) => setCurrent(e.target.value)}
                       placeholder="e.g. 20"
+                      style={inputStyle}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="length">Cable Length (m)</Label>
-                    <Input
-                      id="length"
+                    <label style={labelStyle}>Cable Length (m)</label>
+                    <input
                       type="number"
                       value={length}
                       onChange={(e) => setLength(e.target.value)}
                       placeholder="e.g. 30"
+                      style={inputStyle}
                     />
                   </div>
                 </div>
 
-                <div>
-                  <Label htmlFor="cableType">Cable Type</Label>
-                  <NativeSelect
-                    id="cableType"
+                <div style={{ marginBottom: "12px" }}>
+                  <label style={labelStyle}>Cable Type</label>
+                  <select
                     value={cableType}
                     onChange={(e) => setCableType(e.target.value as CableType)}
+                    style={inputStyle}
                   >
                     {Object.entries(CABLE_DATA).map(([key, data]) => (
                       <option key={key} value={key}>
                         {data.name}
                       </option>
                     ))}
-                  </NativeSelect>
+                  </select>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                   <div>
-                    <Label htmlFor="phaseType">Supply Type</Label>
-                    <NativeSelect
-                      id="phaseType"
+                    <label style={labelStyle}>Supply Type</label>
+                    <select
                       value={phaseType}
                       onChange={(e) => setPhaseType(e.target.value as "single" | "three")}
+                      style={inputStyle}
                     >
                       <option value="single">Single Phase (230V)</option>
                       <option value="three">Three Phase (400V)</option>
-                    </NativeSelect>
+                    </select>
                   </div>
                   <div>
-                    <Label htmlFor="circuitType">Circuit Type</Label>
-                    <NativeSelect
-                      id="circuitType"
+                    <label style={labelStyle}>Circuit Type</label>
+                    <select
                       value={circuitType}
                       onChange={(e) => setCircuitType(e.target.value as "lighting" | "power")}
+                      style={inputStyle}
                     >
-                      <option value="power">Power Circuit (5% max VD)</option>
-                      <option value="lighting">Lighting Circuit (3% max VD)</option>
-                    </NativeSelect>
+                      <option value="power">Power (5% max VD)</option>
+                      <option value="lighting">Lighting (3% max VD)</option>
+                    </select>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
 
             {/* Correction Factors */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Correction Factors</CardTitle>
-                <CardDescription>Apply derating factors per BS 7671</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="ambientTemp">Ambient Temperature (Ca)</Label>
-                  <NativeSelect
-                    id="ambientTemp"
+            <div style={cardStyle}>
+              <div style={cardHeaderStyle}>
+                <h2 style={{ fontSize: "14px", fontWeight: 600, margin: 0 }}>Correction Factors</h2>
+              </div>
+              <div style={cardContentStyle}>
+                <div style={{ marginBottom: "12px" }}>
+                  <label style={labelStyle}>Ambient Temperature (Ca)</label>
+                  <select
                     value={ambientTemp}
                     onChange={(e) => setAmbientTemp(e.target.value)}
+                    style={inputStyle}
                   >
                     {Object.entries(AMBIENT_TEMP_FACTORS).map(([temp, factor]) => (
                       <option key={temp} value={temp}>
                         {temp}°C (Ca = {factor})
                       </option>
                     ))}
-                  </NativeSelect>
+                  </select>
                 </div>
 
-                <div>
-                  <Label htmlFor="grouping">Cable Grouping (Cg)</Label>
-                  <NativeSelect
-                    id="grouping"
+                <div style={{ marginBottom: "12px" }}>
+                  <label style={labelStyle}>Cable Grouping (Cg)</label>
+                  <select
                     value={grouping}
                     onChange={(e) => setGrouping(e.target.value)}
+                    style={inputStyle}
                   >
                     {Object.entries(GROUPING_FACTORS).map(([count, factor]) => (
                       <option key={count} value={count}>
                         {count} cable{count !== "1" ? "s" : ""} (Cg = {factor})
                       </option>
                     ))}
-                  </NativeSelect>
+                  </select>
                 </div>
 
                 <div>
-                  <Label htmlFor="insulation">Thermal Insulation (Ci)</Label>
-                  <NativeSelect
-                    id="insulation"
+                  <label style={labelStyle}>Thermal Insulation (Ci)</label>
+                  <select
                     value={insulation}
                     onChange={(e) => setInsulation(e.target.value)}
+                    style={inputStyle}
                   >
                     {Object.entries(INSULATION_FACTORS).map(([depth, factor]) => (
                       <option key={depth} value={depth}>
                         {depth === "none" ? "No insulation" : `${depth} insulation`} (Ci = {factor})
                       </option>
                     ))}
-                  </NativeSelect>
+                  </select>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </div>
 
           {/* Results Section */}
-          <div className="space-y-6">
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             {results && !("error" in results) ? (
               <>
                 {/* Recommended Cable */}
                 {results.recommended ? (
-                  <Card className="border-[var(--success)] bg-[var(--success)]/5">
-                    <CardHeader>
-                      <CardTitle className="text-[var(--success)]">Recommended Cable Size</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-4xl font-black mb-2">{results.recommended.size}mm²</div>
-                      <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div
+                    style={{
+                      ...cardStyle,
+                      borderColor: "var(--success)",
+                      background: "rgba(16, 185, 129, 0.05)",
+                    }}
+                  >
+                    <div style={{ ...cardHeaderStyle, borderColor: "rgba(16, 185, 129, 0.2)" }}>
+                      <h2 style={{ fontSize: "14px", fontWeight: 600, margin: 0, color: "var(--success)" }}>
+                        Recommended Cable
+                      </h2>
+                    </div>
+                    <div style={cardContentStyle}>
+                      <div style={{ fontSize: "32px", fontWeight: 900, marginBottom: "12px" }}>
+                        {results.recommended.size}mm²
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", fontSize: "13px" }}>
                         <div>
-                          <div className="text-[var(--muted-foreground)]">Current Rating</div>
-                          <div className="font-semibold">{results.recommended.currentRating}A (derated: {results.recommended.correctedRating}A)</div>
+                          <div style={{ color: "var(--muted-foreground)", fontSize: "11px", marginBottom: "2px" }}>
+                            Current Rating
+                          </div>
+                          <div style={{ fontWeight: 600 }}>
+                            {results.recommended.currentRating}A (derated: {results.recommended.correctedRating}A)
+                          </div>
                         </div>
                         <div>
-                          <div className="text-[var(--muted-foreground)]">Voltage Drop</div>
-                          <div className="font-semibold">{results.recommended.voltageDrop}V ({results.recommended.voltageDropPercent}%)</div>
+                          <div style={{ color: "var(--muted-foreground)", fontSize: "11px", marginBottom: "2px" }}>
+                            Voltage Drop
+                          </div>
+                          <div style={{ fontWeight: 600 }}>
+                            {results.recommended.voltageDrop}V ({results.recommended.voltageDropPercent}%)
+                          </div>
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
                 ) : (
-                  <Card className="border-[var(--warning)] bg-[var(--warning)]/5">
-                    <CardHeader>
-                      <CardTitle className="text-[var(--warning)]">No Compliant Cable</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm">
-                        No cable size meets the voltage drop requirements ({results.maxVoltageDrop}% max).
-                        Consider reducing cable length or splitting the circuit.
+                  <div
+                    style={{
+                      ...cardStyle,
+                      borderColor: "var(--warning)",
+                      background: "rgba(245, 158, 11, 0.05)",
+                    }}
+                  >
+                    <div style={{ ...cardHeaderStyle, borderColor: "rgba(245, 158, 11, 0.2)" }}>
+                      <h2 style={{ fontSize: "14px", fontWeight: 600, margin: 0, color: "var(--warning)" }}>
+                        No Compliant Cable
+                      </h2>
+                    </div>
+                    <div style={cardContentStyle}>
+                      <p style={{ fontSize: "13px", margin: 0 }}>
+                        No cable size meets the voltage drop requirements ({results.maxVoltageDrop}% max). Consider
+                        reducing cable length or splitting the circuit.
                       </p>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
                 )}
 
                 {/* Calculation Details */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Calculation Details</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4 text-sm">
+                <div style={cardStyle}>
+                  <div style={cardHeaderStyle}>
+                    <h2 style={{ fontSize: "14px", fontWeight: 600, margin: 0 }}>Calculation Details</h2>
+                  </div>
+                  <div style={cardContentStyle}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", fontSize: "13px" }}>
                       <div>
-                        <div className="text-[var(--muted-foreground)]">Combined Correction Factor</div>
-                        <div className="font-semibold">{results.correctionFactor}</div>
+                        <div style={{ color: "var(--muted-foreground)", fontSize: "11px", marginBottom: "2px" }}>
+                          Combined Factor
+                        </div>
+                        <div style={{ fontWeight: 600 }}>{results.correctionFactor}</div>
                       </div>
                       <div>
-                        <div className="text-[var(--muted-foreground)]">Tabulated Current Required</div>
-                        <div className="font-semibold">{results.designCurrent}A</div>
+                        <div style={{ color: "var(--muted-foreground)", fontSize: "11px", marginBottom: "2px" }}>
+                          Tabulated Current
+                        </div>
+                        <div style={{ fontWeight: 600 }}>{results.designCurrent}A</div>
                       </div>
                       <div>
-                        <div className="text-[var(--muted-foreground)]">Supply Voltage</div>
-                        <div className="font-semibold">{results.supplyVoltage}V</div>
+                        <div style={{ color: "var(--muted-foreground)", fontSize: "11px", marginBottom: "2px" }}>
+                          Supply Voltage
+                        </div>
+                        <div style={{ fontWeight: 600 }}>{results.supplyVoltage}V</div>
                       </div>
                       <div>
-                        <div className="text-[var(--muted-foreground)]">Max Voltage Drop</div>
-                        <div className="font-semibold">{results.maxVoltageDrop}% ({(results.supplyVoltage * results.maxVoltageDrop / 100).toFixed(1)}V)</div>
+                        <div style={{ color: "var(--muted-foreground)", fontSize: "11px", marginBottom: "2px" }}>
+                          Max Voltage Drop
+                        </div>
+                        <div style={{ fontWeight: 600 }}>
+                          {results.maxVoltageDrop}% ({((results.supplyVoltage * results.maxVoltageDrop) / 100).toFixed(1)}V)
+                        </div>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
 
                 {/* All Cable Options */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>All Cable Options</CardTitle>
-                    <CardDescription>Comparison of available sizes</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="border-b border-[var(--border)]">
-                            <th className="text-left py-2 font-semibold">Size</th>
-                            <th className="text-left py-2 font-semibold">Rating</th>
-                            <th className="text-left py-2 font-semibold">VD</th>
-                            <th className="text-left py-2 font-semibold">VD %</th>
-                            <th className="text-left py-2 font-semibold">Status</th>
+                <div style={cardStyle}>
+                  <div style={cardHeaderStyle}>
+                    <h2 style={{ fontSize: "14px", fontWeight: 600, margin: 0 }}>All Cable Options</h2>
+                  </div>
+                  <div style={{ ...cardContentStyle, padding: 0 }}>
+                    <table style={{ width: "100%", fontSize: "12px", borderCollapse: "collapse" }}>
+                      <thead>
+                        <tr style={{ background: "var(--muted)" }}>
+                          <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: 600 }}>Size</th>
+                          <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: 600 }}>Rating</th>
+                          <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: 600 }}>VD</th>
+                          <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: 600 }}>VD %</th>
+                          <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: 600 }}>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {results.calculations.map((calc) => (
+                          <tr
+                            key={calc.size}
+                            style={{
+                              borderTop: "1px solid var(--border)",
+                              background:
+                                results.recommended?.size === calc.size ? "rgba(16, 185, 129, 0.1)" : "transparent",
+                            }}
+                          >
+                            <td style={{ padding: "8px 12px", fontWeight: 500 }}>{calc.size}mm²</td>
+                            <td style={{ padding: "8px 12px" }}>{calc.correctedRating}A</td>
+                            <td style={{ padding: "8px 12px" }}>{calc.voltageDrop}V</td>
+                            <td style={{ padding: "8px 12px" }}>{calc.voltageDropPercent}%</td>
+                            <td style={{ padding: "8px 12px" }}>
+                              {calc.isCompliant ? (
+                                <span style={{ color: "var(--success)", fontWeight: 500 }}>OK</span>
+                              ) : (
+                                <span style={{ color: "var(--error)", fontWeight: 500 }}>Exceeds</span>
+                              )}
+                            </td>
                           </tr>
-                        </thead>
-                        <tbody>
-                          {results.calculations.map((calc) => (
-                            <tr
-                              key={calc.size}
-                              className={`border-b border-[var(--border)] ${
-                                results.recommended?.size === calc.size ? "bg-[var(--success)]/10" : ""
-                              }`}
-                            >
-                              <td className="py-2 font-medium">{calc.size}mm²</td>
-                              <td className="py-2">{calc.correctedRating}A</td>
-                              <td className="py-2">{calc.voltageDrop}V</td>
-                              <td className="py-2">{calc.voltageDropPercent}%</td>
-                              <td className="py-2">
-                                {calc.isCompliant ? (
-                                  <span className="text-[var(--success)]">✓ OK</span>
-                                ) : (
-                                  <span className="text-[var(--error)]">✗ Exceeds</span>
-                                )}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </CardContent>
-                </Card>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </>
             ) : results && "error" in results ? (
-              <Card className="border-[var(--error)] bg-[var(--error)]/5">
-                <CardHeader>
-                  <CardTitle className="text-[var(--error)]">Error</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p>{results.error}</p>
-                </CardContent>
-              </Card>
+              <div
+                style={{
+                  ...cardStyle,
+                  borderColor: "var(--error)",
+                  background: "rgba(239, 68, 68, 0.05)",
+                }}
+              >
+                <div style={{ ...cardHeaderStyle, borderColor: "rgba(239, 68, 68, 0.2)" }}>
+                  <h2 style={{ fontSize: "14px", fontWeight: 600, margin: 0, color: "var(--error)" }}>Error</h2>
+                </div>
+                <div style={cardContentStyle}>
+                  <p style={{ fontSize: "13px", margin: 0 }}>{results.error}</p>
+                </div>
+              </div>
             ) : (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Results</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-[var(--muted-foreground)]">
+              <div style={cardStyle}>
+                <div style={cardHeaderStyle}>
+                  <h2 style={{ fontSize: "14px", fontWeight: 600, margin: 0 }}>Results</h2>
+                </div>
+                <div style={cardContentStyle}>
+                  <p style={{ fontSize: "13px", color: "var(--muted-foreground)", margin: 0 }}>
                     Enter circuit parameters to calculate cable size.
                   </p>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             )}
 
             {/* Reference Info */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">Reference</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-xs text-[var(--muted-foreground)]">
-                  Calculations based on BS 7671:2018+A2:2022. Cable ratings from Appendix 4, Table 4D1A/4D2A.
-                  Voltage drop values from Table 4Ab. For final installation, always verify with manufacturer data
-                  and consult a qualified electrician.
+            <div style={{ ...cardStyle, background: "var(--muted)" }}>
+              <div style={cardContentStyle}>
+                <p style={{ fontSize: "11px", color: "var(--muted-foreground)", margin: 0, lineHeight: 1.5 }}>
+                  Calculations based on BS 7671:2018+A2:2022. Cable ratings from Appendix 4, Table 4D1A/4D2A. Voltage
+                  drop values from Table 4Ab. For final installation, always verify with manufacturer data and consult
+                  a qualified electrician.
                 </p>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Responsive grid fix */}
+      <style>{`
+        @media (max-width: 768px) {
+          main > div > div {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
     </main>
   );
 }
