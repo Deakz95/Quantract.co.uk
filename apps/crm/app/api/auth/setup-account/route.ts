@@ -40,17 +40,67 @@ export async function POST(req: Request) {
       },
     });
 
-    if (dbUser) {
-      // User already exists - just set session and redirect
+    if (dbUser && dbUser.companyId) {
+      // User already exists with a company - just set session and redirect
       await setSession(dbUser.role as "admin" | "client" | "engineer");
       if (dbUser.email) await setUserEmail(dbUser.email);
-      if (dbUser.companyId) await setCompanyId(dbUser.companyId);
+      await setCompanyId(dbUser.companyId);
       await setProfileComplete(Boolean(dbUser.profileComplete));
 
       const role = dbUser.role || "admin";
       const redirectTo = dbUser.profileComplete ? `/${role}` : `/${role}/onboarding`;
 
       return NextResponse.json({ ok: true, redirectTo });
+    }
+
+    // User exists but without a company - create company and link
+    if (dbUser && !dbUser.companyId) {
+      const companyId = randomUUID();
+      const companySlug = `${companyName.toLowerCase().replace(/[^a-z0-9]/g, "-").slice(0, 30)}-${companyId.slice(0, 8)}`;
+
+      await prisma.company.create({
+        data: {
+          id: companyId,
+          name: companyName,
+          slug: companySlug,
+          brandName: companyName,
+          brandTagline: "",
+          themePrimary: "#0f172a",
+          themeAccent: "#38bdf8",
+          themeBg: "#ffffff",
+          themeText: "#0f172a",
+          updatedAt: new Date(),
+        },
+      });
+
+      // Update user with company
+      dbUser = await prisma.user.update({
+        where: { id: dbUser.id },
+        data: {
+          companyId: companyId,
+          name: user.name || dbUser.name,
+          neonAuthUserId: user.id,
+          profileComplete: true,
+        },
+      });
+
+      // Set session cookies
+      await setSession(dbUser.role as "admin" | "client" | "engineer");
+      await setUserEmail(dbUser.email);
+      await setCompanyId(companyId);
+      await setProfileComplete(true);
+
+      return NextResponse.json({
+        ok: true,
+        redirectTo: "/admin",
+        user: {
+          id: dbUser.id,
+          email: dbUser.email,
+          name: dbUser.name,
+          role: dbUser.role,
+          companyId: companyId,
+        },
+      });
     }
 
     // Create company
