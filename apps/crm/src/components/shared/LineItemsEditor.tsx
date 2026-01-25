@@ -114,10 +114,12 @@ export default function LineItemsEditor(props: {
               <input
                 type="number"
                 className="w-20 h-10 rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 text-sm text-center text-[var(--foreground)]"
-                value={it.qty}
-                onChange={(e) => setItem(i, { qty: Number(e.target.value) })}
+                value={it.qty || ""}
+                onChange={(e) => setItem(i, { qty: e.target.value === "" ? 0 : Number(e.target.value) })}
+                onFocus={(e) => e.target.select()}
                 min={0}
                 step={1}
+                placeholder="0"
                 disabled={disabled}
               />
             </div>
@@ -127,10 +129,12 @@ export default function LineItemsEditor(props: {
               <input
                 type="number"
                 className="w-28 h-10 rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 text-sm text-[var(--foreground)]"
-                value={it.unitPrice}
-                onChange={(e) => setItem(i, { unitPrice: Number(e.target.value) })}
+                value={it.unitPrice || ""}
+                onChange={(e) => setItem(i, { unitPrice: e.target.value === "" ? 0 : Number(e.target.value) })}
+                onFocus={(e) => e.target.select()}
                 min={0}
                 step={0.01}
+                placeholder="0.00"
                 disabled={disabled}
               />
             </div>
