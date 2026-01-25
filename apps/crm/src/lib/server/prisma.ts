@@ -1,5 +1,4 @@
 import { PrismaClient } from "@prisma/client";
-import { assertEnv } from "@/lib/env";
 
 declare global {
   // eslint-disable-next-line no-var
@@ -7,15 +6,23 @@ declare global {
 }
 
 /**
- * Production-safe Prisma singleton.
+ * Production-safe Prisma singleton with lazy initialization.
  *
- * Note: We intentionally *do not* return null here. If DATABASE_URL is missing,
- * we fail fast so API routes that rely on Prisma don't compile into a broken runtime.
+ * The client is created lazily (on first use) to support builds where
+ * DATABASE_URL is not available. This allows Next.js page data collection
+ * to complete during build without a database connection.
+ *
+ * At runtime, DATABASE_URL is injected by the with-neon-conn.mjs wrapper
+ * before the app starts.
  */
 function createPrismaClient(): PrismaClient {
   const url = process.env.DATABASE_URL;
   if (url == null || url.trim() === "") {
-    throw new Error("DATABASE_URL is missing. Set DATABASE_URL in your environment (.env/.env.local). ");
+    throw new Error(
+      "DATABASE_URL is missing. " +
+      "In production, this should be injected by with-neon-conn.mjs at runtime. " +
+      "For local dev, set DATABASE_URL in .env.local."
+    );
   }
 
   if (global.__prisma) return global.__prisma;
@@ -28,12 +35,28 @@ function createPrismaClient(): PrismaClient {
   return client;
 }
 
-// Most of the codebase expects `prisma.<model>`.
-export const prisma = createPrismaClient();
-
-// Some routes used to call prisma() - keep a helper for that pattern.
-export function getPrisma() {
-  return prisma;
+/**
+ * Lazy Prisma client getter - only initializes on first call.
+ * This is the primary way to access the Prisma client.
+ */
+export function getPrisma(): PrismaClient {
+  // Lazy initialization - only create client when actually needed
+  if (!global.__prisma) {
+    global.__prisma = createPrismaClient();
+  }
+  return global.__prisma;
 }
+
+/**
+ * Proxy object that lazily initializes PrismaClient on first property access.
+ * This allows `import { prisma } from './prisma'` to work at module load time
+ * without actually connecting to the database until a query is made.
+ */
+export const prisma: PrismaClient = new Proxy({} as PrismaClient, {
+  get(_target, prop) {
+    return getPrisma()[prop as keyof PrismaClient];
+  },
+});
+
 // Back-compat helper used by some API routes
 export const p = getPrisma;
