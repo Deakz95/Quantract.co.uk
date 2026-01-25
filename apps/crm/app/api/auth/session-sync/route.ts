@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { neonAuth } from "@neondatabase/auth/next/server";
 import { p } from "@/lib/server/prisma";
 import { setSession, setCompanyId, setProfileComplete, setUserEmail } from "@/lib/serverAuth";
+import { randomUUID } from "crypto";
 
 export const runtime = "nodejs";
 
@@ -38,8 +39,13 @@ export async function POST(req: Request) {
 
     if (!dbUser) {
       // Create company for new user
+      const companyId = randomUUID();
+      const companySlug = `company-${companyId.slice(0, 8)}`;
       const company = await prisma.company.create({
         data: {
+          id: companyId,
+          name: user.name || "New Company",
+          slug: companySlug,
           brandName: user.name || "New Company",
           brandTagline: "",
           themePrimary: "#0f172a",
@@ -50,8 +56,10 @@ export async function POST(req: Request) {
       });
 
       // Create user with company
+      const userId = randomUUID();
       dbUser = await prisma.user.create({
         data: {
+          id: userId,
           email: email || `user-${user.id}@example.com`,
           name: user.name || null,
           companyId: company.id,
@@ -131,8 +139,13 @@ export async function GET(req: Request) {
 
     if (!dbUser) {
       // Create company for new user
+      const companyId = randomUUID();
+      const companySlug = `company-${companyId.slice(0, 8)}`;
       const company = await prisma.company.create({
         data: {
+          id: companyId,
+          name: user.name || "New Company",
+          slug: companySlug,
           brandName: user.name || "New Company",
           brandTagline: "",
           themePrimary: "#0f172a",
@@ -143,8 +156,10 @@ export async function GET(req: Request) {
       });
 
       // Create user with company
+      const userId = randomUUID();
       dbUser = await prisma.user.create({
         data: {
+          id: userId,
           email: email || `user-${user.id}@example.com`,
           name: user.name || null,
           companyId: company.id,
