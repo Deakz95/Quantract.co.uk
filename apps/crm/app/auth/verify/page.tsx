@@ -1,10 +1,10 @@
 "use client";
 
 import { useSearchParams, useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 
-export default function VerifyMagicLinkPage() {
+function VerifyContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const token = searchParams.get("token") || "";
@@ -83,5 +83,26 @@ export default function VerifyMagicLinkPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen bg-[var(--muted)] flex items-center justify-center p-6">
+      <div className="w-full max-w-lg rounded-xl border border-[var(--border)] bg-[var(--background)] p-6 text-center">
+        <h1 className="text-xl font-semibold">Loading...</h1>
+        <div className="mt-4">
+          <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-current border-t-transparent" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function VerifyMagicLinkPage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <VerifyContent />
+    </Suspense>
   );
 }
