@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { requireRole, requireCompanyId, getUserEmail } from "@/lib/serverAuth";
+import { getAuthContext } from "@/lib/serverAuth";
 import { getPrisma } from "@/lib/server/prisma";
-import { withRequestLogging } from "@/lib/server/observability";
+import { withRequestLogging, logError } from "@/lib/server/observability";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import {
   normalizePlan,
   getPlanDefinition,
@@ -24,17 +25,25 @@ export const runtime = "nodejs";
  */
 export const GET = withRequestLogging(async function GET() {
   try {
-    await requireRole("admin");
-  } catch {
-    return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
-  }
+    const authCtx = await getAuthContext();
+    if (!authCtx) {
+      return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
+    }
 
-  const companyId = await requireCompanyId();
-  const userEmail = await getUserEmail();
-  const client = getPrisma();
-  if (!client) {
-    return NextResponse.json({ ok: false, error: "prisma_disabled" }, { status: 400 });
-  }
+    if (authCtx.role !== "admin") {
+      return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
+    }
+
+    if (!authCtx.companyId) {
+      return NextResponse.json({ ok: false, error: "no_company" }, { status: 401 });
+    }
+
+    const companyId = authCtx.companyId;
+    const userEmail = authCtx.email;
+    const client = getPrisma();
+    if (!client) {
+      return NextResponse.json({ ok: false, error: "service_unavailable" }, { status: 503 });
+    }
 
   // Get company data
   const company = await client.company.findUnique({
@@ -177,4 +186,12 @@ export const GET = withRequestLogging(async function GET() {
     enterpriseCheck,
     modulePricing: MODULE_PRICING,
   });
+  } catch (error) {
+    if (error instanceof PrismaClientKnownRequestError) {
+      logError(error, { route: "/api/admin/entitlements", action: "get" });
+      return NextResponse.json({ ok: false, error: "database_error", code: error.code }, { status: 409 });
+    }
+    logError(error, { route: "/api/admin/entitlements", action: "get" });
+    return NextResponse.json({ ok: false, error: "load_failed" }, { status: 500 });
+  }
 });

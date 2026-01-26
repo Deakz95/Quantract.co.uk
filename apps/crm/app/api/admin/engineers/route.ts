@@ -1,39 +1,100 @@
 import { NextResponse } from "next/server";
-import { requireRoles } from "@/lib/serverAuth";
-import * as repo from "@/lib/server/repo";
+import { getAuthContext } from "@/lib/serverAuth";
+import { getPrisma } from "@/lib/server/prisma";
+import { withRequestLogging, logError } from "@/lib/server/observability";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 
-export async function GET() {
-  const session = await requireRoles("admin");
-  if (!session) {
-    return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+export const runtime = "nodejs";
+
+export const GET = withRequestLogging(async function GET() {
+  try {
+    const authCtx = await getAuthContext();
+    if (!authCtx) {
+      return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
+    }
+
+    if (authCtx.role !== "admin") {
+      return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
+    }
+
+    if (!authCtx.companyId) {
+      return NextResponse.json({ ok: false, error: "no_company" }, { status: 401 });
+    }
+
+    const client = getPrisma();
+    if (!client) {
+      return NextResponse.json({ ok: false, error: "service_unavailable" }, { status: 503 });
+    }
+
+    const engineers = await client.engineer.findMany({
+      where: { companyId: authCtx.companyId },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return NextResponse.json({ ok: true, engineers: engineers || [] });
+  } catch (error) {
+    if (error instanceof PrismaClientKnownRequestError) {
+      logError(error, { route: "/api/admin/engineers", action: "list" });
+      return NextResponse.json({ ok: false, error: "database_error", code: error.code }, { status: 409 });
+    }
+    logError(error, { route: "/api/admin/engineers", action: "list" });
+    return NextResponse.json({ ok: false, error: "load_failed" }, { status: 500 });
   }
-  const engineers = await repo.listEngineers();
-  return NextResponse.json({ ok: true, engineers });
-}
+});
 
-export async function POST(req: Request) {
-  const session = await requireRoles("admin");
-  if (!session) {
-    return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+export const POST = withRequestLogging(async function POST(req: Request) {
+  try {
+    const authCtx = await getAuthContext();
+    if (!authCtx) {
+      return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
+    }
+
+    if (authCtx.role !== "admin") {
+      return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
+    }
+
+    if (!authCtx.companyId) {
+      return NextResponse.json({ ok: false, error: "no_company" }, { status: 401 });
+    }
+
+    const client = getPrisma();
+    if (!client) {
+      return NextResponse.json({ ok: false, error: "service_unavailable" }, { status: 503 });
+    }
+
+    const body = (await req.json().catch(() => null)) as any;
+    if (!body) {
+      return NextResponse.json({ ok: false, error: "invalid_request_body" }, { status: 400 });
+    }
+
+    const email = String(body.email || "").trim().toLowerCase();
+    if (!email) {
+      return NextResponse.json({ ok: false, error: "email_required" }, { status: 400 });
+    }
+
+    const name = body.name ? String(body.name).trim() : null;
+    const phone = body.phone ? String(body.phone).trim() : null;
+
+    const engineer = await client.engineer.create({
+      data: {
+        companyId: authCtx.companyId,
+        email,
+        name: name || email.split("@")[0],
+        phone,
+        status: "active",
+      },
+    });
+
+    return NextResponse.json({ ok: true, engineer });
+  } catch (error) {
+    if (error instanceof PrismaClientKnownRequestError) {
+      logError(error, { route: "/api/admin/engineers", action: "create" });
+      if (error.code === "P2002") {
+        return NextResponse.json({ ok: false, error: "duplicate_email" }, { status: 409 });
+      }
+      return NextResponse.json({ ok: false, error: "database_error", code: error.code }, { status: 409 });
+    }
+    logError(error, { route: "/api/admin/engineers", action: "create" });
+    return NextResponse.json({ ok: false, error: "create_failed" }, { status: 500 });
   }
-
-  const body = (await req.json().catch(() => null)) as any;
-  if (!body) {
-    return NextResponse.json({ ok: false, error: "Invalid request body" }, { status: 400 });
-  }
-
-  const email = String(body.email || "").trim().toLowerCase();
-  if (!email) {
-    return NextResponse.json({ ok: false, error: "Email is required" }, { status: 400 });
-  }
-
-  const name = body.name ? String(body.name).trim() : undefined;
-  const phone = body.phone ? String(body.phone).trim() : undefined;
-
-  const engineer = await repo.createEngineer({ email, name, phone });
-  if (!engineer) {
-    return NextResponse.json({ ok: false, error: "Failed to create engineer" }, { status: 500 });
-  }
-
-  return NextResponse.json({ ok: true, engineer });
-}
+});

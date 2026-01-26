@@ -1,56 +1,111 @@
 import { NextResponse } from "next/server";
-import { requireRoles } from "@/lib/serverAuth";
+import { getAuthContext } from "@/lib/serverAuth";
+import { getPrisma } from "@/lib/server/prisma";
 import * as repo from "@/lib/server/repo";
+import { withRequestLogging, logError } from "@/lib/server/observability";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 
-export async function GET(req: Request) {
-  const session = await requireRoles("admin");
-  if (!session) {
-    return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+export const runtime = "nodejs";
+
+export const GET = withRequestLogging(async function GET(req: Request) {
+  try {
+    const authCtx = await getAuthContext();
+    if (!authCtx) {
+      return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
+    }
+
+    if (authCtx.role !== "admin") {
+      return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
+    }
+
+    if (!authCtx.companyId) {
+      return NextResponse.json({ ok: false, error: "no_company" }, { status: 401 });
+    }
+
+    const url = new URL(req.url);
+    const clientId = url.searchParams.get("clientId")?.trim() || "";
+    if (!clientId) return NextResponse.json({ ok: true, sites: [] });
+
+    const client = getPrisma();
+    if (!client) {
+      return NextResponse.json({ ok: false, error: "service_unavailable" }, { status: 503 });
+    }
+
+    const sites = await client.site.findMany({
+      where: { clientId, companyId: authCtx.companyId },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return NextResponse.json({ ok: true, sites: sites || [] });
+  } catch (error) {
+    if (error instanceof PrismaClientKnownRequestError) {
+      logError(error, { route: "/api/admin/sites", action: "list" });
+      return NextResponse.json({ ok: false, error: "database_error", code: error.code }, { status: 409 });
+    }
+    logError(error, { route: "/api/admin/sites", action: "list" });
+    return NextResponse.json({ ok: false, error: "load_failed" }, { status: 500 });
   }
+});
 
-  const url = new URL(req.url);
-  const clientId = url.searchParams.get("clientId")?.trim() || "";
-  if (!clientId) return NextResponse.json({ ok: true, sites: [] });
+export const POST = withRequestLogging(async function POST(req: Request) {
+  try {
+    const authCtx = await getAuthContext();
+    if (!authCtx) {
+      return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
+    }
 
-  const sites = await repo.listSitesForClient(clientId);
-  return NextResponse.json({ ok: true, sites });
-}
+    if (authCtx.role !== "admin") {
+      return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
+    }
 
-export async function POST(req: Request) {
-  const authCtx = await requireRoles("admin");
-  if (!authCtx) {
-    return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+    if (!authCtx.companyId) {
+      return NextResponse.json({ ok: false, error: "no_company" }, { status: 401 });
+    }
+
+    const client = getPrisma();
+    if (!client) {
+      return NextResponse.json({ ok: false, error: "service_unavailable" }, { status: 503 });
+    }
+
+    const body = (await req.json().catch(() => null)) as any;
+    const clientId = String(body?.clientId ?? "").trim();
+    if (!clientId) return NextResponse.json({ ok: false, error: "missing_client_id" }, { status: 400 });
+
+    const site = await client.site.create({
+      data: {
+        companyId: authCtx.companyId,
+        clientId,
+        name: typeof body?.name === "string" ? body.name.trim() : null,
+        address1: typeof body?.address1 === "string" ? body.address1.trim() : null,
+        address2: typeof body?.address2 === "string" ? body.address2.trim() : null,
+        city: typeof body?.city === "string" ? body.city.trim() : null,
+        county: typeof body?.county === "string" ? body.county.trim() : null,
+        postcode: typeof body?.postcode === "string" ? body.postcode.trim() : null,
+        country: typeof body?.country === "string" ? body.country.trim() : null,
+        notes: typeof body?.notes === "string" ? body.notes.trim() : null,
+      },
+    });
+
+    // Audit event for site creation
+    await repo.recordAuditEvent({
+      entityType: "site",
+      entityId: site.id,
+      action: "site.created",
+      actorRole: "admin",
+      actor: authCtx.email,
+      meta: {
+        clientId,
+        name: site.name,
+      },
+    });
+
+    return NextResponse.json({ ok: true, site });
+  } catch (error) {
+    if (error instanceof PrismaClientKnownRequestError) {
+      logError(error, { route: "/api/admin/sites", action: "create" });
+      return NextResponse.json({ ok: false, error: "database_error", code: error.code }, { status: 409 });
+    }
+    logError(error, { route: "/api/admin/sites", action: "create" });
+    return NextResponse.json({ ok: false, error: "create_failed" }, { status: 500 });
   }
-
-  const body = (await req.json().catch(() => null)) as any;
-  const clientId = String(body?.clientId ?? "").trim();
-  if (!clientId) return NextResponse.json({ ok: false, error: "Missing clientId" }, { status: 400 });
-
-  const site = await repo.createSite({
-    clientId,
-    name: typeof body?.name === "string" ? body.name : undefined,
-    address1: typeof body?.address1 === "string" ? body.address1 : undefined,
-    address2: typeof body?.address2 === "string" ? body.address2 : undefined,
-    city: typeof body?.city === "string" ? body.city : undefined,
-    county: typeof body?.county === "string" ? body.county : undefined,
-    postcode: typeof body?.postcode === "string" ? body.postcode : undefined,
-    country: typeof body?.country === "string" ? body.country : undefined,
-    notes: typeof body?.notes === "string" ? body.notes : undefined,
-  });
-  if (!site) return NextResponse.json({ ok: false, error: "Create failed" }, { status: 500 });
-
-  // Audit event for site creation
-  await repo.recordAuditEvent({
-    entityType: "site",
-    entityId: site.id,
-    action: "site.created",
-    actorRole: "admin",
-    actor: authCtx.email,
-    meta: {
-      clientId,
-      name: site.name,
-    },
-  });
-
-  return NextResponse.json({ ok: true, site });
-}
+});

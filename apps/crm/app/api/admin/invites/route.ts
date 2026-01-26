@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { requireRole, requireCompanyId } from "@/lib/serverAuth";
-import { prisma } from "@/lib/server/prisma";
-import { withRequestLogging } from "@/lib/server/observability";
+import { getAuthContext } from "@/lib/serverAuth";
+import { getPrisma } from "@/lib/server/prisma";
+import { withRequestLogging, logError } from "@/lib/server/observability";
 import { sendInviteEmail, absoluteUrl } from "@/lib/server/email";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import crypto from "crypto";
 
 export const runtime = "nodejs";
@@ -13,32 +14,61 @@ function normEmail(email: string) {
 
 export const GET = withRequestLogging(async function GET() {
   try {
-    const session = await requireRole("admin");
-    if (!session) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
-    const companyId = await requireCompanyId();
-    if (!companyId) return NextResponse.json({ ok: false, error: "No company" }, { status: 400 });
+    const authCtx = await getAuthContext();
+    if (!authCtx) {
+      return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
+    }
+
+    if (authCtx.role !== "admin") {
+      return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
+    }
+
+    if (!authCtx.companyId) {
+      return NextResponse.json({ ok: false, error: "no_company" }, { status: 401 });
+    }
+
+    const prisma = getPrisma();
+    if (!prisma) {
+      return NextResponse.json({ ok: false, error: "service_unavailable" }, { status: 503 });
+    }
 
     const invites = await prisma.invite.findMany({
-      where: { companyId },
+      where: { companyId: authCtx.companyId },
       orderBy: { createdAt: "desc" },
       take: 200,
     });
-    return NextResponse.json({ ok: true, invites });
+    return NextResponse.json({ ok: true, invites: invites || [] });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json(
-      { ok: false, error: "Internal error", message, route: "/api/admin/invites" },
-      { status: 500 }
-    );
+    if (error instanceof PrismaClientKnownRequestError) {
+      logError(error, { route: "/api/admin/invites", action: "list" });
+      return NextResponse.json({ ok: false, error: "database_error", code: error.code }, { status: 409 });
+    }
+    logError(error, { route: "/api/admin/invites", action: "list" });
+    return NextResponse.json({ ok: false, error: "load_failed" }, { status: 500 });
   }
 });
 
 export const POST = withRequestLogging(async function POST(req: Request) {
   try {
-    const session = await requireRole("admin");
-    if (!session) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
-    const companyId = await requireCompanyId();
-    if (!companyId) return NextResponse.json({ ok: false, error: "No company" }, { status: 400 });
+    const authCtx = await getAuthContext();
+    if (!authCtx) {
+      return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
+    }
+
+    if (authCtx.role !== "admin") {
+      return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
+    }
+
+    if (!authCtx.companyId) {
+      return NextResponse.json({ ok: false, error: "no_company" }, { status: 401 });
+    }
+
+    const prisma = getPrisma();
+    if (!prisma) {
+      return NextResponse.json({ ok: false, error: "service_unavailable" }, { status: 503 });
+    }
+
+    const companyId = authCtx.companyId;
 
     const body = (await req.json().catch(() => null)) as any;
     const role = String(body?.role || "").toLowerCase();
@@ -94,10 +124,11 @@ export const POST = withRequestLogging(async function POST(req: Request) {
       },
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json(
-      { ok: false, error: "Internal error", message, route: "/api/admin/invites" },
-      { status: 500 }
-    );
+    if (error instanceof PrismaClientKnownRequestError) {
+      logError(error, { route: "/api/admin/invites", action: "create" });
+      return NextResponse.json({ ok: false, error: "database_error", code: error.code }, { status: 409 });
+    }
+    logError(error, { route: "/api/admin/invites", action: "create" });
+    return NextResponse.json({ ok: false, error: "create_failed" }, { status: 500 });
   }
 });

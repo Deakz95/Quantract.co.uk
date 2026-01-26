@@ -1,33 +1,71 @@
 import { NextResponse } from "next/server";
-import { requireRoles, requireCompanyId } from "@/lib/serverAuth";
+import { getAuthContext } from "@/lib/serverAuth";
+import { getPrisma } from "@/lib/server/prisma";
 import * as repo from "@/lib/server/repo";
+import { withRequestLogging, logError } from "@/lib/server/observability";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 
-export async function GET() {
+export const runtime = "nodejs";
+
+export const GET = withRequestLogging(async function GET() {
   try {
-    // Explicit auth checks - throws on failure
-    await requireRoles("admin");
-    await requireCompanyId();
+    const authCtx = await getAuthContext();
+    if (!authCtx) {
+      return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
+    }
 
-    const enquiries = await repo.listEnquiries();
-    return NextResponse.json({ ok: true, enquiries });
-  } catch (err: any) {
-    // Preserve error status for auth failures
-    if (err?.status === 401) {
-      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    if (authCtx.role !== "admin") {
+      return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
     }
-    if (err?.status === 403) {
-      return NextResponse.json({ error: "forbidden" }, { status: 403 });
+
+    if (!authCtx.companyId) {
+      return NextResponse.json({ ok: false, error: "no_company" }, { status: 401 });
     }
-    console.error("[GET /api/admin/enquiries] Error:", err);
-    return NextResponse.json({ error: "internal_server_error" }, { status: 500 });
+
+    const client = getPrisma();
+    if (!client) {
+      return NextResponse.json({ ok: false, error: "service_unavailable" }, { status: 503 });
+    }
+
+    const enquiries = await client.enquiry.findMany({
+      where: { companyId: authCtx.companyId },
+      orderBy: { createdAt: "desc" },
+      include: {
+        stage: { select: { id: true, name: true, color: true } },
+        owner: { select: { id: true, name: true, email: true } },
+      },
+    });
+
+    return NextResponse.json({ ok: true, enquiries: enquiries || [] });
+  } catch (error) {
+    if (error instanceof PrismaClientKnownRequestError) {
+      logError(error, { route: "/api/admin/enquiries", action: "list" });
+      return NextResponse.json({ ok: false, error: "database_error", code: error.code }, { status: 409 });
+    }
+    logError(error, { route: "/api/admin/enquiries", action: "list" });
+    return NextResponse.json({ ok: false, error: "load_failed" }, { status: 500 });
   }
-}
+});
 
-export async function POST(req: Request) {
+export const POST = withRequestLogging(async function POST(req: Request) {
   try {
-    // Explicit auth checks - throws on failure
-    const authCtx = await requireRoles("admin");
-    await requireCompanyId();
+    const authCtx = await getAuthContext();
+    if (!authCtx) {
+      return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
+    }
+
+    if (authCtx.role !== "admin") {
+      return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
+    }
+
+    if (!authCtx.companyId) {
+      return NextResponse.json({ ok: false, error: "no_company" }, { status: 401 });
+    }
+
+    const client = getPrisma();
+    if (!client) {
+      return NextResponse.json({ ok: false, error: "service_unavailable" }, { status: 503 });
+    }
 
     const body = (await req.json().catch(() => null)) as {
       stageId?: string;
@@ -43,19 +81,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "missing_stage_id" }, { status: 400 });
     }
 
-    const enquiry = await repo.createEnquiry({
-      stageId: body.stageId,
-      ownerId: body.ownerId,
-      name: body.name,
-      email: body.email,
-      phone: body.phone,
-      notes: body.notes,
-      valueEstimate: body.valueEstimate,
+    const enquiry = await client.enquiry.create({
+      data: {
+        companyId: authCtx.companyId,
+        stageId: body.stageId,
+        ownerId: body.ownerId || null,
+        name: body.name || null,
+        email: body.email || null,
+        phone: body.phone || null,
+        notes: body.notes || null,
+        valueEstimate: body.valueEstimate || null,
+      },
+      include: {
+        stage: { select: { id: true, name: true, color: true } },
+        owner: { select: { id: true, name: true, email: true } },
+      },
     });
-
-    if (!enquiry) {
-      return NextResponse.json({ ok: false, error: "failed_to_create_enquiry" }, { status: 500 });
-    }
 
     // Audit event for enquiry creation
     await repo.recordAuditEvent({
@@ -72,19 +113,12 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({ ok: true, enquiry });
-  } catch (err: any) {
-    // Preserve error status for auth failures
-    if (err?.status === 401) {
-      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  } catch (error) {
+    if (error instanceof PrismaClientKnownRequestError) {
+      logError(error, { route: "/api/admin/enquiries", action: "create" });
+      return NextResponse.json({ ok: false, error: "database_error", code: error.code }, { status: 409 });
     }
-    if (err?.status === 403) {
-      return NextResponse.json({ error: "forbidden" }, { status: 403 });
-    }
-    // Invalid JSON or validation errors
-    if (err?.name === "SyntaxError") {
-      return NextResponse.json({ ok: false, error: "invalid_json" }, { status: 400 });
-    }
-    console.error("[POST /api/admin/enquiries] Error:", err);
-    return NextResponse.json({ ok: false, error: "internal_server_error" }, { status: 500 });
+    logError(error, { route: "/api/admin/enquiries", action: "create" });
+    return NextResponse.json({ ok: false, error: "create_failed" }, { status: 500 });
   }
-}
+});

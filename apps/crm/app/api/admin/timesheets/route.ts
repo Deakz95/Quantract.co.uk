@@ -1,32 +1,52 @@
 import { NextResponse } from "next/server";
-import { requireRole } from "@/lib/serverAuth";
-import { listTimesheets } from "@/lib/server/repo";
-import { withRequestLogging } from "@/lib/server/observability";
+import { getAuthContext } from "@/lib/serverAuth";
+import { getPrisma } from "@/lib/server/prisma";
+import { withRequestLogging, logError } from "@/lib/server/observability";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
+
+export const runtime = "nodejs";
+
 export const GET = withRequestLogging(async function GET(req: Request) {
   try {
-    await requireRole("admin");
+    const authCtx = await getAuthContext();
+    if (!authCtx) {
+      return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
+    }
+
+    if (authCtx.role !== "admin") {
+      return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
+    }
+
+    if (!authCtx.companyId) {
+      return NextResponse.json({ ok: false, error: "no_company" }, { status: 401 });
+    }
+
+    const client = getPrisma();
+    if (!client) {
+      return NextResponse.json({ ok: false, error: "service_unavailable" }, { status: 503 });
+    }
+
     const url = new URL(req.url);
     const status = url.searchParams.get("status") || undefined;
-    const ctx = await requireRole("admin");
-    if (!ctx.companyId) {
-      return NextResponse.json({
-        ok: false,
-        error: 'No company context',
-        message: 'No company context'
-      }, { status: 401 });
+
+    const items = await client.timesheet.findMany({
+      where: {
+        companyId: authCtx.companyId,
+        ...(status ? { status } : {}),
+      },
+      orderBy: { weekStart: "desc" },
+      include: {
+        engineer: { select: { id: true, name: true, email: true } },
+      },
+    });
+
+    return NextResponse.json({ ok: true, items: items || [] });
+  } catch (error) {
+    if (error instanceof PrismaClientKnownRequestError) {
+      logError(error, { route: "/api/admin/timesheets", action: "list" });
+      return NextResponse.json({ ok: false, error: "database_error", code: error.code }, { status: 409 });
     }
-    const companyId = ctx.companyId;
-    const items = await listTimesheets({ companyId, status });
-    return NextResponse.json({
-      items
-    });
-  } catch (err: any) {
-    const errorMessage = err?.message || "Unauthorized";
-    return NextResponse.json({
-      error: errorMessage,
-      message: errorMessage
-    }, {
-      status: err?.status || 401
-    });
+    logError(error, { route: "/api/admin/timesheets", action: "list" });
+    return NextResponse.json({ ok: false, error: "load_failed" }, { status: 500 });
   }
 });

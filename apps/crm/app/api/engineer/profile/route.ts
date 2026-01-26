@@ -46,7 +46,7 @@ export const GET = withRequestLogging(async function GET() {
 
     // Get engineer record if linked
     let engineer = null;
-    if (user.role === "engineer") {
+    if (user.role === "engineer" && authCtx.companyId) {
       engineer = await client.engineer.findFirst({
         where: {
           OR: [

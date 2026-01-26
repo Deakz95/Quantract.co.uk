@@ -1,57 +1,168 @@
 import { NextResponse } from "next/server";
-import { requireRole, getUserEmail } from "@/lib/serverAuth";
-import { getOrCreateTimesheet, listTimeEntriesForEngineerWeek, submitTimesheet } from "@/lib/server/repo";
-import { withRequestLogging } from "@/lib/server/observability";
+import { getAuthContext } from "@/lib/serverAuth";
+import { getPrisma } from "@/lib/server/prisma";
+import { withRequestLogging, logError } from "@/lib/server/observability";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
+
+export const runtime = "nodejs";
+
+function getWeekStart(date: Date): Date {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Monday
+  d.setDate(diff);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
 export const GET = withRequestLogging(async function GET(req: Request) {
   try {
-    await requireRole("engineer");
-    const email = await getUserEmail();
-    if (!email) return NextResponse.json({
-      error: "Missing engineer email"
-    }, {
-      status: 401
-    });
+    const authCtx = await getAuthContext();
+    if (!authCtx) {
+      return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
+    }
+
+    if (authCtx.role !== "engineer" && authCtx.role !== "admin") {
+      return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
+    }
+
+    if (!authCtx.email || !authCtx.companyId) {
+      return NextResponse.json({ ok: false, error: "missing_context" }, { status: 401 });
+    }
+
+    const client = getPrisma();
+    if (!client) {
+      return NextResponse.json({ ok: false, error: "service_unavailable" }, { status: 503 });
+    }
+
     const url = new URL(req.url);
-    const weekStart = url.searchParams.get("weekStart") || new Date().toISOString();
-    const sheet = await getOrCreateTimesheet(email, weekStart);
-    const entries = await listTimeEntriesForEngineerWeek(email, weekStart);
-    return NextResponse.json({
-      timesheet: sheet,
-      entries
+    const weekStartParam = url.searchParams.get("weekStart");
+    const weekStart = getWeekStart(weekStartParam ? new Date(weekStartParam) : new Date());
+
+    // Find engineer
+    const engineer = await client.engineer.findFirst({
+      where: {
+        companyId: authCtx.companyId,
+        OR: [{ email: authCtx.email }, { userId: authCtx.userId }],
+      },
     });
-  } catch (err: any) {
-    return NextResponse.json({
-      error: err?.message || "Unauthorized"
-    }, {
-      status: err?.status || 401
+
+    if (!engineer) {
+      return NextResponse.json({ ok: true, timesheet: null, entries: [] });
+    }
+
+    // Get or create timesheet
+    let timesheet = await client.timesheet.findFirst({
+      where: {
+        companyId: authCtx.companyId,
+        engineerId: engineer.id,
+        weekStart,
+      },
     });
+
+    if (!timesheet) {
+      timesheet = await client.timesheet.create({
+        data: {
+          companyId: authCtx.companyId,
+          engineerId: engineer.id,
+          weekStart,
+          status: "draft",
+        },
+      });
+    }
+
+    // Get time entries for this week
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 7);
+
+    const entries = await client.timeEntry.findMany({
+      where: {
+        companyId: authCtx.companyId,
+        engineerId: engineer.id,
+        date: { gte: weekStart, lt: weekEnd },
+      },
+      orderBy: { date: "asc" },
+      include: {
+        job: { select: { id: true, title: true, jobNumber: true } },
+      },
+    });
+
+    return NextResponse.json({ ok: true, timesheet, entries: entries || [] });
+  } catch (error) {
+    if (error instanceof PrismaClientKnownRequestError) {
+      logError(error, { route: "/api/engineer/timesheets", action: "get" });
+      return NextResponse.json({ ok: false, error: "database_error", code: error.code }, { status: 409 });
+    }
+    logError(error, { route: "/api/engineer/timesheets", action: "get" });
+    return NextResponse.json({ ok: false, error: "load_failed" }, { status: 500 });
   }
 });
+
 export const POST = withRequestLogging(async function POST(req: Request) {
   try {
-    await requireRole("engineer");
-    const email = await getUserEmail();
-    if (!email) return NextResponse.json({
-      error: "Missing engineer email"
-    }, {
-      status: 401
-    });
+    const authCtx = await getAuthContext();
+    if (!authCtx) {
+      return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
+    }
+
+    if (authCtx.role !== "engineer" && authCtx.role !== "admin") {
+      return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
+    }
+
+    if (!authCtx.email || !authCtx.companyId) {
+      return NextResponse.json({ ok: false, error: "missing_context" }, { status: 401 });
+    }
+
+    const client = getPrisma();
+    if (!client) {
+      return NextResponse.json({ ok: false, error: "service_unavailable" }, { status: 503 });
+    }
+
     const body = await req.json().catch(() => ({}));
-    const weekStart = String(body.weekStart || new Date().toISOString());
-    const sheet = await submitTimesheet(email, weekStart);
-    if (!sheet) return NextResponse.json({
-      error: "Failed to submit timesheet"
-    }, {
-      status: 500
+    const weekStartParam = body.weekStart;
+    const weekStart = getWeekStart(weekStartParam ? new Date(weekStartParam) : new Date());
+
+    // Find engineer
+    const engineer = await client.engineer.findFirst({
+      where: {
+        companyId: authCtx.companyId,
+        OR: [{ email: authCtx.email }, { userId: authCtx.userId }],
+      },
     });
-    return NextResponse.json({
-      timesheet: sheet
+
+    if (!engineer) {
+      return NextResponse.json({ ok: false, error: "engineer_not_found" }, { status: 404 });
+    }
+
+    // Find or create timesheet and submit it
+    const timesheet = await client.timesheet.upsert({
+      where: {
+        companyId_engineerId_weekStart: {
+          companyId: authCtx.companyId,
+          engineerId: engineer.id,
+          weekStart,
+        },
+      },
+      update: {
+        status: "submitted",
+        submittedAt: new Date(),
+      },
+      create: {
+        companyId: authCtx.companyId,
+        engineerId: engineer.id,
+        weekStart,
+        status: "submitted",
+        submittedAt: new Date(),
+      },
     });
-  } catch (err: any) {
-    return NextResponse.json({
-      error: err?.message || "Unauthorized"
-    }, {
-      status: err?.status || 401
-    });
+
+    return NextResponse.json({ ok: true, timesheet });
+  } catch (error) {
+    if (error instanceof PrismaClientKnownRequestError) {
+      logError(error, { route: "/api/engineer/timesheets", action: "submit" });
+      return NextResponse.json({ ok: false, error: "database_error", code: error.code }, { status: 409 });
+    }
+    logError(error, { route: "/api/engineer/timesheets", action: "submit" });
+    return NextResponse.json({ ok: false, error: "submit_failed" }, { status: 500 });
   }
 });

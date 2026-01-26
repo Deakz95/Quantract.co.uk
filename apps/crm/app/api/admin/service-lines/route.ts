@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { requireRole, requireCompanyId } from "@/lib/serverAuth";
+import { getAuthContext } from "@/lib/serverAuth";
 import { getPrisma } from "@/lib/server/prisma";
-import { withRequestLogging } from "@/lib/server/observability";
+import { withRequestLogging, logError } from "@/lib/server/observability";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { randomUUID } from "crypto";
 
 export const runtime = "nodejs";
@@ -19,28 +20,43 @@ function slugify(text: string): string {
  */
 export const GET = withRequestLogging(async function GET() {
   try {
-    await requireRole("admin");
-  } catch {
-    return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
-  }
+    const authCtx = await getAuthContext();
+    if (!authCtx) {
+      return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
+    }
 
-  const companyId = await requireCompanyId();
-  const client = getPrisma();
-  if (!client) {
-    return NextResponse.json({ ok: false, error: "prisma_disabled" }, { status: 400 });
-  }
+    if (authCtx.role !== "admin") {
+      return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
+    }
 
-  const serviceLines = await client.serviceLine.findMany({
-    where: { companyId },
-    orderBy: [{ isDefault: "desc" }, { name: "asc" }],
-    include: {
-      defaultLegalEntity: {
-        select: { id: true, displayName: true },
+    if (!authCtx.companyId) {
+      return NextResponse.json({ ok: false, error: "no_company" }, { status: 401 });
+    }
+
+    const client = getPrisma();
+    if (!client) {
+      return NextResponse.json({ ok: false, error: "service_unavailable" }, { status: 503 });
+    }
+
+    const serviceLines = await client.serviceLine.findMany({
+      where: { companyId: authCtx.companyId },
+      orderBy: [{ isDefault: "desc" }, { name: "asc" }],
+      include: {
+        defaultLegalEntity: {
+          select: { id: true, displayName: true },
+        },
       },
-    },
-  });
+    });
 
-  return NextResponse.json({ ok: true, serviceLines });
+    return NextResponse.json({ ok: true, serviceLines: serviceLines || [] });
+  } catch (error) {
+    if (error instanceof PrismaClientKnownRequestError) {
+      logError(error, { route: "/api/admin/service-lines", action: "list" });
+      return NextResponse.json({ ok: false, error: "database_error", code: error.code }, { status: 409 });
+    }
+    logError(error, { route: "/api/admin/service-lines", action: "list" });
+    return NextResponse.json({ ok: false, error: "load_failed" }, { status: 500 });
+  }
 });
 
 /**
@@ -49,81 +65,97 @@ export const GET = withRequestLogging(async function GET() {
  */
 export const POST = withRequestLogging(async function POST(req: Request) {
   try {
-    await requireRole("admin");
-  } catch {
-    return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
-  }
-
-  const companyId = await requireCompanyId();
-  const client = getPrisma();
-  if (!client) {
-    return NextResponse.json({ ok: false, error: "prisma_disabled" }, { status: 400 });
-  }
-
-  const body = await req.json().catch(() => ({}));
-
-  const name = String(body.name ?? "").trim();
-  if (!name) {
-    return NextResponse.json({ ok: false, error: "missing_name" }, { status: 400 });
-  }
-
-  const slug = body.slug ? slugify(String(body.slug)) : slugify(name);
-
-  // Check for duplicate slug
-  const existing = await client.serviceLine.findFirst({
-    where: { companyId, slug },
-  });
-  if (existing) {
-    return NextResponse.json({ ok: false, error: "duplicate_slug" }, { status: 400 });
-  }
-
-  const isDefault = Boolean(body.isDefault);
-
-  // If setting as default, unset other defaults
-  if (isDefault) {
-    await client.serviceLine.updateMany({
-      where: { companyId, isDefault: true },
-      data: { isDefault: false, updatedAt: new Date() },
-    });
-  }
-
-  // Validate defaultLegalEntityId if provided
-  let defaultLegalEntityId: string | null = null;
-  if (body.defaultLegalEntityId) {
-    const entity = await client.legalEntity.findFirst({
-      where: { id: body.defaultLegalEntityId, companyId },
-    });
-    if (entity) {
-      defaultLegalEntityId = entity.id;
+    const authCtx = await getAuthContext();
+    if (!authCtx) {
+      return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
     }
-  }
 
-  const serviceLine = await client.serviceLine.create({
-    data: {
-      id: randomUUID(),
-      companyId,
-      name,
-      slug,
-      description: body.description ? String(body.description).trim() : null,
-      defaultLegalEntityId,
-      isDefault,
-      status: "active",
-      updatedAt: new Date(),
-    },
-    include: {
-      defaultLegalEntity: {
-        select: { id: true, displayName: true },
-      },
-    },
-  });
+    if (authCtx.role !== "admin") {
+      return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
+    }
 
-  // If this is marked default, update company
-  if (isDefault) {
-    await client.company.update({
-      where: { id: companyId },
-      data: { defaultServiceLineId: serviceLine.id, updatedAt: new Date() },
+    if (!authCtx.companyId) {
+      return NextResponse.json({ ok: false, error: "no_company" }, { status: 401 });
+    }
+
+    const client = getPrisma();
+    if (!client) {
+      return NextResponse.json({ ok: false, error: "service_unavailable" }, { status: 503 });
+    }
+
+    const companyId = authCtx.companyId;
+    const body = await req.json().catch(() => ({}));
+
+    const name = String(body.name ?? "").trim();
+    if (!name) {
+      return NextResponse.json({ ok: false, error: "missing_name" }, { status: 400 });
+    }
+
+    const slug = body.slug ? slugify(String(body.slug)) : slugify(name);
+
+    // Check for duplicate slug
+    const existing = await client.serviceLine.findFirst({
+      where: { companyId, slug },
     });
-  }
+    if (existing) {
+      return NextResponse.json({ ok: false, error: "duplicate_slug" }, { status: 400 });
+    }
 
-  return NextResponse.json({ ok: true, serviceLine });
+    const isDefault = Boolean(body.isDefault);
+
+    // If setting as default, unset other defaults
+    if (isDefault) {
+      await client.serviceLine.updateMany({
+        where: { companyId, isDefault: true },
+        data: { isDefault: false, updatedAt: new Date() },
+      });
+    }
+
+    // Validate defaultLegalEntityId if provided
+    let defaultLegalEntityId: string | null = null;
+    if (body.defaultLegalEntityId) {
+      const entity = await client.legalEntity.findFirst({
+        where: { id: body.defaultLegalEntityId, companyId },
+      });
+      if (entity) {
+        defaultLegalEntityId = entity.id;
+      }
+    }
+
+    const serviceLine = await client.serviceLine.create({
+      data: {
+        id: randomUUID(),
+        companyId,
+        name,
+        slug,
+        description: body.description ? String(body.description).trim() : null,
+        defaultLegalEntityId,
+        isDefault,
+        status: "active",
+        updatedAt: new Date(),
+      },
+      include: {
+        defaultLegalEntity: {
+          select: { id: true, displayName: true },
+        },
+      },
+    });
+
+    // If this is marked default, update company
+    if (isDefault) {
+      await client.company.update({
+        where: { id: companyId },
+        data: { defaultServiceLineId: serviceLine.id, updatedAt: new Date() },
+      });
+    }
+
+    return NextResponse.json({ ok: true, serviceLine });
+  } catch (error) {
+    if (error instanceof PrismaClientKnownRequestError) {
+      logError(error, { route: "/api/admin/service-lines", action: "create" });
+      return NextResponse.json({ ok: false, error: "database_error", code: error.code }, { status: 409 });
+    }
+    logError(error, { route: "/api/admin/service-lines", action: "create" });
+    return NextResponse.json({ ok: false, error: "create_failed" }, { status: 500 });
+  }
 });
