@@ -113,6 +113,7 @@ export type Invoice = {
   token: string; // share token for client link
   invoiceNumber?: string;
   companyId?: string;
+  legalEntityId?: string;
   clientId?: string;
   quoteId?: string;
   jobId?: string;
@@ -232,6 +233,8 @@ export type Job = {
   siteId?: string;
   siteName?: string;
   title?: string;
+  serviceLineId?: string;
+  performingLegalEntityId?: string;
   // Budget snapshot (ex VAT)
   budgetSubtotal?: number;
   budgetVat?: number;
@@ -355,6 +358,7 @@ export type Certificate = {
   jobId?: string;
   siteId?: string;
   clientId?: string;
+  legalEntityId?: string;
   type: CertificateType;
   status: CertificateStatus;
   certificateNumber?: string;

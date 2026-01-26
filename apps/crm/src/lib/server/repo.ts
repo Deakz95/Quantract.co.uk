@@ -41,6 +41,7 @@ import { certificateIsReadyForCompletion, getCertificateTemplate, normalizeCerti
 import { validateCertificateForCompletion, isCertificateReadyForCompletion } from "@/lib/certificateValidation";
 import { clampMoney, calculateVATFromSubtotal, validateVATCalculation } from "@/lib/invoiceMath";
 import { calculateJobFinancials, calculateCostItemTotal } from "@/lib/server/jobFinancials";
+import { resolveLegalEntity, allocateInvoiceNumberForEntity, allocateCertificateNumberForEntity } from "@/lib/server/multiEntity";
 import type { PrismaClient } from "@prisma/client";
 
 type Tx = PrismaClient;
@@ -388,6 +389,8 @@ function toInvoice(row: any): Invoice {
   return {
     id: row.id,
     token: row.token,
+    invoiceNumber: row.invoiceNumber ?? undefined,
+    legalEntityId: row.legalEntityId ?? undefined,
     clientId: row.clientId ?? undefined,
     quoteId: row.quoteId ?? undefined,
     jobId: row.jobId ?? undefined,
@@ -743,6 +746,7 @@ function toCertificate(row: any): Certificate {
     jobId: row.jobId ?? undefined,
     siteId: row.siteId ?? undefined,
     clientId: row.clientId ?? undefined,
+    legalEntityId: row.legalEntityId ?? undefined,
     type: row.type,
     status: row.status,
     certificateNumber: row.certificateNumber ?? undefined,
@@ -1464,6 +1468,10 @@ export async function createInvoiceForJob(input: {
     .catch(() => null);
   if (!job) return null;
 
+  // Resolve legal entity for this invoice
+  const legalEntityResolution = await resolveLegalEntity({ jobId: input.jobId });
+  const legalEntityId = legalEntityResolution?.legalEntityId ?? null;
+
   let vatRate = typeof input.vatRate === "number"
     ? input.vatRate
     : job.quote
@@ -1591,7 +1599,10 @@ export async function createInvoiceForJob(input: {
       }
 
       const token = crypto.randomBytes(24).toString("hex");
-      const invoiceNumber = await allocateInvoiceNumber(client);
+      // Use per-entity invoice numbering when legal entity is available
+      const invoiceNumber = legalEntityId
+        ? await allocateInvoiceNumberForEntity(legalEntityId)
+        : await allocateInvoiceNumber(client);
 
       const created = await client.$transaction(async (tx: any) => {
         const inv = await tx.invoice.create({
@@ -1599,6 +1610,7 @@ export async function createInvoiceForJob(input: {
             companyId,
             token,
             invoiceNumber,
+            legalEntityId,
             clientId: job.clientId ?? null,
             quoteId: job.quoteId ?? null,
             jobId: job.id,
@@ -1682,7 +1694,10 @@ export async function createInvoiceForJob(input: {
   const { vat, total } = vatCalc;
 
   const token = crypto.randomBytes(24).toString("hex");
-  const invoiceNumber = await allocateInvoiceNumber(client);
+  // Use per-entity invoice numbering when legal entity is available
+  const invoiceNumber = legalEntityId
+    ? await allocateInvoiceNumberForEntity(legalEntityId)
+    : await allocateInvoiceNumber(client);
 
   const created = await client.$transaction(async (tx: any) => {
     const inv = await tx.invoice.create({
@@ -1690,6 +1705,7 @@ export async function createInvoiceForJob(input: {
         companyId,
         token,
         invoiceNumber,
+        legalEntityId,
         clientId: job.clientId ?? null,
         quoteId: job.quoteId ?? null,
         jobId: job.id,
@@ -3282,6 +3298,11 @@ export async function createCertificate(input: { jobId: string; type: Certificat
   if (!client) return null;
   const job = await client.job.findUnique({ where: { id: input.jobId }, include: { Client: true, Site: true, Engineer: true } }).catch(() => null);
   if (!job) return null;
+
+  // Resolve legal entity for this certificate
+  const legalEntityResolution = await resolveLegalEntity({ jobId: input.jobId });
+  const legalEntityId = legalEntityResolution?.legalEntityId ?? null;
+
   const siteAddress = job.site
     ? [job.site.address1, job.site.address2, job.site.city, job.site.county, job.site.postcode, job.site.country].filter(Boolean).join(", ")
     : (job as any).siteAddress ?? "";
@@ -3299,6 +3320,7 @@ export async function createCertificate(input: { jobId: string; type: Certificat
       data: { jobId: job.id,
         siteId: job.siteId,
         clientId: job.clientId,
+        legalEntityId,
         type: input.type,
         status: "draft",
         inspectorName: job.engineer?.name ?? null,
@@ -3456,10 +3478,16 @@ export async function issueCertificate(id: string): Promise<Certificate | null> 
   const cl = cert.clientId ? await client.client.findUnique({ where: { id: cert.clientId } }).catch(() => null) : null;
   const site = cert.siteId ? await client.site.findUnique({ where: { id: cert.siteId } }).catch(() => null) : null;
 
+  // Allocate certificate number if not already set and legal entity exists
+  let certificateNumber = (cert as any).certificateNumber ?? null;
+  if (!certificateNumber && (cert as any).legalEntityId) {
+    certificateNumber = await allocateCertificateNumberForEntity((cert as any).legalEntityId);
+  }
+
   // If already issued and pdfKey exists, we keep existing pdfKey but refresh issuedAt.
   const issuedAt = new Date();
   const pdf = await renderCertificatePdf({
-    certificate: toCertificate({ ...cert, issuedAt, data } as any),
+    certificate: toCertificate({ ...cert, issuedAt, data, certificateNumber } as any),
     client: cl ? toClient(cl) : null,
     site: site ? toSite(site) : null,
     testResults: results.map(toCertificateTestResult),
@@ -3475,6 +3503,7 @@ export async function issueCertificate(id: string): Promise<Certificate | null> 
         status: "issued",
         issuedAt,
         pdfKey,
+        ...(certificateNumber ? { certificateNumber } : {}),
       },
     })
     .catch(() => null);
