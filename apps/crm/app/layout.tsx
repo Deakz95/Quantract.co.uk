@@ -9,6 +9,7 @@ import { Toaster } from "@/components/ui/Toaster";
 import QuantractAIWidget from "@/components/ai/QuantractAIWidget";
 import { NeonAuthUIProvider } from "@neondatabase/auth/react";
 import { authClient } from "@/lib/auth/client";
+import { ThemeInitializer } from "@/components/ThemeInitializer";
 export const metadata: Metadata = {
   title: "Quantract",
   description: "Quotes, agreements, invoices & job management",
@@ -23,6 +24,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="antialiased">
+        <ThemeInitializer />
         <ImpersonationBanner />
         <AdminContextBanner />
         <NeonAuthUIProvider authClient={authClient}>{children}</NeonAuthUIProvider>

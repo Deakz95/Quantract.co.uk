@@ -6,90 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/Input";
 import { Check, Palette, RefreshCw, Sparkles } from "lucide-react";
-
-// Color palette presets
-const colorPalettes = [
-  {
-    id: "ocean",
-    name: "Ocean Blue",
-    description: "Professional and calming",
-    primary: "#3b82f6",
-    accent: "#06b6d4",
-    bg: "#f8fafc",
-    text: "#0f172a",
-    preview: "from-blue-500 to-cyan-500",
-  },
-  {
-    id: "sunset",
-    name: "Sunset Orange",
-    description: "Warm and energetic",
-    primary: "#f97316",
-    accent: "#ec4899",
-    bg: "#fff7ed",
-    text: "#1c1917",
-    preview: "from-orange-500 to-pink-500",
-  },
-  {
-    id: "forest",
-    name: "Forest Green",
-    description: "Natural and growth",
-    primary: "#22c55e",
-    accent: "#14b8a6",
-    bg: "#f0fdf4",
-    text: "#052e16",
-    preview: "from-green-500 to-teal-500",
-  },
-  {
-    id: "purple",
-    name: "Purple Haze",
-    description: "Creative and premium",
-    primary: "#8b5cf6",
-    accent: "#d946ef",
-    bg: "#faf5ff",
-    text: "#1e1b4b",
-    preview: "from-violet-500 to-fuchsia-500",
-  },
-  {
-    id: "midnight",
-    name: "Midnight Dark",
-    description: "Sleek and modern",
-    primary: "#6366f1",
-    accent: "#22d3ee",
-    bg: "#0f172a",
-    text: "#f8fafc",
-    preview: "from-indigo-500 to-cyan-400",
-  },
-  {
-    id: "rose",
-    name: "Rose Gold",
-    description: "Elegant and refined",
-    primary: "#e11d48",
-    accent: "#fb7185",
-    bg: "#fff1f2",
-    text: "#1f2937",
-    preview: "from-rose-600 to-pink-400",
-  },
-  {
-    id: "ember",
-    name: "Ember Red",
-    description: "Bold and powerful",
-    primary: "#dc2626",
-    accent: "#f59e0b",
-    bg: "#fef2f2",
-    text: "#1c1917",
-    preview: "from-red-600 to-amber-500",
-  },
-  {
-    id: "arctic",
-    name: "Arctic Frost",
-    description: "Clean and minimal",
-    primary: "#0ea5e9",
-    accent: "#94a3b8",
-    bg: "#f1f5f9",
-    text: "#0f172a",
-    preview: "from-sky-500 to-[var(--muted-foreground)]",
-  },
-];
+import { themes, ThemeConfig, applyThemeToDOM, persistTheme, getThemeById } from "@/lib/themes";
 
 type CompanySettings = {
   id: string;
@@ -117,7 +34,14 @@ type CompanySettings = {
 function pickSettings(json: any): CompanySettings | null {
   const s = json?.settings ?? json?.company ?? json?.data?.settings ?? null;
   if (!s) return null;
-  return s as CompanySettings;
+  // Provide default theme values from Midnight Dark theme
+  return {
+    ...s,
+    themePrimary: s.themePrimary || "#6366f1",
+    themeAccent: s.themeAccent || "#22d3ee",
+    themeBg: s.themeBg || "#0f1115",
+    themeText: s.themeText || "#f8fafc",
+  } as CompanySettings;
 }
 
 export function CompanySettingsForm(props: { mode: "settings" | "onboarding" }) {
@@ -144,10 +68,14 @@ export function CompanySettingsForm(props: { mode: "settings" | "onboarding" }) 
         if (alive) {
           setForm(settings);
           // Try to match current colors to a preset
-          const matched = colorPalettes.find(
-            (p) => p.primary.toLowerCase() === settings.themePrimary?.toLowerCase()
+          const matched = themes.find(
+            (t) => t.tokens.primary.toLowerCase() === settings.themePrimary?.toLowerCase()
           );
-          if (matched) setSelectedPalette(matched.id);
+          if (matched) {
+            setSelectedPalette(matched.id);
+            // Apply the matched theme to ensure all tokens are set
+            applyThemeToDOM(matched);
+          }
         }
       } catch (e: any) {
         if (alive) setError(e?.message || "failed_to_load");
@@ -166,37 +94,43 @@ export function CompanySettingsForm(props: { mode: "settings" | "onboarding" }) 
     return Math.round(v * 100);
   }, [form?.defaultVatRate]);
 
-  function applyPalette(palette: typeof colorPalettes[0]) {
+  function applyPalette(theme: ThemeConfig) {
     if (!form) return;
-    setSelectedPalette(palette.id);
+    setSelectedPalette(theme.id);
     setForm({
       ...form,
-      themePrimary: palette.primary,
-      themeAccent: palette.accent,
-      themeBg: palette.bg,
-      themeText: palette.text,
+      themePrimary: theme.tokens.primary,
+      themeAccent: theme.tokens.accent,
+      themeBg: theme.tokens.bg,
+      themeText: theme.tokens.text,
     });
-    
-    // Apply immediately to preview
-    const root = document.documentElement;
-    root.style.setProperty("--primary", palette.primary);
-    root.style.setProperty("--accent", palette.accent);
-    root.style.setProperty("--background", palette.bg);
-    root.style.setProperty("--foreground", palette.text);
-    root.style.setProperty("--qt-theme-primary", palette.primary);
-    root.style.setProperty("--qt-theme-accent", palette.accent);
-    root.style.setProperty("--qt-theme-bg", palette.bg);
-    root.style.setProperty("--qt-theme-text", palette.text);
+
+    // Apply complete theme to DOM
+    applyThemeToDOM(theme);
+    persistTheme(theme.id);
   }
 
   function applyCustomColor(key: keyof Pick<CompanySettings, 'themePrimary' | 'themeAccent' | 'themeBg' | 'themeText'>, value: string) {
     if (!form) return;
     setSelectedPalette(null);
     setForm({ ...form, [key]: value });
-    
-    const cssVar = key === 'themePrimary' ? '--primary' : key === 'themeAccent' ? '--accent' : key === 'themeBg' ? '--background' : '--foreground';
-    document.documentElement.style.setProperty(cssVar, value);
-    document.documentElement.style.setProperty(`--qt-theme-${key.replace('theme', '').toLowerCase()}`, value);
+
+    const root = document.documentElement;
+    if (key === 'themePrimary') {
+      root.style.setProperty("--primary", value);
+      root.style.setProperty("--ring", value);
+      root.style.setProperty("--qt-theme-primary", value);
+    } else if (key === 'themeAccent') {
+      root.style.setProperty("--accent", value);
+      root.style.setProperty("--qt-theme-accent", value);
+    } else if (key === 'themeBg') {
+      root.style.setProperty("--background", value);
+      root.style.setProperty("--qt-theme-bg", value);
+    } else if (key === 'themeText') {
+      root.style.setProperty("--foreground", value);
+      root.style.setProperty("--card-foreground", value);
+      root.style.setProperty("--qt-theme-text", value);
+    }
   }
 
   async function save(markOnboarded: boolean) {
@@ -322,24 +256,63 @@ export function CompanySettingsForm(props: { mode: "settings" | "onboarding" }) 
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {colorPalettes.map((palette) => (
+            {themes.map((theme) => (
               <button
-                key={palette.id}
-                onClick={() => applyPalette(palette)}
-                className={`relative p-4 rounded-xl border-2 transition-all duration-200 text-left hover:scale-[1.02] ${
-                  selectedPalette === palette.id
-                    ? "border-[var(--primary)] shadow-lg"
+                key={theme.id}
+                onClick={() => applyPalette(theme)}
+                className={`relative p-4 rounded-xl border-2 transition-all duration-200 text-left hover:scale-[1.02] overflow-hidden ${
+                  selectedPalette === theme.id
+                    ? "border-[var(--primary)] shadow-lg ring-2 ring-[var(--primary)]/30"
                     : "border-[var(--border)] hover:border-[var(--primary)]/50"
                 }`}
+                style={{
+                  backgroundColor: theme.tokens.bg,
+                  borderColor: selectedPalette === theme.id ? theme.tokens.primary : theme.tokens.border,
+                }}
               >
-                {selectedPalette === palette.id && (
-                  <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-[var(--primary)] flex items-center justify-center">
-                    <Check className="w-4 h-4 text-white" />
+                {selectedPalette === theme.id && (
+                  <div
+                    className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center"
+                    style={{ backgroundColor: theme.tokens.primary }}
+                  >
+                    <Check className="w-4 h-4" style={{ color: theme.tokens.primaryContrast }} />
                   </div>
                 )}
-                <div className={`w-full h-8 rounded-lg bg-gradient-to-r ${palette.preview} mb-3`} />
-                <div className="font-semibold text-sm text-[var(--foreground)]">{palette.name}</div>
-                <div className="text-xs text-[var(--muted-foreground)]">{palette.description}</div>
+                <div className={`w-full h-8 rounded-lg bg-gradient-to-r ${theme.preview} mb-3`} />
+                <div
+                  className="font-semibold text-sm"
+                  style={{ color: theme.tokens.text }}
+                >
+                  {theme.name}
+                </div>
+                <div
+                  className="text-xs"
+                  style={{ color: theme.tokens.textMuted }}
+                >
+                  {theme.description}
+                </div>
+                {/* Mini preview of buttons/badges */}
+                <div className="mt-2 flex gap-1">
+                  <span
+                    className="px-2 py-0.5 text-[10px] rounded-full font-medium"
+                    style={{
+                      backgroundColor: theme.tokens.primary,
+                      color: theme.tokens.primaryContrast,
+                    }}
+                  >
+                    Button
+                  </span>
+                  <span
+                    className="px-2 py-0.5 text-[10px] rounded-full font-medium"
+                    style={{
+                      backgroundColor: theme.tokens.surface2,
+                      color: theme.tokens.text,
+                      border: `1px solid ${theme.tokens.border}`,
+                    }}
+                  >
+                    Badge
+                  </span>
+                </div>
               </button>
             ))}
           </div>
@@ -421,7 +394,7 @@ export function CompanySettingsForm(props: { mode: "settings" | "onboarding" }) 
                     const f = e.target.files?.[0];
                     if (f) void uploadLogo(f);
                   }}
-                  className="flex-1 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-[var(--primary)] file:text-white file:font-semibold file:cursor-pointer hover:file:bg-[var(--primary-dark)]"
+                  className="flex-1 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-[var(--primary)] file:text-[var(--primary-foreground)] file:font-semibold file:cursor-pointer hover:file:bg-[var(--primary-dark)]"
                 />
                 {form.logoKey && (
                   <Badge variant="success">
@@ -571,7 +544,7 @@ export function CompanySettingsForm(props: { mode: "settings" | "onboarding" }) 
         <Button variant="gradient" disabled={saving} onClick={() => void save(false)}>
           {saving ? (
             <>
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+              <div className="w-4 h-4 border-2 border-[var(--primary-foreground)] border-t-transparent rounded-full animate-spin mr-2" />
               Saving...
             </>
           ) : (

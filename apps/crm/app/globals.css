@@ -16,40 +16,68 @@
   --font-sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
 
-  /* Dark Mode Theme Colors (Default and Only) - aligned with marketing site */
+  /* ========================================
+     DEFAULT THEME: Midnight Dark
+     These are the default values - the theme
+     system will override them at runtime.
+     ======================================== */
+
+  /* Core backgrounds */
   --background: #0f1115;
-  --foreground: #e6e8ec;
-  --card: #232a3b;
-  --card-foreground: #e6e8ec;
+  --foreground: #f8fafc;
+  --card: #1a1f2e;
+  --card-foreground: #f8fafc;
   --muted: #232a3b;
   --muted-foreground: #94a3b8;
   --border: #3f4a5f;
 
+  /* Popover (shadcn/radix compat) */
+  --popover: #1a1f2e;
+  --popover-foreground: #f8fafc;
+
+  /* Secondary */
+  --secondary: #232a3b;
+  --secondary-foreground: #f8fafc;
+
+  /* Input */
+  --input: #1a1f2e;
+  --input-foreground: #f8fafc;
+
   /* Primary - Main brand color */
-  --primary: #3b82f6;
-  --primary-light: #60a5fa;
-  --primary-dark: #2563eb;
+  --primary: #6366f1;
+  --primary-light: #818cf8;
+  --primary-dark: #4f46e5;
   --primary-foreground: #ffffff;
 
   /* Accent - Secondary highlight */
-  --accent: #06b6d4;
-  --accent-light: #22d3ee;
-  --accent-dark: #0891b2;
-  --accent-foreground: #ffffff;
+  --accent: #22d3ee;
+  --accent-light: #67e8f9;
+  --accent-dark: #06b6d4;
+  --accent-foreground: #0f172a;
 
   /* Success, Warning, Error */
   --success: #10b981;
   --success-light: #34d399;
+  --success-foreground: #ffffff;
   --warning: #f59e0b;
   --warning-light: #fbbf24;
+  --warning-foreground: #0f172a;
   --error: #ef4444;
   --error-light: #f87171;
+  --error-foreground: #ffffff;
 
-  /* Theme variables from settings - aligned with marketing site */
-  --qt-theme-primary: #3b82f6;
-  --qt-theme-accent: #06b6d4;
+  /* Destructive (alias for error, shadcn/radix compat) */
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+
+  /* Focus ring */
+  --ring: #6366f1;
+
+  /* Theme variables from settings (legacy compat) */
+  --qt-theme-primary: #6366f1;
+  --qt-theme-accent: #22d3ee;
   --qt-theme-bg: #0f1115;
-  --qt-theme-text: #e6e8ec;
+  --qt-theme-text: #f8fafc;
 
   /* Gradients */
   --gradient-primary: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
@@ -66,14 +94,13 @@
   --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.08), 0 8px 10px -6px rgb(0 0 0 / 0.08);
   --shadow-glow: 0 0 20px -5px var(--primary);
   --shadow-colored: 0 10px 40px -10px var(--primary);
+  --shadow-color: rgba(0, 0, 0, 0.3);
 
   /* Glass effects */
   --glass-bg: rgba(30, 41, 59, 0.8);
   --glass-border: rgba(51, 65, 85, 0.5);
   --glass-blur: 12px;
 }
-
-/* Dark mode locked permanently - no theme switching */
 
 /* Theme inline for Tailwind v4 */
 @theme inline {
@@ -84,14 +111,29 @@
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-border: var(--border);
+  --color-ring: var(--ring);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-input: var(--input);
+  --color-input-foreground: var(--input-foreground);
   --color-primary: var(--primary);
   --color-primary-light: var(--primary-light);
   --color-primary-dark: var(--primary-dark);
+  --color-primary-foreground: var(--primary-foreground);
   --color-accent: var(--accent);
   --color-accent-light: var(--accent-light);
+  --color-accent-foreground: var(--accent-foreground);
   --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
   --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
   --color-error: var(--error);
+  --color-error-light: var(--error-light);
+  --color-error-foreground: var(--error-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
 }
@@ -122,7 +164,7 @@ a:hover {
 }
 
 a:focus-visible {
-  outline: 2px solid var(--primary);
+  outline: 2px solid var(--ring);
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -349,7 +391,7 @@ h6 {
    ======================================== */
 
 :focus-visible {
-  outline: 2px solid var(--primary);
+  outline: 2px solid var(--ring);
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -422,7 +464,7 @@ input[type="checkbox"] {
 }
 
 input[type="checkbox"]:focus-visible {
-  outline: 2px solid var(--primary);
+  outline: 2px solid var(--ring);
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -433,5 +475,5 @@ input[type="checkbox"]:focus-visible {
 
 ::selection {
   background: var(--primary);
-  color: white;
+  color: var(--primary-foreground);
 }

@@ -84,7 +84,7 @@ export function Shell({
                     href={it.href}
                     className={cn(
                       "block rounded-xl px-3 py-2 text-sm font-semibold",
-                      active ? "bg-[var(--background)] text-white" : "text-[var(--muted-foreground)] hover:bg-[var(--muted)]"
+                      active ? "bg-[var(--primary)] text-[var(--primary-foreground)]" : "text-[var(--muted-foreground)] hover:bg-[var(--muted)]"
                     )}
                   >
                     {it.label}
@@ -108,7 +108,7 @@ export function Shell({
                         href={it.href}
                         className={cn(
                           "block rounded-xl px-3 py-2 text-sm font-semibold",
-                          active ? "bg-blue-100 text-blue-900" : "text-blue-700 hover:bg-blue-50"
+                          active ? "bg-[var(--accent)] text-[var(--accent-foreground)]" : "text-[var(--accent)] hover:bg-[var(--muted)]"
                         )}
                       >
                         {it.label}
