@@ -11,6 +11,7 @@ import {
   X,
   RefreshCw,
   AlertTriangle,
+  AlertCircle,
   Settings,
   Lock,
   Mail,
@@ -70,6 +71,7 @@ const TABS: { key: Tab; label: string; icon: typeof Settings; desc: string }[] =
 export function LeadCaptureSettings() {
   const [activeTab, setActiveTab] = useState<Tab>("domains");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [domains, setDomains] = useState<AllowedDomain[]>([]);
   const [keys, setKeys] = useState<IntegrationKey[]>([]);
   const [forms, setForms] = useState<FormConfig[]>([]);
@@ -79,6 +81,7 @@ export function LeadCaptureSettings() {
   // Load initial data
   const loadData = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const [domainsRes, keysRes, formsRes, companyRes] = await Promise.all([
         fetch("/api/admin/lead-capture/domains"),
@@ -87,24 +90,38 @@ export function LeadCaptureSettings() {
         fetch("/api/me"),
       ]);
 
-      if (domainsRes.ok) {
-        const data = await domainsRes.json();
-        setDomains(data.domains || []);
+      // Handle API errors
+      const errors: string[] = [];
+
+      if (!domainsRes.ok) {
+        errors.push("domains");
+      } else {
+        setDomains((await domainsRes.json()).domains || []);
       }
-      if (keysRes.ok) {
-        const data = await keysRes.json();
-        setKeys(data.keys || []);
+
+      if (!keysRes.ok) {
+        errors.push("keys");
+      } else {
+        setKeys((await keysRes.json()).keys || []);
       }
-      if (formsRes.ok) {
-        const data = await formsRes.json();
-        setForms(data.forms || []);
+
+      if (!formsRes.ok) {
+        errors.push("forms");
+      } else {
+        setForms((await formsRes.json()).forms || []);
       }
+
       if (companyRes.ok) {
         const data = await companyRes.json();
         setCompanySlug(data.company?.slug || "");
       }
+
+      if (errors.length > 0) {
+        setError(`Failed to load: ${errors.join(", ")}`);
+      }
     } catch (err) {
       console.error("Failed to load lead capture settings:", err);
+      setError("Failed to load settings. Please try again.");
       toast({
         title: "Error",
         description: "Failed to load settings",
@@ -123,6 +140,21 @@ export function LeadCaptureSettings() {
     return (
       <div className="flex items-center justify-center py-12">
         <RefreshCw className="w-6 h-6 animate-spin text-[var(--muted-foreground)]" />
+      </div>
+    );
+  }
+
+  // Error state - show when all data failed to load
+  if (error && domains.length === 0 && keys.length === 0 && forms.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
+        <h3 className="text-lg font-semibold text-[var(--foreground)] mb-2">Unable to load settings</h3>
+        <p className="text-sm text-[var(--muted-foreground)] mb-4">{error}</p>
+        <Button onClick={loadData} variant="outline">
+          <RefreshCw className="w-4 h-4 mr-2" />
+          Try Again
+        </Button>
       </div>
     );
   }

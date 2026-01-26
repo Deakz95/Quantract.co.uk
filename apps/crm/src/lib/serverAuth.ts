@@ -175,20 +175,29 @@ export type AuthContext = {
   sessionId: string;
 };
 
+/**
+ * Get auth context safely - never throws, returns null on any error
+ */
 export async function getAuthContext(): Promise<AuthContext | null> {
-  const jar = await cookies();
-  // Check both prefixed and non-prefixed for migration compatibility
-  const sid = jar.get(SID_COOKIE)?.value || jar.get("qt_sid_v1")?.value || "";
-  if (!sid) return null;
-  const session = await getSession(sid);
-  if (!session) return null;
-  return {
-    role: session.user.role as Role,
-    email: session.user.email,
-    companyId: session.user.companyId ?? null,
-    userId: session.user.id,
-    sessionId: session.id,
-  };
+  try {
+    const jar = await cookies();
+    // Check both prefixed and non-prefixed for migration compatibility
+    const sid = jar.get(SID_COOKIE)?.value || jar.get("qt_sid_v1")?.value || "";
+    if (!sid) return null;
+    const session = await getSession(sid);
+    if (!session) return null;
+    return {
+      role: session.user.role as Role,
+      email: session.user.email,
+      companyId: session.user.companyId ?? null,
+      userId: session.user.id,
+      sessionId: session.id,
+    };
+  } catch (error) {
+    // Log but never throw - auth failures should return null
+    console.error("[getAuthContext] Error:", error);
+    return null;
+  }
 }
 
 export async function requireRole(role: Role) {
