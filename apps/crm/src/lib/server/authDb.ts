@@ -64,7 +64,7 @@ export async function createMagicLink(userId: string, ip?: string | null) {
   return { raw, expiresAt };
 }
 
-export async function consumeMagicLink(tokenRaw: string) {
+export async function validateMagicLink(tokenRaw: string) {
   const db = getPrisma();
   const tokenHash = sha256(tokenRaw);
   const token = await db.magicLinkToken.findUnique({
@@ -75,12 +75,23 @@ export async function consumeMagicLink(tokenRaw: string) {
   if (token.usedAt) return { ok: false as const, error: "Link already used" };
   if (token.expiresAt.getTime() < Date.now()) return { ok: false as const, error: "Link expired" };
 
+  return { ok: true as const, user: token.User, tokenId: token.id };
+}
+
+export async function markMagicLinkUsed(tokenId: string) {
+  const db = getPrisma();
   await db.magicLinkToken.update({
-    where: { id: token.id },
+    where: { id: tokenId },
     data: { usedAt: new Date() },
   });
+}
 
-  return { ok: true as const, user: token.User };
+/** @deprecated Use validateMagicLink + markMagicLinkUsed instead */
+export async function consumeMagicLink(tokenRaw: string) {
+  const result = await validateMagicLink(tokenRaw);
+  if (!result.ok) return result;
+  await markMagicLinkUsed(result.tokenId);
+  return { ok: true as const, user: result.user };
 }
 
 export async function createSession(userId: string, rememberMe: boolean = false) {

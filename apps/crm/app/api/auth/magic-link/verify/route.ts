@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { withRequestLogging } from "@/lib/server/observability";
-import { consumeMagicLink, createSession } from "@/lib/server/authDb";
+import { validateMagicLink, markMagicLinkUsed, createSession } from "@/lib/server/authDb";
 import { setSession, setUserEmail, setCompanyId, setProfileComplete } from "@/lib/serverAuth";
 
 function getBaseUrl(req: Request): string {
@@ -30,7 +30,7 @@ export const GET = withRequestLogging(async function GET(req: Request) {
       return redirectTo(req, "/auth/error?reason=missing_token", "missing_token");
     }
 
-    const result = await consumeMagicLink(token);
+    const result = await validateMagicLink(token);
 
     // Token not found / invalid
     if (!result.ok) {
@@ -48,6 +48,9 @@ export const GET = withRequestLogging(async function GET(req: Request) {
     await setUserEmail(user.email);
     if (user.companyId) await setCompanyId(user.companyId);
     await setProfileComplete(Boolean((user as any).profileComplete));
+
+    // Mark token as used only AFTER successful session creation
+    await markMagicLinkUsed(result.tokenId);
 
     // Success - redirect to dashboard based on role
     const role = user.role;
