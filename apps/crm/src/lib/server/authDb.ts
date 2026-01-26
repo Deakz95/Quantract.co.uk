@@ -67,6 +67,8 @@ export async function createMagicLink(userId: string, ip?: string | null) {
 export async function validateMagicLink(tokenRaw: string) {
   const db = getPrisma();
   const tokenHash = sha256(tokenRaw);
+
+  // First, find the token to get details and check basic validity
   const token = await db.magicLinkToken.findUnique({
     where: { tokenHash },
     include: { User: true },
@@ -75,22 +77,28 @@ export async function validateMagicLink(tokenRaw: string) {
   if (token.usedAt) return { ok: false as const, error: "Link already used" };
   if (token.expiresAt.getTime() < Date.now()) return { ok: false as const, error: "Link expired" };
 
+  // Atomically mark as used - only succeeds if not already used (race-safe)
+  const updated = await db.magicLinkToken.updateMany({
+    where: { id: token.id, usedAt: null },
+    data: { usedAt: new Date() },
+  });
+
+  // If no rows updated, another request claimed it first
+  if (updated.count === 0) {
+    return { ok: false as const, error: "Link already used" };
+  }
+
   return { ok: true as const, user: token.User, tokenId: token.id };
 }
 
 export async function markMagicLinkUsed(tokenId: string) {
-  const db = getPrisma();
-  await db.magicLinkToken.update({
-    where: { id: tokenId },
-    data: { usedAt: new Date() },
-  });
+  // No-op: token is now marked as used atomically in validateMagicLink
 }
 
-/** @deprecated Use validateMagicLink + markMagicLinkUsed instead */
+/** @deprecated Use validateMagicLink instead - it atomically validates and consumes */
 export async function consumeMagicLink(tokenRaw: string) {
   const result = await validateMagicLink(tokenRaw);
   if (!result.ok) return result;
-  await markMagicLinkUsed(result.tokenId);
   return { ok: true as const, user: result.user };
 }
 

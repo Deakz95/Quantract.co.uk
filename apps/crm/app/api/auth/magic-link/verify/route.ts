@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { withRequestLogging } from "@/lib/server/observability";
-import { validateMagicLink, markMagicLinkUsed, createSession } from "@/lib/server/authDb";
+import { validateMagicLink, createSession } from "@/lib/server/authDb";
 import { setSession, setUserEmail, setCompanyId, setProfileComplete } from "@/lib/serverAuth";
 
 function getBaseUrl(req: Request): string {
@@ -48,9 +48,6 @@ export const GET = withRequestLogging(async function GET(req: Request) {
     await setUserEmail(user.email);
     if (user.companyId) await setCompanyId(user.companyId);
     await setProfileComplete(Boolean((user as any).profileComplete));
-
-    // Mark token as used only AFTER successful session creation
-    await markMagicLinkUsed(result.tokenId);
 
     // Success - redirect to dashboard based on role
     const role = user.role;
