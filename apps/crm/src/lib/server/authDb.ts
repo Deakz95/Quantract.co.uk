@@ -71,7 +71,7 @@ export async function validateMagicLink(tokenRaw: string) {
   // First, find the token to get details and check basic validity
   const token = await db.magicLinkToken.findUnique({
     where: { tokenHash },
-    include: { User: true },
+    include: { user: true },
   });
   if (!token) return { ok: false as const, error: "Invalid link" };
   if (token.usedAt) return { ok: false as const, error: "Link already used" };
@@ -88,7 +88,7 @@ export async function validateMagicLink(tokenRaw: string) {
     return { ok: false as const, error: "Link already used" };
   }
 
-  return { ok: true as const, user: token.User, tokenId: token.id };
+  return { ok: true as const, user: token.user, tokenId: token.id };
 }
 
 export async function markMagicLinkUsed(tokenId: string) {
@@ -124,10 +124,10 @@ export async function getSession(sessionId: string) {
   const db = getPrisma();
   const session = await db.authSession.findUnique({
     where: { id: sessionId },
-    include: { User: true },
+    include: { user: true },
   });
   if (!session) return null;
   if (session.revokedAt) return null;
   if (session.expiresAt.getTime() < Date.now()) return null;
-  return { ...session, user: session.User };
+  return { ...session, user: session.user };
 }

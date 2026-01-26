@@ -13,6 +13,7 @@
     "test:e2e": "playwright test tests/playwright/e2e-*.spec.ts",
     "test:e2e:ui": "playwright test tests/playwright/e2e-*.spec.ts --ui",
     "test:smoke": "playwright test tests/playwright/e2e-*.spec.ts --project=chromium",
+    "smoke": "tsx scripts/smoke/run-smoke-tests.ts",
     "prisma:generate": "prisma generate",
     "prisma:validate": "prisma validate",
     "prisma:migrate:deploy": "node scripts/with-neon-conn.mjs -- prisma migrate deploy",
