@@ -150,6 +150,9 @@ model Client {
   paymentTermsDays     Int?
   disableAutoChase     Boolean       @default(false)
   xeroContactId        String?
+  // SMS consent
+  smsOptIn             Boolean       @default(false)
+  smsOptInAt           DateTime?
   createdAt            DateTime      @default(now())
   updatedAt            DateTime
   Certificate          Certificate[]
@@ -212,6 +215,19 @@ model Company {
   xeroTokenExpiresAt       DateTime?
   defaultLegalEntityId     String?
   defaultServiceLineId     String?
+  // SMS Notification Settings
+  smsEnabled               Boolean                 @default(false)
+  smsProvider              String?                 // "twilio" | "messagebird" | etc
+  smsSenderId              String?                 // Sender ID / From number
+  smsApiKey                String?                 // Encrypted API key
+  smsApiSecret             String?                 // Encrypted API secret
+  smsRequireConsent        Boolean                 @default(true)
+  smsQuietHoursEnabled     Boolean                 @default(false)
+  smsQuietFrom             String?                 // Time string "21:00"
+  smsQuietTo               String?                 // Time string "08:00"
+  smsMaxPerClientPerDay    Int                     @default(3)
+  smsMaxPerJobPerDay       Int                     @default(5)
+  smsCredits               Int                     @default(0)
   createdAt                DateTime                @default(now())
   updatedAt                DateTime
   Agreement                Agreement[]
@@ -256,6 +272,9 @@ model Company {
   Task                     Task[]
   Comment                  Comment[]
   Mention                  Mention[]
+  NotificationRule         NotificationRule[]
+  NotificationTemplate     NotificationTemplate[]
+  NotificationLog          NotificationLog[]
 }
 
 model CompanyUser {
@@ -1339,4 +1358,112 @@ enum UserRole {
   OFFICE
   ENGINEER
   FINANCE
+}
+
+// ============================================================================
+// NOTIFICATION SYSTEM
+// ============================================================================
+
+enum NotificationChannel {
+  SMS
+  EMAIL
+}
+
+enum NotificationEventKey {
+  // Appointments & Jobs
+  appointmentBooked
+  appointmentReminder24h
+  appointmentReminder2h
+  engineerOnTheWay
+  jobCompleted
+  // Quotes
+  quoteSent
+  quoteReminder
+  quoteAccepted
+  // Invoices & Payments
+  invoiceIssued
+  invoiceOverdue
+  invoiceFinalReminder
+  paymentReceived
+  // Certificates
+  certificateIssued
+  // Portal
+  portalInvite
+}
+
+enum NotificationLogStatus {
+  sent
+  skipped
+  failed
+}
+
+enum NotificationSkipReason {
+  noConsent
+  noCredits
+  quietHours
+  rateLimited
+  missingPhone
+  missingEmail
+  disabled
+  providerError
+}
+
+// Notification rules per company - which events are enabled for which channel
+model NotificationRule {
+  id        String                 @id
+  companyId String
+  channel   NotificationChannel
+  eventKey  NotificationEventKey
+  enabled   Boolean                @default(true)
+  createdAt DateTime               @default(now())
+  updatedAt DateTime
+  Company   Company                @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, channel, eventKey])
+  @@index([companyId])
+}
+
+// Notification templates per company
+model NotificationTemplate {
+  id        String                 @id
+  companyId String
+  channel   NotificationChannel
+  eventKey  NotificationEventKey
+  subject   String?                // For email
+  body      String
+  isDefault Boolean                @default(false)
+  createdAt DateTime               @default(now())
+  updatedAt DateTime
+  Company   Company                @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, channel, eventKey])
+  @@index([companyId])
+}
+
+// Notification logs for auditing
+model NotificationLog {
+  id          String                  @id
+  companyId   String
+  channel     NotificationChannel
+  eventKey    NotificationEventKey
+  recipient   String                  // Phone number or email
+  clientId    String?
+  jobId       String?
+  invoiceId   String?
+  quoteId     String?
+  certificateId String?
+  status      NotificationLogStatus
+  skipReason  NotificationSkipReason?
+  errorMessage String?
+  cost        Int?                    // Cost in pence for SMS
+  segments    Int?                    // SMS segments used
+  providerMessageId String?
+  createdAt   DateTime                @default(now())
+  Company     Company                 @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([companyId, createdAt])
+  @@index([companyId, channel])
+  @@index([clientId])
+  @@index([status])
 }

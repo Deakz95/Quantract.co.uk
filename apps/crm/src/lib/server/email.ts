@@ -1,5 +1,5 @@
 import { Resend } from "resend";
-import { canSendEmail, type NotificationCategory } from "./notifications";
+import { canSendEmail, type NotificationCategory } from "./notificationPreferences";
 import { getPrisma } from "./prisma";
 
 export type SendEmailArgs = {
