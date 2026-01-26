@@ -19,26 +19,47 @@ function redirectTo(req: Request, path: string, reason?: string) {
   return NextResponse.redirect(new URL(path, getBaseUrl(req)));
 }
 
+/**
+ * GET: Redirect to landing page (does NOT consume token).
+ * This prevents email client prefetching from consuming the token.
+ */
 export const GET = withRequestLogging(async function GET(req: Request) {
-  try {
-    const url = new URL(req.url);
-    const token = url.searchParams.get("token") || "";
-    const rememberMe = url.searchParams.get("remember") === "1";
+  const url = new URL(req.url);
+  const token = url.searchParams.get("token") || "";
+  const remember = url.searchParams.get("remember") || "";
 
-    // Missing token
+  if (!token) {
+    return redirectTo(req, "/auth/error?reason=missing_token", "missing_token");
+  }
+
+  // Redirect to landing page - token will be consumed on POST
+  const params = new URLSearchParams({ token });
+  if (remember) params.set("remember", remember);
+  return redirectTo(req, `/auth/verify?${params.toString()}`);
+});
+
+/**
+ * POST: Actually consume the token and create session.
+ * Called from the landing page when user clicks "Sign in".
+ */
+export const POST = withRequestLogging(async function POST(req: Request) {
+  try {
+    const body = await req.json().catch(() => ({}));
+    const token = body.token || "";
+    const rememberMe = body.remember === true || body.remember === "1";
+
     if (!token) {
-      return redirectTo(req, "/auth/error?reason=missing_token", "missing_token");
+      return NextResponse.json({ ok: false, error: "missing_token" }, { status: 400 });
     }
 
     const result = await validateMagicLink(token);
 
-    // Token not found / invalid
     if (!result.ok) {
       const reason = result.error === "Invalid link" ? "invalid_token"
         : result.error === "Link expired" ? "expired"
         : result.error === "Link already used" ? "already_used"
         : "unknown";
-      return redirectTo(req, `/auth/error?reason=${reason}`, reason);
+      return NextResponse.json({ ok: false, error: reason }, { status: 400 });
     }
 
     const user = result.user;
@@ -49,13 +70,15 @@ export const GET = withRequestLogging(async function GET(req: Request) {
     if (user.companyId) await setCompanyId(user.companyId);
     await setProfileComplete(Boolean((user as any).profileComplete));
 
-    // Success - redirect to dashboard based on role
+    // Return success with redirect URL
     const role = user.role;
-    if (role === "admin") return redirectTo(req, "/admin/dashboard");
-    if (role === "engineer") return redirectTo(req, "/engineer");
-    return redirectTo(req, "/client");
+    const redirectUrl = role === "admin" ? "/admin/dashboard"
+      : role === "engineer" ? "/engineer"
+      : "/client";
+
+    return NextResponse.json({ ok: true, redirectUrl });
   } catch (e) {
-    console.error("[magic-link/verify] Error:", e);
-    return redirectTo(req, "/auth/error?reason=server_error", "server_error");
+    console.error("[magic-link/verify] POST Error:", e);
+    return NextResponse.json({ ok: false, error: "server_error" }, { status: 500 });
   }
 });
