@@ -62,3 +62,4 @@ venv/
 # Prisma
 **/prisma/*.db
 **/prisma/*.db-journal
+nul
