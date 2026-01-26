@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
 import { cn } from "@/lib/cn";
-import { Palette, FileText, User, Settings, Briefcase, Receipt, BarChart3, Mail } from "lucide-react";
+import { Palette, FileText, User, Settings, Briefcase, Receipt, BarChart3, Mail, Inbox } from "lucide-react";
 
 const tabs = [
   { label: "Appearance", href: "/admin/settings/appearance", icon: Palette, desc: "Colors & branding" },
@@ -13,6 +13,7 @@ const tabs = [
   { label: "Legal Entities", href: "/admin/settings/legal-entities", icon: Briefcase, desc: "Billing entities" },
   { label: "Service Lines", href: "/admin/settings/service-lines", icon: Receipt, desc: "Service categories" },
   { label: "Notifications", href: "/admin/settings/notifications", icon: Mail, desc: "SMS & Email" },
+  { label: "Lead Capture", href: "/admin/settings/lead-capture", icon: Inbox, desc: "Website forms" },
   { label: "Entitlements", href: "/admin/settings/entitlements", icon: BarChart3, desc: "Limits & usage" },
   { label: "Account", href: "/admin/settings/account", icon: User, desc: "User management" },
 ];

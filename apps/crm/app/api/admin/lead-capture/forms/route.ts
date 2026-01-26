@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
+import { randomUUID } from "crypto";
 import { requireRole, requireCompanyId } from "@/lib/serverAuth";
 import { getPrisma } from "@/lib/server/prisma";
 import { withRequestLogging } from "@/lib/server/observability";
-import { randomUUID } from "crypto";
 
 export const runtime = "nodejs";
 
@@ -14,8 +14,8 @@ function slugify(text: string): string {
 }
 
 /**
- * GET /api/admin/service-lines
- * List all service lines for the current company.
+ * GET /api/admin/lead-capture/forms
+ * List all form configurations.
  */
 export const GET = withRequestLogging(async function GET() {
   try {
@@ -30,22 +30,22 @@ export const GET = withRequestLogging(async function GET() {
     return NextResponse.json({ ok: false, error: "prisma_disabled" }, { status: 400 });
   }
 
-  const serviceLines = await client.serviceLine.findMany({
+  const forms = await client.inboundFormConfig.findMany({
     where: { companyId },
-    orderBy: [{ isDefault: "desc" }, { name: "asc" }],
+    orderBy: [{ isActive: "desc" }, { name: "asc" }],
     include: {
-      defaultLegalEntity: {
-        select: { id: true, displayName: true },
+      _count: {
+        select: { enquiries: true },
       },
     },
   });
 
-  return NextResponse.json({ ok: true, serviceLines });
+  return NextResponse.json({ ok: true, forms });
 });
 
 /**
- * POST /api/admin/service-lines
- * Create a new service line.
+ * POST /api/admin/lead-capture/forms
+ * Create a new form configuration.
  */
 export const POST = withRequestLogging(async function POST(req: Request) {
   try {
@@ -70,60 +70,53 @@ export const POST = withRequestLogging(async function POST(req: Request) {
   const slug = body.slug ? slugify(String(body.slug)) : slugify(name);
 
   // Check for duplicate slug
-  const existing = await client.serviceLine.findFirst({
+  const existing = await client.inboundFormConfig.findFirst({
     where: { companyId, slug },
   });
   if (existing) {
     return NextResponse.json({ ok: false, error: "duplicate_slug" }, { status: 400 });
   }
 
-  const isDefault = Boolean(body.isDefault);
-
-  // If setting as default, unset other defaults
-  if (isDefault) {
-    await client.serviceLine.updateMany({
-      where: { companyId, isDefault: true },
-      data: { isDefault: false, updatedAt: new Date() },
+  // Validate defaultStageId if provided
+  if (body.defaultStageId) {
+    const stage = await client.pipelineStage.findFirst({
+      where: { id: body.defaultStageId, companyId },
     });
-  }
-
-  // Validate defaultLegalEntityId if provided
-  let defaultLegalEntityId: string | null = null;
-  if (body.defaultLegalEntityId) {
-    const entity = await client.legalEntity.findFirst({
-      where: { id: body.defaultLegalEntityId, companyId },
-    });
-    if (entity) {
-      defaultLegalEntityId = entity.id;
+    if (!stage) {
+      return NextResponse.json({ ok: false, error: "invalid_default_stage" }, { status: 400 });
     }
   }
 
-  const serviceLine = await client.serviceLine.create({
+  // Validate defaultOwnerId if provided
+  if (body.defaultOwnerId) {
+    const user = await client.user.findFirst({
+      where: { id: body.defaultOwnerId, companyId },
+    });
+    if (!user) {
+      return NextResponse.json({ ok: false, error: "invalid_default_owner" }, { status: 400 });
+    }
+  }
+
+  const form = await client.inboundFormConfig.create({
     data: {
       id: randomUUID(),
       companyId,
       name,
       slug,
-      description: body.description ? String(body.description).trim() : null,
-      defaultLegalEntityId,
-      isDefault,
-      status: "active",
+      defaultStageId: body.defaultStageId || null,
+      defaultOwnerId: body.defaultOwnerId || null,
+      requiredFields: body.requiredFields || ["name", "email"],
+      optionalFields: body.optionalFields || ["phone", "message"],
+      thankYouMessage: body.thankYouMessage || null,
+      redirectUrl: body.redirectUrl || null,
+      notifyEmails: body.notifyEmails || null,
+      enableCaptcha: body.enableCaptcha !== false,
+      enableHoneypot: body.enableHoneypot !== false,
+      rateLimitPerMinute: body.rateLimitPerMinute || 5,
+      isActive: true,
       updatedAt: new Date(),
-    },
-    include: {
-      defaultLegalEntity: {
-        select: { id: true, displayName: true },
-      },
     },
   });
 
-  // If this is marked default, update company
-  if (isDefault) {
-    await client.company.update({
-      where: { id: companyId },
-      data: { defaultServiceLineId: serviceLine.id, updatedAt: new Date() },
-    });
-  }
-
-  return NextResponse.json({ ok: true, serviceLine });
+  return NextResponse.json({ ok: true, form }, { status: 201 });
 });

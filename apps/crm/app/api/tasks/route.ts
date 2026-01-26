@@ -51,29 +51,29 @@ export const GET = withRequestLogging(async function GET(req: Request) {
     const tasks = await db.task.findMany({
       where,
       include: {
-        Assignee: {
+        assignee: {
           select: { id: true, name: true, email: true },
         },
-        Creator: {
+        creator: {
           select: { id: true, name: true, email: true },
         },
-        Job: {
+        job: {
           select: { id: true, title: true },
         },
-        Client: {
+        client: {
           select: { id: true, name: true },
         },
-        Subtasks: {
+        subtasks: {
           include: {
-            Assignee: {
+            assignee: {
               select: { id: true, name: true, email: true },
             },
           },
           orderBy: { createdAt: "asc" },
         },
-        Comments: {
+        comments: {
           include: {
-            Creator: {
+            creator: {
               select: { id: true, name: true, email: true },
             },
           },
@@ -152,16 +152,16 @@ export const POST = withRequestLogging(async function POST(req: Request) {
         updatedAt: new Date(),
       },
       include: {
-        Assignee: {
+        assignee: {
           select: { id: true, name: true, email: true },
         },
-        Creator: {
+        creator: {
           select: { id: true, name: true, email: true },
         },
-        Job: {
+        job: {
           select: { id: true, title: true },
         },
-        Client: {
+        client: {
           select: { id: true, name: true },
         },
       },

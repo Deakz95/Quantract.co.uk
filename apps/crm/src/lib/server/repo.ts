@@ -469,9 +469,9 @@ function toEngineer(row: any): Engineer {
     costRatePerHour: row.costRatePerHour != null ? Number(row.costRatePerHour) : undefined,
     chargeRatePerHour: row.chargeRatePerHour != null ? Number(row.chargeRatePerHour) : undefined,
     rateCardId: row.rateCardId ?? undefined,
-    rateCardName: row.RateCard?.name ?? undefined,
-    rateCardCostRate: row.RateCard?.costRatePerHour != null ? Number(row.RateCard.costRatePerHour) : undefined,
-    rateCardChargeRate: row.RateCard?.chargeRatePerHour != null ? Number(row.RateCard.chargeRatePerHour) : undefined,
+    rateCardName: row.rateCard?.name ?? undefined,
+    rateCardCostRate: row.rateCard?.costRatePerHour != null ? Number(row.rateCard.costRatePerHour) : undefined,
+    rateCardChargeRate: row.rateCard?.chargeRatePerHour != null ? Number(row.rateCard.chargeRatePerHour) : undefined,
     isActive: row.isActive ?? undefined,
     createdAtISO: new Date(row.createdAt).toISOString(),
     updatedAtISO: new Date(row.updatedAt).toISOString(),
@@ -486,18 +486,18 @@ function toJob(row: any): Job {
     siteId: row.siteId ?? undefined,
     title: row.title ?? undefined,
     status: row.status,
-    engineerEmail: row.Engineer?.email ?? undefined,
+    engineerEmail: row.engineer?.email ?? undefined,
     scheduledAtISO: row.scheduledAt ? new Date(row.scheduledAt).toISOString() : undefined,
     notes: row.notes ?? undefined,
     budgetSubtotal: Number(row.budgetSubtotal ?? 0),
     budgetVat: Number(row.budgetVat ?? 0),
     budgetTotal: Number(row.budgetTotal ?? 0),
     // For backwards compatibility with existing UI
-    clientName: row.Client?.name ?? row.clientName ?? row.clientEmail ?? "",
-    clientEmail: row.Client?.email ?? row.clientEmail ?? "",
-    client: row.Client ? toClient(row.Client) : undefined,
-    siteName: row.Site?.name ?? undefined,
-    siteAddress: row.Site ? [row.Site.address1, row.Site.address2, row.Site.city, row.Site.county, row.Site.postcode, row.Site.country].filter(Boolean).join(", ") : row.siteAddress ?? undefined,
+    clientName: row.client?.name ?? row.clientName ?? row.clientEmail ?? "",
+    clientEmail: row.client?.email ?? row.clientEmail ?? "",
+    client: row.client ? toClient(row.client) : undefined,
+    siteName: row.site?.name ?? undefined,
+    siteAddress: row.site? [row.site.address1, row.site.address2, row.site.city, row.site.county, row.site.postcode, row.site.country].filter(Boolean).join(", ") : row.siteAddress ?? undefined,
     createdAtISO: new Date(row.createdAt).toISOString(),
     updatedAtISO: new Date(row.updatedAt).toISOString(),
   };
@@ -508,7 +508,7 @@ function toScheduleEntry(row: any): ScheduleEntry {
     id: row.id,
     jobId: row.jobId,
     engineerId: row.engineerId,
-    engineerEmail: row.Engineer?.email ?? undefined,
+    engineerEmail: row.engineer?.email ?? undefined,
     startAtISO: new Date(row.startAt).toISOString(),
     endAtISO: new Date(row.endAt).toISOString(),
     notes: row.notes ?? undefined,
@@ -522,7 +522,7 @@ function toTimeEntry(row: any): TimeEntry {
     id: row.id,
     jobId: row.jobId,
     engineerId: row.engineerId,
-    engineerEmail: row.Engineer?.email ?? undefined,
+    engineerEmail: row.engineer?.email ?? undefined,
     timesheetId: row.timesheetId ?? undefined,
     startedAtISO: new Date(row.startedAt).toISOString(),
     endedAtISO: row.endedAt ? new Date(row.endedAt).toISOString() : undefined,
@@ -539,7 +539,7 @@ function toTimesheet(row: any): Timesheet {
   return {
     id: row.id,
     engineerId: row.engineerId,
-    engineerEmail: row.Engineer?.email ?? undefined,
+    engineerEmail: row.engineer?.email ?? undefined,
     weekStartISO: new Date(row.weekStart).toISOString(),
     status: row.status,
     submittedAtISO: row.submittedAt ? new Date(row.submittedAt).toISOString() : undefined,
@@ -2064,13 +2064,13 @@ async function ensureEngineerByEmail(email: string): Promise<Engineer | null> {
   if (!client) return null;
   const e = String(email || "").trim().toLowerCase();
   if (!e) return null;
-  const existing = await client.engineer.findFirst({ where: { email: e }, include: { RateCard: true } }).catch(() => null);
+  const existing = await client.engineer.findFirst({ where: { email: e }, include: { rateCard: true } }).catch(() => null);
   if (existing) return toEngineer(existing);
   const defaultCost = process.env.QT_DEFAULT_COST_RATE_PER_HOUR ? Number(process.env.QT_DEFAULT_COST_RATE_PER_HOUR) : undefined;
   const companyId = await requireCompanyIdForPrisma();
   const defaultRateCard = await client.rateCard.findFirst({ where: { companyId, isDefault: true } }).catch(() => null);
   const row = await client.engineer
-    .create({ data: { companyId, email: e, costRatePerHour: defaultCost ?? null, rateCardId: defaultRateCard?.id ?? null, isActive: true }, include: { RateCard: true } })
+    .create({ data: { companyId, email: e, costRatePerHour: defaultCost ?? null, rateCardId: defaultRateCard?.id ?? null, isActive: true }, include: { rateCard: true } })
     .catch(() => null);
   return row ? toEngineer(row) : null;
 }
@@ -2087,7 +2087,7 @@ export async function listEngineers(): Promise<Engineer[]> {
   const rows = await client.engineer.findMany({
     where: { isActive: true, ...(companyId ? { companyId } : {}) },
     orderBy: { createdAt: "desc" },
-    include: { RateCard: true }
+    include: { rateCard: true }
   });
   return rows.map(toEngineer);
 }
@@ -2099,7 +2099,7 @@ export async function createEngineer(data: { email: string; name?: string; phone
   if (!email) return null;
 
   // Check if engineer already exists
-  const existing = await client.engineer.findFirst({ where: { email }, include: { RateCard: true } }).catch(() => null);
+  const existing = await client.engineer.findFirst({ where: { email }, include: { rateCard: true } }).catch(() => null);
   if (existing) return toEngineer(existing);
 
   const companyId = await requireCompanyIdForPrisma();
@@ -2115,7 +2115,7 @@ export async function createEngineer(data: { email: string; name?: string; phone
         rateCardId: defaultRateCard?.id ?? null,
         isActive: true,
       },
-      include: { RateCard: true },
+      include: { rateCard: true },
     })
     .catch(() => null);
 
@@ -2157,7 +2157,7 @@ export async function setEngineerRateCard(engineerId: string, rateCardId?: strin
   const client = p();
   if (!client) return null;
   const row = await client.engineer
-    .update({ where: { id: engineerId }, data: { rateCardId: rateCardId || null }, include: { RateCard: true } })
+    .update({ where: { id: engineerId }, data: { rateCardId: rateCardId || null }, include: { rateCard: true } })
     .catch(() => null);
   return row ? toEngineer(row) : null;
 }
@@ -2185,7 +2185,7 @@ export async function listJobs(): Promise<Job[]> {
   const rows = await client.job.findMany({
     where: companyId ? { companyId } : {},
     orderBy: { createdAt: "desc" },
-    include: { Client: true, Site: true, Engineer: true },
+    include: { client: true, site: true, engineer: true },
   });
   return rows.map(toJob);
 }
@@ -2199,12 +2199,12 @@ export async function listJobProfitability(opts?: { status?: string; query?: str
   const rows = await client.job.findMany({
     where,
     orderBy: { createdAt: "desc" },
-    include: { Client: true, Site: true, Engineer: true, JobBudgetLine: true },
+    include: { client: true, site: true, engineer: true, jobBudgetLines: true },
   }).catch(() => [] as any[]);
   const query = String(opts?.query || "").trim().toLowerCase();
   const filtered = query
     ? rows.filter((row: any) =>
-        [row.id, row.title, row.Client?.name, row.Client?.email, row.Engineer?.email, row.status, row.Site?.address1]
+        [row.id, row.title, row.client?.name, row.client?.email, row.engineer?.email, row.status, row.site?.address1]
           .filter(Boolean)
           .some((v) => String(v).toLowerCase().includes(query))
       )
@@ -2245,7 +2245,7 @@ export async function getJobById(id: string) {
     return j as any;
   }
   const row = await client.job
-    .findUnique({ where: { id }, include: { Client: true, Site: true, Engineer: true } })
+    .findUnique({ where: { id }, include: { client: true, site: true, engineer: true } })
     .catch(() => null);
   return row ?? null;
 }
@@ -2274,7 +2274,7 @@ export async function listScheduleEntries(fromISO: string, toISO: string): Promi
   const rows = await client.scheduleEntry.findMany({
     where: { OR: [{ startAt: { lt: to } }, { endAt: { gt: from } }] },
     orderBy: { startAt: "asc" },
-    include: { Engineer: true },
+    include: { engineer: true },
   });
   // filter overlap correctly (Prisma OR above is broad)
   return rows
@@ -2293,7 +2293,7 @@ export async function listScheduleEntriesForEngineer(engineerEmail: string, from
   const rows = await client.scheduleEntry.findMany({
     where: { engineerId: eng.id, startAt: { lt: to }, endAt: { gt: from } },
     orderBy: { startAt: "asc" },
-    include: { Engineer: true },
+    include: { engineer: true },
   });
   return rows.map(toScheduleEntry);
 }
@@ -2329,7 +2329,7 @@ export async function createScheduleEntry(input: {
         endAt,
         notes: input.notes ?? null,
       } as any as any,
-      include: { Engineer: true },
+      include: { engineer: true },
     })
     .catch(() => null);
   // also update job convenience fields
@@ -2347,7 +2347,7 @@ export async function ensureJobForQuote(quoteId: string): Promise<Job | null> {
   if (!q) return null;
 
   const existing = await client.job
-    .findFirst({ where: { quoteId }, include: { Client: true, Site: true, Engineer: true } })
+    .findFirst({ where: { quoteId }, include: { client: true, site: true, engineer: true } })
     .catch(() => null);
 
   if (existing) {
@@ -2399,7 +2399,7 @@ export async function ensureJobForQuote(quoteId: string): Promise<Job | null> {
       budgetVat: totals.vat,
       budgetTotal: totals.total,
     } as any,
-    include: { Client: true, Site: true, Engineer: true },
+    include: { client: true, site: true, engineer: true },
   });
 
   // If an invoice exists for the quote, associate it with the job.
@@ -2460,7 +2460,7 @@ export async function createManualJob(data: {
       budgetVat: 0,
       budgetTotal: 0,
     } as any,
-    include: { Client: true, Site: true, Engineer: true },
+    include: { client: true, site: true, engineer: true },
   });
 
   await addAudit({ entityType: "job", entityId: row.id, action: "job.created" as any, actorRole: "admin", meta: { manual: true } });
@@ -2494,7 +2494,7 @@ export async function updateJob(id: string, patch: Partial<Job>): Promise<Job | 
     await addAudit({ entityType: "job", entityId: id, action: "job.assigned" as any, actorRole: "admin", meta: { engineerEmail: patch.engineerEmail } });
   }
 
-  const row = await client.job.update({ where: { id }, data, include: { Client: true, Site: true, Engineer: true } }).catch(() => null);
+  const row = await client.job.update({ where: { id }, data, include: { client: true, site: true, engineer: true } }).catch(() => null);
   if (!row) return null;
   if (data.status) {
     await addAudit({ entityType: "job", entityId: id, action: "job.status.changed" as any, actorRole: "admin", meta: { status: data.status } });
@@ -2587,7 +2587,7 @@ export async function listJobsForEngineer(email: string): Promise<Job[]> {
   if (!e) return [];
   const eng = await client.engineer.findFirst({ where: { email: e } }).catch(() => null);
   if (!eng) return [];
-  const rows = await client.job.findMany({ where: { engineerId: eng.id }, orderBy: { createdAt: "desc" }, include: { Client: true, Site: true, Engineer: true } });
+  const rows = await client.job.findMany({ where: { engineerId: eng.id }, orderBy: { createdAt: "desc" }, include: { client: true, site: true, engineer: true } });
   return rows.map(toJob);
 }
 
@@ -2596,7 +2596,7 @@ export async function listJobsForEngineer(email: string): Promise<Job[]> {
 export async function listTimeEntries(jobId: string): Promise<TimeEntry[]> {
   const client = p();
   if (!client) return [];
-  const rows = await client.timeEntry.findMany({ where: { jobId }, orderBy: { startedAt: "desc" }, include: { Engineer: true } });
+  const rows = await client.timeEntry.findMany({ where: { jobId }, orderBy: { startedAt: "desc" }, include: { engineer: true } });
   return rows.map(toTimeEntry);
 }
 
@@ -2624,7 +2624,7 @@ export async function addTimeEntry(input: { jobId: string; engineerEmail: string
         breakMinutes: Number(input.breakMinutes ?? 0),
         notes: input.notes?.trim() || null,
       } as any,
-      include: { Engineer: true },
+      include: { engineer: true },
     })
     .catch(() => null);
   return row ? toTimeEntry(row) : null;
@@ -2638,7 +2638,7 @@ export async function getEngineerActiveTimer(engineerEmail: string): Promise<Tim
   const row = await client.timeEntry.findFirst({
     where: { engineerId: eng.id, endedAt: null },
     orderBy: { startedAt: "desc" },
-    include: { Engineer: true },
+    include: { engineer: true },
   }).catch(() => null);
   return row ? toTimeEntry(row) : null;
 }
@@ -2657,7 +2657,7 @@ export async function startEngineerTimer(input: { engineerEmail: string; jobId: 
   }
 
   await assertTimesheetEditable(client, eng.id, new Date().toISOString());
-  const existing = await client.timeEntry.findFirst({ where: { engineerId: eng.id, endedAt: null }, orderBy: { startedAt: "desc" }, include: { Engineer: true } }).catch(() => null);
+  const existing = await client.timeEntry.findFirst({ where: { engineerId: eng.id, endedAt: null }, orderBy: { startedAt: "desc" }, include: { engineer: true } }).catch(() => null);
   const active = existing ? toTimeEntry(existing) : null;
   if (existing) return { active, started: null };
 
@@ -2672,7 +2672,7 @@ export async function startEngineerTimer(input: { engineerEmail: string; jobId: 
       notes: input.notes?.trim() || null,
       status: "draft",
     },
-    include: { Engineer: true },
+    include: { engineer: true },
   }).catch(() => null);
   return { active: row ? toTimeEntry(row) : null, started: row ? toTimeEntry(row) : null };
 }
@@ -2686,7 +2686,7 @@ export async function stopEngineerTimer(engineerEmail: string): Promise<TimeEntr
   const existing = await client.timeEntry.findFirst({ where: { engineerId: eng.id, endedAt: null }, orderBy: { startedAt: "desc" } }).catch(() => null);
   if (!existing) return null;
 
-  const row = await client.timeEntry.update({ where: { id: existing.id }, data: { endedAt: new Date() }, include: { Engineer: true } }).catch(() => null);
+  const row = await client.timeEntry.update({ where: { id: existing.id }, data: { endedAt: new Date() }, include: { engineer: true } }).catch(() => null);
   return row ? toTimeEntry(row) : null;
 }
 
@@ -2719,9 +2719,9 @@ export async function getOrCreateTimesheet(engineerEmail: string, weekStartISO: 
   const eng = await ensureEngineerByEmail(engineerEmail);
   if (!eng) return null;
   const weekStart = new Date(startOfWeekMondayISO(weekStartISO));
-  const existing = await client.timesheet.findUnique({ where: { engineerId: eng.id, weekStart } as any, include: { Engineer: true } }).catch(() => null);
+  const existing = await client.timesheet.findUnique({ where: { engineerId: eng.id, weekStart } as any, include: { engineer: true } }).catch(() => null);
   if (existing) return toTimesheet(existing);
-  const created = await client.timesheet.create({ data: { companyId: await requireCompanyIdForPrisma(), engineerId: eng.id, weekStart, status: "draft" }, include: { Engineer: true } }).catch(() => null);
+  const created = await client.timesheet.create({ data: { companyId: await requireCompanyIdForPrisma(), engineerId: eng.id, weekStart, status: "draft" }, include: { engineer: true } }).catch(() => null);
   return created ? toTimesheet(created) : null;
 }
 
@@ -2736,7 +2736,7 @@ export async function listTimeEntriesForEngineerWeek(engineerEmail: string, week
   const rows = await client.timeEntry.findMany({
     where: { engineerId: eng.id, startedAt: { gte: weekStart, lt: weekEnd } },
     orderBy: { startedAt: "asc" },
-    include: { Engineer: true },
+    include: { engineer: true },
   });
   return rows.map(toTimeEntry);
 }
@@ -2754,7 +2754,7 @@ export async function submitTimesheet(engineerEmail: string, weekStartISO: strin
     where: { engineerId: eng.id, weekStart } as any,
     create: { engineerId: eng.id, weekStart, status: "submitted", submittedAt: new Date() } as any,
     update: { status: "submitted", submittedAt: new Date() },
-    include: { Engineer: true },
+    include: { engineer: true },
   }).catch(() => null);
   if (!sheet) return null;
 
@@ -2779,7 +2779,7 @@ export async function listTimesheets(opts: { companyId: string; status?: string 
   const rows = await client.timesheet.findMany({
     where,
     orderBy: { weekStart: "desc" },
-    include: { Engineer: true }
+    include: { engineer: true }
   });
   return rows.map(toTimesheet);
 }
@@ -2787,9 +2787,9 @@ export async function listTimesheets(opts: { companyId: string; status?: string 
 export async function getTimesheetById(id: string): Promise<(Timesheet & { entries: TimeEntry[] }) | null> {
   const client = p();
   if (!client) return null;
-  const row = await client.timesheet.findUnique({ where: { id }, include: { Engineer: true, TimeEntry: { include: { Engineer: true }, orderBy: { startedAt: "asc" } } } }).catch(() => null);
+  const row = await client.timesheet.findUnique({ where: { id }, include: { engineer: true, timeEntries: { include: { engineer: true }, orderBy: { startedAt: "asc" } } } }).catch(() => null);
   if (!row) return null;
-  return { ...toTimesheet(row), entries: row.TimeEntry.map(toTimeEntry) };
+  return { ...toTimesheet(row), entries: row.timeEntries.map(toTimeEntry) };
 }
 
 export async function approveTimesheet(id: string, approverEmail: string): Promise<Timesheet | null> {
@@ -2803,7 +2803,7 @@ export async function approveTimesheet(id: string, approverEmail: string): Promi
   // IDEMPOTENCY: If already approved, return existing state without re-creating cost items
   if (current.status === "approved") {
     console.log(`[IDEMPOTENT] Timesheet ${id} already approved - no action taken`);
-    const existing = await client.timesheet.findUnique({ where: { id }, include: { Engineer: true } });
+    const existing = await client.timesheet.findUnique({ where: { id }, include: { engineer: true } });
     return existing ? toTimesheet(existing) : null;
   }
 
@@ -2832,7 +2832,7 @@ export async function approveTimesheet(id: string, approverEmail: string): Promi
           approvedAt: new Date(),
           approvedBy: String(approverEmail || "").trim().toLowerCase(),
         },
-        include: { Engineer: true },
+        include: { engineer: true },
       });
 
       // Lock time entries atomically
@@ -2849,7 +2849,7 @@ export async function approveTimesheet(id: string, approverEmail: string): Promi
 
     // Transaction rolled back (likely due to race condition)
     if (!result) {
-      const existing = await client.timesheet.findUnique({ where: { id }, include: { Engineer: true } });
+      const existing = await client.timesheet.findUnique({ where: { id }, include: { engineer: true } });
       return existing ? toTimesheet(existing) : null;
     }
 
@@ -2865,7 +2865,7 @@ export async function approveTimesheet(id: string, approverEmail: string): Promi
 export async function rejectTimesheet(id: string, approverEmail: string, reason?: string): Promise<Timesheet | null> {
   const client = p();
   if (!client) return null;
-  const sheet = await client.timesheet.update({ where: { id }, data: { status: "rejected", approvedAt: new Date(), approvedBy: String(approverEmail || "").trim().toLowerCase(), notes: reason?.trim() || null }, include: { Engineer: true } }).catch(() => null);
+  const sheet = await client.timesheet.update({ where: { id }, data: { status: "rejected", approvedAt: new Date(), approvedBy: String(approverEmail || "").trim().toLowerCase(), notes: reason?.trim() || null }, include: { engineer: true } }).catch(() => null);
   if (!sheet) return null;
   // Unlock entries for editing/resubmission
   await client.timeEntry.updateMany({ where: { timesheetId: id }, data: { status: "rejected", lockedAt: null } }).catch(() => null);
@@ -3185,7 +3185,7 @@ function hoursBetween(startedAt: Date, endedAt: Date, breakMinutes: number) {
 async function createLabourCostItemsForTimesheetTx(timesheetId: string, tx: Tx) {
   const entries = await tx.timeEntry.findMany({
     where: { timesheetId },
-    include: { Engineer: { include: { RateCard: true } } },
+    include: { engineer: { include: { rateCard: true } } },
   }).catch(() => [] as any[]);
 
   for (const entry of entries) {
@@ -3203,10 +3203,10 @@ async function createLabourCostItemsForTimesheetTx(timesheetId: string, tx: Tx) 
     const hours = hoursBetween(entry.startedAt, entry.endedAt, Number(entry.breakMinutes ?? 0));
     if (hours <= 0) continue;
 
-    const rate = entry.Engineer?.RateCard?.costRatePerHour != null
-      ? Number(entry.Engineer.RateCard.costRatePerHour)
-      : entry.Engineer?.costRatePerHour != null
-        ? Number(entry.Engineer.costRatePerHour)
+    const rate = entry.engineer?.rateCard?.costRatePerHour != null
+      ? Number(entry.engineer.rateCard.costRatePerHour)
+      : entry.engineer?.costRatePerHour != null
+        ? Number(entry.engineer.costRatePerHour)
         : process.env.QT_DEFAULT_COST_RATE_PER_HOUR
           ? Number(process.env.QT_DEFAULT_COST_RATE_PER_HOUR)
           : 0;
@@ -3221,8 +3221,8 @@ async function createLabourCostItemsForTimesheetTx(timesheetId: string, tx: Tx) 
         type: "labour",
         source,
         lockStatus: "locked",
-        supplier: entry.Engineer?.name ?? entry.Engineer?.email ?? null,
-        description: `Labour (${entry.Engineer?.name ?? entry.Engineer?.email ?? "Engineer"})`,
+        supplier: entry.engineer?.name ?? entry.engineer?.email ?? null,
+        description: `Labour (${entry.engineer?.name ?? entry.engineer?.email ?? "Engineer"})`,
         quantity: hours,
         unitCost: rate,
         markupPct: 0,
@@ -3296,7 +3296,7 @@ export async function listIssuedCertificatesForClientEmail(email: string): Promi
 export async function createCertificate(input: { jobId: string; type: CertificateType }): Promise<Certificate | null> {
   const client = p();
   if (!client) return null;
-  const job = await client.job.findUnique({ where: { id: input.jobId }, include: { Client: true, Site: true, Engineer: true } }).catch(() => null);
+  const job = await client.job.findUnique({ where: { id: input.jobId }, include: { client: true, site: true, engineer: true } }).catch(() => null);
   if (!job) return null;
 
   // Resolve legal entity for this certificate

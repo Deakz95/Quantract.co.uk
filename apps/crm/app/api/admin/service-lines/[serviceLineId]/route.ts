@@ -37,7 +37,7 @@ export const GET = withRequestLogging(async function GET(
   const serviceLine = await client.serviceLine.findFirst({
     where: { id: serviceLineId, companyId },
     include: {
-      DefaultLegalEntity: {
+      defaultLegalEntity: {
         select: { id: true, displayName: true },
       },
     },
@@ -146,7 +146,7 @@ export const PATCH = withRequestLogging(async function PATCH(
     where: { id: serviceLineId },
     data,
     include: {
-      DefaultLegalEntity: {
+      defaultLegalEntity: {
         select: { id: true, displayName: true },
       },
     },

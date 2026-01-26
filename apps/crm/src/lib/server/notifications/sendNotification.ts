@@ -374,10 +374,10 @@ async function sendSMS(
       select: {
         reference: true,
         scheduledStart: true,
-        Site: {
+        site: {
           select: { address1: true, city: true, postcode: true },
         },
-        Engineer: {
+        engineer: {
           select: { name: true },
         },
       },
@@ -392,13 +392,13 @@ async function sendSMS(
           minute: "2-digit",
         });
       }
-      if (job.Site) {
-        variables.jobAddress = [job.Site.address1, job.Site.city, job.Site.postcode]
+      if (job.site) {
+        variables.jobAddress = [job.site.address1, job.site.city, job.site.postcode]
           .filter(Boolean)
           .join(", ");
       }
-      if (job.Engineer) {
-        variables.engineerName = job.Engineer.name;
+      if (job.engineer) {
+        variables.engineerName = job.engineer.name;
       }
     }
   }

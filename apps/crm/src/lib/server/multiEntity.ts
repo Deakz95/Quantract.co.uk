@@ -54,29 +54,29 @@ export async function resolveLegalEntity(opts: {
       select: {
         performingLegalEntityId: true,
         serviceLineId: true,
-        ServiceLine: {
+        serviceLine: {
           select: {
             defaultLegalEntityId: true,
           },
         },
-        PerformingLegalEntity: {
+        performingLegalEntity: {
           select: { id: true, displayName: true, legalName: true },
         },
       },
     });
 
-    if (job?.PerformingLegalEntity) {
+    if (job?.performingLegalEntity) {
       return {
-        legalEntityId: job.PerformingLegalEntity.id,
-        displayName: job.PerformingLegalEntity.displayName,
-        legalName: job.PerformingLegalEntity.legalName,
+        legalEntityId: job.performingLegalEntity.id,
+        displayName: job.performingLegalEntity.displayName,
+        legalName: job.performingLegalEntity.legalName,
       };
     }
 
     // Check job's service line default
-    if (job?.ServiceLine?.defaultLegalEntityId) {
+    if (job?.serviceLine?.defaultLegalEntityId) {
       const entity = await client.legalEntity.findFirst({
-        where: { id: job.ServiceLine.defaultLegalEntityId, companyId },
+        where: { id: job.serviceLine.defaultLegalEntityId, companyId },
         select: { id: true, displayName: true, legalName: true },
       });
       if (entity) {
@@ -95,16 +95,16 @@ export async function resolveLegalEntity(opts: {
       where: { id: opts.serviceLineId, companyId },
       select: {
         defaultLegalEntityId: true,
-        DefaultLegalEntity: {
+        defaultLegalEntity: {
           select: { id: true, displayName: true, legalName: true },
         },
       },
     });
-    if (serviceLine?.DefaultLegalEntity) {
+    if (serviceLine?.defaultLegalEntity) {
       return {
-        legalEntityId: serviceLine.DefaultLegalEntity.id,
-        displayName: serviceLine.DefaultLegalEntity.displayName,
-        legalName: serviceLine.DefaultLegalEntity.legalName,
+        legalEntityId: serviceLine.defaultLegalEntity.id,
+        displayName: serviceLine.defaultLegalEntity.displayName,
+        legalName: serviceLine.defaultLegalEntity.legalName,
       };
     }
   }
@@ -269,7 +269,7 @@ export async function listServiceLines() {
     where: { companyId },
     orderBy: [{ isDefault: "desc" }, { name: "asc" }],
     include: {
-      DefaultLegalEntity: {
+      defaultLegalEntity: {
         select: { id: true, displayName: true },
       },
     },
@@ -300,7 +300,7 @@ export async function getServiceLineById(id: string) {
   return client.serviceLine.findFirst({
     where: { id, companyId },
     include: {
-      DefaultLegalEntity: {
+      defaultLegalEntity: {
         select: { id: true, displayName: true },
       },
     },

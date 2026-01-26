@@ -98,10 +98,10 @@ export async function GET() {
         createdAt: true,
         _count: {
           select: {
-            Quote: true,
-            Invoice: true,
-            Job: true,
-            Client: true,
+            quotes: true,
+            invoices: true,
+            jobs: true,
+            clients: true,
           }
         }
       },
@@ -115,10 +115,10 @@ export async function GET() {
         name: c.name,
         slug: c.slug,
         createdAt: c.createdAt,
-        quotesCount: c._count.Quote,
-        invoicesCount: c._count.Invoice,
-        jobsCount: c._count.Job,
-        clientsCount: c._count.Client,
+        quotesCount: c._count.quotes,
+        invoicesCount: c._count.invoices,
+        jobsCount: c._count.jobs,
+        clientsCount: c._count.clients,
       })),
     });
   } catch (error) {

@@ -27,7 +27,7 @@ export async function GET() {
           ],
         },
         include: {
-          Company: true,
+          company: true,
         },
       });
     }
@@ -50,10 +50,10 @@ export async function GET() {
         role: dbUser.role,
         companyId: dbUser.companyId,
         neonAuthUserId: dbUser.neonAuthUserId,
-        company: dbUser.Company ? {
-          id: dbUser.Company.id,
-          name: dbUser.Company.name,
-          slug: dbUser.Company.slug,
+        company: dbUser.company ? {
+          id: dbUser.company.id,
+          name: dbUser.company.name,
+          slug: dbUser.company.slug,
         } : null,
       } : null,
     });

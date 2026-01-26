@@ -42,7 +42,7 @@ export const GET = withRequestLogging(async function GET(req: Request) {
         },
       },
       include: {
-        TimeEntry: {
+        timeEntries: {
           select: {
             startedAt: true,
             endedAt: true,
@@ -62,7 +62,7 @@ export const GET = withRequestLogging(async function GET(req: Request) {
 
     const jobStats = jobs.map((job: any) => {
       // Calculate actual hours from time entries
-      const actualMinutes = job.TimeEntry.reduce((sum: number, entry: { startedAt: Date; endedAt: Date | null; breakMinutes?: number | null }) => {
+      const actualMinutes = job.timeEntries.reduce((sum: number, entry: { startedAt: Date; endedAt: Date | null; breakMinutes?: number | null }) => {
         if (!entry.endedAt) return sum;
         const duration =
           (new Date(entry.endedAt).getTime() - new Date(entry.startedAt).getTime()) /

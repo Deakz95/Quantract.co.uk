@@ -29,32 +29,32 @@ export const GET = withRequestLogging(
       const task = await db.task.findFirst({
         where: { id: taskId, companyId },
         include: {
-          Assignee: {
+          assignee: {
             select: { id: true, name: true, email: true },
           },
-          Creator: {
+          creator: {
             select: { id: true, name: true, email: true },
           },
-          Job: {
+          job: {
             select: { id: true, title: true },
           },
-          Client: {
+          client: {
             select: { id: true, name: true },
           },
-          ParentTask: {
+          parentTask: {
             select: { id: true, title: true },
           },
-          Subtasks: {
+          subtasks: {
             include: {
-              Assignee: {
+              assignee: {
                 select: { id: true, name: true, email: true },
               },
             },
             orderBy: { createdAt: "asc" },
           },
-          Comments: {
+          comments: {
             include: {
-              Creator: {
+              creator: {
                 select: { id: true, name: true, email: true },
               },
             },
@@ -127,21 +127,21 @@ export const PATCH = withRequestLogging(
         where: { id: taskId },
         data: updateData,
         include: {
-          Assignee: {
+          assignee: {
             select: { id: true, name: true, email: true },
           },
-          Creator: {
+          creator: {
             select: { id: true, name: true, email: true },
           },
-          Job: {
+          job: {
             select: { id: true, title: true },
           },
-          Client: {
+          client: {
             select: { id: true, name: true },
           },
-          Subtasks: {
+          subtasks: {
             include: {
-              Assignee: {
+              assignee: {
                 select: { id: true, name: true, email: true },
               },
             },
