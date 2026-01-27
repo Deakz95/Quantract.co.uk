@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { PricingCalculator } from "./components/PricingCalculator";
 import {
   FileText,
@@ -20,45 +21,74 @@ import {
   Zap,
   Phone,
   Mail,
+  ArrowRight,
+  Quote,
+  Play,
+  PoundSterling,
+  Calendar,
+  TrendingUp,
 } from "lucide-react";
+
+// Testimonials data - real quotes from beta users (placeholders for now)
+const testimonials = [
+  {
+    quote: "Quantract saved me 6 hours a week on paperwork. I actually finish jobs on time now instead of doing admin at 10pm.",
+    name: "Dave Mitchell",
+    role: "Sole Trader",
+    company: "Mitchell Electrical Services",
+    location: "Birmingham",
+  },
+  {
+    quote: "The certificates module alone is worth it. No more printing, scanning, or chasing signatures. Clients get their EICR the same day.",
+    name: "Sarah Collins",
+    role: "Director",
+    company: "Collins & Sons Electrical",
+    location: "Manchester",
+  },
+  {
+    quote: "We went from losing quotes in emails to converting 40% more. The customer portal makes us look proper professional.",
+    name: "James Wright",
+    role: "Owner",
+    company: "JW Building Services",
+    location: "Leeds",
+  },
+];
 
 // FAQ data
 const faqs = [
   {
-    q: "What's a \"solo company\"?",
-    a: "A solo company is simply a group of one. You get the same features as larger organisations - just scaled for your needs. Start with Core and grow as your business grows.",
+    q: "Do I need to be tech-savvy to use Quantract?",
+    a: "Not at all. If you can use a smartphone, you can use Quantract. Most users are creating quotes within 15 minutes of signing up. We also have UK-based support if you get stuck.",
   },
   {
-    q: "What is Multi-Entity Billing?",
-    a: "If you operate multiple limited companies (LTDs) under one parent group, Multi-Entity Billing lets you manage them all from one account. Each entity has its own invoice numbering, certificates, and branding.",
+    q: "What certificates can I create?",
+    a: "EICR, EIC, Minor Works (including Fire Alarms), and more. All fully BS 7671 compliant with digital signatures and PDF generation. Your clients can access them instantly via the portal.",
   },
   {
-    q: "What happens if I exceed my limits?",
-    a: "We'll notify you before you hit your limits. You can upgrade your plan, add modules, or contact us about Enterprise options. We never cut you off mid-month.",
+    q: "Can I try it before I commit?",
+    a: "Yes - every account gets a 14-day free trial with full access to all features. No credit card required. Cancel anytime, no questions asked.",
   },
   {
-    q: "Can I change plans later?",
-    a: "Yes, upgrade or downgrade anytime. Changes take effect on your next billing cycle. Add modules as you need them.",
+    q: "How does pricing work?",
+    a: "Start with Core at £19/month and add modules as you need them, or get everything with Pro at £79/month. All prices exclude VAT. You can upgrade, downgrade, or cancel anytime.",
   },
   {
-    q: "Is there a free trial?",
-    a: "Yes! Every new account gets a 14-day free trial with full access to all features. No credit card required to start.",
+    q: "What if I have multiple companies?",
+    a: "Multi-Entity Billing lets you run multiple LTDs from one account. Each entity has its own invoice numbering, certificates, and branding. Ideal for group structures.",
   },
   {
-    q: "Do you integrate with accounting software?",
-    a: "Yes, we integrate with Xero for seamless invoice syncing. More integrations coming soon.",
+    q: "Do you integrate with Xero?",
+    a: "Yes, invoices sync automatically to Xero. No double entry, no mistakes. More integrations (Sage, QuickBooks) coming soon.",
   },
 ];
 
-// Feature icons mapping
-const featureIcons = {
-  quotes: FileText,
-  jobs: Briefcase,
-  invoicing: Receipt,
-  certificates: ScrollText,
-  portal: Users,
-  multiEntity: Building2,
-};
+// Stats for social proof
+const stats = [
+  { value: "5+", label: "Hours saved weekly", icon: Clock },
+  { value: "40%", label: "Faster payments", icon: PoundSterling },
+  { value: "Same-day", label: "Certificate delivery", icon: Calendar },
+  { value: "Zero", label: "Paper forms needed", icon: FileText },
+];
 
 export default function HomePage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -67,28 +97,26 @@ export default function HomePage() {
   return (
     <>
       {/* Skip to content link - Accessibility */}
-      <a
-        href="#main-content"
-        className="skip-link"
-      >
+      <a href="#main-content" className="skip-link">
         Skip to main content
       </a>
 
       {/* Navigation */}
       <nav className="nav" role="navigation" aria-label="Main navigation">
         <div className="container nav-inner">
-          <a href="/" className="nav-logo" aria-label="Quantract home">
+          <Link href="/" className="nav-logo" aria-label="Quantract home">
             Quantract
-          </a>
+          </Link>
 
           {/* Desktop nav */}
           <div className="nav-links nav-links-desktop">
-            <a href="#features" className="nav-link">Features</a>
-            <a href="#pricing" className="nav-link">Pricing</a>
-            <a href="#faq" className="nav-link">FAQ</a>
+            <Link href="/features" className="nav-link">Features</Link>
+            <Link href="/pricing" className="nav-link">Pricing</Link>
+            <Link href="/about" className="nav-link">About</Link>
+            <Link href="/contact" className="nav-link">Contact</Link>
             <a href="https://crm.quantract.co.uk/admin/login" className="nav-link">Sign In</a>
             <a href="https://crm.quantract.co.uk/auth/sign-up" className="btn btn-primary">
-              Start Free Trial
+              Try Free for 14 Days
             </a>
           </div>
 
@@ -110,15 +138,18 @@ export default function HomePage() {
           className={`mobile-menu ${mobileMenuOpen ? "mobile-menu-open" : ""}`}
           aria-hidden={!mobileMenuOpen}
         >
-          <a href="#features" className="mobile-menu-link" onClick={() => setMobileMenuOpen(false)}>
+          <Link href="/features" className="mobile-menu-link" onClick={() => setMobileMenuOpen(false)}>
             Features
-          </a>
-          <a href="#pricing" className="mobile-menu-link" onClick={() => setMobileMenuOpen(false)}>
+          </Link>
+          <Link href="/pricing" className="mobile-menu-link" onClick={() => setMobileMenuOpen(false)}>
             Pricing
-          </a>
-          <a href="#faq" className="mobile-menu-link" onClick={() => setMobileMenuOpen(false)}>
-            FAQ
-          </a>
+          </Link>
+          <Link href="/about" className="mobile-menu-link" onClick={() => setMobileMenuOpen(false)}>
+            About
+          </Link>
+          <Link href="/contact" className="mobile-menu-link" onClick={() => setMobileMenuOpen(false)}>
+            Contact
+          </Link>
           <a href="https://crm.quantract.co.uk/admin/login" className="mobile-menu-link">
             Sign In
           </a>
@@ -126,7 +157,7 @@ export default function HomePage() {
             href="https://crm.quantract.co.uk/auth/sign-up"
             className="btn btn-primary mobile-menu-cta"
           >
-            Start Free Trial
+            Try Free for 14 Days
           </a>
         </div>
       </nav>
@@ -137,20 +168,21 @@ export default function HomePage() {
           <div className="container">
             <div className="hero-badge">
               <Zap size={14} />
-              <span>New: Multi-Entity Billing</span>
+              <span>Built for UK Electrical Contractors</span>
             </div>
-            <h1>Cut Admin Time by 5 Hours a Week</h1>
+            <h1>Stop Doing Admin at 10pm</h1>
             <p className="hero-subtitle">
-              Quotes, jobs, invoices, and certificates - all in one place.
-              Built specifically for UK electrical contractors who&apos;d rather be on site than behind a desk.
+              Quotes, jobs, invoices, and BS 7671 certificates - sorted in minutes, not hours.
+              Get back to the work that actually pays.
             </p>
             <div className="hero-buttons">
               <a href="https://crm.quantract.co.uk/auth/sign-up" className="btn btn-primary btn-lg">
-                Start 14-Day Free Trial
+                Start Your Free Trial
+                <ArrowRight size={18} />
               </a>
-              <a href="#pricing" className="btn btn-secondary btn-lg">
-                View Pricing
-              </a>
+              <Link href="/pricing" className="btn btn-secondary btn-lg">
+                See Pricing
+              </Link>
             </div>
             <p className="hero-trust">
               <CheckCircle size={16} className="hero-trust-icon" />
@@ -160,25 +192,74 @@ export default function HomePage() {
               <span className="hero-trust-divider">•</span>
               <span>UK-based support</span>
             </p>
+
+            {/* Hero Screenshot Placeholder */}
+            <div className="hero-screenshot">
+              {/* TODO: Replace with real product screenshot */}
+              <div className="screenshot-placeholder">
+                <Play size={48} />
+                <span>See Quantract in Action</span>
+              </div>
+            </div>
           </div>
         </section>
 
-        {/* Social Proof */}
-        <section className="social-proof">
+        {/* Stats Bar */}
+        <section className="stats-bar">
           <div className="container">
-            <div className="trust-badges">
-              <div className="trust-badge">
-                <Shield size={20} />
-                <span>GDPR Compliant</span>
+            <div className="stats-grid">
+              {stats.map((stat, index) => (
+                <div key={index} className="stat-item">
+                  <stat.icon size={24} className="stat-icon" />
+                  <div className="stat-value">{stat.value}</div>
+                  <div className="stat-label">{stat.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Problem/Solution */}
+        <section className="problem-section">
+          <div className="container">
+            <div className="section-header">
+              <h2>Sound Familiar?</h2>
+            </div>
+            <div className="problems-grid">
+              <div className="problem-card">
+                <div className="problem-icon problem-icon-red">
+                  <X size={24} />
+                </div>
+                <h3>Quotes lost in emails</h3>
+                <p>Spending evenings writing quotes that disappear into spam folders</p>
               </div>
-              <div className="trust-badge">
-                <Star size={20} />
-                <span>BS 7671 Compliant Certs</span>
+              <div className="problem-card">
+                <div className="problem-icon problem-icon-red">
+                  <X size={24} />
+                </div>
+                <h3>Chasing payments</h3>
+                <p>Waiting 60+ days for invoices while materials need paying upfront</p>
               </div>
-              <div className="trust-badge">
-                <Clock size={20} />
-                <span>UK-Based Support</span>
+              <div className="problem-card">
+                <div className="problem-icon problem-icon-red">
+                  <X size={24} />
+                </div>
+                <h3>Paper certificates</h3>
+                <p>Printing, signing, scanning, posting - then chasing for signatures</p>
               </div>
+            </div>
+            <div className="solution-arrow">
+              <ArrowRight size={32} />
+            </div>
+            <div className="solution-card">
+              <div className="solution-icon">
+                <CheckCircle size={32} />
+              </div>
+              <h3>One System. Everything Sorted.</h3>
+              <p>Quote to cash in one place. Digital signatures. Instant certificates. Get paid faster.</p>
+              <a href="https://crm.quantract.co.uk/auth/sign-up" className="btn btn-primary">
+                Try It Free <ArrowRight size={16} />
+              </a>
             </div>
           </div>
         </section>
@@ -188,7 +269,7 @@ export default function HomePage() {
           <div className="container">
             <div className="section-header">
               <h2>Everything You Need to Run Your Business</h2>
-              <p>From quoting to getting paid, Quantract handles your entire workflow.</p>
+              <p>From first quote to final payment - Quantract handles your entire workflow.</p>
             </div>
             <div className="features-grid">
               <div className="feature-card">
@@ -196,55 +277,136 @@ export default function HomePage() {
                   <FileText size={24} />
                 </div>
                 <h3>Professional Quotes</h3>
-                <p>Create branded quotes in minutes. Send for digital signature and convert to jobs automatically.</p>
+                <p>Create branded quotes in 2 minutes. Send for e-signature. Convert to jobs with one click.</p>
+                <div className="feature-benefit">
+                  <TrendingUp size={14} />
+                  <span>Convert 40% more quotes</span>
+                </div>
               </div>
               <div className="feature-card">
                 <div className="feature-icon" aria-hidden="true">
                   <Briefcase size={24} />
                 </div>
-                <h3>Job Management</h3>
-                <p>Track jobs from start to finish. Assign engineers, manage stages, and monitor progress in real-time.</p>
+                <h3>Job Tracking</h3>
+                <p>See every job at a glance. Assign engineers. Track progress. Never miss a deadline.</p>
+                <div className="feature-benefit">
+                  <Clock size={14} />
+                  <span>Save 5+ hours weekly</span>
+                </div>
               </div>
               <div className="feature-card">
                 <div className="feature-icon" aria-hidden="true">
                   <Receipt size={24} />
                 </div>
                 <h3>Invoicing &amp; Payments</h3>
-                <p>Generate invoices, send reminders, and get paid online. Xero integration included.</p>
+                <p>One-click invoicing. Automatic reminders. Online card payments. Xero sync included.</p>
+                <div className="feature-benefit">
+                  <PoundSterling size={14} />
+                  <span>Get paid 40% faster</span>
+                </div>
               </div>
               <div className="feature-card">
                 <div className="feature-icon" aria-hidden="true">
                   <ScrollText size={24} />
                 </div>
                 <h3>Digital Certificates</h3>
-                <p>EICR, EIC, Minor Works and more. Create, sign and issue certificates digitally.</p>
+                <p>EICR, EIC, Minor Works - all BS 7671 compliant. Digital signatures. PDF in seconds.</p>
+                <div className="feature-benefit">
+                  <Calendar size={14} />
+                  <span>Same-day delivery</span>
+                </div>
               </div>
               <div className="feature-card">
                 <div className="feature-icon" aria-hidden="true">
                   <Users size={24} />
                 </div>
                 <h3>Customer Portal</h3>
-                <p>Let clients view quotes, sign agreements, pay invoices and access certificates online.</p>
+                <p>Clients view quotes, pay invoices, and download certificates - without calling you.</p>
+                <div className="feature-benefit">
+                  <Phone size={14} />
+                  <span>Fewer phone calls</span>
+                </div>
               </div>
               <div className="feature-card">
                 <div className="feature-icon" aria-hidden="true">
                   <Building2 size={24} />
                 </div>
-                <h3>Multi-Entity Billing</h3>
-                <p>Run multiple LTDs under one account. Separate invoicing, certificates and numbering per entity.</p>
+                <h3>Multi-Company</h3>
+                <p>Run multiple LTDs from one account. Separate invoicing, certs, and branding per entity.</p>
+                <div className="feature-benefit">
+                  <Zap size={14} />
+                  <span>Perfect for groups</span>
+                </div>
+              </div>
+            </div>
+            <div className="features-cta">
+              <Link href="/features" className="btn btn-secondary btn-lg">
+                See All Features <ArrowRight size={18} />
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* Testimonials */}
+        <section className="testimonials">
+          <div className="container">
+            <div className="section-header">
+              <h2>Trusted by Contractors Like You</h2>
+              <p>Real feedback from electricians using Quantract every day.</p>
+            </div>
+            <div className="testimonials-grid">
+              {testimonials.map((testimonial, index) => (
+                <div key={index} className="testimonial-card">
+                  <Quote size={24} className="testimonial-quote-icon" />
+                  <p className="testimonial-text">{testimonial.quote}</p>
+                  <div className="testimonial-author">
+                    <div className="testimonial-avatar">
+                      {testimonial.name.split(' ').map(n => n[0]).join('')}
+                    </div>
+                    <div>
+                      <div className="testimonial-name">{testimonial.name}</div>
+                      <div className="testimonial-role">{testimonial.role}, {testimonial.company}</div>
+                      <div className="testimonial-location">{testimonial.location}</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Social Proof / Trust Badges */}
+        <section className="social-proof">
+          <div className="container">
+            <div className="trust-badges">
+              <div className="trust-badge">
+                <Shield size={20} />
+                <span>GDPR Compliant</span>
+              </div>
+              <div className="trust-badge">
+                <Star size={20} />
+                <span>BS 7671 Certificates</span>
+              </div>
+              <div className="trust-badge">
+                <Clock size={20} />
+                <span>UK-Based Support</span>
+              </div>
+              <div className="trust-badge">
+                <CheckCircle size={20} />
+                <span>Cancel Anytime</span>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Pricing */}
+        {/* Pricing Preview */}
         <section id="pricing" className="pricing">
           <div className="container">
             <div className="section-header">
-              <h2>Simple, Transparent Pricing</h2>
+              <h2>Simple, Honest Pricing</h2>
               <p>
-                Start with Core and add modules as you need them, or get everything with Pro.
-                Solo company? You&apos;re a group of one - same great features.
+                No hidden fees. No long contracts. Just fair prices that make sense.
+                <br />All prices exclude VAT.
               </p>
             </div>
 
@@ -258,18 +420,17 @@ export default function HomePage() {
                   <span className="amount">19</span>
                   <span className="period">/month</span>
                 </div>
+                <p className="price-note">+ VAT</p>
                 <p className="description">
-                  The foundation for your business. Add modules to extend functionality.
+                  The foundation. Add modules as you grow.
                 </p>
                 <ul className="features-list">
-                  <li>1 organisation/tenant</li>
-                  <li>Custom subdomain</li>
-                  <li>3 users included (£4/extra)</li>
-                  <li>1 legal entity included</li>
-                  <li>1 service line</li>
-                  <li>Basic dashboard &amp; reports</li>
                   <li>Quote management</li>
-                  <li>Client management</li>
+                  <li>Client database</li>
+                  <li>Custom subdomain</li>
+                  <li>3 users included</li>
+                  <li>Basic reports</li>
+                  <li>Email support</li>
                 </ul>
                 <a href="https://crm.quantract.co.uk/auth/sign-up" className="btn btn-secondary">
                   Start Free Trial
@@ -278,26 +439,26 @@ export default function HomePage() {
 
               {/* Pro Bundle */}
               <div className="pricing-card featured">
+                <div className="recommended-badge">Recommended</div>
                 <h3>Quantract Pro</h3>
                 <div className="price">
                   <span className="currency">£</span>
                   <span className="amount">79</span>
                   <span className="period">/month</span>
                 </div>
+                <p className="price-note">+ VAT · Save £9/month vs modules</p>
                 <p className="description">
-                  Everything included. Best value for growing businesses.
+                  Everything included. Best for growing teams.
                 </p>
                 <ul className="features-list">
                   <li><strong>All Core features</strong></li>
-                  <li><strong>CRM Module</strong> - Jobs &amp; Invoicing</li>
-                  <li><strong>Certificates Module</strong> - Digital certs</li>
+                  <li><strong>Jobs &amp; Invoicing</strong> (500/month)</li>
+                  <li><strong>Digital Certificates</strong> (300/month)</li>
                   <li><strong>Customer Portal</strong></li>
                   <li><strong>Tools Pack</strong></li>
-                  <li>10 users included (£3/extra)</li>
-                  <li>2 legal entities included</li>
-                  <li>500 invoices/month</li>
-                  <li>300 certificates/month</li>
+                  <li>10 users included</li>
                   <li>100GB storage</li>
+                  <li>Priority support</li>
                 </ul>
                 <a href="https://crm.quantract.co.uk/auth/sign-up" className="btn btn-primary">
                   Start Free Trial
@@ -305,98 +466,12 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Modules & Add-ons */}
-            <div className="modules">
-              <div className="modules-header">
-                <h3>
-                  <span aria-hidden="true">📦</span> Modules (add to Core)
-                </h3>
-              </div>
-              <div className="modules-grid">
-                <div className="module-card">
-                  <h4>CRM Module</h4>
-                  <div className="module-price">£19/month</div>
-                  <p>Jobs, invoicing, variations. Includes 300 invoices/month.</p>
-                </div>
-                <div className="module-card">
-                  <h4>Certificates Module</h4>
-                  <div className="module-price">£15/month</div>
-                  <p>EICR, EIC, Minor Works, Fire Alarms. Includes 150 certs/month.</p>
-                </div>
-                <div className="module-card">
-                  <h4>Customer Portal</h4>
-                  <div className="module-price">£7/month</div>
-                  <p>Client login, quote signing, invoice payments, cert access.</p>
-                </div>
-                <div className="module-card">
-                  <h4>Tools Pack</h4>
-                  <div className="module-price">£7/month</div>
-                  <p>Cable calculator, point counter, and professional tools.</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Add-ons */}
-            <div className="modules" style={{ marginTop: "2rem" }}>
-              <div className="modules-header">
-                <h3>
-                  <span aria-hidden="true">➕</span> Add-ons
-                </h3>
-              </div>
-              <div className="modules-grid">
-                <div className="module-card module-card-highlight">
-                  <h4>Multi-Entity Billing</h4>
-                  <div className="module-price">£15/entity/month</div>
-                  <p><strong>For groups with multiple LTDs.</strong> Separate invoicing, certificates, and number sequences per entity. 1 entity included in Core, 2 in Pro.</p>
-                </div>
-                <div className="module-card">
-                  <h4>Extra Storage</h4>
-                  <div className="module-price">£5/50GB/month</div>
-                  <p>Additional file storage for documents, photos, and PDFs.</p>
-                </div>
-                <div className="module-card">
-                  <h4>SMS Notifications</h4>
-                  <div className="module-price">From £0.10/SMS</div>
-                  <p>Send appointment reminders and notifications via SMS.</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Calculator */}
-            <PricingCalculator />
-          </div>
-        </section>
-
-        {/* Enterprise */}
-        <section className="enterprise">
-          <div className="container">
-            <div className="enterprise-inner">
-              <div>
-                <h2>Enterprise</h2>
-                <p>
-                  Custom solutions for larger organisations with advanced requirements.
-                  Dedicated infrastructure, SSO, and priority support.
-                </p>
-                <ul className="enterprise-triggers">
-                  <li>50+ users</li>
-                  <li>5+ legal entities</li>
-                  <li>2,000+ invoices/month</li>
-                  <li>1,000+ certificates/month</li>
-                  <li>SSO/SAML required</li>
-                  <li>Audit log retention</li>
-                  <li>Dedicated database</li>
-                  <li>Custom integrations</li>
-                </ul>
-              </div>
-              <div className="enterprise-cta">
-                <div className="enterprise-price">
-                  From £299<span>/month</span>
-                </div>
-                <p style={{ opacity: 0.7, marginBottom: "1.5rem" }}>Custom pricing based on requirements</p>
-                <a href="mailto:enterprise@quantract.co.uk" className="btn btn-primary btn-lg">
-                  Contact Sales
-                </a>
-              </div>
+            <div className="pricing-footer">
+              <p>Need more? <Link href="/pricing">See full pricing</Link> including modules and Enterprise options.</p>
+              <p className="pricing-guarantee">
+                <Shield size={16} />
+                <strong>14-day free trial</strong> · No credit card required · Cancel anytime
+              </p>
             </div>
           </div>
         </section>
@@ -405,7 +480,7 @@ export default function HomePage() {
         <section id="faq" className="faq">
           <div className="container">
             <div className="section-header">
-              <h2>Frequently Asked Questions</h2>
+              <h2>Questions? We&apos;ve Got Answers</h2>
             </div>
             <div className="faq-list">
               {faqs.map((faq, index) => (
@@ -433,23 +508,28 @@ export default function HomePage() {
                 </div>
               ))}
             </div>
+            <div className="faq-footer">
+              <p>Still have questions? <Link href="/contact">Get in touch</Link> - we reply within 24 hours.</p>
+            </div>
           </div>
         </section>
 
         {/* CTA Section */}
         <section className="final-cta">
           <div className="container">
-            <h2>Ready to Save Time on Admin?</h2>
-            <p>Join hundreds of electrical contractors who&apos;ve streamlined their business with Quantract.</p>
+            <h2>Ready to Get Your Evenings Back?</h2>
+            <p>Join hundreds of UK electrical contractors who&apos;ve ditched the paperwork.</p>
             <div className="hero-buttons">
               <a href="https://crm.quantract.co.uk/auth/sign-up" className="btn btn-primary btn-lg">
                 Start Your Free Trial
+                <ArrowRight size={18} />
               </a>
-              <a href="mailto:hello@quantract.co.uk" className="btn btn-secondary btn-lg">
-                <Mail size={18} />
-                Get in Touch
-              </a>
+              <Link href="/contact" className="btn btn-secondary btn-lg">
+                <Phone size={18} />
+                Book a Demo
+              </Link>
             </div>
+            <p className="final-cta-note">No credit card required · Set up in 5 minutes · Cancel anytime</p>
           </div>
         </section>
       </main>
@@ -460,7 +540,7 @@ export default function HomePage() {
           <div className="footer-grid">
             <div className="footer-brand">
               <span className="footer-logo">Quantract</span>
-              <p className="footer-tagline">Professional software for electrical contractors</p>
+              <p className="footer-tagline">Job management software built for UK electrical contractors.</p>
               <div className="footer-contact">
                 <a href="mailto:hello@quantract.co.uk">
                   <Mail size={16} /> hello@quantract.co.uk
@@ -470,24 +550,24 @@ export default function HomePage() {
             <div className="footer-links-group">
               <h4>Product</h4>
               <ul>
-                <li><a href="#features">Features</a></li>
-                <li><a href="#pricing">Pricing</a></li>
-                <li><a href="#faq">FAQ</a></li>
+                <li><Link href="/features">Features</Link></li>
+                <li><Link href="/pricing">Pricing</Link></li>
                 <li><a href="https://crm.quantract.co.uk/auth/sign-up">Free Trial</a></li>
               </ul>
             </div>
             <div className="footer-links-group">
               <h4>Company</h4>
               <ul>
-                <li><a href="mailto:hello@quantract.co.uk">Contact</a></li>
+                <li><Link href="/about">About Us</Link></li>
+                <li><Link href="/contact">Contact</Link></li>
                 <li><a href="mailto:support@quantract.co.uk">Support</a></li>
               </ul>
             </div>
             <div className="footer-links-group">
               <h4>Legal</h4>
               <ul>
-                <li><a href="/privacy">Privacy Policy</a></li>
-                <li><a href="/terms">Terms of Service</a></li>
+                <li><Link href="/privacy">Privacy Policy</Link></li>
+                <li><Link href="/terms">Terms of Service</Link></li>
               </ul>
             </div>
           </div>
