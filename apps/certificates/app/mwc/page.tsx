@@ -1,20 +1,50 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Button, Card, CardHeader, CardTitle, CardContent, CardDescription, Input, Label, NativeSelect, Textarea } from "@quantract/ui";
 import { getCertificateTemplate, type MWCCertificate } from "../../lib/certificate-types";
 import { generateCertificatePDF } from "../../lib/pdf-generator";
+import {
+  useCertificateStore,
+  createNewCertificate,
+  generateCertificateNumber,
+  type StoredCertificate,
+} from "../../lib/certificateStore";
 
-export default function MWCPage() {
+function MWCPageContent() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const certificateId = searchParams.get("id");
+
+  const { certificates, addCertificate, updateCertificate, getCertificate } = useCertificateStore();
+
   const [data, setData] = useState<MWCCertificate>(getCertificateTemplate("MWC") as MWCCertificate);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [currentCertId, setCurrentCertId] = useState<string | null>(certificateId);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+
+  // Load existing certificate if ID is provided
+  useEffect(() => {
+    if (certificateId) {
+      const existing = getCertificate(certificateId);
+      if (existing && existing.data) {
+        setData(existing.data as MWCCertificate);
+        setCurrentCertId(certificateId);
+        setLastSaved(new Date(existing.updated_at));
+      }
+    }
+  }, [certificateId, getCertificate]);
 
   const updateOverview = (field: keyof MWCCertificate["overview"], value: string) => {
     setData((prev) => ({
       ...prev,
       overview: { ...prev.overview, [field]: value },
     }));
+    setSaveStatus("idle");
   };
 
   const updateCircuit = (field: string, value: string) => {
@@ -22,6 +52,7 @@ export default function MWCPage() {
       ...prev,
       circuitDetails: { ...prev.circuitDetails, [field]: value },
     }));
+    setSaveStatus("idle");
   };
 
   const updateTests = (field: string, value: any) => {
@@ -29,9 +60,48 @@ export default function MWCPage() {
       ...prev,
       testResults: { ...prev.testResults, [field]: value },
     }));
+    setSaveStatus("idle");
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    setSaveStatus("saving");
+
+    try {
+      if (currentCertId) {
+        // Update existing certificate
+        updateCertificate(currentCertId, {
+          client_name: data.overview.clientName,
+          installation_address: data.overview.installationAddress,
+          data: data as unknown as Record<string, unknown>,
+        });
+      } else {
+        // Create new certificate
+        const newCert = createNewCertificate("MWC", data as unknown as Record<string, unknown>);
+        newCert.client_name = data.overview.clientName;
+        newCert.installation_address = data.overview.installationAddress;
+        newCert.certificate_number = data.overview.jobReference || generateCertificateNumber("MWC");
+        addCertificate(newCert);
+        setCurrentCertId(newCert.id);
+        // Update URL without navigation
+        window.history.replaceState({}, "", `/mwc?id=${newCert.id}`);
+      }
+
+      setLastSaved(new Date());
+      setSaveStatus("saved");
+      setTimeout(() => setSaveStatus("idle"), 2000);
+    } catch (error) {
+      console.error("Error saving certificate:", error);
+      setSaveStatus("error");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleDownload = async () => {
+    // Auto-save before download
+    await handleSave();
+
     setIsGenerating(true);
     try {
       const pdfBytes = await generateCertificatePDF(data);
@@ -42,11 +112,26 @@ export default function MWCPage() {
       a.download = `MWC-${data.overview.jobReference || "certificate"}.pdf`;
       a.click();
       URL.revokeObjectURL(url);
+
+      // Update status to issued after download
+      if (currentCertId) {
+        updateCertificate(currentCertId, { status: "issued" });
+      }
     } catch (error) {
       console.error("Error generating PDF:", error);
       alert("Failed to generate PDF. Please try again.");
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleMarkComplete = () => {
+    if (currentCertId) {
+      updateCertificate(currentCertId, { status: "complete" });
+      setSaveStatus("saved");
+      setTimeout(() => setSaveStatus("idle"), 2000);
+    } else {
+      handleSave();
     }
   };
 
@@ -56,23 +141,61 @@ export default function MWCPage() {
       <header className="border-b border-[var(--border)] bg-[var(--card)] sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link href="/" className="text-[var(--muted-foreground)] hover:text-[var(--foreground)]">
+            <Link href="/dashboard" className="text-[var(--muted-foreground)] hover:text-[var(--foreground)]">
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
             </Link>
             <div>
               <h1 className="text-xl font-bold">Minor Electrical Installation Works Certificate</h1>
-              <p className="text-xs text-[var(--muted-foreground)]">BS 7671 • MWC</p>
+              <p className="text-xs text-[var(--muted-foreground)]">
+                BS 7671 • MWC
+                {currentCertId && (
+                  <span className="ml-2 text-[var(--primary)]">
+                    • {lastSaved ? `Last saved ${lastSaved.toLocaleTimeString()}` : "Not saved"}
+                  </span>
+                )}
+              </p>
             </div>
           </div>
-          <Button onClick={handleDownload} disabled={isGenerating}>
-            {isGenerating ? "Generating..." : "Download PDF"}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="secondary"
+              onClick={handleSave}
+              disabled={isSaving}
+              className="relative"
+            >
+              {saveStatus === "saving" ? (
+                "Saving..."
+              ) : saveStatus === "saved" ? (
+                <span className="flex items-center gap-1">
+                  <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Saved
+                </span>
+              ) : (
+                "Save"
+              )}
+            </Button>
+            <Button onClick={handleDownload} disabled={isGenerating}>
+              {isGenerating ? "Generating..." : "Download PDF"}
+            </Button>
+          </div>
         </div>
       </header>
 
       <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
+        {/* Save Status Banner */}
+        {!currentCertId && (
+          <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl text-sm text-amber-400 flex items-center gap-3">
+            <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <span>This certificate is not saved yet. Click &quot;Save&quot; to store it locally.</span>
+          </div>
+        )}
+
         {/* Overview Section */}
         <Card>
           <CardHeader>
@@ -131,7 +254,10 @@ export default function MWCPage() {
           <CardContent>
             <Textarea
               value={data.workDescription}
-              onChange={(e) => setData((prev) => ({ ...prev, workDescription: e.target.value }))}
+              onChange={(e) => {
+                setData((prev) => ({ ...prev, workDescription: e.target.value }));
+                setSaveStatus("idle");
+              }}
               placeholder="Describe the work carried out, e.g. Installation of additional socket outlet, replacement of light fitting..."
               className="min-h-[120px]"
             />
@@ -273,23 +399,45 @@ export default function MWCPage() {
           <CardContent>
             <Textarea
               value={data.observations}
-              onChange={(e) => setData((prev) => ({ ...prev, observations: e.target.value }))}
+              onChange={(e) => {
+                setData((prev) => ({ ...prev, observations: e.target.value }));
+                setSaveStatus("idle");
+              }}
               placeholder="Enter any observations or comments about the work..."
               className="min-h-[100px]"
             />
           </CardContent>
         </Card>
 
-        {/* Download Button */}
-        <div className="flex justify-end gap-4 pt-4">
-          <Link href="/">
-            <Button variant="secondary">Cancel</Button>
-          </Link>
-          <Button onClick={handleDownload} disabled={isGenerating} size="lg">
-            {isGenerating ? "Generating PDF..." : "Download Certificate"}
-          </Button>
+        {/* Action Buttons */}
+        <div className="flex flex-col sm:flex-row justify-between gap-4 pt-4 border-t border-[var(--border)]">
+          <div className="flex gap-2">
+            <Link href="/dashboard">
+              <Button variant="ghost">View All Certificates</Button>
+            </Link>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="secondary" onClick={handleMarkComplete} disabled={isSaving}>
+              Mark as Complete
+            </Button>
+            <Button onClick={handleDownload} disabled={isGenerating} size="lg">
+              {isGenerating ? "Generating PDF..." : "Download Certificate"}
+            </Button>
+          </div>
         </div>
       </div>
     </main>
+  );
+}
+
+export default function MWCPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-pulse text-[var(--muted-foreground)]">Loading...</div>
+      </div>
+    }>
+      <MWCPageContent />
+    </Suspense>
   );
 }

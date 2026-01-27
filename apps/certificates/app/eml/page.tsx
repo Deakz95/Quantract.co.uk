@@ -1,19 +1,47 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Button, Card, CardHeader, CardTitle, CardContent, CardDescription, Input, Label, NativeSelect, Textarea } from "@quantract/ui";
 import { getCertificateTemplate, type EmergencyLightingCertificate } from "../../lib/certificate-types";
+import {
+  useCertificateStore,
+  createNewCertificate,
+  generateCertificateNumber,
+} from "../../lib/certificateStore";
 
-export default function EmergencyLightingPage() {
+function EmergencyLightingPageContent() {
+  const searchParams = useSearchParams();
+  const certificateId = searchParams.get("id");
+
+  const { addCertificate, updateCertificate, getCertificate } = useCertificateStore();
+
   const [data, setData] = useState<EmergencyLightingCertificate>(getCertificateTemplate("EML") as EmergencyLightingCertificate);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [currentCertId, setCurrentCertId] = useState<string | null>(certificateId);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+
+  // Load existing certificate if ID is provided
+  useEffect(() => {
+    if (certificateId) {
+      const existing = getCertificate(certificateId);
+      if (existing && existing.data) {
+        setData(existing.data as EmergencyLightingCertificate);
+        setCurrentCertId(certificateId);
+        setLastSaved(new Date(existing.updated_at));
+      }
+    }
+  }, [certificateId, getCertificate]);
 
   const updateOverview = (field: keyof EmergencyLightingCertificate["overview"], value: string) => {
     setData((prev) => ({
       ...prev,
       overview: { ...prev.overview, [field]: value },
     }));
+    setSaveStatus("idle");
   };
 
   const updateSystemDetails = (field: keyof EmergencyLightingCertificate["systemDetails"], value: string | boolean) => {
@@ -21,6 +49,7 @@ export default function EmergencyLightingPage() {
       ...prev,
       systemDetails: { ...prev.systemDetails, [field]: value },
     }));
+    setSaveStatus("idle");
   };
 
   const updateTestResults = (field: keyof EmergencyLightingCertificate["testResults"], value: string | boolean) => {
@@ -28,6 +57,7 @@ export default function EmergencyLightingPage() {
       ...prev,
       testResults: { ...prev.testResults, [field]: value },
     }));
+    setSaveStatus("idle");
   };
 
   const addLuminaire = () => {
@@ -35,6 +65,7 @@ export default function EmergencyLightingPage() {
       ...prev,
       luminaires: [...prev.luminaires, { location: "", type: "", luminaireType: "", duration: "", status: "", notes: "" }],
     }));
+    setSaveStatus("idle");
   };
 
   const updateLuminaire = (index: number, field: string, value: string) => {
@@ -44,6 +75,7 @@ export default function EmergencyLightingPage() {
         i === index ? { ...lum, [field]: value } : lum
       ),
     }));
+    setSaveStatus("idle");
   };
 
   const removeLuminaire = (index: number) => {
@@ -51,14 +83,52 @@ export default function EmergencyLightingPage() {
       ...prev,
       luminaires: prev.luminaires.filter((_, i) => i !== index),
     }));
+    setSaveStatus("idle");
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    setSaveStatus("saving");
+
+    try {
+      if (currentCertId) {
+        updateCertificate(currentCertId, {
+          client_name: data.overview.clientName,
+          installation_address: data.overview.installationAddress,
+          data: data as unknown as Record<string, unknown>,
+        });
+      } else {
+        const newCert = createNewCertificate("EML", data as unknown as Record<string, unknown>);
+        newCert.client_name = data.overview.clientName;
+        newCert.installation_address = data.overview.installationAddress;
+        newCert.certificate_number = data.overview.jobReference || generateCertificateNumber("EML");
+        addCertificate(newCert);
+        setCurrentCertId(newCert.id);
+        window.history.replaceState({}, "", `/eml?id=${newCert.id}`);
+      }
+
+      setLastSaved(new Date());
+      setSaveStatus("saved");
+      setTimeout(() => setSaveStatus("idle"), 2000);
+    } catch (error) {
+      console.error("Error saving certificate:", error);
+      setSaveStatus("error");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleDownload = async () => {
+    await handleSave();
+
     setIsGenerating(true);
     // PDF generation would go here
     setTimeout(() => {
       alert("Emergency Lighting Certificate PDF generation coming soon!");
       setIsGenerating(false);
+      if (currentCertId) {
+        updateCertificate(currentCertId, { status: "issued" });
+      }
     }, 500);
   };
 
@@ -74,23 +144,61 @@ export default function EmergencyLightingPage() {
       <header className="border-b border-[var(--border)] bg-[var(--card)] sticky top-0 z-10">
         <div className="max-w-[1200px] mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link href="/" className="text-[var(--muted-foreground)] hover:text-[var(--foreground)]">
+            <Link href="/dashboard" className="text-[var(--muted-foreground)] hover:text-[var(--foreground)]">
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
             </Link>
             <div>
               <h1 className="text-xl font-bold">Emergency Lighting Certificate</h1>
-              <p className="text-xs text-[var(--muted-foreground)]">BS 5266 | Emergency Lighting</p>
+              <p className="text-xs text-[var(--muted-foreground)]">
+                BS 5266 | Emergency Lighting
+                {currentCertId && (
+                  <span className="ml-2 text-[var(--primary)]">
+                    • {lastSaved ? `Last saved ${lastSaved.toLocaleTimeString()}` : "Not saved"}
+                  </span>
+                )}
+              </p>
             </div>
           </div>
-          <Button onClick={handleDownload} disabled={isGenerating}>
-            {isGenerating ? "Generating..." : "Download PDF"}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="secondary"
+              onClick={handleSave}
+              disabled={isSaving}
+              className="relative"
+            >
+              {saveStatus === "saving" ? (
+                "Saving..."
+              ) : saveStatus === "saved" ? (
+                <span className="flex items-center gap-1">
+                  <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Saved
+                </span>
+              ) : (
+                "Save"
+              )}
+            </Button>
+            <Button onClick={handleDownload} disabled={isGenerating}>
+              {isGenerating ? "Generating..." : "Download PDF"}
+            </Button>
+          </div>
         </div>
       </header>
 
       <div className="max-w-[1200px] mx-auto px-6 py-6">
+        {/* Save Status Banner */}
+        {!currentCertId && (
+          <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl text-sm text-amber-400 flex items-center gap-3">
+            <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <span>This certificate is not saved yet. Click &quot;Save&quot; to store it locally.</span>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6">
           {/* Main Content */}
           <div className="flex flex-col gap-6">
@@ -531,13 +639,33 @@ export default function EmergencyLightingPage() {
               </div>
             </div>
 
-            {/* Download Button */}
+            {/* Action Buttons */}
+            <Button variant="secondary" onClick={handleSave} disabled={isSaving} className="w-full">
+              {saveStatus === "saving" ? "Saving..." : "Save Certificate"}
+            </Button>
             <Button onClick={handleDownload} disabled={isGenerating} size="lg" className="w-full">
               {isGenerating ? "Generating..." : "Download Certificate"}
             </Button>
+            <Link href="/dashboard" className="w-full">
+              <Button variant="ghost" className="w-full">
+                View All Certificates
+              </Button>
+            </Link>
           </div>
         </div>
       </div>
     </main>
+  );
+}
+
+export default function EmergencyLightingPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-pulse text-[var(--muted-foreground)]">Loading...</div>
+      </div>
+    }>
+      <EmergencyLightingPageContent />
+    </Suspense>
   );
 }

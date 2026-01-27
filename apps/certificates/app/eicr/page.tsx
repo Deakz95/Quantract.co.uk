@@ -1,11 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Button, Card, CardHeader, CardTitle, CardContent, CardDescription, Input, Label, NativeSelect, Textarea } from "@quantract/ui";
 import { getCertificateTemplate, type EICRCertificate } from "../../lib/certificate-types";
 import { generateCertificatePDF } from "../../lib/pdf-generator";
 import BoardViewer, { type BoardData, type Circuit } from "../../components/BoardViewer";
+import {
+  useCertificateStore,
+  createNewCertificate,
+  generateCertificateNumber,
+} from "../../lib/certificateStore";
 
 // Example board data - in production this would come from form input
 const EXAMPLE_BOARD: BoardData = {
@@ -66,17 +72,39 @@ const EXAMPLE_3PHASE_BOARD: BoardData = {
   ],
 };
 
-export default function EICRPage() {
+function EICRPageContent() {
+  const searchParams = useSearchParams();
+  const certificateId = searchParams.get("id");
+
+  const { addCertificate, updateCertificate, getCertificate } = useCertificateStore();
+
   const [data, setData] = useState<EICRCertificate>(getCertificateTemplate("EICR") as EICRCertificate);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [currentCertId, setCurrentCertId] = useState<string | null>(certificateId);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [activeTab, setActiveTab] = useState<"details" | "boards">("boards");
   const [boards, setBoards] = useState<BoardData[]>([EXAMPLE_BOARD, EXAMPLE_3PHASE_BOARD]);
+
+  // Load existing certificate if ID is provided
+  useEffect(() => {
+    if (certificateId) {
+      const existing = getCertificate(certificateId);
+      if (existing && existing.data) {
+        setData(existing.data as EICRCertificate);
+        setCurrentCertId(certificateId);
+        setLastSaved(new Date(existing.updated_at));
+      }
+    }
+  }, [certificateId, getCertificate]);
 
   const updateOverview = (field: keyof EICRCertificate["overview"], value: string) => {
     setData((prev) => ({
       ...prev,
       overview: { ...prev.overview, [field]: value },
     }));
+    setSaveStatus("idle");
   };
 
   const updateSupply = (field: keyof EICRCertificate["supplyCharacteristics"], value: string) => {
@@ -84,6 +112,7 @@ export default function EICRPage() {
       ...prev,
       supplyCharacteristics: { ...prev.supplyCharacteristics, [field]: value },
     }));
+    setSaveStatus("idle");
   };
 
   const updateEarthing = (field: keyof EICRCertificate["earthingArrangements"], value: string) => {
@@ -91,6 +120,7 @@ export default function EICRPage() {
       ...prev,
       earthingArrangements: { ...prev.earthingArrangements, [field]: value },
     }));
+    setSaveStatus("idle");
   };
 
   const updateTests = (field: keyof EICRCertificate["testResults"], value: string | boolean) => {
@@ -98,6 +128,7 @@ export default function EICRPage() {
       ...prev,
       testResults: { ...prev.testResults, [field]: value },
     }));
+    setSaveStatus("idle");
   };
 
   const addObservation = () => {
@@ -105,6 +136,7 @@ export default function EICRPage() {
       ...prev,
       observations: [...prev.observations, { code: "", observation: "", recommendation: "", location: "" }],
     }));
+    setSaveStatus("idle");
   };
 
   const updateObservation = (index: number, field: string, value: string) => {
@@ -114,6 +146,7 @@ export default function EICRPage() {
         i === index ? { ...obs, [field]: value } : obs
       ),
     }));
+    setSaveStatus("idle");
   };
 
   const removeObservation = (index: number) => {
@@ -121,9 +154,44 @@ export default function EICRPage() {
       ...prev,
       observations: prev.observations.filter((_, i) => i !== index),
     }));
+    setSaveStatus("idle");
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    setSaveStatus("saving");
+
+    try {
+      if (currentCertId) {
+        updateCertificate(currentCertId, {
+          client_name: data.overview.clientName,
+          installation_address: data.overview.installationAddress,
+          data: data as unknown as Record<string, unknown>,
+        });
+      } else {
+        const newCert = createNewCertificate("EICR", data as unknown as Record<string, unknown>);
+        newCert.client_name = data.overview.clientName;
+        newCert.installation_address = data.overview.installationAddress;
+        newCert.certificate_number = data.overview.jobReference || generateCertificateNumber("EICR");
+        addCertificate(newCert);
+        setCurrentCertId(newCert.id);
+        window.history.replaceState({}, "", `/eicr?id=${newCert.id}`);
+      }
+
+      setLastSaved(new Date());
+      setSaveStatus("saved");
+      setTimeout(() => setSaveStatus("idle"), 2000);
+    } catch (error) {
+      console.error("Error saving certificate:", error);
+      setSaveStatus("error");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleDownload = async () => {
+    await handleSave();
+
     setIsGenerating(true);
     try {
       const pdfBytes = await generateCertificatePDF(data);
@@ -134,6 +202,10 @@ export default function EICRPage() {
       a.download = `EICR-${data.overview.jobReference || "certificate"}.pdf`;
       a.click();
       URL.revokeObjectURL(url);
+
+      if (currentCertId) {
+        updateCertificate(currentCertId, { status: "issued" });
+      }
     } catch (error) {
       console.error("Error generating PDF:", error);
       alert("Failed to generate PDF. Please try again.");
@@ -148,19 +220,47 @@ export default function EICRPage() {
       <header className="border-b border-[var(--border)] bg-[var(--card)] sticky top-0 z-10">
         <div className="max-w-[1600px] mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link href="/" className="text-[var(--muted-foreground)] hover:text-[var(--foreground)]">
+            <Link href="/dashboard" className="text-[var(--muted-foreground)] hover:text-[var(--foreground)]">
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
             </Link>
             <div>
               <h1 className="text-xl font-bold">Electrical Installation Condition Report</h1>
-              <p className="text-xs text-[var(--muted-foreground)]">BS 7671:2018+A2:2022 | EICR</p>
+              <p className="text-xs text-[var(--muted-foreground)]">
+                BS 7671:2018+A2:2022 | EICR
+                {currentCertId && (
+                  <span className="ml-2 text-[var(--primary)]">
+                    • {lastSaved ? `Last saved ${lastSaved.toLocaleTimeString()}` : "Not saved"}
+                  </span>
+                )}
+              </p>
             </div>
           </div>
-          <Button onClick={handleDownload} disabled={isGenerating}>
-            {isGenerating ? "Generating..." : "Download PDF"}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="secondary"
+              onClick={handleSave}
+              disabled={isSaving}
+              className="relative"
+            >
+              {saveStatus === "saving" ? (
+                "Saving..."
+              ) : saveStatus === "saved" ? (
+                <span className="flex items-center gap-1">
+                  <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Saved
+                </span>
+              ) : (
+                "Save"
+              )}
+            </Button>
+            <Button onClick={handleDownload} disabled={isGenerating}>
+              {isGenerating ? "Generating..." : "Download PDF"}
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -191,6 +291,16 @@ export default function EICRPage() {
       </div>
 
       <div className="max-w-[1600px] mx-auto px-6 py-6">
+        {/* Save Status Banner */}
+        {!currentCertId && (
+          <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl text-sm text-amber-400 flex items-center gap-3">
+            <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <span>This report is not saved yet. Click &quot;Save&quot; to store it locally.</span>
+          </div>
+        )}
+
         {/* Boards Tab */}
         {activeTab === "boards" && (
           <div className="flex flex-col gap-8">
@@ -569,18 +679,37 @@ export default function EICRPage() {
               </CardContent>
             </Card>
 
-            {/* Download Button */}
-            <div className="flex justify-end gap-4 pt-4">
-              <Link href="/">
-                <Button variant="secondary">Cancel</Button>
-              </Link>
-              <Button onClick={handleDownload} disabled={isGenerating} size="lg">
-                {isGenerating ? "Generating PDF..." : "Download Report"}
-              </Button>
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row justify-between gap-4 pt-4 border-t border-[var(--border)]">
+              <div className="flex gap-2">
+                <Link href="/dashboard">
+                  <Button variant="ghost">View All Certificates</Button>
+                </Link>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="secondary" onClick={handleSave} disabled={isSaving}>
+                  {saveStatus === "saving" ? "Saving..." : "Save"}
+                </Button>
+                <Button onClick={handleDownload} disabled={isGenerating} size="lg">
+                  {isGenerating ? "Generating PDF..." : "Download Report"}
+                </Button>
+              </div>
             </div>
           </div>
         )}
       </div>
     </main>
+  );
+}
+
+export default function EICRPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-pulse text-[var(--muted-foreground)]">Loading...</div>
+      </div>
+    }>
+      <EICRPageContent />
+    </Suspense>
   );
 }
