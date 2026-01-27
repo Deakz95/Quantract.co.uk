@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { PricingCalculator } from "./components/PricingCalculator";
 import {
   FileText,
   Receipt,
@@ -28,31 +27,7 @@ import {
   Calendar,
   TrendingUp,
 } from "lucide-react";
-
-// Testimonials data - real quotes from beta users (placeholders for now)
-const testimonials = [
-  {
-    quote: "Quantract saved me 6 hours a week on paperwork. I actually finish jobs on time now instead of doing admin at 10pm.",
-    name: "Dave Mitchell",
-    role: "Sole Trader",
-    company: "Mitchell Electrical Services",
-    location: "Birmingham",
-  },
-  {
-    quote: "The certificates module alone is worth it. No more printing, scanning, or chasing signatures. Clients get their EICR the same day.",
-    name: "Sarah Collins",
-    role: "Director",
-    company: "Collins & Sons Electrical",
-    location: "Manchester",
-  },
-  {
-    quote: "We went from losing quotes in emails to converting 40% more. The customer portal makes us look proper professional.",
-    name: "James Wright",
-    role: "Owner",
-    company: "JW Building Services",
-    location: "Leeds",
-  },
-];
+import { testimonials, getInitials } from "../src/data/testimonials";
 
 // FAQ data
 const faqs = [
@@ -355,13 +330,13 @@ export default function HomePage() {
               <p>Real feedback from electricians using Quantract every day.</p>
             </div>
             <div className="testimonials-grid">
-              {testimonials.map((testimonial, index) => (
-                <div key={index} className="testimonial-card">
+              {testimonials.map((testimonial) => (
+                <div key={testimonial.id} className="testimonial-card">
                   <Quote size={24} className="testimonial-quote-icon" />
                   <p className="testimonial-text">{testimonial.quote}</p>
                   <div className="testimonial-author">
                     <div className="testimonial-avatar">
-                      {testimonial.name.split(' ').map(n => n[0]).join('')}
+                      {getInitials(testimonial.name)}
                     </div>
                     <div>
                       <div className="testimonial-name">{testimonial.name}</div>

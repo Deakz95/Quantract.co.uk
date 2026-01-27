@@ -23,22 +23,45 @@ export default function ContactPage() {
     phone: "",
     subject: "general",
     message: "",
+    website: "", // Honeypot field
   });
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In production, this would send to an API endpoint
-    // For now, we'll show a success message and open mailto
-    const mailtoLink = `mailto:hello@quantract.co.uk?subject=${encodeURIComponent(
-      formState.subject === "demo" ? "Demo Request" :
-      formState.subject === "sales" ? "Sales Enquiry" :
-      formState.subject === "support" ? "Support Request" : "General Enquiry"
-    )} from ${formState.name}&body=${encodeURIComponent(
-      `Name: ${formState.name}\nEmail: ${formState.email}\nCompany: ${formState.company}\nPhone: ${formState.phone}\n\nMessage:\n${formState.message}`
-    )}`;
-    window.location.href = mailtoLink;
-    setSubmitted(true);
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formState),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to send message");
+      }
+
+      setSubmitted(true);
+      setFormState({
+        name: "",
+        email: "",
+        company: "",
+        phone: "",
+        subject: "general",
+        message: "",
+        website: "",
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -111,7 +134,7 @@ export default function ContactPage() {
                 <span className="contact-option-note">For existing customers</span>
               </a>
 
-              <a href="https://wa.me/447000000000" className="contact-option-card contact-option-whatsapp" target="_blank" rel="noopener noreferrer">
+              <a href={`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "447000000000"}`} className="contact-option-card contact-option-whatsapp" target="_blank" rel="noopener noreferrer">
                 <div className="contact-option-icon">
                   <Phone size={28} />
                 </div>
@@ -164,13 +187,33 @@ export default function ContactPage() {
                   <div className="contact-form-success">
                     <CheckCircle size={48} />
                     <h3>Thanks for getting in touch!</h3>
-                    <p>We&apos;ll reply within 24 hours. Check your email client - we&apos;ve opened a draft message for you.</p>
+                    <p>We&apos;ve received your message and will reply within 24 hours.</p>
                     <button onClick={() => setSubmitted(false)} className="btn btn-secondary">
                       Send Another Message
                     </button>
                   </div>
                 ) : (
                   <form onSubmit={handleSubmit} className="contact-form">
+                    {/* Honeypot field - hidden from users, catches bots */}
+                    <div style={{ position: "absolute", left: "-9999px" }} aria-hidden="true">
+                      <label htmlFor="website">Website</label>
+                      <input
+                        type="text"
+                        id="website"
+                        name="website"
+                        tabIndex={-1}
+                        autoComplete="off"
+                        value={formState.website}
+                        onChange={(e) => setFormState({ ...formState, website: e.target.value })}
+                      />
+                    </div>
+
+                    {error && (
+                      <div className="form-error" role="alert">
+                        {error}
+                      </div>
+                    )}
+
                     <div className="form-row">
                       <div className="form-group">
                         <label htmlFor="name">Name <span className="required">*</span></label>
@@ -247,9 +290,22 @@ export default function ContactPage() {
                       />
                     </div>
 
-                    <button type="submit" className="btn btn-primary btn-lg">
-                      <Send size={18} />
-                      Send Message
+                    <button
+                      type="submit"
+                      className="btn btn-primary btn-lg"
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <span className="spinner" aria-hidden="true" />
+                          Sending...
+                        </>
+                      ) : (
+                        <>
+                          <Send size={18} />
+                          Send Message
+                        </>
+                      )}
                     </button>
 
                     <p className="form-privacy">
