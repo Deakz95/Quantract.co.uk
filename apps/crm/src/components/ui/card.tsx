@@ -18,28 +18,39 @@ const variantStyles: Record<CardVariant, string> = {
 };
 
 export function Card({ className, variant = "default", asButton, onClick, onKeyDown, ...props }: CardProps) {
-  const isClickable = variant === "interactive" || onClick || asButton;
+  // Only add keyboard handlers if explicitly requested via asButton or onClick
+  // Don't auto-add for interactive variant (it may be wrapped in Link)
+  const needsKeyboardHandlers = asButton || onClick;
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (isClickable && (e.key === "Enter" || e.key === " ")) {
-      e.preventDefault();
-      onClick?.(e as unknown as React.MouseEvent<HTMLDivElement>);
-    }
-    onKeyDown?.(e);
-  };
+  const handleKeyDown = needsKeyboardHandlers
+    ? (e: React.KeyboardEvent<HTMLDivElement>) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick?.(e as unknown as React.MouseEvent<HTMLDivElement>);
+        }
+        onKeyDown?.(e);
+      }
+    : onKeyDown;
+
+  // Build props object conditionally to avoid passing undefined handlers
+  const interactiveProps = needsKeyboardHandlers
+    ? {
+        tabIndex: 0,
+        role: "button" as const,
+        onClick,
+        onKeyDown: handleKeyDown,
+      }
+    : {};
 
   return (
     <div
       className={cn(
         "rounded-2xl transition-all duration-300",
         variantStyles[variant],
-        isClickable && "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2",
+        needsKeyboardHandlers && "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2",
         className
       )}
-      tabIndex={isClickable ? 0 : undefined}
-      role={isClickable ? "button" : undefined}
-      onClick={onClick}
-      onKeyDown={handleKeyDown}
+      {...interactiveProps}
       {...props}
     />
   );
