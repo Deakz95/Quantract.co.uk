@@ -1,3 +1,6 @@
+[![CI](https://github.com/Deakz95/Quantract.co.uk/actions/workflows/ci.yml/badge.svg)](https://github.com/Deakz95/Quantract.co.uk/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/Deakz95/Quantract.co.uk/branch/main/graph/badge.svg)](https://codecov.io/gh/Deakz95/Quantract.co.uk)
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
@@ -21,6 +24,45 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+
+## Testing
+
+The project uses Vitest for unit tests and Playwright for E2E tests.
+
+### Running Tests
+
+```bash
+# Run unit tests
+npm run test:unit
+
+# Run unit tests in watch mode
+npm run test:unit:watch
+
+# Run unit tests with coverage
+npm run test:coverage
+
+# Run E2E tests
+npm run test:e2e
+
+# Run E2E tests with UI
+npm run test:e2e:ui
+
+# Run smoke tests (Chromium only)
+npm run test:smoke
+```
+
+### Test Structure
+
+- `src/**/*.test.ts` - Unit tests (Vitest)
+- `src/**/*.test.tsx` - Component tests (Vitest + React Testing Library)
+- `tests/playwright/*.spec.ts` - E2E tests (Playwright)
+
+### Coverage
+
+Coverage reports are generated in the `coverage/` directory. Key areas with coverage thresholds:
+
+- `src/lib/*.ts` - 60% minimum (business logic)
+- `src/lib/server/*.ts` - 40% minimum (server utilities)
 
 ## Environment variables
 
