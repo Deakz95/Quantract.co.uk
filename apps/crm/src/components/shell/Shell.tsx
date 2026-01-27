@@ -16,9 +16,13 @@ const NAV: Record<Role, { label: string; href: string; section?: string }[]> = {
     { label: "Invoices", href: "/admin/invoices" },
     { label: "Planner", href: "/admin/planner" },
     { label: "Clients", href: "/admin/clients" },
+    { label: "Contacts", href: "/admin/contacts" },
+    { label: "Deals", href: "/admin/deals" },
     { label: "Engineers", href: "/admin/engineers" },
     { label: "Certificates", href: "/admin/certificates" },
     { label: "Timesheets", href: "/admin/timesheets" },
+    { label: "Reports", href: "/admin/reports" },
+    { label: "Import", href: "/admin/import" },
     { label: "Invites", href: "/admin/invites" },
     { label: "Settings", href: "/admin/settings" },
     // Admin can access all portals

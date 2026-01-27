@@ -1,0 +1,144 @@
+import { NextResponse } from "next/server";
+import { getAuthContext } from "@/lib/serverAuth";
+import { getPrisma } from "@/lib/server/prisma";
+import * as repo from "@/lib/server/repo";
+import { withRequestLogging, logError } from "@/lib/server/observability";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
+import { randomUUID } from "crypto";
+
+export const runtime = "nodejs";
+
+export const GET = withRequestLogging(async function GET() {
+  try {
+    const authCtx = await getAuthContext();
+    if (!authCtx) {
+      return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
+    }
+
+    if (authCtx.role !== "admin") {
+      return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
+    }
+
+    if (!authCtx.companyId) {
+      return NextResponse.json({ ok: false, error: "no_company" }, { status: 401 });
+    }
+
+    const client = getPrisma();
+    if (!client) {
+      return NextResponse.json({ ok: false, error: "service_unavailable" }, { status: 503 });
+    }
+
+    const stages = await client.dealStage.findMany({
+      where: { companyId: authCtx.companyId },
+      orderBy: { sortOrder: "asc" },
+    });
+
+    return NextResponse.json({ ok: true, stages: stages || [] });
+  } catch (error) {
+    if (error instanceof PrismaClientKnownRequestError) {
+      logError(error, { route: "/api/admin/deal-stages", action: "list" });
+      return NextResponse.json({ ok: false, error: "database_error", code: error.code }, { status: 409 });
+    }
+    logError(error, { route: "/api/admin/deal-stages", action: "list" });
+    return NextResponse.json({ ok: false, error: "load_failed" }, { status: 500 });
+  }
+});
+
+export const POST = withRequestLogging(async function POST(req: Request) {
+  try {
+    const authCtx = await getAuthContext();
+    if (!authCtx) {
+      return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
+    }
+
+    if (authCtx.role !== "admin") {
+      return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
+    }
+
+    if (!authCtx.companyId) {
+      return NextResponse.json({ ok: false, error: "no_company" }, { status: 401 });
+    }
+
+    const client = getPrisma();
+    if (!client) {
+      return NextResponse.json({ ok: false, error: "service_unavailable" }, { status: 503 });
+    }
+
+    const body = (await req.json().catch(() => null)) as any;
+    const name = String(body?.name ?? "").trim();
+
+    if (!name) {
+      return NextResponse.json(
+        { ok: false, error: "name_required" },
+        { status: 400 }
+      );
+    }
+
+    // Check for duplicate name within company
+    const existing = await client.dealStage.findFirst({
+      where: { companyId: authCtx.companyId, name },
+    });
+
+    if (existing) {
+      return NextResponse.json(
+        { ok: false, error: "name_already_exists" },
+        { status: 409 }
+      );
+    }
+
+    // Get the highest sortOrder to append new stage at the end
+    const lastStage = await client.dealStage.findFirst({
+      where: { companyId: authCtx.companyId },
+      orderBy: { sortOrder: "desc" },
+    });
+
+    const nextSortOrder = (lastStage?.sortOrder ?? -1) + 1;
+
+    // Validate isWon and isLost are mutually exclusive
+    const isWon = Boolean(body?.isWon);
+    const isLost = Boolean(body?.isLost);
+
+    if (isWon && isLost) {
+      return NextResponse.json(
+        { ok: false, error: "stage_cannot_be_won_and_lost" },
+        { status: 400 }
+      );
+    }
+
+    const created = await client.dealStage.create({
+      data: {
+        id: randomUUID(),
+        companyId: authCtx.companyId,
+        name,
+        color: body?.color ? String(body.color).trim() : null,
+        sortOrder: body?.sortOrder != null ? Number(body.sortOrder) : nextSortOrder,
+        probability: body?.probability != null ? Number(body.probability) : null,
+        isWon,
+        isLost,
+        updatedAt: new Date(),
+      },
+    });
+
+    // Audit event
+    await repo.recordAuditEvent({
+      entityType: "dealStage",
+      entityId: created.id,
+      action: "dealStage.created",
+      actorRole: "admin",
+      actor: authCtx.email,
+      meta: { name, sortOrder: created.sortOrder, isWon, isLost },
+    });
+
+    return NextResponse.json({ ok: true, stage: created });
+  } catch (error) {
+    if (error instanceof PrismaClientKnownRequestError) {
+      logError(error, { route: "/api/admin/deal-stages", action: "create" });
+      if (error.code === "P2002") {
+        return NextResponse.json({ ok: false, error: "name_already_exists" }, { status: 409 });
+      }
+      return NextResponse.json({ ok: false, error: "database_error", code: error.code }, { status: 409 });
+    }
+    logError(error, { route: "/api/admin/deal-stages", action: "create" });
+    return NextResponse.json({ ok: false, error: "create_failed" }, { status: 500 });
+  }
+});

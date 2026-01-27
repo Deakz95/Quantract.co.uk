@@ -70,32 +70,32 @@ model AuthSession {
 }
 
 model Certificate {
-  id                    String                  @id
-  companyId             String
-  legalEntityId         String?
-  jobId                 String?
-  siteId                String?
-  clientId              String?
-  type                  String
-  status                String
-  certificateNumber     String?
-  issuedAt              DateTime?
-  inspectorName         String?
-  inspectorEmail        String?
-  dataVersion           Int                     @default(1)
-  data                  Json                    @default("{}")
-  completedAt           DateTime?
-  pdfKey                String?
-  signedName            String?
-  signedAt              DateTime?
-  createdAt             DateTime                @default(now())
-  updatedAt             DateTime
-  auditEvents           AuditEvent[]
-  client                Client?                 @relation(fields: [clientId], references: [id])
-  company               Company                 @relation(fields: [companyId], references: [id])
-  legalEntity           LegalEntity?            @relation(fields: [legalEntityId], references: [id])
-  job                   Job?                    @relation(fields: [jobId], references: [id])
-  site                  Site?                   @relation(fields: [siteId], references: [id])
+  id                     String                  @id
+  companyId              String
+  legalEntityId          String?
+  jobId                  String?
+  siteId                 String?
+  clientId               String?
+  type                   String
+  status                 String
+  certificateNumber      String?
+  issuedAt               DateTime?
+  inspectorName          String?
+  inspectorEmail         String?
+  dataVersion            Int                     @default(1)
+  data                   Json                    @default("{}")
+  completedAt            DateTime?
+  pdfKey                 String?
+  signedName             String?
+  signedAt               DateTime?
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime
+  auditEvents            AuditEvent[]
+  client                 Client?                 @relation(fields: [clientId], references: [id])
+  company                Company                 @relation(fields: [companyId], references: [id])
+  legalEntity            LegalEntity?            @relation(fields: [legalEntityId], references: [id])
+  job                    Job?                    @relation(fields: [jobId], references: [id])
+  site                   Site?                   @relation(fields: [siteId], references: [id])
   certificateTestResults CertificateTestResult[]
 
   @@unique([legalEntityId, certificateNumber])
@@ -163,121 +163,132 @@ model Client {
   sites                Site[]
   users                User[]
   tasks                Task[]
+  // CRM modules
+  contacts             Contact[]
+  deals                Deal[]
+  activities           Activity[]
 
   @@unique([companyId, email])
   @@index([companyId])
 }
 
 model Company {
-  id                       String                  @id
-  name                     String
-  slug                     String                  @unique
-  subdomain                String?                 @unique
-  dataTier                 String                  @default("shared")
-  dedicatedDatabaseUrl     String?
-  dataRegion               String                  @default("eu-west-2")
-  brandName                String                  @default("Quantract")
-  brandTagline             String?
-  logoKey                  String?
-  themePrimary             String                  @default("#0f172a")
-  themeAccent              String                  @default("#16a34a")
-  themeBg                  String                  @default("#f8fafc")
-  themeText                String                  @default("#0f172a")
-  pdfFooterLine1           String?
-  pdfFooterLine2           String?
-  defaultVatRate           Float                   @default(0.2)
-  invoiceNumberPrefix      String                  @default("INV-")
-  nextInvoiceNumber        Int                     @default(1)
-  certificateNumberPrefix  String                  @default("CERT-")
-  nextCertificateNumber    Int                     @default(1)
-  onboardedAt              DateTime?
-  defaultPaymentTermsDays  Int                     @default(14)
-  autoChaseEnabled         Boolean                 @default(false)
-  autoChaseFirstDays       Int                     @default(7)
-  autoChaseSecondDays      Int                     @default(14)
-  autoChaseThirdDays       Int                     @default(21)
-  quoteValidityDays        Int                     @default(30)
-  termsAndConditions       String?
-  plan                     String                  @default("trial")
-  subscriptionStatus       String                  @default("inactive")
-  stripeCustomerId         String?
-  stripeSubscriptionId     String?
-  currentPeriodEnd         DateTime?
-  trialEnd                 DateTime?
-  trialStartedAt           DateTime?
-  quotesThisMonth          Int                     @default(0)
-  invoicesThisMonth        Int                     @default(0)
-  usageResetAt             DateTime?
-  xeroConnected            Boolean                 @default(false)
-  xeroTenantId             String?
-  xeroAccessToken          String?
-  xeroRefreshToken         String?
-  xeroTokenExpiresAt       DateTime?
-  defaultLegalEntityId     String?
-  defaultServiceLineId     String?
+  id                      String                  @id
+  name                    String
+  slug                    String                  @unique
+  subdomain               String?                 @unique
+  dataTier                String                  @default("shared")
+  dedicatedDatabaseUrl    String?
+  dataRegion              String                  @default("eu-west-2")
+  brandName               String                  @default("Quantract")
+  brandTagline            String?
+  logoKey                 String?
+  themePrimary            String                  @default("#0f172a")
+  themeAccent             String                  @default("#16a34a")
+  themeBg                 String                  @default("#f8fafc")
+  themeText               String                  @default("#0f172a")
+  pdfFooterLine1          String?
+  pdfFooterLine2          String?
+  defaultVatRate          Float                   @default(0.2)
+  invoiceNumberPrefix     String                  @default("INV-")
+  nextInvoiceNumber       Int                     @default(1)
+  certificateNumberPrefix String                  @default("CERT-")
+  nextCertificateNumber   Int                     @default(1)
+  onboardedAt             DateTime?
+  defaultPaymentTermsDays Int                     @default(14)
+  autoChaseEnabled        Boolean                 @default(false)
+  autoChaseFirstDays      Int                     @default(7)
+  autoChaseSecondDays     Int                     @default(14)
+  autoChaseThirdDays      Int                     @default(21)
+  quoteValidityDays       Int                     @default(30)
+  termsAndConditions      String?
+  plan                    String                  @default("trial")
+  subscriptionStatus      String                  @default("inactive")
+  stripeCustomerId        String?
+  stripeSubscriptionId    String?
+  currentPeriodEnd        DateTime?
+  trialEnd                DateTime?
+  trialStartedAt          DateTime?
+  quotesThisMonth         Int                     @default(0)
+  invoicesThisMonth       Int                     @default(0)
+  usageResetAt            DateTime?
+  xeroConnected           Boolean                 @default(false)
+  xeroTenantId            String?
+  xeroAccessToken         String?
+  xeroRefreshToken        String?
+  xeroTokenExpiresAt      DateTime?
+  defaultLegalEntityId    String?
+  defaultServiceLineId    String?
   // SMS Notification Settings
-  smsEnabled               Boolean                 @default(false)
-  smsProvider              String?                 // "twilio" | "messagebird" | etc
-  smsSenderId              String?                 // Sender ID / From number
-  smsApiKey                String?                 // Encrypted API key
-  smsApiSecret             String?                 // Encrypted API secret
-  smsRequireConsent        Boolean                 @default(true)
-  smsQuietHoursEnabled     Boolean                 @default(false)
-  smsQuietFrom             String?                 // Time string "21:00"
-  smsQuietTo               String?                 // Time string "08:00"
-  smsMaxPerClientPerDay    Int                     @default(3)
-  smsMaxPerJobPerDay       Int                     @default(5)
-  smsCredits               Int                     @default(0)
-  createdAt                DateTime                @default(now())
-  updatedAt                DateTime
-  agreements               Agreement[]
-  auditEvents              AuditEvent[]
-  certificates             Certificate[]
-  certificateTestResults   CertificateTestResult[]
-  clients                  Client[]
-  companyUsers             CompanyUser[]
-  costItems                CostItem[]
-  costItemAttachments      CostItemAttachment[]
-  engineers                Engineer[]
-  expenses                 Expense[]
-  invites                  Invite[]
-  invoices                 Invoice[]
-  invoiceAttachments       InvoiceAttachment[]
-  invoiceChases            InvoiceChase[]
-  invoicePayments          InvoicePayment[]
-  invoiceVariations        InvoiceVariation[]
-  jobs                     Job[]
-  jobBudgetLines           JobBudgetLine[]
-  jobStages                JobStage[]
-  legalEntities            LegalEntity[]
-  serviceLines             ServiceLine[]
-  quotes                   Quote[]
-  quoteRevisions           QuoteRevision[]
-  rateCards                RateCard[]
-  scheduleEntries          ScheduleEntry[]
-  sites                    Site[]
-  snagItems                SnagItem[]
-  subcontractors           Subcontractor[]
-  suppliers                Supplier[]
-  supplierBills            SupplierBill[]
-  supplierBillLines        SupplierBillLine[]
-  timeEntries              TimeEntry[]
-  timesheets               Timesheet[]
-  users                    User[]
-  variations               Variation[]
-  variationAttachments     VariationAttachment[]
-  impersonationLogs        impersonation_logs[]
-  checklistTemplates       ChecklistTemplate[]
-  jobChecklists            JobChecklist[]
-  tasks                    Task[]
-  comments                 Comment[]
-  mentions                 Mention[]
-  notificationRules        NotificationRule[]
-  notificationTemplates    NotificationTemplate[]
-  notificationLogs         NotificationLog[]
-  inboundIntegrationKeys   InboundIntegrationKey[]
-  allowedDomains           AllowedDomain[]
-  inboundFormConfigs       InboundFormConfig[]
+  smsEnabled              Boolean                 @default(false)
+  smsProvider             String? // "twilio" | "messagebird" | etc
+  smsSenderId             String? // Sender ID / From number
+  smsApiKey               String? // Encrypted API key
+  smsApiSecret            String? // Encrypted API secret
+  smsRequireConsent       Boolean                 @default(true)
+  smsQuietHoursEnabled    Boolean                 @default(false)
+  smsQuietFrom            String? // Time string "21:00"
+  smsQuietTo              String? // Time string "08:00"
+  smsMaxPerClientPerDay   Int                     @default(3)
+  smsMaxPerJobPerDay      Int                     @default(5)
+  smsCredits              Int                     @default(0)
+  createdAt               DateTime                @default(now())
+  updatedAt               DateTime
+  agreements              Agreement[]
+  auditEvents             AuditEvent[]
+  certificates            Certificate[]
+  certificateTestResults  CertificateTestResult[]
+  clients                 Client[]
+  companyUsers            CompanyUser[]
+  costItems               CostItem[]
+  costItemAttachments     CostItemAttachment[]
+  engineers               Engineer[]
+  expenses                Expense[]
+  invites                 Invite[]
+  invoices                Invoice[]
+  invoiceAttachments      InvoiceAttachment[]
+  invoiceChases           InvoiceChase[]
+  invoicePayments         InvoicePayment[]
+  invoiceVariations       InvoiceVariation[]
+  jobs                    Job[]
+  jobBudgetLines          JobBudgetLine[]
+  jobStages               JobStage[]
+  legalEntities           LegalEntity[]
+  serviceLines            ServiceLine[]
+  quotes                  Quote[]
+  quoteRevisions          QuoteRevision[]
+  rateCards               RateCard[]
+  scheduleEntries         ScheduleEntry[]
+  sites                   Site[]
+  snagItems               SnagItem[]
+  subcontractors          Subcontractor[]
+  suppliers               Supplier[]
+  supplierBills           SupplierBill[]
+  supplierBillLines       SupplierBillLine[]
+  timeEntries             TimeEntry[]
+  timesheets              Timesheet[]
+  users                   User[]
+  variations              Variation[]
+  variationAttachments    VariationAttachment[]
+  impersonationLogs       impersonation_logs[]
+  checklistTemplates      ChecklistTemplate[]
+  jobChecklists           JobChecklist[]
+  tasks                   Task[]
+  comments                Comment[]
+  mentions                Mention[]
+  notificationRules       NotificationRule[]
+  notificationTemplates   NotificationTemplate[]
+  notificationLogs        NotificationLog[]
+  inboundIntegrationKeys  InboundIntegrationKey[]
+  allowedDomains          AllowedDomain[]
+  inboundFormConfigs      InboundFormConfig[]
+  // CRM modules
+  contacts                Contact[]
+  dealStages              DealStage[]
+  deals                   Deal[]
+  activities              Activity[]
+  savedViews              SavedView[]
+  importJobs              ImportJob[]
 }
 
 model CompanyUser {
@@ -298,17 +309,17 @@ model CompanyUser {
 model LegalEntity {
   id                      String        @id
   companyId               String
-  displayName             String        // Short name shown in UI (e.g., "Electrical Ltd")
-  legalName               String        // Full legal name (e.g., "ABC Electrical Services Limited")
-  companyNumber           String?       // Companies House number
-  vatNumber               String?       // VAT registration number
+  displayName             String // Short name shown in UI (e.g., "Electrical Ltd")
+  legalName               String // Full legal name (e.g., "ABC Electrical Services Limited")
+  companyNumber           String? // Companies House number
+  vatNumber               String? // VAT registration number
   registeredAddress1      String?
   registeredAddress2      String?
   registeredCity          String?
   registeredCounty        String?
   registeredPostcode      String?
   registeredCountry       String?       @default("United Kingdom")
-  pdfFooterLine1          String?       // Override company footer for this entity
+  pdfFooterLine1          String? // Override company footer for this entity
   pdfFooterLine2          String?
   invoiceNumberPrefix     String        @default("INV-")
   nextInvoiceNumber       Int           @default(1)
@@ -334,10 +345,10 @@ model LegalEntity {
 model ServiceLine {
   id                   String       @id
   companyId            String
-  name                 String       // e.g., "Electrical", "Compliance", "Renewables"
-  slug                 String       // URL-friendly: "electrical", "compliance", "renewables"
+  name                 String // e.g., "Electrical", "Compliance", "Renewables"
+  slug                 String // URL-friendly: "electrical", "compliance", "renewables"
   description          String?
-  defaultLegalEntityId String?      // Default legal entity for this service line
+  defaultLegalEntityId String? // Default legal entity for this service line
   isDefault            Boolean      @default(false) // Organization default service line
   status               String       @default("active") // active, inactive
   createdAt            DateTime     @default(now())
@@ -430,33 +441,33 @@ model Engineer {
 }
 
 model Enquiry {
-  id            String              @id
+  id            String             @id
   companyId     String
   stageId       String
-  ownerId       String?             // Owner assignment (User.id)
-  formConfigId  String?             // Reference to InboundFormConfig if from website
+  ownerId       String? // Owner assignment (User.id)
+  formConfigId  String? // Reference to InboundFormConfig if from website
   name          String?
   email         String?
   phone         String?
   postcode      String?
-  message       String?             // Message/enquiry text from website form
-  notes         String?             // Internal notes
+  message       String? // Message/enquiry text from website form
+  notes         String? // Internal notes
   valueEstimate Int?
   quoteId       String?
-  source        String              @default("manual") // manual | website | api
-  pageUrl       String?             // URL where form was submitted
-  referrer      String?             // HTTP referrer
+  source        String             @default("manual") // manual | website | api
+  pageUrl       String? // URL where form was submitted
+  referrer      String? // HTTP referrer
   utmSource     String?
   utmMedium     String?
   utmCampaign   String?
   utmTerm       String?
   utmContent    String?
-  metaJson      Json?               // Any additional metadata
-  createdAt     DateTime            @default(now())
+  metaJson      Json? // Any additional metadata
+  createdAt     DateTime           @default(now())
   updatedAt     DateTime
-  owner         User?               @relation("EnquiryOwner", fields: [ownerId], references: [id])
-  pipelineStage PipelineStage       @relation(fields: [stageId], references: [id])
-  formConfig    InboundFormConfig?  @relation(fields: [formConfigId], references: [id])
+  owner         User?              @relation("EnquiryOwner", fields: [ownerId], references: [id])
+  pipelineStage PipelineStage      @relation(fields: [stageId], references: [id])
+  formConfig    InboundFormConfig? @relation(fields: [formConfigId], references: [id])
   enquiryEvents EnquiryEvent[]
 
   @@index([companyId, stageId])
@@ -628,7 +639,7 @@ model Job {
   id                      String          @id
   companyId               String
   serviceLineId           String?
-  performingLegalEntityId String?         // Override: which legal entity performs this job
+  performingLegalEntityId String? // Override: which legal entity performs this job
   quoteId                 String?
   clientId                String?
   siteId                  String
@@ -664,6 +675,8 @@ model Job {
   jobChecklists           JobChecklist[]
   tasks                   Task[]
   comments                Comment[]
+  // CRM modules
+  activities              Activity[]
 
   @@index([companyId])
   @@index([serviceLineId])
@@ -1259,6 +1272,11 @@ model User {
   tasksCreated              Task[]                   @relation("TaskCreator")
   commentsCreated           Comment[]                @relation("CommentCreator")
   mentions                  Mention[]                @relation("UserMentions")
+  // CRM modules
+  dealsOwned                Deal[]                   @relation("DealOwner")
+  activitiesCreated         Activity[]               @relation("ActivityCreator")
+  savedViews                SavedView[]              @relation("UserSavedViews")
+  importJobs                ImportJob[]              @relation("UserImports")
 
   @@unique([role, email])
   @@index([companyId])
@@ -1447,7 +1465,7 @@ model NotificationTemplate {
   companyId String
   channel   NotificationChannel
   eventKey  NotificationEventKey
-  subject   String?              // For email
+  subject   String? // For email
   body      String
   isDefault Boolean              @default(false)
   createdAt DateTime             @default(now())
@@ -1464,7 +1482,7 @@ model NotificationLog {
   companyId         String
   channel           NotificationChannel
   eventKey          NotificationEventKey
-  recipient         String                  // Phone number or email
+  recipient         String // Phone number or email
   clientId          String?
   jobId             String?
   invoiceId         String?
@@ -1473,8 +1491,8 @@ model NotificationLog {
   status            NotificationLogStatus
   skipReason        NotificationSkipReason?
   errorMessage      String?
-  cost              Int?                    // Cost in pence for SMS
-  segments          Int?                    // SMS segments used
+  cost              Int? // Cost in pence for SMS
+  segments          Int? // SMS segments used
   providerMessageId String?
   createdAt         DateTime                @default(now())
   company           Company                 @relation(fields: [companyId], references: [id], onDelete: Cascade)
@@ -1494,9 +1512,9 @@ model NotificationLog {
 model InboundIntegrationKey {
   id          String    @id
   companyId   String
-  name        String    // Friendly name e.g., "Main Website", "Landing Page"
+  name        String // Friendly name e.g., "Main Website", "Landing Page"
   keyHash     String    @unique // HMAC-SHA256 hash of the actual key (actual key is never stored)
-  keyPrefix   String    // First 8 chars of key for identification (e.g., "qt_live_a1b2...")
+  keyPrefix   String // First 8 chars of key for identification (e.g., "qt_live_a1b2...")
   permissions String    @default("enquiry:create") // Comma-separated permissions
   isActive    Boolean   @default(true)
   expiresAt   DateTime?
@@ -1514,16 +1532,16 @@ model InboundIntegrationKey {
 
 // Allowed domains for CORS and referer validation
 model AllowedDomain {
-  id              String   @id
+  id              String    @id
   companyId       String
-  domain          String   // e.g., "example.com" or "*.example.com"
-  isVerified      Boolean  @default(false)
-  verificationKey String?  // Optional DNS TXT record verification key
+  domain          String // e.g., "example.com" or "*.example.com"
+  isVerified      Boolean   @default(false)
+  verificationKey String? // Optional DNS TXT record verification key
   verifiedAt      DateTime?
-  isActive        Boolean  @default(true)
-  createdAt       DateTime @default(now())
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
   updatedAt       DateTime
-  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company         Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@unique([companyId, domain])
   @@index([companyId])
@@ -1535,15 +1553,15 @@ model AllowedDomain {
 model InboundFormConfig {
   id                 String    @id
   companyId          String
-  name               String    // e.g., "Contact Form", "Quote Request"
-  slug               String    // URL-friendly identifier
-  defaultStageId     String?   // Pipeline stage for new enquiries from this form
-  defaultOwnerId     String?   // Default owner assignment
+  name               String // e.g., "Contact Form", "Quote Request"
+  slug               String // URL-friendly identifier
+  defaultStageId     String? // Pipeline stage for new enquiries from this form
+  defaultOwnerId     String? // Default owner assignment
   requiredFields     Json      @default("[\"name\", \"email\"]") // Array of required field names
   optionalFields     Json      @default("[\"phone\", \"message\"]") // Array of optional field names
-  thankYouMessage    String?   // Custom thank you message
-  redirectUrl        String?   // URL to redirect after submission
-  notifyEmails       String?   // Comma-separated emails to notify on submission
+  thankYouMessage    String? // Custom thank you message
+  redirectUrl        String? // URL to redirect after submission
+  notifyEmails       String? // Comma-separated emails to notify on submission
   enableCaptcha      Boolean   @default(true)
   enableHoneypot     Boolean   @default(true)
   rateLimitPerMinute Int       @default(5) // Max submissions per minute per IP
@@ -1557,4 +1575,164 @@ model InboundFormConfig {
   @@index([companyId])
   @@index([slug])
   @@index([isActive])
+}
+
+// ============================================================================
+// CRM MODULES - Contacts, Deals Pipeline, Activities
+// ============================================================================
+
+// CONTACTS - Multiple contacts per client
+model Contact {
+  id               String   @id
+  companyId        String
+  clientId         String?
+  firstName        String
+  lastName         String
+  email            String?
+  phone            String?
+  mobile           String?
+  jobTitle         String?
+  isPrimary        Boolean  @default(false)
+  preferredChannel String   @default("email")
+  notes            String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime
+
+  company    Company    @relation(fields: [companyId], references: [id])
+  client     Client?    @relation(fields: [clientId], references: [id])
+  deals      Deal[]
+  activities Activity[]
+
+  @@unique([companyId, email])
+  @@index([companyId])
+  @@index([clientId])
+}
+
+// DEAL STAGES - Pipeline columns
+model DealStage {
+  id          String   @id
+  companyId   String
+  name        String
+  color       String?
+  sortOrder   Int      @default(0)
+  probability Int?
+  isWon       Boolean  @default(false)
+  isLost      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime
+
+  company Company @relation(fields: [companyId], references: [id])
+  deals   Deal[]
+
+  @@unique([companyId, name])
+  @@index([companyId, sortOrder])
+}
+
+// DEALS - Opportunities with Kanban support
+model Deal {
+  id                String    @id
+  companyId         String
+  stageId           String
+  contactId         String?
+  clientId          String?
+  ownerId           String?
+  title             String
+  value             Float     @default(0)
+  probability       Int?
+  expectedCloseDate DateTime?
+  closedAt          DateTime?
+  lostReason        String?
+  notes             String?
+  source            String    @default("manual")
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime
+
+  company    Company    @relation(fields: [companyId], references: [id])
+  stage      DealStage  @relation(fields: [stageId], references: [id])
+  contact    Contact?   @relation(fields: [contactId], references: [id])
+  client     Client?    @relation(fields: [clientId], references: [id])
+  owner      User?      @relation("DealOwner", fields: [ownerId], references: [id])
+  activities Activity[]
+
+  @@index([companyId])
+  @@index([stageId])
+  @@index([ownerId])
+}
+
+// ACTIVITIES - Universal activity log
+model Activity {
+  id          String   @id
+  companyId   String
+  type        String // NOTE, CALL, EMAIL, MEETING, TASK, STAGE_CHANGE
+  subject     String
+  description String?
+  contactId   String?
+  dealId      String?
+  clientId    String?
+  jobId       String?
+  createdBy   String
+  occurredAt  DateTime @default(now())
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime
+
+  company Company  @relation(fields: [companyId], references: [id])
+  contact Contact? @relation(fields: [contactId], references: [id])
+  deal    Deal?    @relation(fields: [dealId], references: [id])
+  client  Client?  @relation(fields: [clientId], references: [id])
+  job     Job?     @relation(fields: [jobId], references: [id])
+  creator User     @relation("ActivityCreator", fields: [createdBy], references: [id])
+
+  @@index([companyId])
+  @@index([contactId])
+  @@index([dealId])
+  @@index([clientId])
+  @@index([jobId])
+}
+
+// SAVED VIEWS - User filter configurations
+model SavedView {
+  id         String   @id
+  companyId  String
+  userId     String
+  name       String
+  entityType String // contacts, deals, clients, jobs
+  filters    Json
+  columns    Json?
+  sortBy     String?
+  sortDir    String?
+  isDefault  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime
+
+  company Company @relation(fields: [companyId], references: [id])
+  user    User    @relation("UserSavedViews", fields: [userId], references: [id])
+
+  @@unique([companyId, userId, name, entityType])
+  @@index([companyId, entityType])
+}
+
+// IMPORT JOBS - Track import progress
+model ImportJob {
+  id            String    @id
+  companyId     String
+  userId        String
+  entityType    String
+  fileName      String
+  fileKey       String
+  status        String    @default("pending")
+  totalRows     Int?
+  processedRows Int       @default(0)
+  successCount  Int       @default(0)
+  errorCount    Int       @default(0)
+  mapping       Json
+  errors        Json?
+  createdAt     DateTime  @default(now())
+  completedAt   DateTime?
+
+  company Company @relation(fields: [companyId], references: [id])
+  user    User    @relation("UserImports", fields: [userId], references: [id])
+
+  @@index([companyId])
+  @@index([status])
 }
