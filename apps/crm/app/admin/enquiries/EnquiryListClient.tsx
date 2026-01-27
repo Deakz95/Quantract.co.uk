@@ -194,7 +194,21 @@ export function EnquiryListClient() {
   }
 
   if (loadError) {
-    return <ErrorState description={loadError} onRetry={loadData} />;
+    const isDbError = loadError.toLowerCase().includes("database") ||
+                      loadError.toLowerCase().includes("table") ||
+                      loadError.toLowerCase().includes("does not exist");
+    return (
+      <ErrorState
+        title="Unable to load enquiries"
+        description={isDbError
+          ? "This feature requires database configuration. The enquiries table may not be set up yet."
+          : loadError
+        }
+        helpText="Contact support if this persists: support@quantract.co.uk"
+        onRetry={loadData}
+        showSupport={true}
+      />
+    );
   }
 
   return (

@@ -12,6 +12,8 @@ type ErrorStateProps = {
   onRetry?: () => void;
   meta?: string;
   className?: string;
+  showSupport?: boolean;
+  helpText?: string;
 };
 
 export function ErrorState({
@@ -21,6 +23,8 @@ export function ErrorState({
   onRetry,
   meta,
   className,
+  showSupport = false,
+  helpText,
 }: ErrorStateProps) {
   return (
     <div
@@ -42,6 +46,11 @@ export function ErrorState({
         <p className="max-w-md text-sm text-[#A0A4AE]">{description}</p>
       )}
 
+      {/* Help text */}
+      {helpText && (
+        <p className="max-w-md text-xs text-[#A0A4AE]/80">{helpText}</p>
+      )}
+
       {/* Meta information */}
       {meta && (
         <p className="text-xs text-[#A0A4AE]/60 font-mono">{meta}</p>
@@ -56,6 +65,13 @@ export function ErrorState({
           </Button>
         ) : null}
         {action}
+        {showSupport && (
+          <a href="mailto:support@quantract.co.uk">
+            <Button variant="outline" type="button" className="inline-flex h-11 items-center gap-2">
+              Contact Support
+            </Button>
+          </a>
+        )}
       </div>
     </div>
   );

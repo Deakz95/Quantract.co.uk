@@ -144,7 +144,15 @@ export default function AdminLogin() {
               {/* Password Field (conditional) */}
               {mode === "password" && (
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-[var(--foreground)]">Password</label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium text-[var(--foreground)]">Password</label>
+                    <Link
+                      href="/auth/forgot-password"
+                      className="text-xs text-[var(--primary)] hover:underline"
+                    >
+                      Forgot password?
+                    </Link>
+                  </div>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--muted-foreground)]" />
                     <Input
@@ -170,14 +178,17 @@ export default function AdminLogin() {
                 <span className="text-sm text-[var(--muted-foreground)]">Keep me logged in</span>
               </label>
 
-              {/* Success Message */}
+              {/* Success Message - Enhanced for magic link */}
               {sentTo && (
                 <div className="rounded-xl bg-[var(--success)]/10 border border-[var(--success)]/20 p-4 flex items-start gap-3">
                   <CheckCircle2 className="w-5 h-5 text-[var(--success)] flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-sm font-medium text-[var(--success)]">Check your inbox!</p>
+                    <p className="text-sm font-medium text-[var(--success)]">Magic link sent!</p>
                     <p className="text-xs text-[var(--success)]/80 mt-0.5">
-                      Sign-in link sent to <strong>{sentTo}</strong>
+                      Check your inbox at <strong>{sentTo}</strong>
+                    </p>
+                    <p className="text-xs text-[var(--success)]/60 mt-1">
+                      Also check your spam folder. Link expires in 15 minutes.
                     </p>
                   </div>
                 </div>

@@ -268,6 +268,24 @@ export function OnboardingChecklist() {
             </div>
           </div>
         )}
+
+        {/* Don't show again option */}
+        {!allComplete && (
+          <div className="mt-4 pt-4 border-t border-[var(--border)]">
+            <label className="flex items-center gap-2 cursor-pointer text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors">
+              <input
+                type="checkbox"
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    handleDismiss();
+                  }
+                }}
+                className="w-3.5 h-3.5 rounded border-[var(--border)] text-[var(--primary)] focus:ring-[var(--primary)] cursor-pointer"
+              />
+              Don&apos;t show this again
+            </label>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

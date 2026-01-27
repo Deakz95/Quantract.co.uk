@@ -157,7 +157,21 @@ export default function KanbanBoard() {
   }
 
   if (loadError) {
-    return <ErrorState title="Unable to load deals" description={loadError} onRetry={load} />;
+    const isDbError = loadError.toLowerCase().includes("database") ||
+                      loadError.toLowerCase().includes("table") ||
+                      loadError.toLowerCase().includes("does not exist");
+    return (
+      <ErrorState
+        title="Unable to load deals pipeline"
+        description={isDbError
+          ? "This feature requires database configuration. The deals and deal stages tables may not be set up yet."
+          : loadError
+        }
+        helpText="Contact support if this persists: support@quantract.co.uk"
+        onRetry={load}
+        showSupport={true}
+      />
+    );
   }
 
   const totalDeals = stagesWithDeals.reduce((sum, s) => sum + s.deals.length, 0);

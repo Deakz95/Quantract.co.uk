@@ -138,7 +138,20 @@ export default function CertificatesPageClient() {
                 ))}
               </div>
             ) : loadError ? (
-              <ErrorState title="Unable to load jobs" description={loadError} onRetry={loadJobs} />
+              <ErrorState
+                title="Unable to load certificates"
+                description="This feature requires jobs to be created first. Create your first job to enable certificate generation."
+                helpText="Contact support if this persists: support@quantract.co.uk"
+                onRetry={loadJobs}
+                showSupport={true}
+                action={
+                  <Link href="/admin/jobs">
+                    <Button variant="secondary" type="button">
+                      Go to Jobs
+                    </Button>
+                  </Link>
+                }
+              />
             ) : jobs.length === 0 ? (
               <EmptyState
                 title="No jobs yet"
