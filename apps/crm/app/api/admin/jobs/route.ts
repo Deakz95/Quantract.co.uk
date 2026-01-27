@@ -3,6 +3,7 @@ import { getAuthContext } from "@/lib/serverAuth";
 import { getPrisma } from "@/lib/server/prisma";
 import { withRequestLogging, logError } from "@/lib/server/observability";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
+import { randomUUID } from "crypto";
 
 export const runtime = "nodejs";
 
@@ -115,6 +116,7 @@ export const POST = withRequestLogging(async function POST(req: Request) {
 
       const job = await client.job.create({
         data: {
+          id: randomUUID(),
           companyId: authCtx.companyId,
           jobNumber,
           clientId,
@@ -122,6 +124,7 @@ export const POST = withRequestLogging(async function POST(req: Request) {
           title,
           description: body?.description || null,
           status: "pending",
+          updatedAt: new Date(),
         },
         include: {
           client: { select: { id: true, name: true } },
@@ -163,6 +166,7 @@ export const POST = withRequestLogging(async function POST(req: Request) {
 
     const job = await client.job.create({
       data: {
+        id: randomUUID(),
         companyId: authCtx.companyId,
         jobNumber,
         quoteId,
@@ -173,6 +177,7 @@ export const POST = withRequestLogging(async function POST(req: Request) {
         budgetSubtotal: quote.subtotal,
         budgetVat: quote.vat,
         budgetTotal: quote.total,
+        updatedAt: new Date(),
       },
       include: {
         client: { select: { id: true, name: true } },

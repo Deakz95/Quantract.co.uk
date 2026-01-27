@@ -4,7 +4,7 @@ import { getPrisma } from "@/lib/server/prisma";
 import { clampMoney } from "@/lib/invoiceMath";
 import { withRequestLogging, logError } from "@/lib/server/observability";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
-import { randomBytes } from "crypto";
+import { randomBytes, randomUUID } from "crypto";
 
 export const runtime = "nodejs";
 
@@ -112,6 +112,7 @@ export const POST = withRequestLogging(async function POST(req: Request) {
 
       const invoice = await client.invoice.create({
         data: {
+          id: randomUUID(),
           companyId: authCtx.companyId,
           quoteId,
           clientId: quote.clientId,
@@ -124,6 +125,7 @@ export const POST = withRequestLogging(async function POST(req: Request) {
           total: quote.total,
           status: "draft",
           dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+          updatedAt: new Date(),
         },
       });
 
@@ -160,6 +162,7 @@ export const POST = withRequestLogging(async function POST(req: Request) {
 
     const invoice = await client.invoice.create({
       data: {
+        id: randomUUID(),
         companyId: authCtx.companyId,
         token,
         invoiceNumber,
@@ -170,6 +173,7 @@ export const POST = withRequestLogging(async function POST(req: Request) {
         total,
         status: "draft",
         dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        updatedAt: new Date(),
       },
     });
 

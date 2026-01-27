@@ -4,6 +4,7 @@ import { getPrisma } from "@/lib/server/prisma";
 import * as repo from "@/lib/server/repo";
 import { withRequestLogging, logError } from "@/lib/server/observability";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
+import { randomUUID } from "crypto";
 
 export const runtime = "nodejs";
 
@@ -28,9 +29,28 @@ export const GET = withRequestLogging(async function GET() {
       return NextResponse.json({ ok: false, error: "service_unavailable" }, { status: 503 });
     }
 
+    // Select only columns that exist in production to avoid schema mismatch errors
     const clients = await client.client.findMany({
       where: { companyId: authCtx.companyId },
       orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        companyId: true,
+        name: true,
+        email: true,
+        phone: true,
+        address1: true,
+        address2: true,
+        city: true,
+        county: true,
+        postcode: true,
+        country: true,
+        notes: true,
+        paymentTermsDays: true,
+        disableAutoChase: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
 
     return NextResponse.json({ ok: true, clients: clients || [] });
@@ -78,6 +98,7 @@ export const POST = withRequestLogging(async function POST(req: Request) {
 
     const created = await client.client.create({
       data: {
+        id: randomUUID(),
         companyId: authCtx.companyId,
         name,
         email,
@@ -91,6 +112,7 @@ export const POST = withRequestLogging(async function POST(req: Request) {
         notes: body?.notes ? String(body.notes).trim() : null,
         paymentTermsDays: body?.paymentTermsDays != null ? Number(body.paymentTermsDays) : null,
         disableAutoChase: body?.disableAutoChase != null ? Boolean(body.disableAutoChase) : false,
+        updatedAt: new Date(),
       },
     });
 

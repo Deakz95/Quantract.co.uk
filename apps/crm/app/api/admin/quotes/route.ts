@@ -4,7 +4,7 @@ import { getPrisma } from "@/lib/server/prisma";
 import { quoteTotals } from "@/lib/server/db";
 import { withRequestLogging, logError } from "@/lib/server/observability";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
-import { randomBytes } from "crypto";
+import { randomBytes, randomUUID } from "crypto";
 
 export const runtime = "nodejs";
 
@@ -109,6 +109,7 @@ export const POST = withRequestLogging(async function POST(req: Request) {
 
     const quote = await client.quote.create({
       data: {
+        id: randomUUID(),
         companyId: authCtx.companyId,
         token,
         quoteNumber,
@@ -123,8 +124,10 @@ export const POST = withRequestLogging(async function POST(req: Request) {
         vat,
         total,
         status: "draft",
+        updatedAt: new Date(),
         items: items.length > 0 ? {
           create: items.map((item: any, index: number) => ({
+            id: randomUUID(),
             description: String(item.description || ""),
             quantity: Number(item.quantity || 1),
             unitPrice: Number(item.unitPrice || 0),

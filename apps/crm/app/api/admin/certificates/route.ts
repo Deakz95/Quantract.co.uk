@@ -3,6 +3,7 @@ import { getAuthContext } from "@/lib/serverAuth";
 import { getPrisma } from "@/lib/server/prisma";
 import { withRequestLogging, logError } from "@/lib/server/observability";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
+import { randomUUID } from "crypto";
 
 export const runtime = "nodejs";
 
@@ -103,11 +104,13 @@ export const POST = withRequestLogging(async function POST(req: Request) {
 
     const certificate = await client.certificate.create({
       data: {
+        id: randomUUID(),
         companyId: authCtx.companyId,
         jobId,
         type,
         certificateNumber,
         status: "draft",
+        updatedAt: new Date(),
       },
     });
 

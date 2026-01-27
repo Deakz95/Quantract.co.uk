@@ -4,6 +4,7 @@ import { getPrisma } from "@/lib/server/prisma";
 import * as repo from "@/lib/server/repo";
 import { withRequestLogging, logError } from "@/lib/server/observability";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
+import { randomUUID } from "crypto";
 
 export const runtime = "nodejs";
 
@@ -73,6 +74,7 @@ export const POST = withRequestLogging(async function POST(req: Request) {
 
     const site = await client.site.create({
       data: {
+        id: randomUUID(),
         companyId: authCtx.companyId,
         clientId,
         name: typeof body?.name === "string" ? body.name.trim() : null,
@@ -83,6 +85,7 @@ export const POST = withRequestLogging(async function POST(req: Request) {
         postcode: typeof body?.postcode === "string" ? body.postcode.trim() : null,
         country: typeof body?.country === "string" ? body.country.trim() : null,
         notes: typeof body?.notes === "string" ? body.notes.trim() : null,
+        updatedAt: new Date(),
       },
     });
 
