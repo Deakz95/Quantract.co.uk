@@ -92,24 +92,13 @@ export default function DashboardPage() {
     }
   };
 
-  // Show loading state until hydrated
-  if (!hydrated) {
-    return (
-      <div className="min-h-screen bg-[var(--background)] flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-[var(--primary)] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-[var(--muted-foreground)]">Loading certificates...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <main className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
-      {/* Background grid */}
+      {/* Background grid - must be behind content with negative z-index */}
       <div
-        className="fixed inset-0 pointer-events-none z-0"
+        className="fixed inset-0 pointer-events-none"
         style={{
+          zIndex: -1,
           backgroundImage:
             "linear-gradient(rgba(59, 130, 246, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(59, 130, 246, 0.03) 1px, transparent 1px)",
           backgroundSize: "50px 50px",

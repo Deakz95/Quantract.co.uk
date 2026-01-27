@@ -1,1 +1,37 @@
 @import "@quantract/ui/globals.css";
+
+/* ========================================
+   CERTIFICATES APP - SAFETY OVERRIDES
+   Ensure content is always visible and
+   decorative elements stay in background
+   ======================================== */
+
+/* Force main content to be on top */
+main {
+  position: relative;
+  z-index: 1;
+}
+
+/* Ensure header is above content */
+header {
+  position: relative;
+  z-index: 10;
+}
+
+/* Limit any decorative fixed/absolute elements */
+.fixed[class*="pointer-events-none"],
+.absolute[class*="pointer-events-none"] {
+  z-index: -1 !important;
+}
+
+/* Ensure SVGs don't overflow */
+svg {
+  max-width: 100%;
+  flex-shrink: 0;
+}
+
+/* Ensure forms are interactive */
+form, input, select, textarea, button {
+  position: relative;
+  z-index: 1;
+}

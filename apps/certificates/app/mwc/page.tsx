@@ -39,17 +39,6 @@ function MWCPageContent() {
     }
   }, [certificateId, getCertificate, hydrated]);
 
-  // Show loading state until hydrated
-  if (!hydrated) {
-    return (
-      <div className="min-h-screen bg-[var(--background)] flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-[var(--primary)] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-[var(--muted-foreground)]">Loading certificate...</p>
-        </div>
-      </div>
-    );
-  }
 
   const updateOverview = (field: keyof MWCCertificate["overview"], value: string) => {
     setData((prev) => ({
@@ -154,7 +143,7 @@ function MWCPageContent() {
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link href="/dashboard" className="text-[var(--muted-foreground)] hover:text-[var(--foreground)]">
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-5 h-5" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
             </Link>
