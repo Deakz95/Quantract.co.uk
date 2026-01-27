@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
-import { requireRole, requireCompanyId } from "@/lib/serverAuth";
+import { getAuthContext } from "@/lib/serverAuth";
 import { getPrisma } from "@/lib/server/prisma";
-import { withRequestLogging } from "@/lib/server/observability";
+import { withRequestLogging, logError } from "@/lib/server/observability";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import {
   EVENT_LABELS,
   DEFAULT_SMS_TEMPLATES,
@@ -17,16 +18,24 @@ export const runtime = "nodejs";
  */
 export const GET = withRequestLogging(async function GET() {
   try {
-    await requireRole("admin");
-  } catch {
-    return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
-  }
+    const authCtx = await getAuthContext();
+    if (!authCtx) {
+      return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
+    }
 
-  const companyId = await requireCompanyId();
-  const client = getPrisma();
-  if (!client) {
-    return NextResponse.json({ ok: false, error: "prisma_disabled" }, { status: 400 });
-  }
+    if (authCtx.role !== "admin") {
+      return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
+    }
+
+    if (!authCtx.companyId) {
+      return NextResponse.json({ ok: false, error: "no_company" }, { status: 401 });
+    }
+
+    const companyId = authCtx.companyId;
+    const client = getPrisma();
+    if (!client) {
+      return NextResponse.json({ ok: false, error: "service_unavailable" }, { status: 503 });
+    }
 
   const templates = await client.notificationTemplate.findMany({
     where: { companyId },
@@ -73,12 +82,20 @@ export const GET = withRequestLogging(async function GET() {
     }
   }
 
-  return NextResponse.json({
-    ok: true,
-    templates: templatesMap,
-    rawTemplates: templates,
-    defaults: DEFAULT_SMS_TEMPLATES,
-  });
+    return NextResponse.json({
+      ok: true,
+      templates: templatesMap,
+      rawTemplates: templates,
+      defaults: DEFAULT_SMS_TEMPLATES,
+    });
+  } catch (error) {
+    if (error instanceof PrismaClientKnownRequestError) {
+      logError(error, { route: "/api/admin/notifications/templates", action: "list" });
+      return NextResponse.json({ ok: false, error: "database_error", code: error.code }, { status: 409 });
+    }
+    logError(error, { route: "/api/admin/notifications/templates", action: "list" });
+    return NextResponse.json({ ok: false, error: "load_failed" }, { status: 500 });
+  }
 });
 
 /**
@@ -87,86 +104,102 @@ export const GET = withRequestLogging(async function GET() {
  */
 export const PATCH = withRequestLogging(async function PATCH(req: Request) {
   try {
-    await requireRole("admin");
-  } catch {
-    return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
-  }
+    const authCtx = await getAuthContext();
+    if (!authCtx) {
+      return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
+    }
 
-  const companyId = await requireCompanyId();
-  const client = getPrisma();
-  if (!client) {
-    return NextResponse.json({ ok: false, error: "prisma_disabled" }, { status: 400 });
-  }
+    if (authCtx.role !== "admin") {
+      return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
+    }
 
-  const body = await req.json().catch(() => ({}));
+    if (!authCtx.companyId) {
+      return NextResponse.json({ ok: false, error: "no_company" }, { status: 401 });
+    }
 
-  const { eventKey, channel, templateBody, subject, restoreDefault } = body;
+    const companyId = authCtx.companyId;
+    const client = getPrisma();
+    if (!client) {
+      return NextResponse.json({ ok: false, error: "service_unavailable" }, { status: 503 });
+    }
 
-  if (!eventKey || !channel) {
-    return NextResponse.json(
-      { ok: false, error: "invalid_params" },
-      { status: 400 }
-    );
-  }
+    const body = await req.json().catch(() => ({}));
 
-  // Validate eventKey and channel
-  const validEventKeys = Object.keys(EVENT_LABELS);
-  const validChannels = ["SMS", "EMAIL"];
+    const { eventKey, channel, templateBody, subject, restoreDefault } = body;
 
-  if (!validEventKeys.includes(eventKey) || !validChannels.includes(channel)) {
-    return NextResponse.json(
-      { ok: false, error: "invalid_event_or_channel" },
-      { status: 400 }
-    );
-  }
+    if (!eventKey || !channel) {
+      return NextResponse.json(
+        { ok: false, error: "invalid_params" },
+        { status: 400 }
+      );
+    }
 
-  // If restoring default, delete custom template
-  if (restoreDefault) {
-    await client.notificationTemplate.deleteMany({
+    // Validate eventKey and channel
+    const validEventKeys = Object.keys(EVENT_LABELS);
+    const validChannels = ["SMS", "EMAIL"];
+
+    if (!validEventKeys.includes(eventKey) || !validChannels.includes(channel)) {
+      return NextResponse.json(
+        { ok: false, error: "invalid_event_or_channel" },
+        { status: 400 }
+      );
+    }
+
+    // If restoring default, delete custom template
+    if (restoreDefault) {
+      await client.notificationTemplate.deleteMany({
+        where: {
+          companyId,
+          channel: channel as "SMS" | "EMAIL",
+          eventKey: eventKey as NotificationEventKey,
+        },
+      });
+
+      return NextResponse.json({ ok: true, restored: true });
+    }
+
+    // Validate body
+    if (typeof templateBody !== "string" || !templateBody.trim()) {
+      return NextResponse.json(
+        { ok: false, error: "body_required" },
+        { status: 400 }
+      );
+    }
+
+    // Upsert the template
+    await client.notificationTemplate.upsert({
       where: {
+        companyId_channel_eventKey: {
+          companyId,
+          channel: channel as "SMS" | "EMAIL",
+          eventKey: eventKey as NotificationEventKey,
+        },
+      },
+      create: {
+        id: randomUUID(),
         companyId,
         channel: channel as "SMS" | "EMAIL",
         eventKey: eventKey as NotificationEventKey,
+        body: templateBody.trim(),
+        subject: channel === "EMAIL" && subject ? String(subject).trim() : null,
+        isDefault: false,
+        updatedAt: new Date(),
+      },
+      update: {
+        body: templateBody.trim(),
+        subject: channel === "EMAIL" && subject ? String(subject).trim() : null,
+        isDefault: false,
+        updatedAt: new Date(),
       },
     });
 
-    return NextResponse.json({ ok: true, restored: true });
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    if (error instanceof PrismaClientKnownRequestError) {
+      logError(error, { route: "/api/admin/notifications/templates", action: "update" });
+      return NextResponse.json({ ok: false, error: "database_error", code: error.code }, { status: 409 });
+    }
+    logError(error, { route: "/api/admin/notifications/templates", action: "update" });
+    return NextResponse.json({ ok: false, error: "update_failed" }, { status: 500 });
   }
-
-  // Validate body
-  if (typeof templateBody !== "string" || !templateBody.trim()) {
-    return NextResponse.json(
-      { ok: false, error: "body_required" },
-      { status: 400 }
-    );
-  }
-
-  // Upsert the template
-  await client.notificationTemplate.upsert({
-    where: {
-      companyId_channel_eventKey: {
-        companyId,
-        channel: channel as "SMS" | "EMAIL",
-        eventKey: eventKey as NotificationEventKey,
-      },
-    },
-    create: {
-      id: randomUUID(),
-      companyId,
-      channel: channel as "SMS" | "EMAIL",
-      eventKey: eventKey as NotificationEventKey,
-      body: templateBody.trim(),
-      subject: channel === "EMAIL" && subject ? String(subject).trim() : null,
-      isDefault: false,
-      updatedAt: new Date(),
-    },
-    update: {
-      body: templateBody.trim(),
-      subject: channel === "EMAIL" && subject ? String(subject).trim() : null,
-      isDefault: false,
-      updatedAt: new Date(),
-    },
-  });
-
-  return NextResponse.json({ ok: true });
 });

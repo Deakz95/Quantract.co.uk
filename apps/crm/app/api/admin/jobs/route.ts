@@ -1,33 +1,72 @@
 import { NextResponse } from "next/server";
-import { requireRoles } from "@/lib/serverAuth";
-import * as repo from "@/lib/server/repo";
+import { getAuthContext } from "@/lib/serverAuth";
+import { getPrisma } from "@/lib/server/prisma";
+import { withRequestLogging, logError } from "@/lib/server/observability";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 
-export async function GET() {
+export const runtime = "nodejs";
+
+export const GET = withRequestLogging(async function GET() {
   try {
-    const session = await requireRoles("admin");
-    if (!session) {
-      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    const authCtx = await getAuthContext();
+    if (!authCtx) {
+      return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
+    }
+
+    if (authCtx.role !== "admin") {
+      return NextResponse.json({ error: "forbidden" }, { status: 403 });
+    }
+
+    if (!authCtx.companyId) {
+      return NextResponse.json({ error: "no_company" }, { status: 401 });
+    }
+
+    const client = getPrisma();
+    if (!client) {
+      return NextResponse.json({ error: "service_unavailable" }, { status: 503 });
     }
 
     // IMPORTANT: return the array directly (UI + Playwright expect an array)
-    const jobs = await repo.listJobs();
-    return NextResponse.json(jobs);
-  } catch (error: any) {
-    // Log the actual error for debugging
-    console.error("[GET /api/admin/jobs] Error:", error);
-    // Return 401 for auth errors, 500 for others
-    if (error?.status === 401 || error?.status === 403) {
-      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-    }
-    return NextResponse.json({ error: error?.message || "internal_server_error" }, { status: 500 });
-  }
-}
+    const jobs = await client.job.findMany({
+      where: { companyId: authCtx.companyId },
+      orderBy: { createdAt: "desc" },
+      include: {
+        client: { select: { id: true, name: true, email: true } },
+        site: { select: { id: true, name: true, address1: true, city: true, postcode: true } },
+        quote: { select: { id: true, quoteNumber: true, total: true } },
+        assignedEngineer: { select: { id: true, name: true, email: true } },
+      },
+    });
 
-export async function POST(req: Request) {
+    return NextResponse.json(jobs || []);
+  } catch (error) {
+    if (error instanceof PrismaClientKnownRequestError) {
+      logError(error, { route: "/api/admin/jobs", action: "list" });
+      return NextResponse.json({ error: "database_error", code: error.code }, { status: 409 });
+    }
+    logError(error, { route: "/api/admin/jobs", action: "list" });
+    return NextResponse.json({ error: "load_failed" }, { status: 500 });
+  }
+});
+
+export const POST = withRequestLogging(async function POST(req: Request) {
   try {
-    const session = await requireRoles("admin");
-    if (!session) {
-      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    const authCtx = await getAuthContext();
+    if (!authCtx) {
+      return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
+    }
+
+    if (authCtx.role !== "admin") {
+      return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
+    }
+
+    if (!authCtx.companyId) {
+      return NextResponse.json({ ok: false, error: "no_company" }, { status: 401 });
+    }
+
+    const client = getPrisma();
+    if (!client) {
+      return NextResponse.json({ ok: false, error: "service_unavailable" }, { status: 503 });
     }
 
     const body = (await req.json().catch(() => null)) as {
@@ -38,6 +77,10 @@ export async function POST(req: Request) {
       title?: string;
       description?: string;
     };
+
+    // Generate job number
+    const jobCount = await client.job.count({ where: { companyId: authCtx.companyId } });
+    const jobNumber = `JOB-${String(jobCount + 1).padStart(5, "0")}`;
 
     // Manual job creation
     if (body?.manual) {
@@ -55,16 +98,36 @@ export async function POST(req: Request) {
         return NextResponse.json({ ok: false, error: "missing_title" }, { status: 400 });
       }
 
-      const job = await repo.createManualJob({
-        clientId,
-        siteId,
-        title,
-        description: body?.description,
+      // Verify client and site belong to this company
+      const clientRecord = await client.client.findFirst({
+        where: { id: clientId, companyId: authCtx.companyId },
       });
-
-      if (!job) {
-        return NextResponse.json({ ok: false, error: "failed_to_create_job" }, { status: 500 });
+      if (!clientRecord) {
+        return NextResponse.json({ ok: false, error: "client_not_found" }, { status: 404 });
       }
+
+      const site = await client.site.findFirst({
+        where: { id: siteId, companyId: authCtx.companyId },
+      });
+      if (!site) {
+        return NextResponse.json({ ok: false, error: "site_not_found" }, { status: 404 });
+      }
+
+      const job = await client.job.create({
+        data: {
+          companyId: authCtx.companyId,
+          jobNumber,
+          clientId,
+          siteId,
+          title,
+          description: body?.description || null,
+          status: "pending",
+        },
+        include: {
+          client: { select: { id: true, name: true } },
+          site: { select: { id: true, name: true, address1: true } },
+        },
+      });
 
       return NextResponse.json({ ok: true, job });
     }
@@ -76,21 +139,55 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "missing_quote_id" }, { status: 400 });
     }
 
-    const job = await repo.ensureJobForQuote(quoteId);
-    if (!job) {
-      return NextResponse.json({ ok: false, error: "not_found" }, { status: 404 });
+    // Check if job already exists for this quote
+    const existingJob = await client.job.findFirst({
+      where: { quoteId, companyId: authCtx.companyId },
+    });
+
+    if (existingJob) {
+      return NextResponse.json({ ok: true, job: existingJob });
     }
 
-    return NextResponse.json({ ok: true, job });
-  } catch (err: any) {
-    // Surface invariant violations
-    if (err?.message?.includes("must have a site")) {
+    // Get the quote
+    const quote = await client.quote.findFirst({
+      where: { id: quoteId, companyId: authCtx.companyId },
+    });
+
+    if (!quote) {
+      return NextResponse.json({ ok: false, error: "quote_not_found" }, { status: 404 });
+    }
+
+    if (!quote.siteId) {
       return NextResponse.json({ ok: false, error: "quote_missing_site" }, { status: 400 });
     }
-    if (err?.status === 401 || err?.status === 403) {
-      return NextResponse.json({ ok: false, error: "unauthorized" }, { status: err.status });
+
+    const job = await client.job.create({
+      data: {
+        companyId: authCtx.companyId,
+        jobNumber,
+        quoteId,
+        clientId: quote.clientId,
+        siteId: quote.siteId,
+        title: `Job from Quote ${quote.quoteNumber || quoteId}`,
+        status: "pending",
+        budgetSubtotal: quote.subtotal,
+        budgetVat: quote.vat,
+        budgetTotal: quote.total,
+      },
+      include: {
+        client: { select: { id: true, name: true } },
+        site: { select: { id: true, name: true, address1: true } },
+        quote: { select: { id: true, quoteNumber: true } },
+      },
+    });
+
+    return NextResponse.json({ ok: true, job });
+  } catch (error) {
+    if (error instanceof PrismaClientKnownRequestError) {
+      logError(error, { route: "/api/admin/jobs", action: "create" });
+      return NextResponse.json({ ok: false, error: "database_error", code: error.code }, { status: 409 });
     }
-    console.error("[POST /api/admin/jobs] Error:", err);
-    return NextResponse.json({ ok: false, error: "internal_server_error" }, { status: 500 });
+    logError(error, { route: "/api/admin/jobs", action: "create" });
+    return NextResponse.json({ ok: false, error: "create_failed" }, { status: 500 });
   }
-}
+});

@@ -1,30 +1,123 @@
 import { NextResponse } from "next/server";
-import { requireRoles } from "@/lib/serverAuth";
-import * as repo from "@/lib/server/repo";
+import { getAuthContext } from "@/lib/serverAuth";
+import { getPrisma } from "@/lib/server/prisma";
+import { withRequestLogging, logError } from "@/lib/server/observability";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 
-export async function GET(req: Request) {
-  const session = await requireRoles("admin");
-  if (!session) {
-    return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
-  }
-  const url = new URL(req.url);
-  const jobId = String(url.searchParams.get("jobId") ?? "").trim();
-  if (!jobId) return NextResponse.json({ ok: true, certificates: [] });
-  const certificates = await repo.listCertificatesForJob(jobId);
-  return NextResponse.json({ ok: true, certificates });
-}
+export const runtime = "nodejs";
 
-export async function POST(req: Request) {
-  const session = await requireRoles("admin");
-  if (!session) {
-    return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+export const GET = withRequestLogging(async function GET(req: Request) {
+  try {
+    const authCtx = await getAuthContext();
+    if (!authCtx) {
+      return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
+    }
+
+    if (authCtx.role !== "admin") {
+      return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
+    }
+
+    if (!authCtx.companyId) {
+      return NextResponse.json({ ok: false, error: "no_company" }, { status: 401 });
+    }
+
+    const client = getPrisma();
+    if (!client) {
+      return NextResponse.json({ ok: false, error: "service_unavailable" }, { status: 503 });
+    }
+
+    const url = new URL(req.url);
+    const jobId = String(url.searchParams.get("jobId") ?? "").trim();
+    if (!jobId) return NextResponse.json({ ok: true, certificates: [] });
+
+    const certificates = await client.certificate.findMany({
+      where: { jobId, companyId: authCtx.companyId },
+      orderBy: { createdAt: "desc" },
+      include: {
+        job: { select: { id: true, title: true, jobNumber: true } },
+      },
+    });
+
+    return NextResponse.json({ ok: true, certificates: certificates || [] });
+  } catch (error) {
+    if (error instanceof PrismaClientKnownRequestError) {
+      logError(error, { route: "/api/admin/certificates", action: "list" });
+      return NextResponse.json({ ok: false, error: "database_error", code: error.code }, { status: 409 });
+    }
+    logError(error, { route: "/api/admin/certificates", action: "list" });
+    return NextResponse.json({ ok: false, error: "load_failed" }, { status: 500 });
   }
-  const body = (await req.json().catch(() => null)) as any;
-  const jobId = String(body?.jobId ?? "").trim();
-  const type = String(body?.type ?? "").trim();
-  if (!jobId) return NextResponse.json({ ok: false, error: "Missing jobId" }, { status: 400 });
-  if (!type) return NextResponse.json({ ok: false, error: "Missing type" }, { status: 400 });
-  const cert = await repo.createCertificate({ jobId, type: type as any });
-  if (!cert) return NextResponse.json({ ok: false, error: "Could not create certificate" }, { status: 500 });
-  return NextResponse.json({ ok: true, certificate: cert });
-}
+});
+
+export const POST = withRequestLogging(async function POST(req: Request) {
+  try {
+    const authCtx = await getAuthContext();
+    if (!authCtx) {
+      return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
+    }
+
+    if (authCtx.role !== "admin") {
+      return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
+    }
+
+    if (!authCtx.companyId) {
+      return NextResponse.json({ ok: false, error: "no_company" }, { status: 401 });
+    }
+
+    const client = getPrisma();
+    if (!client) {
+      return NextResponse.json({ ok: false, error: "service_unavailable" }, { status: 503 });
+    }
+
+    const body = (await req.json().catch(() => null)) as any;
+    const jobId = String(body?.jobId ?? "").trim();
+    const type = String(body?.type ?? "").trim();
+
+    if (!jobId) return NextResponse.json({ ok: false, error: "missing_job_id" }, { status: 400 });
+    if (!type) return NextResponse.json({ ok: false, error: "missing_type" }, { status: 400 });
+
+    // Verify the job belongs to this company
+    const job = await client.job.findFirst({
+      where: { id: jobId, companyId: authCtx.companyId },
+    });
+
+    if (!job) {
+      return NextResponse.json({ ok: false, error: "job_not_found" }, { status: 404 });
+    }
+
+    // Get or generate certificate number
+    const company = await client.company.findUnique({
+      where: { id: authCtx.companyId },
+      select: { certificateNumberPrefix: true, nextCertificateNumber: true },
+    });
+
+    const prefix = company?.certificateNumberPrefix || "CERT-";
+    const num = company?.nextCertificateNumber || 1;
+    const certificateNumber = `${prefix}${String(num).padStart(5, "0")}`;
+
+    // Increment next certificate number
+    await client.company.update({
+      where: { id: authCtx.companyId },
+      data: { nextCertificateNumber: num + 1 },
+    });
+
+    const certificate = await client.certificate.create({
+      data: {
+        companyId: authCtx.companyId,
+        jobId,
+        type,
+        certificateNumber,
+        status: "draft",
+      },
+    });
+
+    return NextResponse.json({ ok: true, certificate });
+  } catch (error) {
+    if (error instanceof PrismaClientKnownRequestError) {
+      logError(error, { route: "/api/admin/certificates", action: "create" });
+      return NextResponse.json({ ok: false, error: "database_error", code: error.code }, { status: 409 });
+    }
+    logError(error, { route: "/api/admin/certificates", action: "create" });
+    return NextResponse.json({ ok: false, error: "create_failed" }, { status: 500 });
+  }
+});

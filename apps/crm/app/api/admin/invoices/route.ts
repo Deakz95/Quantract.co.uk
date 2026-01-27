@@ -1,28 +1,71 @@
 import { NextResponse } from "next/server";
-import { requireRoles } from "@/lib/serverAuth";
-import * as repo from "@/lib/server/repo";
-import { createInvoice } from "@/lib/server/db";
+import { getAuthContext } from "@/lib/serverAuth";
+import { getPrisma } from "@/lib/server/prisma";
 import { clampMoney } from "@/lib/invoiceMath";
+import { withRequestLogging, logError } from "@/lib/server/observability";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
+import { randomBytes } from "crypto";
 
-export async function GET() {
+export const runtime = "nodejs";
+
+export const GET = withRequestLogging(async function GET() {
   try {
-    const session = await requireRoles("admin");
-    if (!session) {
-      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    const authCtx = await getAuthContext();
+    if (!authCtx) {
+      return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
     }
 
-    const invoices = await repo.listInvoices();
-    return NextResponse.json(invoices);
-  } catch {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
-}
+    if (authCtx.role !== "admin") {
+      return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
+    }
 
-export async function POST(req: Request) {
+    if (!authCtx.companyId) {
+      return NextResponse.json({ ok: false, error: "no_company" }, { status: 401 });
+    }
+
+    const client = getPrisma();
+    if (!client) {
+      return NextResponse.json({ ok: false, error: "service_unavailable" }, { status: 503 });
+    }
+
+    const invoices = await client.invoice.findMany({
+      where: { companyId: authCtx.companyId },
+      orderBy: { createdAt: "desc" },
+      include: {
+        client: { select: { id: true, name: true, email: true } },
+        payments: true,
+      },
+    });
+
+    return NextResponse.json({ ok: true, invoices: invoices || [] });
+  } catch (error) {
+    if (error instanceof PrismaClientKnownRequestError) {
+      logError(error, { route: "/api/admin/invoices", action: "list" });
+      return NextResponse.json({ ok: false, error: "database_error", code: error.code }, { status: 409 });
+    }
+    logError(error, { route: "/api/admin/invoices", action: "list" });
+    return NextResponse.json({ ok: false, error: "load_failed" }, { status: 500 });
+  }
+});
+
+export const POST = withRequestLogging(async function POST(req: Request) {
   try {
-    const session = await requireRoles("admin");
-    if (!session) {
-      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    const authCtx = await getAuthContext();
+    if (!authCtx) {
+      return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
+    }
+
+    if (authCtx.role !== "admin") {
+      return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
+    }
+
+    if (!authCtx.companyId) {
+      return NextResponse.json({ ok: false, error: "no_company" }, { status: 401 });
+    }
+
+    const client = getPrisma();
+    if (!client) {
+      return NextResponse.json({ ok: false, error: "service_unavailable" }, { status: 503 });
     }
 
     const body = (await req.json().catch(() => ({}))) as any;
@@ -30,11 +73,61 @@ export async function POST(req: Request) {
     // Create from quote (idempotent)
     const quoteId = typeof body.quoteId === "string" ? body.quoteId : undefined;
     if (quoteId) {
-      const inv = await repo.ensureInvoiceForQuote(quoteId);
-      if (!inv) {
-        return NextResponse.json({ error: "quote_not_found" }, { status: 404 });
+      // Check if quote exists and belongs to this company
+      const quote = await client.quote.findFirst({
+        where: { id: quoteId, companyId: authCtx.companyId },
+        include: { items: true },
+      });
+
+      if (!quote) {
+        return NextResponse.json({ ok: false, error: "quote_not_found" }, { status: 404 });
       }
-      return NextResponse.json({ invoice: inv });
+
+      // Check if invoice already exists for this quote
+      const existingInvoice = await client.invoice.findFirst({
+        where: { quoteId, companyId: authCtx.companyId },
+      });
+
+      if (existingInvoice) {
+        return NextResponse.json({ ok: true, invoice: existingInvoice });
+      }
+
+      // Generate invoice number
+      const company = await client.company.findUnique({
+        where: { id: authCtx.companyId },
+        select: { invoiceNumberPrefix: true, nextInvoiceNumber: true },
+      });
+
+      const prefix = company?.invoiceNumberPrefix || "INV-";
+      const num = company?.nextInvoiceNumber || 1;
+      const invoiceNumber = `${prefix}${String(num).padStart(5, "0")}`;
+
+      // Increment next invoice number
+      await client.company.update({
+        where: { id: authCtx.companyId },
+        data: { nextInvoiceNumber: num + 1 },
+      });
+
+      const token = randomBytes(16).toString("hex");
+
+      const invoice = await client.invoice.create({
+        data: {
+          companyId: authCtx.companyId,
+          quoteId,
+          clientId: quote.clientId,
+          token,
+          invoiceNumber,
+          clientName: quote.clientName,
+          clientEmail: quote.clientEmail,
+          subtotal: quote.subtotal,
+          vat: quote.vat,
+          total: quote.total,
+          status: "draft",
+          dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+        },
+      });
+
+      return NextResponse.json({ ok: true, invoice });
     }
 
     // Manual invoice
@@ -45,12 +138,48 @@ export async function POST(req: Request) {
     const total = clampMoney(Number(body.total ?? subtotal + vat));
 
     if (!clientName || !clientEmail) {
-      return NextResponse.json({ error: "missing_client" }, { status: 400 });
+      return NextResponse.json({ ok: false, error: "missing_client" }, { status: 400 });
     }
 
-    const inv = createInvoice({ clientName, clientEmail, subtotal, vat, total });
-    return NextResponse.json({ invoice: inv });
-  } catch {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    // Generate invoice number
+    const company = await client.company.findUnique({
+      where: { id: authCtx.companyId },
+      select: { invoiceNumberPrefix: true, nextInvoiceNumber: true },
+    });
+
+    const prefix = company?.invoiceNumberPrefix || "INV-";
+    const num = company?.nextInvoiceNumber || 1;
+    const invoiceNumber = `${prefix}${String(num).padStart(5, "0")}`;
+
+    await client.company.update({
+      where: { id: authCtx.companyId },
+      data: { nextInvoiceNumber: num + 1 },
+    });
+
+    const token = randomBytes(16).toString("hex");
+
+    const invoice = await client.invoice.create({
+      data: {
+        companyId: authCtx.companyId,
+        token,
+        invoiceNumber,
+        clientName,
+        clientEmail,
+        subtotal,
+        vat,
+        total,
+        status: "draft",
+        dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      },
+    });
+
+    return NextResponse.json({ ok: true, invoice });
+  } catch (error) {
+    if (error instanceof PrismaClientKnownRequestError) {
+      logError(error, { route: "/api/admin/invoices", action: "create" });
+      return NextResponse.json({ ok: false, error: "database_error", code: error.code }, { status: 409 });
+    }
+    logError(error, { route: "/api/admin/invoices", action: "create" });
+    return NextResponse.json({ ok: false, error: "create_failed" }, { status: 500 });
   }
-}
+});

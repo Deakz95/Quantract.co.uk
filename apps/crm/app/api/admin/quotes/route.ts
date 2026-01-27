@@ -1,38 +1,84 @@
 import { NextResponse } from "next/server";
-import { requireRoles } from "@/lib/serverAuth";
+import { getAuthContext } from "@/lib/serverAuth";
+import { getPrisma } from "@/lib/server/prisma";
 import { quoteTotals } from "@/lib/server/db";
-import * as repo from "@/lib/server/repo";
+import { withRequestLogging, logError } from "@/lib/server/observability";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
+import { randomBytes } from "crypto";
 
-export async function GET() {
+export const runtime = "nodejs";
+
+export const GET = withRequestLogging(async function GET() {
   try {
-    const session = await requireRoles("admin");
-    if (!session) {
-      return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+    const authCtx = await getAuthContext();
+    if (!authCtx) {
+      return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
     }
 
-    const quotes = (await repo.listQuotes()).map((q) => ({
+    if (authCtx.role !== "admin") {
+      return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
+    }
+
+    if (!authCtx.companyId) {
+      return NextResponse.json({ ok: false, error: "no_company" }, { status: 401 });
+    }
+
+    const client = getPrisma();
+    if (!client) {
+      return NextResponse.json({ ok: false, error: "service_unavailable" }, { status: 503 });
+    }
+
+    const quotes = await client.quote.findMany({
+      where: { companyId: authCtx.companyId },
+      orderBy: { createdAt: "desc" },
+      include: {
+        items: true,
+        client: { select: { id: true, name: true, email: true } },
+        site: { select: { id: true, name: true, address1: true, city: true, postcode: true } },
+      },
+    });
+
+    const mappedQuotes = quotes.map((q: any) => ({
       ...q,
       totals: quoteTotals(q),
       shareUrl: `/client/quotes/${q.token}`,
     }));
 
-    return NextResponse.json({ ok: true, quotes });
-  } catch {
-    return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+    return NextResponse.json({ ok: true, quotes: mappedQuotes });
+  } catch (error) {
+    if (error instanceof PrismaClientKnownRequestError) {
+      logError(error, { route: "/api/admin/quotes", action: "list" });
+      return NextResponse.json({ ok: false, error: "database_error", code: error.code }, { status: 409 });
+    }
+    logError(error, { route: "/api/admin/quotes", action: "list" });
+    return NextResponse.json({ ok: false, error: "load_failed" }, { status: 500 });
   }
-}
+});
 
-export async function POST(req: Request) {
+export const POST = withRequestLogging(async function POST(req: Request) {
   try {
-    const session = await requireRoles("admin");
-    if (!session) {
-      return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+    const authCtx = await getAuthContext();
+    if (!authCtx) {
+      return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
+    }
+
+    if (authCtx.role !== "admin") {
+      return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
+    }
+
+    if (!authCtx.companyId) {
+      return NextResponse.json({ ok: false, error: "no_company" }, { status: 401 });
+    }
+
+    const client = getPrisma();
+    if (!client) {
+      return NextResponse.json({ ok: false, error: "service_unavailable" }, { status: 503 });
     }
 
     const body = (await req.json().catch(() => null)) as any;
 
     const clientName = String(body?.clientName ?? "").trim();
-    const clientEmail = String(body?.clientEmail ?? "").trim();
+    const clientEmail = String(body?.clientEmail ?? "").trim().toLowerCase();
 
     if (!clientName) {
       return NextResponse.json({ ok: false, error: "missing_client_name" }, { status: 400 });
@@ -41,26 +87,70 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "invalid_client_email" }, { status: 400 });
     }
 
-    const q = await repo.createQuote({
-      clientId: typeof body?.clientId === "string" ? body.clientId : undefined,
-      clientName,
-      clientEmail,
-      siteId: typeof body?.siteId === "string" ? body.siteId : undefined,
-      siteAddress: body?.siteAddress,
-      notes: body?.notes,
-      vatRate: typeof body?.vatRate === "number" ? body.vatRate : 0.2,
-      items: Array.isArray(body?.items) ? body.items : [],
+    // Generate token and quote number
+    const token = randomBytes(16).toString("hex");
+    const company = await client.company.findUnique({
+      where: { id: authCtx.companyId },
+      select: { invoiceNumberPrefix: true, nextInvoiceNumber: true },
+    });
+
+    const quoteNumber = `Q-${String(company?.nextInvoiceNumber || 1).padStart(5, "0")}`;
+
+    // Calculate totals from items
+    const items = Array.isArray(body?.items) ? body.items : [];
+    const vatRate = typeof body?.vatRate === "number" ? body.vatRate : 0.2;
+    const subtotal = items.reduce((sum: number, item: any) => {
+      const qty = Number(item.quantity || 1);
+      const price = Number(item.unitPrice || 0);
+      return sum + qty * price;
+    }, 0);
+    const vat = subtotal * vatRate;
+    const total = subtotal + vat;
+
+    const quote = await client.quote.create({
+      data: {
+        companyId: authCtx.companyId,
+        token,
+        quoteNumber,
+        clientId: typeof body?.clientId === "string" ? body.clientId : null,
+        clientName,
+        clientEmail,
+        siteId: typeof body?.siteId === "string" ? body.siteId : null,
+        siteAddress: body?.siteAddress || null,
+        notes: body?.notes || null,
+        vatRate,
+        subtotal,
+        vat,
+        total,
+        status: "draft",
+        items: items.length > 0 ? {
+          create: items.map((item: any, index: number) => ({
+            description: String(item.description || ""),
+            quantity: Number(item.quantity || 1),
+            unitPrice: Number(item.unitPrice || 0),
+            sortOrder: index,
+          })),
+        } : undefined,
+      },
+      include: {
+        items: true,
+      },
     });
 
     return NextResponse.json({
       ok: true,
       quote: {
-        ...q,
-        totals: quoteTotals(q),
-        shareUrl: `/client/quotes/${q.token}`,
+        ...quote,
+        totals: quoteTotals(quote),
+        shareUrl: `/client/quotes/${quote.token}`,
       },
     });
-  } catch {
-    return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+  } catch (error) {
+    if (error instanceof PrismaClientKnownRequestError) {
+      logError(error, { route: "/api/admin/quotes", action: "create" });
+      return NextResponse.json({ ok: false, error: "database_error", code: error.code }, { status: 409 });
+    }
+    logError(error, { route: "/api/admin/quotes", action: "create" });
+    return NextResponse.json({ ok: false, error: "create_failed" }, { status: 500 });
   }
-}
+});
