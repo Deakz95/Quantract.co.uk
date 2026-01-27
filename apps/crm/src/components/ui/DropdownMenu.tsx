@@ -91,3 +91,23 @@ export function DropdownMenuItem({
     </button>
   );
 }
+
+export function DropdownMenuSeparator({ className }: { className?: string }) {
+  return (
+    <div className={cn("my-1 h-px bg-[var(--border)]", className)} />
+  );
+}
+
+export function DropdownMenuLabel({
+  children,
+  className
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={cn("px-2 py-1.5 text-sm font-medium text-[var(--muted-foreground)]", className)}>
+      {children}
+    </div>
+  );
+}

@@ -29,7 +29,19 @@ import {
   Activity,
   Upload,
   FileBarChart,
+  CircleUser,
+  User,
+  HelpCircle,
+  LogOut,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/DropdownMenu";
 
 import { ImpersonationBanner } from "@/components/ImpersonationBanner";
 
@@ -99,6 +111,29 @@ export function AppShell({
   const [newOpen, setNewOpen] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+
+  // Fetch user email from auth endpoint
+  useEffect(() => {
+    const fetchUserEmail = async () => {
+      try {
+        const res = await fetch("/api/auth/me", { cache: "no-store" });
+        const data = await res.json().catch(() => null);
+        if (res.ok && data?.ok && data?.user?.email) {
+          setUserEmail(data.user.email);
+        }
+      } catch {
+        // ignore - user may not be authenticated
+      }
+    };
+    void fetchUserEmail();
+  }, []);
+
+  // Logout function
+  const handleLogout = async () => {
+    await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+    window.location.href = `/${role}/login`;
+  };
 
   useEffect(() => {
     const apply = async () => {
@@ -247,6 +282,46 @@ export function AppShell({
                 <span className="hidden sm:inline">New</span>
               </Button>
             )}
+
+            {/* User Profile Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger>
+                <Button variant="ghost" size="icon" className="rounded-full">
+                  <CircleUser className="w-5 h-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                {userEmail && (
+                  <>
+                    <DropdownMenuLabel className="truncate">{userEmail}</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
+                <Link href={`/${role}/profile`}>
+                  <DropdownMenuItem>
+                    <User className="w-4 h-4 mr-2 inline" />
+                    Profile
+                  </DropdownMenuItem>
+                </Link>
+                <Link href={`/${role}/settings`}>
+                  <DropdownMenuItem>
+                    <Settings className="w-4 h-4 mr-2 inline" />
+                    Settings
+                  </DropdownMenuItem>
+                </Link>
+                <a href="https://docs.quantract.co.uk" target="_blank" rel="noopener noreferrer">
+                  <DropdownMenuItem>
+                    <HelpCircle className="w-4 h-4 mr-2 inline" />
+                    Help
+                  </DropdownMenuItem>
+                </a>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout} className="text-red-600 hover:text-red-700">
+                  <LogOut className="w-4 h-4 mr-2 inline" />
+                  Log out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </header>

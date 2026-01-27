@@ -142,7 +142,7 @@ export function ActivityForm({ entityType, entityId, activity, onSuccess, onCanc
       {/* Subject */}
       <label className="block">
         <span className="block text-xs font-semibold text-[var(--muted-foreground)] mb-1">
-          Subject
+          Subject <span className="text-red-500">*</span>
         </span>
         <input
           type="text"

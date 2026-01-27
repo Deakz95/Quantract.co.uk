@@ -446,7 +446,7 @@ export default function EngineersPageClient() {
               </label>
 
               <label className="grid gap-1">
-                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Email *</span>
+                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Email <span className="text-red-500">*</span></span>
                 <input
                   className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2.5 text-sm text-[var(--foreground)]"
                   placeholder="engineer@example.com"

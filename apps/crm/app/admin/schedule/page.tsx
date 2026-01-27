@@ -260,7 +260,7 @@ export default function AdminSchedulePage() {
                 <div className="empty-state mt-4">
                   <div className="empty-state-title">No engineers found</div>
                   <p className="empty-state-description">
-                    Add engineers by creating jobs assigned to new engineer emails or set QT_ENGINEER_EMAILS.
+                    Add engineers in Settings to enable scheduling.
                   </p>
                 </div>
               ) : (

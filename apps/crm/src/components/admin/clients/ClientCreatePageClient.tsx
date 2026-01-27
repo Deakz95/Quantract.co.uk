@@ -65,12 +65,12 @@ if (!e || !e.includes("@")) {
         <CardContent>
           <div className="grid gap-4">
             <label className="grid gap-1">
-              <span className="text-xs font-semibold text-[var(--muted-foreground)]">Full name</span>
+              <span className="text-xs font-semibold text-[var(--muted-foreground)]">Full name <span className="text-red-500">*</span></span>
               <input className="h-10 rounded-md border border-[var(--border)] bg-[var(--background)] px-3 text-sm text-[var(--foreground)]" value={name} onChange={(e) => setName(e.target.value)} name="name" placeholder="e.g. Jane Doe" />
             </label>
 
             <label className="grid gap-1">
-              <span className="text-xs font-semibold text-[var(--muted-foreground)]">Email</span>
+              <span className="text-xs font-semibold text-[var(--muted-foreground)]">Email <span className="text-red-500">*</span></span>
               <input className="h-10 rounded-md border border-[var(--border)] bg-[var(--background)] px-3 text-sm text-[var(--foreground)]" value={email} onChange={(e) => setEmail(e.target.value)} name="email" placeholder="jane@example.com" />
             </label>
 

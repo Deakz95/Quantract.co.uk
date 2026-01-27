@@ -157,7 +157,7 @@ export default function AdminJobNewPage() {
             <CardContent>
               <div className="grid gap-3">
                 <label className="grid gap-1">
-                  <span className="text-xs font-semibold text-[var(--muted-foreground)]">Client *</span>
+                  <span className="text-xs font-semibold text-[var(--muted-foreground)]">Client <span className="text-red-500">*</span></span>
                   <select
                     className="h-11 rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 text-sm text-[var(--foreground)]"
                     value={selectedClientId}
@@ -171,7 +171,7 @@ export default function AdminJobNewPage() {
                 </label>
 
                 <label className="grid gap-1">
-                  <span className="text-xs font-semibold text-[var(--muted-foreground)]">Job Title *</span>
+                  <span className="text-xs font-semibold text-[var(--muted-foreground)]">Job Title <span className="text-red-500">*</span></span>
                   <input
                     className="h-11 rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)]"
                     placeholder="e.g. Kitchen rewire"

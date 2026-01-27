@@ -401,8 +401,8 @@ export default function LandingPage() {
             <div>
               <h4 className="font-semibold text-[var(--foreground)] mb-4">Legal</h4>
               <ul className="space-y-2 text-sm text-[var(--muted-foreground)]">
-                <li><a href="#" className="hover:text-[var(--foreground)]">Privacy</a></li>
-                <li><a href="#" className="hover:text-[var(--foreground)]">Terms</a></li>
+                <li><Link href="/privacy" className="hover:text-[var(--foreground)]">Privacy</Link></li>
+                <li><Link href="/terms" className="hover:text-[var(--foreground)]">Terms</Link></li>
               </ul>
             </div>
           </div>

@@ -220,7 +220,7 @@ export default function DealForm({ open, onOpenChange, deal, stages, onSuccess }
             {/* Title */}
             <div>
               <label className="block text-xs font-semibold text-[var(--muted-foreground)] mb-1.5">
-                Title *
+                Title <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -267,7 +267,7 @@ export default function DealForm({ open, onOpenChange, deal, stages, onSuccess }
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-[var(--muted-foreground)] mb-1.5">
-                  Stage *
+                  Stage <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={form.stageId}

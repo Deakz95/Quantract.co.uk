@@ -4,6 +4,7 @@ import { AppShell } from "@/components/AppShell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { OnboardingChecklist } from "@/components/admin/OnboardingChecklist";
 import { FileText, Receipt, Briefcase, TrendingUp, Clock, ArrowUpRight, Zap, Settings, Menu, X, Plus, Users } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useCallback } from "react";
@@ -787,6 +788,9 @@ export default function DashboardPage() {
   return (
     <AppShell role="admin" title="Dashboard" subtitle="Overview of your business performance and recent activity.">
       <div className="space-y-6">
+        {/* Onboarding Checklist */}
+        <OnboardingChecklist />
+
         {/* Customize Controls */}
         <div className="flex items-center justify-end gap-2">
           {isCustomizing ? (

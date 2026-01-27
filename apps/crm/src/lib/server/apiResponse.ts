@@ -31,7 +31,44 @@ const USER_MESSAGES: Record<string, string> = {
   INTERNAL: "Something went wrong. Please try again later",
   DATABASE: "A database error occurred. Please try again",
   NETWORK: "A network error occurred. Please try again",
+  SERVICE_UNAVAILABLE: "Service temporarily unavailable. Please try again later",
+  LOAD_FAILED: "Failed to load data. Please refresh the page",
+  ALREADY_EXISTS: "This item already exists",
 };
+
+/**
+ * Check if an error is a Prisma error and return appropriate response info
+ */
+function getPrismaErrorInfo(error: unknown): { code: string; status: number; message: string } | null {
+  if (!error || typeof error !== "object") return null;
+
+  const errorName = (error as { name?: string }).name ?? "";
+  const errorCode = (error as { code?: string }).code ?? "";
+
+  // Handle Prisma initialization errors (database not available)
+  if (errorName === "PrismaClientInitializationError") {
+    return { code: "SERVICE_UNAVAILABLE", status: 503, message: USER_MESSAGES.SERVICE_UNAVAILABLE };
+  }
+
+  // Handle known Prisma request errors
+  if (errorName === "PrismaClientKnownRequestError") {
+    switch (errorCode) {
+      case "P2002": // Unique constraint violation
+        return { code: "ALREADY_EXISTS", status: 409, message: USER_MESSAGES.ALREADY_EXISTS };
+      case "P2003": // Foreign key constraint violation
+        return { code: "VALIDATION", status: 400, message: "Invalid reference. Please check your selection." };
+      case "P2025": // Record not found
+        return { code: "NOT_FOUND", status: 404, message: USER_MESSAGES.NOT_FOUND };
+      case "P2021": // Table does not exist
+      case "P2022": // Column does not exist
+        return { code: "SERVICE_UNAVAILABLE", status: 503, message: USER_MESSAGES.SERVICE_UNAVAILABLE };
+      default:
+        return { code: "DATABASE", status: 500, message: USER_MESSAGES.DATABASE };
+    }
+  }
+
+  return null;
+}
 
 /**
  * Create a safe JSON response - NEVER includes stack traces
@@ -144,6 +181,16 @@ export function withSafeErrors<T extends (...args: any[]) => Promise<Response>>(
     try {
       return await handler(...args);
     } catch (error) {
+      // Check for Prisma errors first
+      const prismaInfo = getPrismaErrorInfo(error);
+      if (prismaInfo) {
+        return safeError(error, context, {
+          status: prismaInfo.status,
+          code: prismaInfo.code,
+          userMessage: prismaInfo.message,
+        });
+      }
+
       // Check for known error types
       if (error instanceof Error) {
         const msg = error.message.toLowerCase();
@@ -156,10 +203,34 @@ export function withSafeErrors<T extends (...args: any[]) => Promise<Response>>(
         if (msg.includes("not found")) {
           return SafeErrors.notFound(context);
         }
+        // Never expose Prisma operation names
+        if (msg.includes("prisma.") || msg.includes("findmany") || msg.includes("findfirst")) {
+          return safeError(error, context, {
+            status: 500,
+            code: "DATABASE",
+            userMessage: USER_MESSAGES.DATABASE,
+          });
+        }
       }
 
       // Default to internal error
       return SafeErrors.internal(error, context);
     }
   }) as T;
+}
+
+/**
+ * Helper to add Prisma error handling to existing try/catch blocks
+ * Returns a user-friendly error response or null if not a Prisma error
+ */
+export function handlePrismaError(error: unknown, context: ErrorContext): Response | null {
+  const prismaInfo = getPrismaErrorInfo(error);
+  if (prismaInfo) {
+    return safeError(error, context, {
+      status: prismaInfo.status,
+      code: prismaInfo.code,
+      userMessage: prismaInfo.message,
+    });
+  }
+  return null;
 }

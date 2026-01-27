@@ -44,7 +44,7 @@ export function ContactForm({ form, setForm, clients, onSave, onClear, busy, isE
     <div className="grid gap-3">
       <div className="grid grid-cols-2 gap-3">
         <label className="grid gap-1">
-          <span className="text-xs font-semibold text-[var(--muted-foreground)]">First name *</span>
+          <span className="text-xs font-semibold text-[var(--muted-foreground)]">First name <span className="text-red-500">*</span></span>
           <input
             className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-[var(--foreground)] text-sm"
             value={form.firstName ?? ""}
@@ -54,7 +54,7 @@ export function ContactForm({ form, setForm, clients, onSave, onClear, busy, isE
         </label>
 
         <label className="grid gap-1">
-          <span className="text-xs font-semibold text-[var(--muted-foreground)]">Last name *</span>
+          <span className="text-xs font-semibold text-[var(--muted-foreground)]">Last name <span className="text-red-500">*</span></span>
           <input
             className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-[var(--foreground)] text-sm"
             value={form.lastName ?? ""}

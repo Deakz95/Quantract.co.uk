@@ -40,6 +40,15 @@ declare module "lucide-react" {
   export const Upload: LucideIcon;
   export const Download: LucideIcon;
   export const CheckCircle2: LucideIcon;
+  export const CircleUser: LucideIcon;
+  export const LogOut: LucideIcon;
+  export const Filter: LucideIcon;
+  export const Search: LucideIcon;
+  export const Eye: LucideIcon;
+  export const EyeOff: LucideIcon;
+  export const ArrowLeft: LucideIcon;
+  export const RefreshCcw: LucideIcon;
+  export const ExternalLink: LucideIcon;
 
   // Re-export icons that already work
   export const Mail: LucideIcon;
