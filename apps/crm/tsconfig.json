@@ -45,6 +45,12 @@
     ".next",
     "**/*.test.ts",
     "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx",
+    "src/test/**/*",
+    "src/lib/server/test-utils.ts",
+    "vitest.config.ts",
+    "tests/**/*",
     "stageK_work/**/*"
   ]
 }
