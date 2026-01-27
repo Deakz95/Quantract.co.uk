@@ -1,4 +1,5 @@
-CREATE TABLE "SnagItem" (
+-- CreateTable SnagItem (idempotent)
+CREATE TABLE IF NOT EXISTS "SnagItem" (
     "id" TEXT NOT NULL,
     "companyId" TEXT NOT NULL,
     "jobId" TEXT NOT NULL,
@@ -11,9 +12,18 @@ CREATE TABLE "SnagItem" (
     CONSTRAINT "SnagItem_pkey" PRIMARY KEY ("id")
 );
 
-CREATE INDEX "SnagItem_companyId_idx" ON "SnagItem"("companyId");
-CREATE INDEX "SnagItem_jobId_idx" ON "SnagItem"("jobId");
-CREATE INDEX "SnagItem_status_idx" ON "SnagItem"("status");
+-- CreateIndex (idempotent)
+CREATE INDEX IF NOT EXISTS "SnagItem_companyId_idx" ON "SnagItem"("companyId");
+CREATE INDEX IF NOT EXISTS "SnagItem_jobId_idx" ON "SnagItem"("jobId");
+CREATE INDEX IF NOT EXISTS "SnagItem_status_idx" ON "SnagItem"("status");
 
-ALTER TABLE "SnagItem" ADD CONSTRAINT "SnagItem_companyId_fkey" FOREIGN KEY ("companyId") REFERENCES "Company"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-ALTER TABLE "SnagItem" ADD CONSTRAINT "SnagItem_jobId_fkey" FOREIGN KEY ("jobId") REFERENCES "Job"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+-- AddForeignKey (idempotent)
+DO $$ BEGIN
+    ALTER TABLE "SnagItem" ADD CONSTRAINT "SnagItem_companyId_fkey" FOREIGN KEY ("companyId") REFERENCES "Company"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+    ALTER TABLE "SnagItem" ADD CONSTRAINT "SnagItem_jobId_fkey" FOREIGN KEY ("jobId") REFERENCES "Job"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
