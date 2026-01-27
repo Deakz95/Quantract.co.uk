@@ -7,6 +7,7 @@ import { Button, Card, CardHeader, CardTitle, CardContent, CardDescription, Inpu
 import { getCertificateTemplate, type EmergencyLightingCertificate } from "../../lib/certificate-types";
 import {
   useCertificateStore,
+  useStoreHydration,
   createNewCertificate,
   generateCertificateNumber,
 } from "../../lib/certificateStore";
@@ -14,6 +15,7 @@ import {
 function EmergencyLightingPageContent() {
   const searchParams = useSearchParams();
   const certificateId = searchParams.get("id");
+  const hydrated = useStoreHydration();
 
   const { addCertificate, updateCertificate, getCertificate } = useCertificateStore();
 
@@ -24,9 +26,9 @@ function EmergencyLightingPageContent() {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
-  // Load existing certificate if ID is provided
+  // Load existing certificate if ID is provided (only after hydration)
   useEffect(() => {
-    if (certificateId) {
+    if (hydrated && certificateId) {
       const existing = getCertificate(certificateId);
       if (existing && existing.data) {
         setData(existing.data as EmergencyLightingCertificate);
@@ -34,7 +36,19 @@ function EmergencyLightingPageContent() {
         setLastSaved(new Date(existing.updated_at));
       }
     }
-  }, [certificateId, getCertificate]);
+  }, [certificateId, getCertificate, hydrated]);
+
+  // Show loading state until hydrated
+  if (!hydrated) {
+    return (
+      <div className="min-h-screen bg-[var(--background)] flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-[var(--primary)] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-[var(--muted-foreground)]">Loading certificate...</p>
+        </div>
+      </div>
+    );
+  }
 
   const updateOverview = (field: keyof EmergencyLightingCertificate["overview"], value: string) => {
     setData((prev) => ({

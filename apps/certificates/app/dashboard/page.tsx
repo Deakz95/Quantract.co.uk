@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import {
   useCertificateStore,
+  useStoreHydration,
   CertificateStatus,
   CertificateType,
   STATUS_LABELS,
@@ -11,6 +12,7 @@ import {
 } from "../../lib/certificateStore";
 
 export default function DashboardPage() {
+  const hydrated = useStoreHydration();
   const { certificates, deleteCertificate } = useCertificateStore();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<CertificateStatus | "all">("all");
@@ -89,6 +91,18 @@ export default function DashboardPage() {
         return "text-[var(--muted-foreground)]";
     }
   };
+
+  // Show loading state until hydrated
+  if (!hydrated) {
+    return (
+      <div className="min-h-screen bg-[var(--background)] flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-[var(--primary)] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-[var(--muted-foreground)]">Loading certificates...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">

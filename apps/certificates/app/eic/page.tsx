@@ -8,6 +8,7 @@ import { getCertificateTemplate, type EICCertificate } from "../../lib/certifica
 import { generateCertificatePDF } from "../../lib/pdf-generator";
 import {
   useCertificateStore,
+  useStoreHydration,
   createNewCertificate,
   generateCertificateNumber,
 } from "../../lib/certificateStore";
@@ -15,6 +16,7 @@ import {
 function EICPageContent() {
   const searchParams = useSearchParams();
   const certificateId = searchParams.get("id");
+  const hydrated = useStoreHydration();
 
   const { addCertificate, updateCertificate, getCertificate } = useCertificateStore();
 
@@ -25,9 +27,9 @@ function EICPageContent() {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
-  // Load existing certificate if ID is provided
+  // Load existing certificate if ID is provided (only after hydration)
   useEffect(() => {
-    if (certificateId) {
+    if (hydrated && certificateId) {
       const existing = getCertificate(certificateId);
       if (existing && existing.data) {
         setData(existing.data as EICCertificate);
@@ -35,7 +37,19 @@ function EICPageContent() {
         setLastSaved(new Date(existing.updated_at));
       }
     }
-  }, [certificateId, getCertificate]);
+  }, [certificateId, getCertificate, hydrated]);
+
+  // Show loading state until hydrated
+  if (!hydrated) {
+    return (
+      <div className="min-h-screen bg-[var(--background)] flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-[var(--primary)] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-[var(--muted-foreground)]">Loading certificate...</p>
+        </div>
+      </div>
+    );
+  }
 
   const updateOverview = (field: keyof EICCertificate["overview"], value: string) => {
     setData((prev) => ({

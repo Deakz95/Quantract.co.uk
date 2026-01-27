@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { useState, useEffect } from 'react';
 
 export type CertificateStatus = 'draft' | 'in_progress' | 'complete' | 'issued';
 export type CertificateType = 'EIC' | 'EICR' | 'MWC' | 'FIRE' | 'EML';
@@ -19,6 +20,8 @@ export interface StoredCertificate {
 
 interface CertificateStore {
   certificates: StoredCertificate[];
+  _hasHydrated: boolean;
+  setHasHydrated: (state: boolean) => void;
   addCertificate: (cert: StoredCertificate) => void;
   updateCertificate: (id: string, data: Partial<StoredCertificate>) => void;
   deleteCertificate: (id: string) => void;
@@ -29,6 +32,11 @@ export const useCertificateStore = create<CertificateStore>()(
   persist(
     (set, get) => ({
       certificates: [],
+      _hasHydrated: false,
+
+      setHasHydrated: (state) => {
+        set({ _hasHydrated: state });
+      },
 
       addCertificate: (cert) =>
         set((state) => ({
@@ -53,9 +61,38 @@ export const useCertificateStore = create<CertificateStore>()(
     }),
     {
       name: 'quantract-certificates-storage',
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
     }
   )
 );
+
+// Hook to check if the store has hydrated
+export const useStoreHydration = () => {
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    // Check if already hydrated
+    const hasHydrated = useCertificateStore.getState()._hasHydrated;
+    if (hasHydrated) {
+      setHydrated(true);
+    } else {
+      // Wait for hydration
+      const unsubscribe = useCertificateStore.subscribe(
+        (state) => {
+          if (state._hasHydrated) {
+            setHydrated(true);
+            unsubscribe();
+          }
+        }
+      );
+      return unsubscribe;
+    }
+  }, []);
+
+  return hydrated;
+};
 
 // Helper to generate certificate number
 export function generateCertificateNumber(type: CertificateType): string {
