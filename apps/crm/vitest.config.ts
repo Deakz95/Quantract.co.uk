@@ -13,6 +13,9 @@ export default defineConfig({
     // Global test setup
     globals: true,
 
+    // Setup file for DOM mocks and testing-library
+    setupFiles: ["./src/test/setup.ts"],
+
     // Path aliases matching tsconfig.json
     alias: {
       "@": path.resolve(__dirname, "./src"),
