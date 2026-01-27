@@ -121,9 +121,9 @@ export const POST = withRequestLogging(async function POST(req: Request) {
 
     // Audit event
     await repo.recordAuditEvent({
-      entityType: "dealStage",
+      entityType: "deal_stage",
       entityId: created.id,
-      action: "dealStage.created",
+      action: "deal_stage.created",
       actorRole: "admin",
       actor: authCtx.email,
       meta: { name, sortOrder: created.sortOrder, isWon, isLost },

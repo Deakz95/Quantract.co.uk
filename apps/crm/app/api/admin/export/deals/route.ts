@@ -66,7 +66,7 @@ export const GET = withRequestLogging(async function GET() {
     });
 
     // Transform to export format
-    const exportData = deals.map((deal) => ({
+    const exportData = deals.map((deal: typeof deals[number]) => ({
       Title: deal.title,
       Value: deal.value,
       "Probability (%)": deal.probability || "",

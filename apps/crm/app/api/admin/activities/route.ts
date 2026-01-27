@@ -74,7 +74,7 @@ export const GET = withRequestLogging(async function GET(req: Request) {
     ]);
 
     return jsonOk({
-      activities: activities.map((a) => ({
+      activities: activities.map((a: typeof activities[number]) => ({
         id: a.id,
         type: a.type,
         subject: a.subject,

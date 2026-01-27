@@ -206,8 +206,9 @@ export function MappingStep({
                     >
                       <option value="">-- Select column --</option>
                       {headers.map((header) => {
-                        const isUsed =
-                          mapping[header] && mapping[header] !== field.name;
+                        const isUsed = Boolean(
+                          mapping[header] && mapping[header] !== field.name
+                        );
                         return (
                           <option
                             key={header}

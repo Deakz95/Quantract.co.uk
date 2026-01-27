@@ -276,7 +276,7 @@ export default async function ContactDetailPage({ params }: Props) {
                   </tr>
                 </thead>
                 <tbody>
-                  {contact.deals.map((deal) => (
+                  {contact.deals.map((deal: { id: string; title: string; value: number | null; stage: { name: string; color: string | null } | null; createdAt: Date }) => (
                     <tr key={deal.id} className="border-t border-[var(--border)]">
                       <td className="py-3">
                         <div className="font-semibold text-[var(--foreground)]">{deal.title}</div>
@@ -319,7 +319,7 @@ export default async function ContactDetailPage({ params }: Props) {
             <div className="text-sm text-[var(--muted-foreground)]">No activities recorded for this contact.</div>
           ) : (
             <div className="space-y-3">
-              {contact.activities.map((activity) => (
+              {contact.activities.map((activity: { id: string; type: string; subject: string; occurredAt: Date; notes: string | null }) => (
                 <div key={activity.id} className="rounded-xl border border-[var(--border)] p-4">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">

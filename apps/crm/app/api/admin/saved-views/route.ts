@@ -33,7 +33,7 @@ export async function GET(req: Request) {
 
   return NextResponse.json({
     ok: true,
-    views: views.map((v) => ({
+    views: views.map((v: typeof views[number]) => ({
       id: v.id,
       companyId: v.companyId,
       userId: v.userId,

@@ -51,7 +51,7 @@ export const GET = withRequestLogging(async function GET() {
     });
 
     // Transform to export format
-    const exportData = clients.map((client) => ({
+    const exportData = clients.map((client: typeof clients[number]) => ({
       Name: client.name,
       Email: client.email,
       Phone: client.phone || "",

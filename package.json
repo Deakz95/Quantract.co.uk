@@ -24,5 +24,8 @@
   },
   "devDependencies": {
     "typescript": "^5.9.3"
+  },
+  "overrides": {
+    "lucide-react": "0.562.0"
   }
 }

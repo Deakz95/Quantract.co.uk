@@ -48,7 +48,7 @@ export const GET = withRequestLogging(async function GET() {
     });
 
     // Transform to export format
-    const exportData = contacts.map((contact) => ({
+    const exportData = contacts.map((contact: typeof contacts[number]) => ({
       "First Name": contact.firstName,
       "Last Name": contact.lastName,
       Email: contact.email || "",

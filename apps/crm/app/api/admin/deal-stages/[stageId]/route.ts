@@ -142,9 +142,9 @@ export const PATCH = withRequestLogging(
 
       // Audit event
       await repo.recordAuditEvent({
-        entityType: "dealStage",
+        entityType: "deal_stage",
         entityId: stageId,
-        action: "dealStage.updated",
+        action: "deal_stage.updated",
         actorRole: "admin",
         actor: authCtx.email,
         meta: { changes: patch },
@@ -211,9 +211,9 @@ export const DELETE = withRequestLogging(
 
       // Audit event
       await repo.recordAuditEvent({
-        entityType: "dealStage",
+        entityType: "deal_stage",
         entityId: stageId,
-        action: "dealStage.deleted",
+        action: "deal_stage.deleted",
         actorRole: "admin",
         actor: authCtx.email,
         meta: {

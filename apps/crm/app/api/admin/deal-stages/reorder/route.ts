@@ -65,7 +65,7 @@ export const POST = withRequestLogging(async function POST(req: Request) {
       select: { id: true },
     });
 
-    const existingIds = new Set(existingStages.map((s) => s.id));
+    const existingIds = new Set(existingStages.map((s: { id: string }) => s.id));
     for (const id of stageIds) {
       if (!existingIds.has(id)) {
         return jsonErr("invalid_stage_id", 400);
@@ -93,13 +93,13 @@ export const POST = withRequestLogging(async function POST(req: Request) {
 
     // Audit event
     await repo.recordAuditEvent({
-      entityType: "dealStage",
+      entityType: "deal_stage",
       entityId: authCtx.companyId,
-      action: "dealStage.reordered",
+      action: "deal_stage.reordered",
       actorRole: "admin",
       actor: authCtx.email,
       meta: {
-        stageOrders: stageOrders.map((s: any) => ({ id: s.id, sortOrder: s.sortOrder })),
+        stageOrders: stageOrders.map((s: { id: string; sortOrder: number }) => ({ id: s.id, sortOrder: s.sortOrder })),
       },
     });
 

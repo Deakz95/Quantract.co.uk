@@ -73,8 +73,8 @@ export const GET = withRequestLogging(async function GET(req: Request) {
       select: { id: true },
     });
 
-    const wonStageIds = wonStages.map((s) => s.id);
-    const lostStageIds = lostStages.map((s) => s.id);
+    const wonStageIds = wonStages.map((s: { id: string }) => s.id);
+    const lostStageIds = lostStages.map((s: { id: string }) => s.id);
 
     // Get deals closed within date range
     const closedDeals = await db.deal.findMany({
@@ -91,12 +91,12 @@ export const GET = withRequestLogging(async function GET(req: Request) {
     });
 
     // Calculate metrics
-    const wonDeals = closedDeals.filter((d) => wonStageIds.includes(d.stageId));
-    const lostDeals = closedDeals.filter((d) => lostStageIds.includes(d.stageId));
+    const wonDeals = closedDeals.filter((d: typeof closedDeals[number]) => wonStageIds.includes(d.stageId));
+    const lostDeals = closedDeals.filter((d: typeof closedDeals[number]) => lostStageIds.includes(d.stageId));
 
     const wonCount = wonDeals.length;
     const lostCount = lostDeals.length;
-    const totalValue = wonDeals.reduce((sum, d) => sum + d.value, 0);
+    const totalValue = wonDeals.reduce((sum: number, d: typeof wonDeals[number]) => sum + d.value, 0);
     const avgDealSize = wonCount > 0 ? totalValue / wonCount : 0;
     const conversionRate = wonCount + lostCount > 0 ? (wonCount / (wonCount + lostCount)) * 100 : 0;
 
