@@ -131,7 +131,7 @@ test.describe('Search & Filter Functionality', () => {
 
     if (await statusFilter.isVisible()) {
       // Filter by 'active' status
-      await statusFilter.selectOption({ label: /active/i });
+      await statusFilter.selectOption({ value: 'active' });
       await page.waitForTimeout(1000);
 
       // Should show active job
