@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/Input";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import {
   FileText,
   Plus,
@@ -214,6 +215,8 @@ function DomainsTab({
 }) {
   const [newDomain, setNewDomain] = useState("");
   const [adding, setAdding] = useState(false);
+  const [domainToDelete, setDomainToDelete] = useState<AllowedDomain | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const handleAdd = async () => {
     if (!newDomain.trim()) return;
@@ -243,10 +246,15 @@ function DomainsTab({
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Delete this domain?")) return;
+  const requestDelete = (domain: AllowedDomain) => {
+    setDomainToDelete(domain);
+  };
+
+  const handleDelete = async () => {
+    if (!domainToDelete) return;
+    setDeleting(true);
     try {
-      const res = await fetch(`/api/admin/lead-capture/domains/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/admin/lead-capture/domains/${domainToDelete.id}`, { method: "DELETE" });
       const data = await res.json();
       if (data.ok) {
         toast({ title: "Success", description: "Domain deleted" });
@@ -256,6 +264,9 @@ function DomainsTab({
       }
     } catch {
       toast({ title: "Error", description: "Request failed", variant: "destructive" });
+    } finally {
+      setDeleting(false);
+      setDomainToDelete(null);
     }
   };
 
@@ -336,7 +347,7 @@ function DomainsTab({
                   )}
                 </button>
                 <button
-                  onClick={() => handleDelete(domain.id)}
+                  onClick={() => requestDelete(domain)}
                   className="p-2 rounded hover:bg-[var(--muted)] text-red-500"
                   title="Delete"
                 >
@@ -347,6 +358,17 @@ function DomainsTab({
           ))}
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={Boolean(domainToDelete)}
+        title="Delete domain?"
+        message={domainToDelete ? `This will remove "${domainToDelete.domain}" from the allowed domains list.` : ""}
+        confirmLabel="Delete domain"
+        onCancel={() => setDomainToDelete(null)}
+        onConfirm={handleDelete}
+        busy={deleting}
+      />
     </div>
   );
 }
@@ -365,6 +387,8 @@ function KeysTab({
   const [adding, setAdding] = useState(false);
   const [newKey, setNewKey] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState(false);
+  const [keyToDelete, setKeyToDelete] = useState<IntegrationKey | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const handleCreate = async () => {
     if (!newKeyName.trim()) return;
@@ -394,10 +418,15 @@ function KeysTab({
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Delete this API key? This cannot be undone.")) return;
+  const requestDelete = (key: IntegrationKey) => {
+    setKeyToDelete(key);
+  };
+
+  const handleDelete = async () => {
+    if (!keyToDelete) return;
+    setDeleting(true);
     try {
-      const res = await fetch(`/api/admin/lead-capture/keys/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/admin/lead-capture/keys/${keyToDelete.id}`, { method: "DELETE" });
       const data = await res.json();
       if (data.ok) {
         toast({ title: "Success", description: "Key deleted" });
@@ -407,6 +436,9 @@ function KeysTab({
       }
     } catch {
       toast({ title: "Error", description: "Request failed", variant: "destructive" });
+    } finally {
+      setDeleting(false);
+      setKeyToDelete(null);
     }
   };
 
@@ -533,7 +565,7 @@ function KeysTab({
                   )}
                 </button>
                 <button
-                  onClick={() => handleDelete(key.id)}
+                  onClick={() => requestDelete(key)}
                   className="p-2 rounded hover:bg-[var(--muted)] text-red-500"
                   title="Delete"
                 >
@@ -544,6 +576,17 @@ function KeysTab({
           ))}
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={Boolean(keyToDelete)}
+        title="Delete API key?"
+        message={keyToDelete ? `This will permanently delete the API key "${keyToDelete.name}". This action cannot be undone.` : ""}
+        confirmLabel="Delete key"
+        onCancel={() => setKeyToDelete(null)}
+        onConfirm={handleDelete}
+        busy={deleting}
+      />
     </div>
   );
 }
@@ -560,6 +603,8 @@ function FormsTab({
 }) {
   const [newFormName, setNewFormName] = useState("");
   const [adding, setAdding] = useState(false);
+  const [formToDelete, setFormToDelete] = useState<FormConfig | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const handleCreate = async () => {
     if (!newFormName.trim()) return;
@@ -589,10 +634,15 @@ function FormsTab({
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Delete this form configuration?")) return;
+  const requestDelete = (form: FormConfig) => {
+    setFormToDelete(form);
+  };
+
+  const handleDelete = async () => {
+    if (!formToDelete) return;
+    setDeleting(true);
     try {
-      const res = await fetch(`/api/admin/lead-capture/forms/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/admin/lead-capture/forms/${formToDelete.id}`, { method: "DELETE" });
       const data = await res.json();
       if (data.ok) {
         toast({ title: "Success", description: "Form deleted" });
@@ -602,6 +652,9 @@ function FormsTab({
       }
     } catch {
       toast({ title: "Error", description: "Request failed", variant: "destructive" });
+    } finally {
+      setDeleting(false);
+      setFormToDelete(null);
     }
   };
 
@@ -686,7 +739,7 @@ function FormsTab({
                   )}
                 </button>
                 <button
-                  onClick={() => handleDelete(form.id)}
+                  onClick={() => requestDelete(form)}
                   className="p-2 rounded hover:bg-[var(--muted)] text-red-500"
                   title="Delete"
                 >
@@ -697,6 +750,17 @@ function FormsTab({
           ))}
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={Boolean(formToDelete)}
+        title="Delete form configuration?"
+        message={formToDelete ? `This will permanently delete the form configuration "${formToDelete.name}".` : ""}
+        confirmLabel="Delete form"
+        onCancel={() => setFormToDelete(null)}
+        onConfirm={handleDelete}
+        busy={deleting}
+      />
     </div>
   );
 }

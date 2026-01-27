@@ -5,7 +5,7 @@ import { useToast } from "@/components/ui/useToast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
+import { Breadcrumbs, type BreadcrumbItem } from "@/components/ui/Breadcrumbs";
 
 type Quote = {
   id: string;
@@ -256,9 +256,15 @@ async function attachClient(clientId: string) {
     );
   }
 
+  const breadcrumbItems: BreadcrumbItem[] = useMemo(() => [
+    { label: "Dashboard", href: "/admin" },
+    { label: "Quotes", href: "/admin/quotes" },
+    { label: `Quote #${quoteId.slice(0, 8)}` },
+  ], [quoteId]);
+
   return (
     <div className="grid gap-4">
-      <Breadcrumbs />
+      <Breadcrumbs items={breadcrumbItems} />
       <Card>
         <CardHeader className="flex items-start justify-between gap-3 sm:flex-row">
           <div>

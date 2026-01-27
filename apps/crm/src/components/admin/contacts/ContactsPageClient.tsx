@@ -9,9 +9,11 @@ import { useToast } from "@/components/ui/useToast";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
-import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
+import { DataTable, BulkActionBar, formatRelativeTime, type Column, type Action, type SortDirection } from "@/components/ui/DataTable";
+import { TableSkeletonInline } from "@/components/ui/TableSkeleton";
 import { apiRequest, createAbortController, getApiErrorMessage, isAbortError, requireOk } from "@/lib/apiClient";
 import { ContactForm } from "./ContactForm";
+import { Users, SquarePen, Eye, Trash2 } from "lucide-react";
 
 type Client = {
   id: string;
@@ -63,6 +65,11 @@ export default function ContactsPageClient({ initialClientId }: ContactsPageClie
   const [clients, setClients] = useState<Client[]>([]);
   const [q, setQ] = useState("");
   const [filterClientId, setFilterClientId] = useState<string>(initialClientId || "");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [sortKey, setSortKey] = useState<string>("updatedAt");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   const [editing, setEditing] = useState<Contact | null>(null);
   const [form, setForm] = useState<Partial<Contact>>({ ...emptyForm, clientId: initialClientId || "" });
@@ -78,7 +85,7 @@ export default function ContactsPageClient({ initialClientId }: ContactsPageClie
       });
       requireOk(data);
       setClients(Array.isArray(data.clients) ? data.clients : []);
-    } catch (error) {
+    } catch {
       // silently fail for clients, not critical
     }
   }, []);
@@ -121,14 +128,55 @@ export default function ContactsPageClient({ initialClientId }: ContactsPageClie
   }, [load]);
 
   const filtered = useMemo(() => {
+    let result = contacts;
     const s = q.trim().toLowerCase();
-    if (!s) return contacts;
-    return contacts.filter((c) =>
-      [c.firstName, c.lastName, c.email, c.phone, c.mobile, c.jobTitle, c.client?.name]
-        .filter(Boolean)
-        .some((v) => String(v).toLowerCase().includes(s))
-    );
-  }, [contacts, q]);
+    if (s) {
+      result = contacts.filter((c) =>
+        [c.firstName, c.lastName, c.email, c.phone, c.mobile, c.jobTitle, c.client?.name]
+          .filter(Boolean)
+          .some((v) => String(v).toLowerCase().includes(s))
+      );
+    }
+
+    // Apply sorting
+    if (sortKey) {
+      result = [...result].sort((a, b) => {
+        let aVal: unknown;
+        let bVal: unknown;
+
+        // Handle computed/nested properties
+        if (sortKey === "name") {
+          aVal = `${a.firstName} ${a.lastName}`.trim();
+          bVal = `${b.firstName} ${b.lastName}`.trim();
+        } else if (sortKey === "clientName") {
+          aVal = a.client?.name;
+          bVal = b.client?.name;
+        } else {
+          aVal = (a as Record<string, unknown>)[sortKey];
+          bVal = (b as Record<string, unknown>)[sortKey];
+        }
+
+        if (aVal == null && bVal == null) return 0;
+        if (aVal == null) return 1;
+        if (bVal == null) return -1;
+
+        let comparison = 0;
+        if (typeof aVal === "string" && typeof bVal === "string") {
+          comparison = aVal.localeCompare(bVal);
+        } else if (typeof aVal === "number" && typeof bVal === "number") {
+          comparison = aVal - bVal;
+        } else if (typeof aVal === "boolean" && typeof bVal === "boolean") {
+          comparison = aVal === bVal ? 0 : aVal ? -1 : 1;
+        } else {
+          comparison = String(aVal).localeCompare(String(bVal));
+        }
+
+        return sortDirection === "asc" ? comparison : -comparison;
+      });
+    }
+
+    return result;
+  }, [contacts, q, sortKey, sortDirection]);
 
   function startNew() {
     setEditing(null);
@@ -139,6 +187,11 @@ export default function ContactsPageClient({ initialClientId }: ContactsPageClie
     setEditing(c);
     setForm({ ...c });
   }
+
+  const handleSort = (key: string, direction: SortDirection) => {
+    setSortKey(key);
+    setSortDirection(direction);
+  };
 
   async function save() {
     setBusy(true);
@@ -175,7 +228,7 @@ export default function ContactsPageClient({ initialClientId }: ContactsPageClie
       toast({ title: editing ? "Contact updated" : "Contact created", variant: "success" });
       await load();
       if (!editing) startNew();
-    } catch (e: any) {
+    } catch (e: unknown) {
       toast({ title: "Could not save", description: getApiErrorMessage(e), variant: "destructive" });
     } finally {
       setBusy(false);
@@ -197,7 +250,8 @@ export default function ContactsPageClient({ initialClientId }: ContactsPageClie
 
       await load();
       if (editing?.id === confirming.id) startNew();
-    } catch (e: any) {
+      setSelectedIds((ids) => ids.filter((id) => id !== confirming.id));
+    } catch (e: unknown) {
       toast({ title: "Could not delete", description: getApiErrorMessage(e), variant: "destructive" });
     } finally {
       setBusy(false);
@@ -205,9 +259,108 @@ export default function ContactsPageClient({ initialClientId }: ContactsPageClie
     }
   }
 
+  const handleBulkDelete = async () => {
+    setBulkDeleting(true);
+    try {
+      await Promise.all(
+        selectedIds.map((id) => apiRequest(`/api/admin/contacts/${id}`, { method: "DELETE" }))
+      );
+      toast({ title: "Deleted", description: `${selectedIds.length} contacts deleted`, variant: "success" });
+      await load();
+      setSelectedIds([]);
+      if (editing && selectedIds.includes(editing.id)) startNew();
+    } catch {
+      toast({ title: "Error", description: "Failed to delete some contacts", variant: "destructive" });
+    } finally {
+      setBulkDeleting(false);
+      setBulkDeleteOpen(false);
+    }
+  };
+
   function displayName(c: Contact) {
     return `${c.firstName} ${c.lastName}`.trim();
   }
+
+  const columns: Column<Contact>[] = [
+    {
+      key: "name",
+      label: "Name",
+      sortable: true,
+      render: (contact) => (
+        <div className="font-semibold text-[var(--foreground)]">{displayName(contact)}</div>
+      ),
+    },
+    {
+      key: "email",
+      label: "Email",
+      sortable: true,
+      render: (contact) => <span className="text-[var(--foreground)]">{contact.email || "-"}</span>,
+    },
+    {
+      key: "phone",
+      label: "Phone",
+      sortable: true,
+      render: (contact) => (
+        <span className="text-[var(--muted-foreground)]">{contact.phone || contact.mobile || "-"}</span>
+      ),
+    },
+    {
+      key: "jobTitle",
+      label: "Job Title",
+      sortable: true,
+      render: (contact) => (
+        <span className="text-[var(--muted-foreground)]">{contact.jobTitle || "-"}</span>
+      ),
+    },
+    {
+      key: "clientName",
+      label: "Client",
+      sortable: true,
+      render: (contact) =>
+        contact.client ? (
+          <Link href={`/admin/clients/${contact.client.id}`} className="text-[var(--primary)] hover:underline">
+            {contact.client.name}
+          </Link>
+        ) : (
+          <span className="text-[var(--muted-foreground)]">-</span>
+        ),
+    },
+    {
+      key: "isPrimary",
+      label: "Primary",
+      sortable: true,
+      render: (contact) => (contact.isPrimary ? <Badge variant="gradient">Primary</Badge> : null),
+    },
+    {
+      key: "updatedAt",
+      label: "Last Updated",
+      sortable: true,
+      render: (contact) => (
+        <span className="text-[var(--muted-foreground)]">{formatRelativeTime(contact.updatedAt)}</span>
+      ),
+    },
+  ];
+
+  const actions: Action<Contact>[] = [
+    {
+      label: "View Details",
+      onClick: (contact) => {
+        window.location.href = `/admin/contacts/${contact.id}`;
+      },
+      icon: <Eye className="w-4 h-4" />,
+    },
+    {
+      label: "Edit",
+      onClick: startEdit,
+      icon: <SquarePen className="w-4 h-4" />,
+    },
+    {
+      label: "Delete",
+      onClick: requestRemove,
+      variant: "danger",
+      icon: <Trash2 className="w-4 h-4" />,
+    },
+  ];
 
   return (
     <div className="grid gap-6 lg:grid-cols-12">
@@ -246,94 +399,51 @@ export default function ContactsPageClient({ initialClientId }: ContactsPageClie
           </CardHeader>
 
           <CardContent>
+            {/* Bulk Action Bar */}
+            <BulkActionBar
+              selectedCount={selectedIds.length}
+              onDelete={() => setBulkDeleteOpen(true)}
+              onClearSelection={() => setSelectedIds([])}
+              deleteLabel="Delete selected"
+              className="mb-4"
+            />
+
             {loading ? (
-              <div className="space-y-3">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="grid grid-cols-6 items-center gap-4">
-                    <LoadingSkeleton className="h-5" />
-                    <LoadingSkeleton className="h-5" />
-                    <LoadingSkeleton className="h-5" />
-                    <LoadingSkeleton className="h-5" />
-                    <LoadingSkeleton className="h-5" />
-                    <LoadingSkeleton className="h-8" />
-                  </div>
-                ))}
-              </div>
+              <TableSkeletonInline columns={6} rows={5} />
             ) : loadError ? (
               <ErrorState title="Unable to load contacts" description={loadError} onRetry={() => void load()} />
-            ) : filtered.length === 0 ? (
+            ) : contacts.length === 0 ? (
               <EmptyState
+                icon={Users}
                 title="No contacts yet"
-                description="Create your first contact to start managing relationships."
-                action={
-                  <Button variant="secondary" type="button" onClick={startNew}>
-                    Add contact
-                  </Button>
-                }
+                description="Contacts are individual people associated with your clients. Track multiple contacts per client organisation for better relationship management."
+                features={[
+                  "Store phone, email, and job title for each contact",
+                  "Designate primary contacts for client communications",
+                  "Set preferred contact channel (email, phone, SMS)",
+                ]}
+                primaryAction={{ label: "Add your first contact", onClick: startNew }}
+                secondaryAction={{ label: "Import from CSV", href: "/admin/import?type=contacts" }}
               />
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-left text-xs text-[var(--muted-foreground)]">
-                      <th className="py-2">Name</th>
-                      <th className="py-2">Email</th>
-                      <th className="py-2">Phone</th>
-                      <th className="py-2">Job Title</th>
-                      <th className="py-2">Client</th>
-                      <th className="py-2">Primary</th>
-                      <th className="py-2"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filtered.map((c) => (
-                      <tr key={c.id} className="border-t border-[var(--border)]">
-                        <td className="py-3">
-                          <div className="font-semibold text-[var(--foreground)]">{displayName(c)}</div>
-                        </td>
-                        <td className="py-3">
-                          <div className="text-[var(--foreground)]">{c.email || "—"}</div>
-                        </td>
-                        <td className="py-3">
-                          <div className="text-[var(--muted-foreground)]">{c.phone || c.mobile || "—"}</div>
-                        </td>
-                        <td className="py-3">
-                          <div className="text-[var(--muted-foreground)]">{c.jobTitle || "—"}</div>
-                        </td>
-                        <td className="py-3">
-                          {c.client ? (
-                            <Link href={`/admin/clients/${c.client.id}`} className="text-[var(--primary)] hover:underline">
-                              {c.client.name}
-                            </Link>
-                          ) : (
-                            <span className="text-[var(--muted-foreground)]">—</span>
-                          )}
-                        </td>
-                        <td className="py-3">
-                          {c.isPrimary ? (
-                            <Badge variant="gradient">Primary</Badge>
-                          ) : null}
-                        </td>
-                        <td className="py-3">
-                          <div className="flex justify-end gap-2">
-                            <Link href={`/admin/contacts/${c.id}`}>
-                              <Button variant="secondary" type="button">
-                                Details
-                              </Button>
-                            </Link>
-                            <Button variant="secondary" type="button" onClick={() => startEdit(c)}>
-                              Edit
-                            </Button>
-                            <Button variant="destructive" type="button" onClick={() => requestRemove(c)}>
-                              Delete
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            ) : filtered.length === 0 ? (
+              <div className="p-12 text-center">
+                <Users className="w-12 h-12 text-[var(--muted-foreground)] mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-[var(--foreground)] mb-2">No contacts match your search</h3>
+                <p className="text-[var(--muted-foreground)] mb-4">Try adjusting your search criteria</p>
               </div>
+            ) : (
+              <DataTable
+                columns={columns}
+                data={filtered}
+                sortKey={sortKey}
+                sortDirection={sortDirection}
+                onSort={handleSort}
+                selectedIds={selectedIds}
+                onSelectionChange={setSelectedIds}
+                actions={actions}
+                getRowId={(row) => row.id}
+                onRowClick={startEdit}
+              />
             )}
           </CardContent>
         </Card>
@@ -358,6 +468,7 @@ export default function ContactsPageClient({ initialClientId }: ContactsPageClie
         </Card>
       </div>
 
+      {/* Single Delete Confirmation */}
       <ConfirmDialog
         open={Boolean(confirming)}
         title={confirming ? `Delete ${displayName(confirming)}?` : "Delete contact?"}
@@ -366,6 +477,17 @@ export default function ContactsPageClient({ initialClientId }: ContactsPageClie
         onCancel={() => setConfirming(null)}
         onConfirm={confirmRemove}
         busy={busy}
+      />
+
+      {/* Bulk Delete Confirmation */}
+      <ConfirmDialog
+        open={bulkDeleteOpen}
+        title={`Delete ${selectedIds.length} contact${selectedIds.length === 1 ? "" : "s"}?`}
+        description="This action cannot be undone. All selected contacts will be permanently deleted."
+        confirmLabel="Delete"
+        onCancel={() => setBulkDeleteOpen(false)}
+        onConfirm={handleBulkDelete}
+        busy={bulkDeleting}
       />
     </div>
   );

@@ -50,7 +50,7 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
     // Avoid hydration mismatch
     return (
       <button
-        className={`p-2 rounded-xl bg-[var(--muted)] text-[var(--muted-foreground)] ${className}`}
+        className={`p-2 rounded-xl bg-[var(--muted)] text-[var(--muted-foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2 ${className}`}
         aria-label="Toggle theme"
       >
         <SunIcon />
@@ -61,7 +61,7 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
   return (
     <button
       onClick={toggleTheme}
-      className={`p-2 rounded-xl bg-[var(--muted)] hover:bg-[var(--border)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-all duration-200 ${className}`}
+      className={`p-2 rounded-xl bg-[var(--muted)] hover:bg-[var(--border)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2 ${className}`}
       aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
     >
       {theme === "dark" ? <SunIcon /> : <MoonIcon />}

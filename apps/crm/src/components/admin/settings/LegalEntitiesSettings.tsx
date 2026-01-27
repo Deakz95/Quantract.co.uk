@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/badge";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Plus, Settings, Briefcase, Check, X, Sparkles } from "lucide-react";
 import { cn } from "@/lib/cn";
 
@@ -33,6 +34,8 @@ export function LegalEntitiesSettings() {
   const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showNew, setShowNew] = useState(false);
+  const [entityToDelete, setEntityToDelete] = useState<LegalEntity | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchEntities = useCallback(async () => {
     try {
@@ -92,10 +95,15 @@ export function LegalEntitiesSettings() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this legal entity?")) return;
+  const requestDelete = (entity: LegalEntity) => {
+    setEntityToDelete(entity);
+  };
+
+  const handleDelete = async () => {
+    if (!entityToDelete) return;
+    setDeleting(true);
     try {
-      const res = await fetch(`/api/admin/legal-entities/${id}`, {
+      const res = await fetch(`/api/admin/legal-entities/${entityToDelete.id}`, {
         method: "DELETE",
       });
       const data = await res.json();
@@ -106,6 +114,9 @@ export function LegalEntitiesSettings() {
       }
     } catch {
       setError("Failed to delete legal entity");
+    } finally {
+      setDeleting(false);
+      setEntityToDelete(null);
     }
   };
 
@@ -165,7 +176,7 @@ export function LegalEntitiesSettings() {
               <LegalEntityCard
                 entity={entity}
                 onEdit={() => setEditingId(entity.id)}
-                onDelete={() => handleDelete(entity.id)}
+                onDelete={() => requestDelete(entity)}
                 onSetDefault={() => handleSetDefault(entity.id)}
               />
             )}
@@ -186,6 +197,17 @@ export function LegalEntitiesSettings() {
           </Button>
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={Boolean(entityToDelete)}
+        title="Delete legal entity?"
+        message={entityToDelete ? `This will permanently delete the legal entity "${entityToDelete.displayName}".` : ""}
+        confirmLabel="Delete entity"
+        onCancel={() => setEntityToDelete(null)}
+        onConfirm={handleDelete}
+        busy={deleting}
+      />
     </div>
   );
 }

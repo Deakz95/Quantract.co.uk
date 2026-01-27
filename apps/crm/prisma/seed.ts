@@ -657,6 +657,30 @@ async function main() {
     },
   });
 
+  // Create Deal Stages for CRM Pipeline
+  const dealStages = [
+    { name: "Lead", sortOrder: 0, probability: 10, color: "#94a3b8" },
+    { name: "Qualified", sortOrder: 1, probability: 25, color: "#3b82f6" },
+    { name: "Proposal", sortOrder: 2, probability: 50, color: "#8b5cf6" },
+    { name: "Negotiation", sortOrder: 3, probability: 75, color: "#f59e0b" },
+    { name: "Won", sortOrder: 4, probability: 100, color: "#22c55e", isWon: true },
+    { name: "Lost", sortOrder: 5, probability: 0, color: "#ef4444", isLost: true },
+  ];
+
+  for (const stage of dealStages) {
+    await prisma.dealStage.upsert({
+      where: {
+        companyId_name: { companyId: demoCompany.id, name: stage.name }
+      },
+      update: stage,
+      create: {
+        id: `${demoCompany.id}-deal-${stage.name.toLowerCase()}`,
+        companyId: demoCompany.id,
+        ...stage,
+      },
+    });
+  }
+
   console.log("✅ Seed complete");
   console.log("");
   console.log("Demo accounts:");
@@ -674,6 +698,7 @@ async function main() {
   console.log("");
   console.log("Demo data created:");
   console.log("  ✓ 6 Pipeline stages for enquiries");
+  console.log("  ✓ 6 Deal stages for CRM pipeline");
   console.log("  ✓ 1 Demo supplier");
   console.log("  ✓ 1 Demo subcontractor");
   console.log("  ✓ 4 Stock items");

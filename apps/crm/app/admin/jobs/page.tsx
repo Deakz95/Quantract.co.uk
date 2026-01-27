@@ -1,13 +1,20 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { AppShell } from "@/components/AppShell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FilterDropdown, type Filters, type FilterConfig } from "@/components/ui/FilterDropdown";
-import { Briefcase, Plus, Clock } from "lucide-react";
+import { DataTable, BulkActionBar, formatRelativeTime, type Column, type Action, type SortDirection } from "@/components/ui/DataTable";
+import { TableSkeletonInline } from "@/components/ui/TableSkeleton";
+import { CardGridSkeleton } from "@/components/ui/CardSkeleton";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { useToast } from "@/components/ui/useToast";
+import { Briefcase, Plus, Clock, SquarePen, Copy, Trash2 } from "lucide-react";
+import { EmptyState } from "@/components/ui/EmptyState";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 type Job = {
   id: string;
@@ -17,6 +24,7 @@ type Job = {
   status: string;
   startDate?: string;
   createdAt?: string;
+  updatedAt?: string;
   client?: {
     id: string;
     name: string;
@@ -43,16 +51,46 @@ const STATUS_OPTIONS = [
 ];
 
 export default function JobsPage() {
+  const router = useRouter();
+  const { toast } = useToast();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState<Filters>({});
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [sortKey, setSortKey] = useState<string>('updatedAt');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
+
+  const loadJobs = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/admin/jobs');
+      const json = await response.json();
+
+      // API returns array directly on success, or { error: "..." } on failure
+      if (!response.ok || json.error) {
+        toast({ title: "Error", description: json.error || "Failed to load jobs", variant: "destructive" });
+        setJobs([]);
+        return;
+      }
+
+      // Ensure we always set an array (defensive coding)
+      const jobsArray = Array.isArray(json) ? json : Array.isArray(json.data) ? json.data : [];
+      setJobs(jobsArray);
+    } catch {
+      toast({ title: "Error", description: "Failed to load jobs", variant: "destructive" });
+      setJobs([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
 
   useEffect(() => {
-    fetch('/api/admin/jobs')
-      .then(r => r.json())
-      .then(j => { setJobs(j.data || j || []); setLoading(false); });
-  }, []);
+    loadJobs();
+  }, [loadJobs]);
 
   // Extract unique clients for filter options
   const clientOptions = useMemo(() => {
@@ -92,7 +130,7 @@ export default function JobsPage() {
 
   // Apply filters and search
   const filteredJobs = useMemo(() => {
-    return jobs.filter(job => {
+    let result = jobs.filter(job => {
       // Search filter
       if (searchTerm) {
         const search = searchTerm.toLowerCase();
@@ -134,7 +172,44 @@ export default function JobsPage() {
 
       return true;
     });
-  }, [jobs, searchTerm, filters]);
+
+    // Apply sorting
+    if (sortKey) {
+      result = [...result].sort((a, b) => {
+        let aVal: unknown;
+        let bVal: unknown;
+
+        // Handle nested properties
+        if (sortKey === 'clientName') {
+          aVal = a.client?.name;
+          bVal = b.client?.name;
+        } else if (sortKey === 'jobName') {
+          aVal = a.name || a.title;
+          bVal = b.name || b.title;
+        } else {
+          aVal = (a as Record<string, unknown>)[sortKey];
+          bVal = (b as Record<string, unknown>)[sortKey];
+        }
+
+        if (aVal == null && bVal == null) return 0;
+        if (aVal == null) return 1;
+        if (bVal == null) return -1;
+
+        let comparison = 0;
+        if (typeof aVal === 'string' && typeof bVal === 'string') {
+          comparison = aVal.localeCompare(bVal);
+        } else if (typeof aVal === 'number' && typeof bVal === 'number') {
+          comparison = aVal - bVal;
+        } else {
+          comparison = String(aVal).localeCompare(String(bVal));
+        }
+
+        return sortDirection === 'asc' ? comparison : -comparison;
+      });
+    }
+
+    return result;
+  }, [jobs, searchTerm, filters, sortKey, sortDirection]);
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, "success" | "warning" | "destructive" | "secondary"> = {
@@ -148,6 +223,141 @@ export default function JobsPage() {
     };
     return <Badge variant={variants[status?.toLowerCase()] || "secondary"}>{status || 'Pending'}</Badge>;
   };
+
+  const handleSort = (key: string, direction: SortDirection) => {
+    setSortKey(key);
+    setSortDirection(direction);
+  };
+
+  const handleEdit = (job: Job) => {
+    router.push(`/admin/jobs/${job.id}`);
+  };
+
+  const handleDuplicate = async (job: Job) => {
+    try {
+      const response = await fetch(`/api/admin/jobs/${job.id}/duplicate`, {
+        method: 'POST',
+      });
+      if (response.ok) {
+        toast({ title: "Success", description: "Job duplicated", variant: "success" });
+        loadJobs();
+      } else {
+        throw new Error('Failed to duplicate');
+      }
+    } catch {
+      toast({ title: "Error", description: "Failed to duplicate job", variant: "destructive" });
+    }
+  };
+
+  const handleDelete = async (job: Job) => {
+    try {
+      const response = await fetch(`/api/admin/jobs/${job.id}`, {
+        method: 'DELETE',
+      });
+      if (response.ok) {
+        toast({ title: "Deleted", description: "Job deleted", variant: "success" });
+        loadJobs();
+        setSelectedIds(ids => ids.filter(id => id !== job.id));
+      } else {
+        throw new Error('Failed to delete');
+      }
+    } catch {
+      toast({ title: "Error", description: "Failed to delete job", variant: "destructive" });
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    setBulkDeleting(true);
+    try {
+      await Promise.all(
+        selectedIds.map(id =>
+          fetch(`/api/admin/jobs/${id}`, { method: 'DELETE' })
+        )
+      );
+      toast({ title: "Deleted", description: `${selectedIds.length} jobs deleted`, variant: "success" });
+      loadJobs();
+      setSelectedIds([]);
+    } catch {
+      toast({ title: "Error", description: "Failed to delete some jobs", variant: "destructive" });
+    } finally {
+      setBulkDeleting(false);
+      setBulkDeleteOpen(false);
+    }
+  };
+
+  const columns: Column<Job>[] = [
+    {
+      key: 'jobNumber',
+      label: 'Job #',
+      sortable: true,
+      render: (job) => (
+        <Link href={`/admin/jobs/${job.id}`} className="text-[var(--primary)] font-medium hover:underline">
+          {job.jobNumber || `J-${job.id?.slice(0, 8)}`}
+        </Link>
+      ),
+    },
+    {
+      key: 'jobName',
+      label: 'Name',
+      sortable: true,
+      render: (job) => (
+        <span className="text-[var(--foreground)] font-medium">
+          {job.name || job.title || 'Untitled Job'}
+        </span>
+      ),
+    },
+    {
+      key: 'clientName',
+      label: 'Client',
+      sortable: true,
+      render: (job) => <span className="text-[var(--foreground)]">{job.client?.name || '-'}</span>,
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      sortable: true,
+      render: (job) => getStatusBadge(job.status),
+    },
+    {
+      key: 'startDate',
+      label: 'Start Date',
+      sortable: true,
+      render: (job) => (
+        <span className="text-[var(--muted-foreground)]">
+          {job.startDate ? new Date(job.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
+        </span>
+      ),
+    },
+    {
+      key: 'updatedAt',
+      label: 'Last Updated',
+      sortable: true,
+      render: (job) => (
+        <span className="text-[var(--muted-foreground)]">
+          {formatRelativeTime(job.updatedAt || job.createdAt)}
+        </span>
+      ),
+    },
+  ];
+
+  const actions: Action<Job>[] = [
+    {
+      label: 'Edit',
+      onClick: handleEdit,
+      icon: <SquarePen className="w-4 h-4" />,
+    },
+    {
+      label: 'Duplicate',
+      onClick: handleDuplicate,
+      icon: <Copy className="w-4 h-4" />,
+    },
+    {
+      label: 'Delete',
+      onClick: handleDelete,
+      variant: 'danger',
+      icon: <Trash2 className="w-4 h-4" />,
+    },
+  ];
 
   return (
     <AppShell role="admin" title="Jobs" subtitle="Manage and track all your jobs">
@@ -167,6 +377,23 @@ export default function JobsPage() {
               onApply={setFilters}
               filterConfigs={filterConfigs}
             />
+            {/* View mode toggle */}
+            <div className="hidden sm:flex border border-[var(--border)] rounded-xl overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setViewMode('table')}
+                className={`px-3 py-2 text-sm ${viewMode === 'table' ? 'bg-[var(--primary)] text-white' : 'bg-[var(--card)] text-[var(--foreground)]'}`}
+              >
+                Table
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('grid')}
+                className={`px-3 py-2 text-sm ${viewMode === 'grid' ? 'bg-[var(--primary)] text-white' : 'bg-[var(--card)] text-[var(--foreground)]'}`}
+              >
+                Grid
+              </button>
+            </div>
           </div>
           <Link href="/admin/jobs/new">
             <Button variant="gradient">
@@ -176,32 +403,69 @@ export default function JobsPage() {
           </Link>
         </div>
 
-        {/* Jobs Grid */}
+        {/* Bulk Action Bar */}
+        <BulkActionBar
+          selectedCount={selectedIds.length}
+          onDelete={() => setBulkDeleteOpen(true)}
+          onClearSelection={() => setSelectedIds([])}
+          deleteLabel="Delete selected"
+        />
+
+        {/* Jobs Content */}
         {loading ? (
-          <div className="p-8 text-center text-[var(--muted-foreground)]">
-            <div className="w-8 h-8 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-            Loading jobs...
-          </div>
+          viewMode === 'table' ? (
+            <Card>
+              <CardContent className="p-0">
+                <TableSkeletonInline columns={6} rows={5} />
+              </CardContent>
+            </Card>
+          ) : (
+            <CardGridSkeleton count={6} />
+          )
+        ) : jobs.length === 0 ? (
+          <Card>
+            <CardContent className="p-6">
+              <EmptyState
+                icon={Briefcase}
+                title="No jobs yet"
+                description="Jobs represent work to be completed for clients. Schedule, assign, and track jobs from start to completion."
+                features={[
+                  "Schedule jobs with start dates and assign to engineers",
+                  "Track job progress with checklists and status updates",
+                  "Link jobs to quotes and generate invoices on completion"
+                ]}
+                primaryAction={{ label: "Create your first job", href: "/admin/jobs/new" }}
+                secondaryAction={{ label: "Learn more", href: "/admin/help/jobs" }}
+              />
+            </CardContent>
+          </Card>
         ) : filteredJobs.length === 0 ? (
           <Card>
             <CardContent className="p-12 text-center">
               <Briefcase className="w-12 h-12 text-[var(--muted-foreground)] mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-[var(--foreground)] mb-2">
-                {jobs.length === 0 ? 'No jobs yet' : 'No jobs match your filters'}
+                No jobs match your filters
               </h3>
               <p className="text-[var(--muted-foreground)] mb-4">
-                {jobs.length === 0
-                  ? 'Create your first job to get started'
-                  : 'Try adjusting your search or filter criteria'}
+                Try adjusting your search or filter criteria
               </p>
-              {jobs.length === 0 && (
-                <Link href="/admin/jobs/new">
-                  <Button variant="gradient">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create Job
-                  </Button>
-                </Link>
-              )}
+            </CardContent>
+          </Card>
+        ) : viewMode === 'table' ? (
+          <Card>
+            <CardContent className="p-0">
+              <DataTable
+                columns={columns}
+                data={filteredJobs}
+                sortKey={sortKey}
+                sortDirection={sortDirection}
+                onSort={handleSort}
+                selectedIds={selectedIds}
+                onSelectionChange={setSelectedIds}
+                actions={actions}
+                getRowId={(row) => row.id}
+                onRowClick={(row) => router.push(`/admin/jobs/${row.id}`)}
+              />
             </CardContent>
           </Card>
         ) : (
@@ -242,6 +506,17 @@ export default function JobsPage() {
           </div>
         )}
       </div>
+
+      {/* Bulk Delete Confirmation */}
+      <ConfirmDialog
+        open={bulkDeleteOpen}
+        title={`Delete ${selectedIds.length} job${selectedIds.length === 1 ? '' : 's'}?`}
+        description="This action cannot be undone. All selected jobs will be permanently deleted."
+        confirmLabel="Delete"
+        onCancel={() => setBulkDeleteOpen(false)}
+        onConfirm={handleBulkDelete}
+        busy={bulkDeleting}
+      />
     </AppShell>
   );
 }

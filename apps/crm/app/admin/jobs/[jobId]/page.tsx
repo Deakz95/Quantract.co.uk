@@ -1,8 +1,8 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
+import { useEffect, useMemo, useState } from 'react';
+import { Breadcrumbs, type BreadcrumbItem } from '@/components/ui/Breadcrumbs';
 
 export default function JobOverview({params}:{params:{jobId:string}}){
   const [data,setData]=useState<any>(null);
@@ -13,11 +13,20 @@ export default function JobOverview({params}:{params:{jobId:string}}){
       .then(j=>setData(j.data));
   },[params.jobId]);
 
+  const breadcrumbItems: BreadcrumbItem[] = useMemo(() => {
+    const jobLabel = data?.job?.name ? `Job: ${data.job.name}` : `Job #${params.jobId.slice(0, 8)}`;
+    return [
+      { label: "Dashboard", href: "/admin" },
+      { label: "Jobs", href: "/admin/jobs" },
+      { label: jobLabel },
+    ];
+  }, [params.jobId, data?.job?.name]);
+
   if(!data) return <p>Loading job overview…</p>;
 
   return (
     <div>
-      <Breadcrumbs />
+      <Breadcrumbs items={breadcrumbItems} />
       <h1>{data.job.name}</h1>
       <h2>Financial Overview</h2>
       <ul>

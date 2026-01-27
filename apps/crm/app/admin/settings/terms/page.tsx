@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { AppShell } from "@/components/AppShell";
+import { Breadcrumbs, type BreadcrumbItem } from "@/components/ui/Breadcrumbs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -116,9 +117,16 @@ Any disputes will be resolved through negotiation in the first instance. If nece
     }
   }
 
+  const breadcrumbItems: BreadcrumbItem[] = [
+    { label: "Dashboard", href: "/admin" },
+    { label: "Settings", href: "/admin/settings" },
+    { label: "Terms & Payments" },
+  ];
+
   if (loading) {
     return (
       <AppShell role="admin" title="Terms & Payments" subtitle="Configure payment terms, auto-chase, and terms & conditions">
+        <Breadcrumbs items={breadcrumbItems} />
         <div className="p-8 text-center text-[var(--muted-foreground)]">
           <div className="w-8 h-8 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           Loading settings...
@@ -129,6 +137,7 @@ Any disputes will be resolved through negotiation in the first instance. If nece
 
   return (
     <AppShell role="admin" title="Terms & Payments" subtitle="Configure payment terms, auto-chase, and terms & conditions">
+      <Breadcrumbs items={breadcrumbItems} />
       <div className="max-w-4xl space-y-6">
         {message && (
           <div className={`p-4 rounded-xl ${message.type === "success" ? "bg-green-50 text-green-700 border border-green-200" : "bg-red-50 text-red-700 border border-red-200"}`}>

@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/useToast";
+import { FormField, FormInput, FormTextarea, LoadingSpinner } from "@/components/ui/FormField";
+import { useFormValidation, type ValidationSchema } from "@/hooks/useFormValidation";
 import { apiRequest, getApiErrorMessage, requireOk } from "@/lib/apiClient";
 import { ActivityTypeIcon, type ActivityType, getActivityTypeLabel } from "./ActivityTypeIcon";
 import type { Activity } from "./ActivityItem";
@@ -15,6 +17,11 @@ type ActivityFormProps = {
   activity?: Activity | null;
   onSuccess?: (activity: Activity) => void;
   onCancel?: () => void;
+};
+
+// Validation schema for activity form
+const validationSchema: ValidationSchema = {
+  subject: { required: "Subject is required" },
 };
 
 export function ActivityForm({ entityType, entityId, activity, onSuccess, onCancel }: ActivityFormProps) {
@@ -33,12 +40,28 @@ export function ActivityForm({ entityType, entityId, activity, onSuccess, onCanc
 
   const isEditing = Boolean(activity);
 
+  const { errors, touched, validateField, validateAll, setFieldTouched, clearErrors } = useFormValidation<{ subject: string }>(validationSchema);
+
+  const handleBlur = useCallback(
+    (field: "subject") => {
+      setFieldTouched(field);
+      validateField(field, subject);
+    },
+    [subject, setFieldTouched, validateField]
+  );
+
+  // Check if form is valid for submission
+  const canSubmit = useMemo(() => {
+    return Boolean(subject.trim());
+  }, [subject]);
+
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
 
-      if (!subject.trim()) {
-        toast({ title: "Subject is required", variant: "destructive" });
+      const formIsValid = validateAll({ subject });
+      if (!formIsValid) {
+        toast({ title: "Please fix the errors before saving", variant: "destructive" });
         return;
       }
 
@@ -100,6 +123,7 @@ export function ActivityForm({ entityType, entityId, activity, onSuccess, onCanc
           setSubject("");
           setDescription("");
           setOccurredAt(new Date().toISOString().slice(0, 16));
+          clearErrors();
         }
 
         onSuccess?.(result);
@@ -110,7 +134,7 @@ export function ActivityForm({ entityType, entityId, activity, onSuccess, onCanc
         setSaving(false);
       }
     },
-    [type, subject, description, occurredAt, entityType, entityId, activity, isEditing, toast, onSuccess]
+    [type, subject, description, occurredAt, entityType, entityId, activity, isEditing, toast, onSuccess, validateAll, clearErrors]
   );
 
   return (
@@ -140,46 +164,47 @@ export function ActivityForm({ entityType, entityId, activity, onSuccess, onCanc
       </div>
 
       {/* Subject */}
-      <label className="block">
-        <span className="block text-xs font-semibold text-[var(--muted-foreground)] mb-1">
-          Subject <span className="text-red-500">*</span>
-        </span>
-        <input
+      <FormField
+        label="Subject"
+        required
+        error={errors.subject}
+        touched={touched.subject}
+        htmlFor="activity-subject"
+      >
+        <FormInput
+          id="activity-subject"
           type="text"
           value={subject}
           onChange={(e) => setSubject(e.target.value)}
+          onBlur={() => handleBlur("subject")}
           placeholder={`Enter ${getActivityTypeLabel(type).toLowerCase()} subject...`}
-          className="w-full rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-[var(--foreground)] text-sm"
-          required
+          hasError={Boolean(errors.subject && touched.subject)}
+          className="w-full"
         />
-      </label>
+      </FormField>
 
       {/* Description */}
-      <label className="block">
-        <span className="block text-xs font-semibold text-[var(--muted-foreground)] mb-1">
-          Description
-        </span>
-        <textarea
+      <FormField label="Description" htmlFor="activity-description">
+        <FormTextarea
+          id="activity-description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Add details..."
           rows={3}
-          className="w-full rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-[var(--foreground)] text-sm resize-none"
+          className="w-full resize-none"
         />
-      </label>
+      </FormField>
 
       {/* Date/Time */}
-      <label className="block">
-        <span className="block text-xs font-semibold text-[var(--muted-foreground)] mb-1">
-          Date & Time
-        </span>
-        <input
+      <FormField label="Date & Time" htmlFor="activity-occurredAt">
+        <FormInput
+          id="activity-occurredAt"
           type="datetime-local"
           value={occurredAt}
           onChange={(e) => setOccurredAt(e.target.value)}
-          className="w-full rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-[var(--foreground)] text-sm"
+          className="w-full"
         />
-      </label>
+      </FormField>
 
       {/* Actions */}
       <div className="flex justify-end gap-2 pt-2">
@@ -188,8 +213,17 @@ export function ActivityForm({ entityType, entityId, activity, onSuccess, onCanc
             Cancel
           </Button>
         )}
-        <Button type="submit" disabled={saving}>
-          {saving ? "Saving..." : isEditing ? "Update Activity" : "Add Activity"}
+        <Button type="submit" disabled={saving || !canSubmit}>
+          {saving ? (
+            <>
+              <LoadingSpinner className="mr-2" />
+              Saving...
+            </>
+          ) : isEditing ? (
+            "Update Activity"
+          ) : (
+            "Add Activity"
+          )}
         </Button>
       </div>
     </form>

@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
+import { Breadcrumbs, type BreadcrumbItem } from "@/components/ui/Breadcrumbs";
 import { cn } from "@/lib/cn";
 import { Palette, FileText, User, Settings, Briefcase, Receipt, BarChart3, Mail, Inbox } from "lucide-react";
 
@@ -20,9 +21,16 @@ const tabs = [
 
 export function AdminSettingsShell({ title, subtitle, children }: { title: string; subtitle?: string; children: ReactNode }) {
   const pathname = usePathname();
-  
+
+  const breadcrumbItems: BreadcrumbItem[] = [
+    { label: "Dashboard", href: "/admin" },
+    { label: "Settings", href: "/admin/settings" },
+    { label: title },
+  ];
+
   return (
     <AppShell role="admin" title={title} subtitle={subtitle} hideNav>
+      <Breadcrumbs items={breadcrumbItems} />
       {/* Settings Navigation */}
       <div className="mb-8">
         <div className="flex items-center gap-2 mb-4">

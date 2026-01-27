@@ -12,16 +12,72 @@ export function Dialog({
   onOpenChange?: (v: boolean) => void;
   children: React.ReactNode;
 }) {
+  const dialogRef = React.useRef<HTMLDivElement>(null);
+
+  // Handle Escape key to close dialog
+  React.useEffect(() => {
+    if (!open) return;
+
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onOpenChange?.(false);
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [open, onOpenChange]);
+
+  // Focus trap - keep focus within dialog
+  React.useEffect(() => {
+    if (!open || !dialogRef.current) return;
+
+    const dialog = dialogRef.current;
+    const focusableElements = dialog.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    const firstFocusable = focusableElements[0];
+    const lastFocusable = focusableElements[focusableElements.length - 1];
+
+    // Focus first focusable element when dialog opens
+    firstFocusable?.focus();
+
+    function handleTabKey(e: KeyboardEvent) {
+      if (e.key !== "Tab") return;
+
+      if (e.shiftKey) {
+        if (document.activeElement === firstFocusable) {
+          e.preventDefault();
+          lastFocusable?.focus();
+        }
+      } else {
+        if (document.activeElement === lastFocusable) {
+          e.preventDefault();
+          firstFocusable?.focus();
+        }
+      }
+    }
+
+    dialog.addEventListener("keydown", handleTabKey);
+    return () => dialog.removeEventListener("keydown", handleTabKey);
+  }, [open]);
+
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+    >
       <button
         aria-label="Close dialog"
-        className="absolute inset-0 cursor-default bg-black/40"
+        className="absolute inset-0 cursor-default bg-black/40 focus-visible:outline-none"
         onClick={() => onOpenChange?.(false)}
       />
       <div
+        ref={dialogRef}
         className="relative w-full max-w-[560px]"
         onClick={(e) => e.stopPropagation()}
       >

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/useToast";
 import { apiRequest, getApiErrorMessage } from "@/lib/apiClient";
 import { RefreshCw, X, AlertCircle } from "lucide-react";
@@ -28,6 +29,8 @@ export default function FailedJobsPageClient() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [retrying, setRetrying] = useState<Record<string, boolean>>({});
+  const [jobToRemove, setJobToRemove] = useState<FailedJob | null>(null);
+  const [removing, setRemoving] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -91,9 +94,14 @@ export default function FailedJobsPageClient() {
     [toast, load]
   );
 
+  const requestRemove = useCallback((job: FailedJob) => {
+    setJobToRemove(job);
+  }, []);
+
   const handleRemove = useCallback(
-    async (job: FailedJob) => {
-      if (!confirm(`Remove failed job ${job.id}?`)) return;
+    async () => {
+      if (!jobToRemove) return;
+      setRemoving(true);
 
       try {
         const res = await apiRequest<{ ok: boolean; error?: string }>(
@@ -103,8 +111,8 @@ export default function FailedJobsPageClient() {
             headers: { "content-type": "application/json" },
             body: JSON.stringify({
               action: "remove",
-              jobId: job.id,
-              queue: job.queue,
+              jobId: jobToRemove.id,
+              queue: jobToRemove.queue,
             }),
           }
         );
@@ -116,9 +124,12 @@ export default function FailedJobsPageClient() {
       } catch (err) {
         const message = getApiErrorMessage(err, "Failed to remove job");
         toast({ title: message, variant: "destructive" });
+      } finally {
+        setRemoving(false);
+        setJobToRemove(null);
       }
     },
-    [toast, load]
+    [jobToRemove, toast, load]
   );
 
   if (loading && !loadedRef.current) return <LoadingSkeleton />;
@@ -191,7 +202,7 @@ export default function FailedJobsPageClient() {
                     <Button
                       size="sm"
                       variant="secondary"
-                      onClick={() => handleRemove(job)}
+                      onClick={() => requestRemove(job)}
                     >
                       <X className="w-4 h-4 mr-1" />
                       Remove
@@ -203,6 +214,17 @@ export default function FailedJobsPageClient() {
           </div>
         )}
       </CardContent>
+
+      {/* Remove Confirmation Dialog */}
+      <ConfirmDialog
+        open={Boolean(jobToRemove)}
+        title="Remove failed job?"
+        message={jobToRemove ? `This will permanently remove the failed job ${jobToRemove.id} from the queue.` : ""}
+        confirmLabel="Remove job"
+        onCancel={() => setJobToRemove(null)}
+        onConfirm={handleRemove}
+        busy={removing}
+      />
     </Card>
   );
 }

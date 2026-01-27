@@ -102,12 +102,13 @@ export function ActivityItem({ activity, onEdit, onDelete, showEntityLinks = tru
 
           {/* Actions */}
           {(onEdit || onDelete) && (
-            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
               {onEdit && (
                 <button
                   type="button"
                   onClick={() => onEdit(activity)}
-                  className="px-2 py-1 text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)] rounded"
+                  className="px-2 py-1 text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)] rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2"
+                  aria-label={`Edit activity: ${activity.subject}`}
                 >
                   Edit
                 </button>
@@ -116,7 +117,8 @@ export function ActivityItem({ activity, onEdit, onDelete, showEntityLinks = tru
                 <button
                   type="button"
                   onClick={() => onDelete(activity)}
-                  className="px-2 py-1 text-xs text-red-500 hover:text-red-600 hover:bg-red-50 rounded"
+                  className="px-2 py-1 text-xs text-red-500 hover:text-red-600 hover:bg-red-50 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
+                  aria-label={`Delete activity: ${activity.subject}`}
                 >
                   Delete
                 </button>

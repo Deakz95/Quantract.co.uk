@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/useToast";
+import { Breadcrumbs, type BreadcrumbItem } from "@/components/ui/Breadcrumbs";
 
 type JobStatus = "new" | "scheduled" | "in_progress" | "completed";
 type Job = {
@@ -212,6 +213,15 @@ export default function AdminJobDetail({ jobId }: Props) {
 
   const stageLookup = useMemo(() => new Map(stages.map((stage) => [stage.id, stage.name])), [stages]);
   const billedVariationIds = useMemo(() => new Set(invoices.filter((inv) => inv.variationId).map((inv) => inv.variationId as string)), [invoices]);
+
+  const breadcrumbItems: BreadcrumbItem[] = useMemo(() => {
+    const jobLabel = job?.clientName ? `Job: ${job.clientName}` : `Job #${jobId.slice(0, 8)}`;
+    return [
+      { label: "Dashboard", href: "/admin" },
+      { label: "Jobs", href: "/admin/jobs" },
+      { label: jobLabel },
+    ];
+  }, [jobId, job?.clientName]);
 
   async function refresh() {
     setLoading(true);
@@ -567,6 +577,7 @@ export default function AdminJobDetail({ jobId }: Props) {
 
   return (
     <div className="space-y-4">
+      <Breadcrumbs items={breadcrumbItems} />
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
           <div className="text-sm font-semibold text-[var(--foreground)]">Job {jobId}</div>

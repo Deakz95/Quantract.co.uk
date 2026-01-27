@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/useToast";
-import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
+import { Breadcrumbs, type BreadcrumbItem } from "@/components/ui/Breadcrumbs";
 
 type Invoice = {
   id: string;
@@ -39,6 +39,12 @@ export default function InvoiceAdminDetail({ invoiceId }: { invoiceId: string })
   const [busy, setBusy] = useState(false);
 
   const clientLink = useMemo(() => (inv ? `/client/invoices/${inv.token}` : ""), [inv]);
+
+  const breadcrumbItems: BreadcrumbItem[] = useMemo(() => [
+    { label: "Dashboard", href: "/admin" },
+    { label: "Invoices", href: "/admin/invoices" },
+    { label: `Invoice #${invoiceId.slice(0, 8)}` },
+  ], [invoiceId]);
 
   useEffect(() => {
     let mounted = true;
@@ -107,7 +113,7 @@ export default function InvoiceAdminDetail({ invoiceId }: { invoiceId: string })
 
   return (
     <div className="space-y-5">
-      <Breadcrumbs />
+      <Breadcrumbs items={breadcrumbItems} />
       <Card>
         <CardHeader>
           <div className="flex flex-wrap items-center justify-between gap-3">

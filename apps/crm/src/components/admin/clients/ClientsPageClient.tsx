@@ -4,14 +4,17 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/useToast";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Dialog, DialogBody, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/Dialog";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
-import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
+import { DataTable, BulkActionBar, formatRelativeTime, type Column, type Action, type SortDirection } from "@/components/ui/DataTable";
+import { TableSkeletonInline } from "@/components/ui/TableSkeleton";
+import { FormField, FormInput, FormTextarea, LoadingSpinner } from "@/components/ui/FormField";
+import { useFormValidation, type ValidationSchema } from "@/hooks/useFormValidation";
 import { apiRequest, createAbortController, getApiErrorMessage, isAbortError, requireOk } from "@/lib/apiClient";
+import { Users, SquarePen, Eye, UserCog, KeyRound, Trash2 } from "lucide-react";
 
 type Client = {
   id: string;
@@ -50,6 +53,12 @@ const empty: Partial<Client> = {
   disableAutoChase: false,
 };
 
+// Validation schema for client form
+const validationSchema: ValidationSchema = {
+  name: { required: "Name is required" },
+  email: { email: "Please enter a valid email address" },
+};
+
 export default function ClientsPageClient() {
   const { toast } = useToast();
 
@@ -58,6 +67,11 @@ export default function ClientsPageClient() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [clients, setClients] = useState<Client[]>([]);
   const [q, setQ] = useState("");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [sortKey, setSortKey] = useState<string>("updatedAtISO");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   const [editing, setEditing] = useState<Client | null>(null);
   const [form, setForm] = useState<Partial<Client>>(empty);
@@ -65,6 +79,9 @@ export default function ClientsPageClient() {
   const [confirming, setConfirming] = useState<Client | null>(null);
 
   const abortRef = useRef<AbortController | null>(null);
+
+  // Form validation
+  const { errors, touched, validateField, validateAll, setFieldTouched, clearErrors } = useFormValidation<Client>(validationSchema);
 
   // Password reset modal state
   const [pwTarget, setPwTarget] = useState<Client | null>(null);
@@ -102,22 +119,69 @@ export default function ClientsPageClient() {
   }, [load]);
 
   const filtered = useMemo(() => {
+    let result = clients;
     const s = q.trim().toLowerCase();
-    if (!s) return clients;
-    return clients.filter((c) =>
-      [c.name, c.email, c.phone, displayAddress(c)].filter(Boolean).some((v) => String(v).toLowerCase().includes(s))
-    );
-  }, [clients, q]);
+    if (s) {
+      result = clients.filter((c) =>
+        [c.name, c.email, c.phone, displayAddress(c)].filter(Boolean).some((v) => String(v).toLowerCase().includes(s))
+      );
+    }
+
+    // Apply sorting
+    if (sortKey) {
+      result = [...result].sort((a, b) => {
+        const aVal = (a as Record<string, unknown>)[sortKey];
+        const bVal = (b as Record<string, unknown>)[sortKey];
+
+        if (aVal == null && bVal == null) return 0;
+        if (aVal == null) return 1;
+        if (bVal == null) return -1;
+
+        let comparison = 0;
+        if (typeof aVal === "string" && typeof bVal === "string") {
+          comparison = aVal.localeCompare(bVal);
+        } else if (typeof aVal === "number" && typeof bVal === "number") {
+          comparison = aVal - bVal;
+        } else {
+          comparison = String(aVal).localeCompare(String(bVal));
+        }
+
+        return sortDirection === "asc" ? comparison : -comparison;
+      });
+    }
+
+    return result;
+  }, [clients, q, sortKey, sortDirection]);
 
   function startNew() {
     setEditing(null);
     setForm({ ...empty });
+    clearErrors();
   }
 
   function startEdit(c: Client) {
     setEditing(c);
     setForm({ ...c });
+    clearErrors();
   }
+
+  const handleBlur = useCallback(
+    (field: keyof Client) => {
+      setFieldTouched(field);
+      validateField(field, form[field]);
+    },
+    [form, setFieldTouched, validateField]
+  );
+
+  // Check if form is valid for submission
+  const canSubmit = useMemo(() => {
+    const name = (form.name ?? "").trim();
+    const email = (form.email ?? "").trim();
+    // Name is required, email must be valid if provided
+    if (!name) return false;
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return false;
+    return true;
+  }, [form.name, form.email]);
 
   function startPasswordReset(c: Client) {
     setPwTarget(c);
@@ -155,6 +219,11 @@ export default function ClientsPageClient() {
     [toast]
   );
 
+  const handleSort = (key: string, direction: SortDirection) => {
+    setSortKey(key);
+    setSortDirection(direction);
+  };
+
   async function savePasswordReset() {
     if (!pwTarget) return;
 
@@ -185,7 +254,7 @@ export default function ClientsPageClient() {
 
       toast({ title: "Password updated", description: `Password reset for ${pwTarget.email}`, variant: "success" });
       setPwOpen(false);
-    } catch (e: any) {
+    } catch (e: unknown) {
       toast({ title: "Error", description: getApiErrorMessage(e), variant: "destructive" });
     } finally {
       setPwSaving(false);
@@ -193,6 +262,13 @@ export default function ClientsPageClient() {
   }
 
   async function save() {
+    // Validate all fields on submit
+    const formIsValid = validateAll(form as Client);
+    if (!formIsValid) {
+      toast({ title: "Please fix the errors before saving", variant: "destructive" });
+      return;
+    }
+
     setBusy(true);
     try {
       const payload = {
@@ -213,8 +289,8 @@ export default function ClientsPageClient() {
         disableAutoChase: Boolean(form.disableAutoChase),
       };
 
-      if (!payload.name || !payload.email) {
-        toast({ title: "Missing fields", description: "Name and email are required", variant: "destructive" });
+      if (!payload.name) {
+        toast({ title: "Missing fields", description: "Name is required", variant: "destructive" });
         return;
       }
 
@@ -232,7 +308,7 @@ export default function ClientsPageClient() {
       toast({ title: editing ? "Client updated" : "Client created", variant: "success" });
       await load();
       if (!editing) startNew();
-    } catch (e: any) {
+    } catch (e: unknown) {
       toast({ title: "Could not save", description: getApiErrorMessage(e), variant: "destructive" });
     } finally {
       setBusy(false);
@@ -254,13 +330,99 @@ export default function ClientsPageClient() {
 
       await load();
       if (editing?.id === confirming.id) startNew();
-    } catch (e: any) {
+      setSelectedIds((ids) => ids.filter((id) => id !== confirming.id));
+    } catch (e: unknown) {
       toast({ title: "Could not delete", description: getApiErrorMessage(e), variant: "destructive" });
     } finally {
       setBusy(false);
       setConfirming(null);
     }
   }
+
+  const handleBulkDelete = async () => {
+    setBulkDeleting(true);
+    try {
+      await Promise.all(
+        selectedIds.map((id) => apiRequest(`/api/admin/clients/${id}`, { method: "DELETE" }))
+      );
+      toast({ title: "Deleted", description: `${selectedIds.length} clients deleted`, variant: "success" });
+      await load();
+      setSelectedIds([]);
+      if (editing && selectedIds.includes(editing.id)) startNew();
+    } catch {
+      toast({ title: "Error", description: "Failed to delete some clients", variant: "destructive" });
+    } finally {
+      setBulkDeleting(false);
+      setBulkDeleteOpen(false);
+    }
+  };
+
+  const columns: Column<Client>[] = [
+    {
+      key: "name",
+      label: "Name",
+      sortable: true,
+      render: (client) => (
+        <div>
+          <div className="font-semibold text-[var(--foreground)]">{client.name}</div>
+          {client.phone && <div className="mt-0.5 text-xs text-[var(--muted-foreground)]">{client.phone}</div>}
+        </div>
+      ),
+    },
+    {
+      key: "email",
+      label: "Email",
+      sortable: true,
+      render: (client) => <span className="text-[var(--foreground)]">{client.email || "-"}</span>,
+    },
+    {
+      key: "address1",
+      label: "Address",
+      sortable: false,
+      render: (client) => (
+        <span className="text-[var(--muted-foreground)]">{displayAddress(client) || "-"}</span>
+      ),
+    },
+    {
+      key: "updatedAtISO",
+      label: "Last Updated",
+      sortable: true,
+      render: (client) => (
+        <span className="text-[var(--muted-foreground)]">{formatRelativeTime(client.updatedAtISO)}</span>
+      ),
+    },
+  ];
+
+  const actions: Action<Client>[] = [
+    {
+      label: "View Details",
+      onClick: (client) => {
+        window.location.href = `/admin/clients/${client.id}`;
+      },
+      icon: <Eye className="w-4 h-4" />,
+    },
+    {
+      label: "Edit",
+      onClick: startEdit,
+      icon: <SquarePen className="w-4 h-4" />,
+    },
+    {
+      label: "Impersonate",
+      onClick: handleImpersonate,
+      icon: <UserCog className="w-4 h-4" />,
+    },
+    {
+      label: "Reset Password",
+      onClick: startPasswordReset,
+      icon: <KeyRound className="w-4 h-4" />,
+    },
+    {
+      label: "Delete",
+      onClick: requestRemove,
+      variant: "danger",
+      icon: <Trash2 className="w-4 h-4" />,
+    },
+  ];
 
   return (
     <div className="grid gap-6 lg:grid-cols-12">
@@ -272,7 +434,7 @@ export default function ClientsPageClient() {
               <div className="flex items-center gap-2">
                 <input
                   className="w-[260px] max-w-full rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-[var(--foreground)] text-sm"
-                  placeholder="Search name, email, postcode…"
+                  placeholder="Search name, email, postcode..."
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
                 />
@@ -287,84 +449,51 @@ export default function ClientsPageClient() {
           </CardHeader>
 
           <CardContent>
+            {/* Bulk Action Bar */}
+            <BulkActionBar
+              selectedCount={selectedIds.length}
+              onDelete={() => setBulkDeleteOpen(true)}
+              onClearSelection={() => setSelectedIds([])}
+              deleteLabel="Delete selected"
+              className="mb-4"
+            />
+
             {loading ? (
-              <div className="space-y-3">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="grid grid-cols-5 items-center gap-4">
-                    <LoadingSkeleton className="h-5" />
-                    <LoadingSkeleton className="h-5" />
-                    <LoadingSkeleton className="h-5" />
-                    <LoadingSkeleton className="h-5" />
-                    <LoadingSkeleton className="h-8" />
-                  </div>
-                ))}
-              </div>
+              <TableSkeletonInline columns={4} rows={5} />
             ) : loadError ? (
               <ErrorState title="Unable to load clients" description={loadError} onRetry={() => void load()} />
-            ) : filtered.length === 0 ? (
+            ) : clients.length === 0 ? (
               <EmptyState
+                icon={Users}
                 title="No clients yet"
-                description="Create your first client to start quoting and invoicing."
-                action={
-                  <Button variant="secondary" type="button" onClick={startNew}>
-                    Add client
-                  </Button>
-                }
+                description="Clients are required before creating quotes, invoices, and jobs. Add your first client to get started with your CRM workflow."
+                features={[
+                  "Store client contact details and billing information",
+                  "Track all quotes, invoices, and jobs per client",
+                  "Manage payment terms and auto-chase settings",
+                ]}
+                primaryAction={{ label: "Add your first client", onClick: startNew }}
+                secondaryAction={{ label: "Import from CSV", href: "/admin/import?type=clients" }}
               />
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-left text-xs text-[var(--muted-foreground)]">
-                      <th className="py-2">Name</th>
-                      <th className="py-2">Email</th>
-                      <th className="py-2">Address</th>
-                      <th className="py-2">Updated</th>
-                      <th className="py-2"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filtered.map((c) => (
-                      <tr key={c.id} className="border-t border-[var(--border)]">
-                        <td className="py-3">
-                          <div className="font-semibold text-[var(--foreground)]">{c.name}</div>
-                          {c.phone ? <div className="mt-0.5 text-xs text-[var(--muted-foreground)]">{c.phone}</div> : null}
-                        </td>
-                        <td className="py-3">
-                          <div className="text-[var(--foreground)]">{c.email}</div>
-                        </td>
-                        <td className="py-3">
-                          <div className="text-[var(--muted-foreground)]">{displayAddress(c) || "—"}</div>
-                        </td>
-                        <td className="py-3">
-                          <Badge>{new Date(c.updatedAtISO).toLocaleDateString("en-GB")}</Badge>
-                        </td>
-                        <td className="py-3">
-                          <div className="flex justify-end gap-2">
-                            <Link href={`/admin/clients/${c.id}`}>
-                              <Button variant="secondary" type="button">
-                                Details
-                              </Button>
-                            </Link>
-                            <Button variant="ghost" type="button" onClick={() => handleImpersonate(c)}>
-                              Impersonate
-                            </Button>
-                            <Button variant="secondary" type="button" onClick={() => startEdit(c)}>
-                              Edit
-                            </Button>
-                            <Button variant="secondary" type="button" onClick={() => startPasswordReset(c)}>
-                              Reset password
-                            </Button>
-                            <Button variant="destructive" type="button" onClick={() => requestRemove(c)}>
-                              Delete
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            ) : filtered.length === 0 ? (
+              <div className="p-12 text-center">
+                <Users className="w-12 h-12 text-[var(--muted-foreground)] mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-[var(--foreground)] mb-2">No clients match your search</h3>
+                <p className="text-[var(--muted-foreground)] mb-4">Try adjusting your search criteria</p>
               </div>
+            ) : (
+              <DataTable
+                columns={columns}
+                data={filtered}
+                sortKey={sortKey}
+                sortDirection={sortDirection}
+                onSort={handleSort}
+                selectedIds={selectedIds}
+                onSelectionChange={setSelectedIds}
+                actions={actions}
+                getRowId={(row) => row.id}
+                onRowClick={startEdit}
+              />
             )}
           </CardContent>
         </Card>
@@ -377,93 +506,90 @@ export default function ClientsPageClient() {
           </CardHeader>
           <CardContent>
             <div className="grid gap-3">
-              <label className="grid gap-1">
-                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Name <span className="text-red-500">*</span></span>
-                <input
-                  className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-[var(--foreground)].5 text-sm"
+              <FormField label="Name" required error={errors.name} touched={touched.name} htmlFor="client-name">
+                <FormInput
+                  id="client-name"
                   value={form.name ?? ""}
                   onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+                  onBlur={() => handleBlur("name")}
+                  hasError={Boolean(errors.name && touched.name)}
                 />
-              </label>
+              </FormField>
 
-              <label className="grid gap-1">
-                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Email <span className="text-red-500">*</span></span>
-                <input
-                  className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-[var(--foreground)].5 text-sm"
+              <FormField label="Email" error={errors.email} touched={touched.email} htmlFor="client-email">
+                <FormInput
+                  id="client-email"
+                  type="email"
                   value={form.email ?? ""}
                   onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
+                  onBlur={() => handleBlur("email")}
+                  hasError={Boolean(errors.email && touched.email)}
                 />
-              </label>
+              </FormField>
 
-              <label className="grid gap-1">
-                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Phone</span>
-                <input
-                  className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-[var(--foreground)].5 text-sm"
+              <FormField label="Phone" htmlFor="client-phone">
+                <FormInput
+                  id="client-phone"
                   value={form.phone ?? ""}
                   onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))}
                 />
-              </label>
+              </FormField>
 
               <div className="grid grid-cols-1 gap-3">
-                <label className="grid gap-1">
-                  <span className="text-xs font-semibold text-[var(--muted-foreground)]">Address line 1</span>
-                  <input
-                    className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-[var(--foreground)].5 text-sm"
+                <FormField label="Address line 1" htmlFor="client-address1">
+                  <FormInput
+                    id="client-address1"
                     value={form.address1 ?? ""}
                     onChange={(e) => setForm((p) => ({ ...p, address1: e.target.value }))}
                   />
-                </label>
+                </FormField>
 
-                <label className="grid gap-1">
-                  <span className="text-xs font-semibold text-[var(--muted-foreground)]">Address line 2</span>
-                  <input
-                    className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-[var(--foreground)].5 text-sm"
+                <FormField label="Address line 2" htmlFor="client-address2">
+                  <FormInput
+                    id="client-address2"
                     value={form.address2 ?? ""}
                     onChange={(e) => setForm((p) => ({ ...p, address2: e.target.value }))}
                   />
-                </label>
+                </FormField>
 
-                <label className="grid gap-1">
-                    <span className="text-xs font-semibold text-[var(--muted-foreground)]">City</span>
-                    <input
-                      className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-[var(--foreground)].5 text-sm"
-                      value={form.city ?? ""}
-                      onChange={(e) => setForm((p) => ({ ...p, city: e.target.value }))}
-                    />
-                  </label>
-                  <label className="grid gap-1">
-                    <span className="text-xs font-semibold text-[var(--muted-foreground)]">County</span>
-                    <input
-                      className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-[var(--foreground)].5 text-sm"
-                      value={form.county ?? ""}
-                      onChange={(e) => setForm((p) => ({ ...p, county: e.target.value }))}
-                    />
-                  </label>
+                <FormField label="City" htmlFor="client-city">
+                  <FormInput
+                    id="client-city"
+                    value={form.city ?? ""}
+                    onChange={(e) => setForm((p) => ({ ...p, city: e.target.value }))}
+                  />
+                </FormField>
 
-                <label className="grid gap-1">
-                    <span className="text-xs font-semibold text-[var(--muted-foreground)]">Postcode</span>
-                    <input
-                      className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-[var(--foreground)].5 text-sm"
-                      value={form.postcode ?? ""}
-                      onChange={(e) => setForm((p) => ({ ...p, postcode: e.target.value }))}
-                    />
-                  </label>
-                  <label className="grid gap-1">
-                    <span className="text-xs font-semibold text-[var(--muted-foreground)]">Country</span>
-                    <input
-                      className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-[var(--foreground)].5 text-sm"
-                      value={form.country ?? ""}
-                      onChange={(e) => setForm((p) => ({ ...p, country: e.target.value }))}
-                    />
-                  </label>
+                <FormField label="County" htmlFor="client-county">
+                  <FormInput
+                    id="client-county"
+                    value={form.county ?? ""}
+                    onChange={(e) => setForm((p) => ({ ...p, county: e.target.value }))}
+                  />
+                </FormField>
+
+                <FormField label="Postcode" htmlFor="client-postcode">
+                  <FormInput
+                    id="client-postcode"
+                    value={form.postcode ?? ""}
+                    onChange={(e) => setForm((p) => ({ ...p, postcode: e.target.value }))}
+                  />
+                </FormField>
+
+                <FormField label="Country" htmlFor="client-country">
+                  <FormInput
+                    id="client-country"
+                    value={form.country ?? ""}
+                    onChange={(e) => setForm((p) => ({ ...p, country: e.target.value }))}
+                  />
+                </FormField>
               </div>
 
-              <label className="grid gap-1">
-                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Payment terms (days)</span>
-                <input
+              <FormField label="Payment terms (days)" htmlFor="client-paymentTerms">
+                <FormInput
+                  id="client-paymentTerms"
                   type="number"
                   min={0}
-                  className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-[var(--foreground)].5 text-sm"
                   value={form.paymentTermsDays ?? ""}
                   onChange={(e) =>
                     setForm((p) => ({
@@ -473,9 +599,9 @@ export default function ClientsPageClient() {
                   }
                   placeholder="e.g. 30 (blank = company default)"
                 />
-              </label>
+              </FormField>
 
-              <label className="flex items-center gap-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-[var(--foreground)].5 text-sm">
+              <label className="flex items-center gap-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-sm">
                 <input
                   type="checkbox"
                   checked={Boolean(form.disableAutoChase)}
@@ -484,21 +610,29 @@ export default function ClientsPageClient() {
                 <span className="text-[var(--foreground)]">Disable auto-chase</span>
               </label>
 
-              <label className="grid gap-1">
-                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Notes</span>
-                <textarea
-                  className="min-h-[80px] rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-[var(--foreground)].5 text-sm"
+              <FormField label="Notes" htmlFor="client-notes">
+                <FormTextarea
+                  id="client-notes"
                   value={form.notes ?? ""}
                   onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))}
                 />
-              </label>
+              </FormField>
 
               <div className="flex justify-end gap-2">
                 <Button variant="secondary" type="button" onClick={startNew}>
                   Clear
                 </Button>
-                <Button type="button" onClick={save} disabled={busy}>
-                  {busy ? "Saving…" : editing ? "Save" : "Create"}
+                <Button type="button" onClick={save} disabled={busy || !canSubmit}>
+                  {busy ? (
+                    <>
+                      <LoadingSpinner className="mr-2" />
+                      Saving...
+                    </>
+                  ) : editing ? (
+                    "Save"
+                  ) : (
+                    "Create"
+                  )}
                 </Button>
               </div>
             </div>
@@ -528,7 +662,7 @@ export default function ClientsPageClient() {
                 <span className="text-xs font-semibold text-[var(--muted-foreground)]">New password</span>
                 <input
                   type="password"
-                  className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-[var(--foreground)].5 text-sm"
+                  className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-[var(--foreground)] text-sm"
                   value={pw}
                   onChange={(e) => setPw(e.target.value)}
                   placeholder="Min 8 characters"
@@ -539,7 +673,7 @@ export default function ClientsPageClient() {
                 <span className="text-xs font-semibold text-[var(--muted-foreground)]">Confirm password</span>
                 <input
                   type="password"
-                  className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-[var(--foreground)].5 text-sm"
+                  className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-[var(--foreground)] text-sm"
                   value={pw2}
                   onChange={(e) => setPw2(e.target.value)}
                   placeholder="Repeat password"
@@ -551,7 +685,7 @@ export default function ClientsPageClient() {
                   Cancel
                 </Button>
                 <Button type="button" onClick={() => void savePasswordReset()} disabled={pwSaving || !pwTarget}>
-                  {pwSaving ? "Saving…" : "Save password"}
+                  {pwSaving ? "Saving..." : "Save password"}
                 </Button>
               </div>
             </div>
@@ -559,6 +693,7 @@ export default function ClientsPageClient() {
         </DialogContent>
       </Dialog>
 
+      {/* Single Delete Confirmation */}
       <ConfirmDialog
         open={Boolean(confirming)}
         title={confirming ? `Delete ${confirming.name}?` : "Delete client?"}
@@ -567,6 +702,17 @@ export default function ClientsPageClient() {
         onCancel={() => setConfirming(null)}
         onConfirm={confirmRemove}
         busy={busy}
+      />
+
+      {/* Bulk Delete Confirmation */}
+      <ConfirmDialog
+        open={bulkDeleteOpen}
+        title={`Delete ${selectedIds.length} client${selectedIds.length === 1 ? "" : "s"}?`}
+        description="This action cannot be undone. All selected clients will be permanently deleted."
+        confirmLabel="Delete"
+        onCancel={() => setBulkDeleteOpen(false)}
+        onConfirm={handleBulkDelete}
+        busy={bulkDeleting}
       />
     </div>
   );

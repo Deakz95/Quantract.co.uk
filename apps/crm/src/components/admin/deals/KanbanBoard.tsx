@@ -3,12 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
+import { KanbanBoardSkeleton } from "@/components/ui/CardSkeleton";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useToast } from "@/components/ui/useToast";
 import { apiRequest, getApiErrorMessage, requireOk } from "@/lib/apiClient";
-import { Plus, Settings } from "lucide-react";
+import { Plus, Settings, Target } from "lucide-react";
 import KanbanColumn from "./KanbanColumn";
 import DealForm from "./DealForm";
 import StageSettingsDialog from "./StageSettingsDialog";
@@ -153,7 +153,7 @@ export default function KanbanBoard() {
   );
 
   if (loading && !loadedRef.current) {
-    return <LoadingSkeleton />;
+    return <KanbanBoardSkeleton columns={4} />;
   }
 
   if (loadError) {
@@ -199,14 +199,16 @@ export default function KanbanBoard() {
         <Card>
           <CardContent className="pt-6">
             <EmptyState
-              title="No pipeline stages"
-              description="Create your first pipeline stage to start tracking deals."
-              action={
-                <Button onClick={() => setStageSettingsOpen(true)}>
-                  <Plus className="w-4 h-4 mr-1.5" />
-                  Add Stage
-                </Button>
-              }
+              icon={Target}
+              title="No deals yet"
+              description="Track your sales pipeline with deals. Create pipeline stages to visualise opportunities from lead to close."
+              features={[
+                "Drag and drop deals through customisable pipeline stages",
+                "Track deal value, probability, and expected close dates",
+                "Link deals to contacts and clients for full context"
+              ]}
+              primaryAction={{ label: "Set up pipeline stages", onClick: () => setStageSettingsOpen(true) }}
+              secondaryAction={{ label: "Learn more", href: "/admin/help/deals" }}
             />
           </CardContent>
         </Card>

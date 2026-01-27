@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import * as repo from "@/lib/server/repo";
 
 function formatGBP(n: number) {
@@ -63,8 +64,15 @@ export default async function Page({ params }: Props) {
 
   const agreementByQuote = new Map(agreements.map((a) => [a.quoteId, a]));
 
+  const breadcrumbItems = [
+    { label: "Dashboard", href: "/admin" },
+    { label: "Clients", href: "/admin/clients" },
+    { label: client.name },
+  ];
+
   return (
       <div className="space-y-6">
+      <Breadcrumbs items={breadcrumbItems} />
       <Card>
         <CardHeader>
           <div className="flex flex-wrap items-start justify-between gap-3">

@@ -79,7 +79,10 @@ export default function DealCard({ deal }: DealCardProps) {
     : null;
 
   return (
-    <Link href={`/admin/deals/${deal.id}`}>
+    <Link
+      href={`/admin/deals/${deal.id}`}
+      className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2"
+    >
       <div
         draggable="true"
         onDragStart={handleDragStart}

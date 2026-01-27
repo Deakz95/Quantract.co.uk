@@ -1,6 +1,9 @@
 "use client";
 
+import { useCallback, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
+import { FormField, FormInput, FormSelect, FormTextarea, LoadingSpinner } from "@/components/ui/FormField";
+import { useFormValidation, type ValidationSchema } from "@/hooks/useFormValidation";
 
 type Client = {
   id: string;
@@ -39,80 +42,148 @@ const preferredChannelOptions = [
   { value: "whatsapp", label: "WhatsApp" },
 ];
 
+// Validation schema for contact form
+const validationSchema: ValidationSchema = {
+  firstName: { required: "First name is required" },
+  lastName: { required: "Last name is required" },
+  email: { email: "Please enter a valid email address" },
+};
+
 export function ContactForm({ form, setForm, clients, onSave, onClear, busy, isEditing }: ContactFormProps) {
+  const { errors, touched, isValid, validateField, validateAll, setFieldTouched, clearErrors } = useFormValidation<Contact>(validationSchema);
+
+  // Validate on form change to keep isValid updated
+  useEffect(() => {
+    // Only validate fields that have been touched
+    if (touched.firstName) validateField("firstName", form.firstName);
+    if (touched.lastName) validateField("lastName", form.lastName);
+    if (touched.email) validateField("email", form.email);
+  }, [form.firstName, form.lastName, form.email, touched, validateField]);
+
+  const handleBlur = useCallback(
+    (field: keyof Contact) => {
+      setFieldTouched(field);
+      validateField(field, form[field]);
+    },
+    [form, setFieldTouched, validateField]
+  );
+
+  const handleClear = useCallback(() => {
+    clearErrors();
+    onClear();
+  }, [clearErrors, onClear]);
+
+  const handleSave = useCallback(() => {
+    const formIsValid = validateAll(form as Contact);
+    if (formIsValid) {
+      onSave();
+    }
+  }, [form, validateAll, onSave]);
+
+  // Check if form is valid for submission
+  const canSubmit = useMemo(() => {
+    const firstName = (form.firstName ?? "").trim();
+    const lastName = (form.lastName ?? "").trim();
+    const email = (form.email ?? "").trim();
+
+    // Required fields must be filled
+    if (!firstName || !lastName) return false;
+
+    // If email is provided, it must be valid
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return false;
+
+    return true;
+  }, [form.firstName, form.lastName, form.email]);
+
   return (
     <div className="grid gap-3">
       <div className="grid grid-cols-2 gap-3">
-        <label className="grid gap-1">
-          <span className="text-xs font-semibold text-[var(--muted-foreground)]">First name <span className="text-red-500">*</span></span>
-          <input
-            className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-[var(--foreground)] text-sm"
+        <FormField
+          label="First name"
+          required
+          error={errors.firstName}
+          touched={touched.firstName}
+          htmlFor="firstName"
+        >
+          <FormInput
+            id="firstName"
             value={form.firstName ?? ""}
             onChange={(e) => setForm((p) => ({ ...p, firstName: e.target.value }))}
+            onBlur={() => handleBlur("firstName")}
             placeholder="John"
+            hasError={Boolean(errors.firstName && touched.firstName)}
           />
-        </label>
+        </FormField>
 
-        <label className="grid gap-1">
-          <span className="text-xs font-semibold text-[var(--muted-foreground)]">Last name <span className="text-red-500">*</span></span>
-          <input
-            className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-[var(--foreground)] text-sm"
+        <FormField
+          label="Last name"
+          required
+          error={errors.lastName}
+          touched={touched.lastName}
+          htmlFor="lastName"
+        >
+          <FormInput
+            id="lastName"
             value={form.lastName ?? ""}
             onChange={(e) => setForm((p) => ({ ...p, lastName: e.target.value }))}
+            onBlur={() => handleBlur("lastName")}
             placeholder="Smith"
+            hasError={Boolean(errors.lastName && touched.lastName)}
           />
-        </label>
+        </FormField>
       </div>
 
-      <label className="grid gap-1">
-        <span className="text-xs font-semibold text-[var(--muted-foreground)]">Email</span>
-        <input
+      <FormField
+        label="Email"
+        error={errors.email}
+        touched={touched.email}
+        htmlFor="email"
+      >
+        <FormInput
+          id="email"
           type="email"
-          className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-[var(--foreground)] text-sm"
           value={form.email ?? ""}
           onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
+          onBlur={() => handleBlur("email")}
           placeholder="john@example.com"
+          hasError={Boolean(errors.email && touched.email)}
         />
-      </label>
+      </FormField>
 
       <div className="grid grid-cols-2 gap-3">
-        <label className="grid gap-1">
-          <span className="text-xs font-semibold text-[var(--muted-foreground)]">Phone</span>
-          <input
+        <FormField label="Phone" htmlFor="phone">
+          <FormInput
+            id="phone"
             type="tel"
-            className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-[var(--foreground)] text-sm"
             value={form.phone ?? ""}
             onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))}
             placeholder="020 1234 5678"
           />
-        </label>
+        </FormField>
 
-        <label className="grid gap-1">
-          <span className="text-xs font-semibold text-[var(--muted-foreground)]">Mobile</span>
-          <input
+        <FormField label="Mobile" htmlFor="mobile">
+          <FormInput
+            id="mobile"
             type="tel"
-            className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-[var(--foreground)] text-sm"
             value={form.mobile ?? ""}
             onChange={(e) => setForm((p) => ({ ...p, mobile: e.target.value }))}
             placeholder="07700 123456"
           />
-        </label>
+        </FormField>
       </div>
 
-      <label className="grid gap-1">
-        <span className="text-xs font-semibold text-[var(--muted-foreground)]">Job title</span>
-        <input
-          className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-[var(--foreground)] text-sm"
+      <FormField label="Job title" htmlFor="jobTitle">
+        <FormInput
+          id="jobTitle"
           value={form.jobTitle ?? ""}
           onChange={(e) => setForm((p) => ({ ...p, jobTitle: e.target.value }))}
           placeholder="Project Manager"
         />
-      </label>
+      </FormField>
 
-      <label className="grid gap-1">
-        <span className="text-xs font-semibold text-[var(--muted-foreground)]">Client</span>
-        <select
-          className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-[var(--foreground)] text-sm"
+      <FormField label="Client" htmlFor="clientId">
+        <FormSelect
+          id="clientId"
           value={form.clientId ?? ""}
           onChange={(e) => setForm((p) => ({ ...p, clientId: e.target.value }))}
         >
@@ -122,13 +193,12 @@ export function ContactForm({ form, setForm, clients, onSave, onClear, busy, isE
               {client.name}
             </option>
           ))}
-        </select>
-      </label>
+        </FormSelect>
+      </FormField>
 
-      <label className="grid gap-1">
-        <span className="text-xs font-semibold text-[var(--muted-foreground)]">Preferred contact method</span>
-        <select
-          className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-[var(--foreground)] text-sm"
+      <FormField label="Preferred contact method" htmlFor="preferredChannel">
+        <FormSelect
+          id="preferredChannel"
           value={form.preferredChannel ?? "email"}
           onChange={(e) => setForm((p) => ({ ...p, preferredChannel: e.target.value }))}
         >
@@ -137,8 +207,8 @@ export function ContactForm({ form, setForm, clients, onSave, onClear, busy, isE
               {opt.label}
             </option>
           ))}
-        </select>
-      </label>
+        </FormSelect>
+      </FormField>
 
       <label className="flex items-center gap-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-sm">
         <input
@@ -149,22 +219,30 @@ export function ContactForm({ form, setForm, clients, onSave, onClear, busy, isE
         <span className="text-[var(--foreground)]">Primary contact for client</span>
       </label>
 
-      <label className="grid gap-1">
-        <span className="text-xs font-semibold text-[var(--muted-foreground)]">Notes</span>
-        <textarea
-          className="min-h-[80px] rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-[var(--foreground)] text-sm"
+      <FormField label="Notes" htmlFor="notes">
+        <FormTextarea
+          id="notes"
           value={form.notes ?? ""}
           onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))}
           placeholder="Additional notes about this contact..."
         />
-      </label>
+      </FormField>
 
       <div className="flex justify-end gap-2">
-        <Button variant="secondary" type="button" onClick={onClear}>
+        <Button variant="secondary" type="button" onClick={handleClear}>
           Clear
         </Button>
-        <Button type="button" onClick={onSave} disabled={busy}>
-          {busy ? "Saving..." : isEditing ? "Save" : "Create"}
+        <Button type="button" onClick={handleSave} disabled={busy || !canSubmit}>
+          {busy ? (
+            <>
+              <LoadingSpinner className="mr-2" />
+              Saving...
+            </>
+          ) : isEditing ? (
+            "Save"
+          ) : (
+            "Create"
+          )}
         </Button>
       </div>
     </div>

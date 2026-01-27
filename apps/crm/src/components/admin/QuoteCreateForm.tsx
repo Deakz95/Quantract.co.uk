@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/useToast";
 import LineItemsEditor, { LineItem } from "@/components/shared/LineItemsEditor";
+import { FormField, FormInput, FormSelect, FormTextarea, LoadingSpinner } from "@/components/ui/FormField";
+import { useFormValidation, type ValidationSchema } from "@/hooks/useFormValidation";
 
 type Client = {
   id: string;
@@ -80,6 +82,34 @@ export default function QuoteCreateForm() {
   // Templates
   const [templates, setTemplates] = useState<any[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
+
+  // Validation schema for quote form
+  const validationSchema: ValidationSchema = useMemo(() => ({
+    clientId: { required: "Client is required" },
+    clientName: { required: "Client name is required" },
+  }), []);
+
+  const { errors: validationErrors, touched, validateField, validateAll, setFieldTouched, clearErrors } = useFormValidation<{ clientId: string; clientName: string }>(validationSchema);
+
+  const handleBlur = useCallback(
+    (field: "clientId" | "clientName") => {
+      setFieldTouched(field);
+      if (field === "clientId") {
+        validateField(field, clientId);
+      } else if (field === "clientName") {
+        validateField(field, clientName);
+      }
+    },
+    [clientId, clientName, setFieldTouched, validateField]
+  );
+
+  // Check if form is valid for submission
+  const canSubmit = useMemo(() => {
+    const name = clientName.trim();
+    const validItems = items.filter((x) => x.description.trim().length);
+    // Client name required, at least one line item
+    return Boolean(name && validItems.length > 0);
+  }, [clientName, items]);
 
   const loadClients = useCallback(async () => {
     try {
@@ -249,12 +279,6 @@ export default function QuoteCreateForm() {
 
     if (!clientName.trim()) {
       newErrors.clientName = "Client name is required";
-    }
-
-    if (!clientEmail.trim()) {
-      newErrors.clientEmail = "Client email is required";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clientEmail.trim())) {
-      newErrors.clientEmail = "Please enter a valid email address";
     }
 
     const validItems = items.filter((x) => x.description.trim().length);
@@ -431,14 +455,16 @@ export default function QuoteCreateForm() {
                 </label>
               )}
 
-              <label className="grid gap-1">
-                <span className="text-xs font-semibold text-[var(--muted-foreground)]">
-                  Client name <span className="text-red-500">*</span>
-                </span>
-                <input
-                  className={`rounded-2xl border px-4 py-3 text-sm text-[var(--foreground)] ${
-                    errors.clientName ? "border-red-500 bg-red-50" : "border-[var(--border)] bg-[var(--background)]"
-                  }`}
+              <FormField
+                label="Client name"
+                required
+                error={errors.clientName}
+                touched={true}
+                htmlFor="quote-clientName"
+              >
+                <FormInput
+                  id="quote-clientName"
+                  className="py-3"
                   value={clientName}
                   onChange={(e) => {
                     setClientName(e.target.value);
@@ -446,46 +472,38 @@ export default function QuoteCreateForm() {
                       setErrors((prev) => ({ ...prev, clientName: "" }));
                     }
                   }}
+                  onBlur={() => handleBlur("clientName")}
                   placeholder="e.g. Jane Smith"
+                  hasError={Boolean(errors.clientName)}
                 />
-                {errors.clientName && (
-                  <span className="text-xs text-red-600">{errors.clientName}</span>
-                )}
-              </label>
+              </FormField>
 
-              <label className="grid gap-1">
-                <span className="text-xs font-semibold text-[var(--muted-foreground)]">
-                  Client email <span className="text-red-500">*</span>
-                </span>
-                <input
+              <FormField
+                label="Client email"
+                htmlFor="quote-clientEmail"
+              >
+                <FormInput
+                  id="quote-clientEmail"
                   type="email"
-                  className={`rounded-2xl border px-4 py-3 text-sm text-[var(--foreground)] ${
-                    errors.clientEmail ? "border-red-500 bg-red-50" : "border-[var(--border)] bg-[var(--background)]"
-                  }`}
+                  className="py-3"
                   value={clientEmail}
                   onChange={(e) => {
                     setClientEmail(e.target.value);
-                    if (errors.clientEmail) {
-                      setErrors((prev) => ({ ...prev, clientEmail: "" }));
-                    }
                   }}
                   placeholder="e.g. jane@email.com"
                 />
-                {errors.clientEmail && (
-                  <span className="text-xs text-red-600">{errors.clientEmail}</span>
-                )}
-              </label>
+              </FormField>
 
-              <label className="grid gap-1">
-                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Site address (optional)</span>
-                <input
-                  className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm text-[var(--foreground)]"
+              <FormField label="Site address (optional)" htmlFor="quote-siteAddress">
+                <FormInput
+                  id="quote-siteAddress"
+                  className="py-3"
                   value={siteAddress}
                   onChange={(e) => setSiteAddress(e.target.value)}
                   disabled={!!siteId}
                   placeholder="e.g. 10 Downing Street, London"
                 />
-              </label>
+              </FormField>
 
               <div className="grid gap-2">
                 <div className="text-xs font-semibold text-[var(--muted-foreground)]">
@@ -506,22 +524,31 @@ export default function QuoteCreateForm() {
                 )}
               </div>
 
-              <label className="grid gap-1">
-                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Notes (optional)</span>
-                <textarea
-                  className="min-h-[100px] rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm text-[var(--foreground)]"
+              <FormField label="Notes (optional)" htmlFor="quote-notes">
+                <FormTextarea
+                  id="quote-notes"
+                  className="min-h-[100px] py-3"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Any assumptions / exclusions / access notes…"
+                  placeholder="Any assumptions / exclusions / access notes..."
                 />
-              </label>
+              </FormField>
 
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="secondary" onClick={() => router.push("/admin/quotes")}>
                   Back
                 </Button>
-                <Button type="button" onClick={create} disabled={busy}>
-                  {busy ? "Saving…" : mode === "edit" ? "Update quote" : "Create quote"}
+                <Button type="button" onClick={create} disabled={busy || !canSubmit}>
+                  {busy ? (
+                    <>
+                      <LoadingSpinner className="mr-2" />
+                      Saving...
+                    </>
+                  ) : mode === "edit" ? (
+                    "Update quote"
+                  ) : (
+                    "Create quote"
+                  )}
                 </Button>
               </div>
             </div>

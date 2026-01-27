@@ -87,7 +87,7 @@ export function Shell({
                     key={it.href}
                     href={it.href}
                     className={cn(
-                      "block rounded-xl px-3 py-2 text-sm font-semibold",
+                      "block rounded-xl px-3 py-2 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2",
                       active ? "bg-[var(--primary)] text-[var(--primary-foreground)]" : "text-[var(--muted-foreground)] hover:bg-[var(--muted)]"
                     )}
                   >
@@ -111,7 +111,7 @@ export function Shell({
                         key={it.href}
                         href={it.href}
                         className={cn(
-                          "block rounded-xl px-3 py-2 text-sm font-semibold",
+                          "block rounded-xl px-3 py-2 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2",
                           active ? "bg-[var(--accent)] text-[var(--accent-foreground)]" : "text-[var(--accent)] hover:bg-[var(--muted)]"
                         )}
                       >
@@ -126,7 +126,7 @@ export function Shell({
                 <button
                   type="button"
                   onClick={logout}
-                  className="block w-full rounded-xl px-3 py-2 text-left text-sm text-[var(--muted-foreground)] hover:bg-[var(--muted)]"
+                  className="block w-full rounded-xl px-3 py-2 text-left text-sm text-[var(--muted-foreground)] hover:bg-[var(--muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2"
                 >
                   Log out
                 </button>
@@ -157,7 +157,7 @@ export function Shell({
                 key={it.href}
                 href={it.href}
                 className={cn(
-                  "flex flex-1 flex-col items-center justify-center rounded-xl px-2 py-2 text-xs font-semibold",
+                  "flex flex-1 flex-col items-center justify-center rounded-xl px-2 py-2 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2",
                   active ? "text-[var(--foreground)]" : "text-[var(--muted-foreground)]"
                 )}
               >
@@ -169,7 +169,7 @@ export function Shell({
           <button
             type="button"
             onClick={logout}
-            className="flex flex-1 flex-col items-center justify-center rounded-xl px-2 py-2 text-xs font-semibold text-[var(--muted-foreground)]"
+            className="flex flex-1 flex-col items-center justify-center rounded-xl px-2 py-2 text-xs font-semibold text-[var(--muted-foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2"
           >
             Logout
           </button>

@@ -1,4 +1,4 @@
-import type { HTMLAttributes } from "react";
+import type { HTMLAttributes, KeyboardEvent } from "react";
 import { cn } from "@/lib/cn";
 
 export function Table({ className, ...props }: HTMLAttributes<HTMLTableElement>) {
@@ -22,13 +22,30 @@ export function TableBody({ className, ...props }: HTMLAttributes<HTMLTableSecti
   return <tbody className={cn("divide-y divide-[var(--border)]", className)} {...props} />;
 }
 
-export function TableRow({ className, ...props }: HTMLAttributes<HTMLTableRowElement>) {
+export interface TableRowProps extends HTMLAttributes<HTMLTableRowElement> {
+  /** Makes the row focusable and clickable with keyboard */
+  isClickable?: boolean;
+}
+
+export function TableRow({ className, isClickable, onClick, onKeyDown, ...props }: TableRowProps) {
+  const handleKeyDown = (e: KeyboardEvent<HTMLTableRowElement>) => {
+    if (isClickable && (e.key === "Enter" || e.key === " ")) {
+      e.preventDefault();
+      onClick?.(e as unknown as React.MouseEvent<HTMLTableRowElement>);
+    }
+    onKeyDown?.(e);
+  };
+
   return (
     <tr
       className={cn(
         "text-left transition-colors hover:bg-[var(--muted)]/50",
+        isClickable && "cursor-pointer focus-visible:outline-none focus-visible:bg-[var(--primary)]/10 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--primary)]",
         className
       )}
+      tabIndex={isClickable ? 0 : undefined}
+      onClick={onClick}
+      onKeyDown={handleKeyDown}
       {...props}
     />
   );

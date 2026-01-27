@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { cn } from "@/lib/cn";
 
 export type SavedView = {
@@ -37,6 +38,8 @@ export function SavedViewSelector({
   const [open, setOpen] = React.useState(false);
   const [views, setViews] = React.useState<SavedView[]>([]);
   const [loading, setLoading] = React.useState(false);
+  const [viewToDelete, setViewToDelete] = React.useState<SavedView | null>(null);
+  const [deleting, setDeleting] = React.useState(false);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
@@ -77,21 +80,29 @@ export function SavedViewSelector({
     setOpen(false);
   }
 
-  async function handleDelete(e: React.MouseEvent, view: SavedView) {
+  function requestDelete(e: React.MouseEvent, view: SavedView) {
     e.stopPropagation();
-    if (!confirm(`Delete view "${view.name}"?`)) return;
+    setViewToDelete(view);
+  }
+
+  async function handleDelete() {
+    if (!viewToDelete) return;
+    setDeleting(true);
 
     try {
-      const res = await fetch(`/api/admin/saved-views/${view.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/admin/saved-views/${viewToDelete.id}`, { method: "DELETE" });
       const data = await res.json();
       if (data.ok) {
-        setViews((prev) => prev.filter((v) => v.id !== view.id));
-        if (currentView?.id === view.id) {
+        setViews((prev) => prev.filter((v) => v.id !== viewToDelete.id));
+        if (currentView?.id === viewToDelete.id) {
           onSelect(null);
         }
       }
     } catch (e) {
       console.error("Failed to delete view:", e);
+    } finally {
+      setDeleting(false);
+      setViewToDelete(null);
     }
   }
 
@@ -201,7 +212,7 @@ export function SavedViewSelector({
                 )}
                 <button
                   type="button"
-                  onClick={(e) => handleDelete(e, view)}
+                  onClick={(e) => requestDelete(e, view)}
                   className={cn(
                     "opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-[var(--destructive)] hover:text-[var(--destructive-foreground)] transition-all",
                     currentView?.id === view.id && "text-[var(--primary-foreground)]"
@@ -236,6 +247,17 @@ export function SavedViewSelector({
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={Boolean(viewToDelete)}
+        title="Delete saved view?"
+        message={viewToDelete ? `This will permanently delete the saved view "${viewToDelete.name}".` : ""}
+        confirmLabel="Delete view"
+        onCancel={() => setViewToDelete(null)}
+        onConfirm={handleDelete}
+        busy={deleting}
+      />
     </div>
   );
 }

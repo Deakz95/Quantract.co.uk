@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { AppShell } from "@/components/AppShell";
+import { Breadcrumbs, type BreadcrumbItem } from "@/components/ui/Breadcrumbs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -60,14 +61,16 @@ export default function SubdomainSettingsPage() {
   const isPro = plan === 'Pro' || plan === 'Enterprise';
   const portalUrl = subdomain ? `https://${subdomain}.quantract.co.uk` : '';
 
+  const breadcrumbItems: BreadcrumbItem[] = [
+    { label: "Dashboard", href: "/admin" },
+    { label: "Settings", href: "/admin/settings" },
+    { label: "Custom Domain" },
+  ];
+
   return (
     <AppShell role="admin" title="Custom Domain" subtitle="Configure your branded portal URL">
+      <Breadcrumbs items={breadcrumbItems} />
       <div className="space-y-6 max-w-2xl">
-        {/* Back Link */}
-        <Link href="/admin/settings" className="inline-flex items-center gap-2 text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)]">
-          <ArrowLeft className="w-4 h-4" />
-          Back to Settings
-        </Link>
 
         {loading ? (
           <div className="p-8 text-center text-[var(--muted-foreground)]">

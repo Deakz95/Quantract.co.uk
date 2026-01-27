@@ -9,6 +9,7 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 import { useToast } from "@/components/ui/useToast";
 import { apiRequest, getApiErrorMessage, requireOk } from "@/lib/apiClient";
+import { FileText } from "lucide-react";
 
 type QuoteRow = {
   id: string;
@@ -94,13 +95,16 @@ export default function QuotesListClient() {
           <ErrorState title="Failed to load" description={loadError} onRetry={load} />
         ) : filtered.length === 0 ? (
           <EmptyState
+            icon={FileText}
             title="No quotes yet"
-            description="Create your first quote to start building jobs and invoices."
-            action={
-              <Link href="/admin/quotes/new">
-                <Button type="button">Create quote</Button>
-              </Link>
-            }
+            description="Quotes let you provide detailed pricing to clients before work begins. Once accepted, quotes can be converted to jobs and invoices."
+            features={[
+              "Build itemised quotes with labour, materials, and descriptions",
+              "Send quotes to clients for digital signature acceptance",
+              "Convert accepted quotes directly into jobs and invoices"
+            ]}
+            primaryAction={{ label: "Create your first quote", href: "/admin/quotes/new" }}
+            secondaryAction={{ label: "Learn more", href: "/admin/help/quoting" }}
           />
         ) : (
           <div className="overflow-x-auto">

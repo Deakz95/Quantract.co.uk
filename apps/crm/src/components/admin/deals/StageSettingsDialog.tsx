@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/Dialog";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/useToast";
 import { apiRequest, getApiErrorMessage, requireOk } from "@/lib/apiClient";
 import { Plus, Trash2, GripVertical, ChevronUp, ChevronDown } from "lucide-react";
@@ -58,6 +59,9 @@ export default function StageSettingsDialog({ open, onOpenChange, onSuccess }: S
     isWon: false,
     isLost: false,
   });
+
+  // State for delete confirmation dialog
+  const [stageToDelete, setStageToDelete] = useState<DealStage | null>(null);
 
   // Load stages when dialog opens
   useEffect(() => {
@@ -188,31 +192,31 @@ export default function StageSettingsDialog({ open, onOpenChange, onSuccess }: S
     }
   }, [editingStage, editForm, toast]);
 
-  const handleDeleteStage = useCallback(async (stageId: string) => {
-    const stage = stages.find((s) => s.id === stageId);
-    if (!stage) return;
+  const requestDeleteStage = useCallback((stage: DealStage) => {
+    setStageToDelete(stage);
+  }, []);
 
-    if (!confirm(`Delete "${stage.name}"? Deals in this stage will need to be reassigned.`)) {
-      return;
-    }
+  const handleDeleteStage = useCallback(async () => {
+    if (!stageToDelete) return;
 
     setSaving(true);
     try {
       const res = await apiRequest<{ ok: boolean; error?: string }>(
-        `/api/admin/deals/stages/${stageId}`,
+        `/api/admin/deals/stages/${stageToDelete.id}`,
         { method: "DELETE" }
       );
 
       requireOk(res, "Failed to delete stage");
 
-      setStages((prev) => prev.filter((s) => s.id !== stageId));
+      setStages((prev) => prev.filter((s) => s.id !== stageToDelete.id));
       toast({ title: "Stage deleted", variant: "success" });
     } catch (error) {
       toast({ title: getApiErrorMessage(error, "Failed to delete stage"), variant: "destructive" });
     } finally {
       setSaving(false);
+      setStageToDelete(null);
     }
-  }, [stages, toast]);
+  }, [stageToDelete, toast]);
 
   const handleMoveStage = useCallback(async (stageId: string, direction: "up" | "down") => {
     const index = stages.findIndex((s) => s.id === stageId);
@@ -400,7 +404,7 @@ export default function StageSettingsDialog({ open, onOpenChange, onSuccess }: S
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => handleDeleteStage(stage.id)}
+                            onClick={() => requestDeleteStage(stage)}
                             disabled={saving}
                             className="text-red-600 hover:text-red-700 hover:bg-red-50"
                           >
@@ -512,6 +516,17 @@ export default function StageSettingsDialog({ open, onOpenChange, onSuccess }: S
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      {/* Delete Stage Confirmation Dialog */}
+      <ConfirmDialog
+        open={Boolean(stageToDelete)}
+        title="Delete stage?"
+        message={stageToDelete ? `This will permanently delete "${stageToDelete.name}". Deals in this stage will need to be reassigned.` : ""}
+        confirmLabel="Delete stage"
+        onCancel={() => setStageToDelete(null)}
+        onConfirm={handleDeleteStage}
+        busy={saving}
+      />
     </Dialog>
   );
 }

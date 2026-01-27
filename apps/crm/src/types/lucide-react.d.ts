@@ -80,4 +80,11 @@ declare module "lucide-react" {
   export const Zap: LucideIcon;
   export const Lock: LucideIcon;
   export const HelpCircle: LucideIcon;
+
+  // Icons for skeleton loading and DataTable
+  export const SquarePen: LucideIcon;
+  export const Copy: LucideIcon;
+  export const Ellipsis: LucideIcon;
+  export const UserCog: LucideIcon;
+  export const KeyRound: LucideIcon;
 }

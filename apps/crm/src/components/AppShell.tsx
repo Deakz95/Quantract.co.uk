@@ -33,6 +33,7 @@ import {
   User,
   HelpCircle,
   LogOut,
+  Search,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -44,6 +45,7 @@ import {
 } from "@/components/ui/DropdownMenu";
 
 import { ImpersonationBanner } from "@/components/ImpersonationBanner";
+import { CommandPalette } from "@/components/ui/CommandPalette";
 
 const BRAND_NAME = process.env.NEXT_PUBLIC_QT_BRAND_NAME || "Quantract";
 const BRAND_TAGLINE = process.env.NEXT_PUBLIC_QT_BRAND_TAGLINE || "Electrical & Building Services";
@@ -112,6 +114,7 @@ export function AppShell({
   const [toolsOpen, setToolsOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   // Fetch user email from auth endpoint
   useEffect(() => {
@@ -206,6 +209,21 @@ export function AppShell({
 
           {/* Right: Actions */}
           <div className="flex items-center gap-2">
+            {/* Global Search Button - Admin Only */}
+            {role === "admin" && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSearchOpen(true)}
+                className="gap-2"
+              >
+                <Search className="w-4 h-4" />
+                <span className="hidden sm:inline">Search</span>
+                <kbd className="hidden md:inline-flex px-1.5 py-0.5 text-[10px] font-mono rounded bg-[var(--muted)] text-[var(--muted-foreground)]">
+                  <span className="text-[9px]">Cmd</span>+K
+                </kbd>
+              </Button>
+            )}
             {role === "admin" && (
               <div className="relative">
                 <Button variant="ghost" size="sm" onClick={() => setToolsOpen(!toolsOpen)}>
@@ -392,6 +410,11 @@ export function AppShell({
             </DialogContent>
           </div>
         </div>
+      )}
+
+      {/* Global Search Command Palette - Admin Only */}
+      {role === "admin" && (
+        <CommandPalette open={searchOpen} onOpenChange={setSearchOpen} />
       )}
 
       {/* Mobile Navigation */}

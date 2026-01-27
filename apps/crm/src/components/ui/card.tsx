@@ -5,6 +5,8 @@ export type CardVariant = "default" | "glass" | "gradient" | "elevated" | "inter
 
 export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   variant?: CardVariant;
+  /** Makes the card focusable and adds keyboard support for clickable cards */
+  asButton?: boolean;
 }
 
 const variantStyles: Record<CardVariant, string> = {
@@ -12,17 +14,32 @@ const variantStyles: Record<CardVariant, string> = {
   glass: "glass",
   gradient: "bg-gradient-to-br from-[var(--card)] to-[var(--muted)] border border-[var(--border)] shadow-md",
   elevated: "bg-[var(--card)] border border-[var(--border)] shadow-xl",
-  interactive: "bg-[var(--card)] border border-[var(--border)] shadow-sm hover:shadow-lg hover:border-[var(--primary)]/30 hover:-translate-y-1 cursor-pointer",
+  interactive: "bg-[var(--card)] border border-[var(--border)] shadow-sm hover:shadow-lg hover:border-[var(--primary)]/30 hover:-translate-y-1 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2",
 };
 
-export function Card({ className, variant = "default", ...props }: CardProps) {
+export function Card({ className, variant = "default", asButton, onClick, onKeyDown, ...props }: CardProps) {
+  const isClickable = variant === "interactive" || onClick || asButton;
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (isClickable && (e.key === "Enter" || e.key === " ")) {
+      e.preventDefault();
+      onClick?.(e as unknown as React.MouseEvent<HTMLDivElement>);
+    }
+    onKeyDown?.(e);
+  };
+
   return (
     <div
       className={cn(
         "rounded-2xl transition-all duration-300",
         variantStyles[variant],
+        isClickable && "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2",
         className
       )}
+      tabIndex={isClickable ? 0 : undefined}
+      role={isClickable ? "button" : undefined}
+      onClick={onClick}
+      onKeyDown={handleKeyDown}
       {...props}
     />
   );

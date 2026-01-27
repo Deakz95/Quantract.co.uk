@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/Table";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { TimesheetActions } from "./timesheetActions";
 
 type TimesheetEntry = {
@@ -50,8 +51,15 @@ export default async function Page({ params }: Props) {
     );
   }
 
+  const breadcrumbItems = [
+    { label: "Dashboard", href: "/admin" },
+    { label: "Timesheets", href: "/admin/timesheets" },
+    { label: `Timesheet: ${sheet.engineerEmail || sheet.engineerId || id.slice(0, 8)}` },
+  ];
+
   return (
       <div className="space-y-4">
+      <Breadcrumbs items={breadcrumbItems} />
       <Card>
         <CardHeader>
           <CardTitle>Timesheet Review</CardTitle>

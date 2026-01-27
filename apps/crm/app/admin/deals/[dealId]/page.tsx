@@ -1,14 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
+import { Breadcrumbs, type BreadcrumbItem } from "@/components/ui/Breadcrumbs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 import { ErrorState } from "@/components/ui/ErrorState";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/useToast";
 import { apiRequest, getApiErrorMessage, requireOk } from "@/lib/apiClient";
 import { ArrowLeft, Calendar, DollarSign, User, Building, FileText, Percent } from "lucide-react";
@@ -70,8 +72,18 @@ export default function DealDetailPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
   const loadedRef = useRef(false);
+
+  const breadcrumbItems: BreadcrumbItem[] = useMemo(() => {
+    const dealLabel = deal?.title ? deal.title : `Deal #${dealId.slice(0, 8)}`;
+    return [
+      { label: "Dashboard", href: "/admin" },
+      { label: "Deals", href: "/admin/deals" },
+      { label: dealLabel },
+    ];
+  }, [dealId, deal?.title]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -101,9 +113,11 @@ export default function DealDetailPage() {
     load();
   }, [load]);
 
-  const handleDelete = useCallback(async () => {
-    if (!confirm("Are you sure you want to delete this deal?")) return;
+  const requestDelete = useCallback(() => {
+    setConfirmDeleteOpen(true);
+  }, []);
 
+  const handleDelete = useCallback(async () => {
     setDeleting(true);
     try {
       const res = await apiRequest<{ ok: boolean; error?: string }>(`/api/admin/deals/${dealId}`, {
@@ -117,6 +131,7 @@ export default function DealDetailPage() {
       toast({ title: getApiErrorMessage(error, "Failed to delete deal"), variant: "destructive" });
     } finally {
       setDeleting(false);
+      setConfirmDeleteOpen(false);
     }
   }, [dealId, toast, router]);
 
@@ -144,6 +159,7 @@ export default function DealDetailPage() {
   if (loading) {
     return (
       <AppShell role="admin" title="Deal Details" subtitle="Loading...">
+        <Breadcrumbs items={breadcrumbItems} />
         <LoadingSkeleton />
       </AppShell>
     );
@@ -152,6 +168,7 @@ export default function DealDetailPage() {
   if (loadError || !deal) {
     return (
       <AppShell role="admin" title="Deal Details" subtitle="Error loading deal">
+        <Breadcrumbs items={breadcrumbItems} />
         <ErrorState title="Unable to load deal" description={loadError || "Deal not found"} onRetry={load} />
       </AppShell>
     );
@@ -161,6 +178,7 @@ export default function DealDetailPage() {
 
   return (
     <AppShell role="admin" title={deal.title} subtitle="Deal details and management">
+      <Breadcrumbs items={breadcrumbItems} />
       <div className="space-y-6">
         {/* Header Card */}
         <Card>
@@ -195,7 +213,7 @@ export default function DealDetailPage() {
                 <Button variant="secondary" onClick={() => setEditOpen(true)}>
                   Edit
                 </Button>
-                <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
+                <Button variant="destructive" onClick={requestDelete} disabled={deleting}>
                   {deleting ? "Deleting..." : "Delete"}
                 </Button>
               </div>
@@ -385,6 +403,17 @@ export default function DealDetailPage() {
           setEditOpen(false);
           load();
         }}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={confirmDeleteOpen}
+        title="Delete deal?"
+        message={`This will permanently delete "${deal.title}". This action cannot be undone.`}
+        confirmLabel="Delete deal"
+        onCancel={() => setConfirmDeleteOpen(false)}
+        onConfirm={handleDelete}
+        busy={deleting}
       />
     </AppShell>
   );

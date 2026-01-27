@@ -3,6 +3,16 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/cn";
+import {
+  Users,
+  FileText,
+  Receipt,
+  Briefcase,
+  User,
+  Target,
+  Search,
+  Clock,
+} from "lucide-react";
 
 type SearchResult = {
   type: string;
@@ -37,17 +47,21 @@ function saveRecentSearch(query: string) {
 }
 
 const typeLabels: Record<string, string> = {
-  contact: "Contacts",
   client: "Clients",
-  deal: "Deals",
+  quote: "Quotes",
+  invoice: "Invoices",
   job: "Jobs",
+  contact: "Contacts",
+  deal: "Deals",
 };
 
-const typeIcons: Record<string, string> = {
-  contact: "U",
-  client: "C",
-  deal: "D",
-  job: "J",
+const typeIcons: Record<string, React.ComponentType<{ className?: string }>> = {
+  client: Users,
+  quote: FileText,
+  invoice: Receipt,
+  job: Briefcase,
+  contact: User,
+  deal: Target,
 };
 
 export function CommandPalette({
@@ -195,24 +209,12 @@ export function CommandPalette({
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-2xl overflow-hidden">
           {/* Search Input */}
           <div className="flex items-center gap-3 px-4 border-b border-[var(--border)]">
-            <svg
-              className="h-5 w-5 text-[var(--muted-foreground)]"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
+            <Search className="h-5 w-5 text-[var(--muted-foreground)]" />
             <input
               ref={inputRef}
               type="text"
               className="flex-1 bg-transparent py-4 text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] outline-none text-base"
-              placeholder="Search contacts, clients, deals, jobs..."
+              placeholder="Search clients, quotes, invoices, jobs..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -240,19 +242,7 @@ export function CommandPalette({
                       className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-[var(--muted)] transition-colors"
                       onClick={() => handleRecentSearch(search)}
                     >
-                      <svg
-                        className="h-4 w-4 text-[var(--muted-foreground)]"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                      </svg>
+                      <Clock className="h-4 w-4 text-[var(--muted-foreground)]" />
                       <span className="text-sm text-[var(--foreground)]">{search}</span>
                     </button>
                   ))}
@@ -276,6 +266,7 @@ export function CommandPalette({
                     {items.map((result) => {
                       const index = currentIndex++;
                       const isSelected = index === selectedIndex;
+                      const IconComponent = typeIcons[result.type] || User;
                       return (
                         <button
                           key={result.id}
@@ -288,13 +279,13 @@ export function CommandPalette({
                         >
                           <div
                             className={cn(
-                              "flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold",
+                              "flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center",
                               isSelected
                                 ? "bg-[var(--primary-foreground)]/20 text-[var(--primary-foreground)]"
                                 : "bg-[var(--muted)] text-[var(--muted-foreground)]"
                             )}
                           >
-                            {typeIcons[result.type] || result.type[0].toUpperCase()}
+                            <IconComponent className="h-4 w-4" />
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className={cn(

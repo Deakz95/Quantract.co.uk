@@ -1,10 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/Dialog";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/useToast";
 import { apiRequest, getApiErrorMessage, requireOk } from "@/lib/apiClient";
+import { FormField, FormInput, FormSelect, FormTextarea, LoadingSpinner } from "@/components/ui/FormField";
+import { useFormValidation, type ValidationSchema } from "@/hooks/useFormValidation";
 
 type DealStage = {
   id: string;
@@ -61,7 +63,20 @@ type DealFormProps = {
   onSuccess: () => void;
 };
 
-const emptyForm = {
+type DealFormValues = {
+  title: string;
+  value: string;
+  probability: string;
+  expectedCloseDate: string;
+  stageId: string;
+  contactId: string;
+  clientId: string;
+  ownerId: string;
+  notes: string;
+  source: string;
+};
+
+const emptyForm: DealFormValues = {
   title: "",
   value: "",
   probability: "",
@@ -74,11 +89,17 @@ const emptyForm = {
   source: "",
 };
 
+// Validation schema for deal form
+const validationSchema: ValidationSchema = {
+  title: { required: "Title is required" },
+  stageId: { required: "Stage is required" },
+};
+
 export default function DealForm({ open, onOpenChange, deal, stages, onSuccess }: DealFormProps) {
   const { toast } = useToast();
   const isEditing = Boolean(deal);
 
-  const [form, setForm] = useState(emptyForm);
+  const [form, setForm] = useState<DealFormValues>(emptyForm);
   const [saving, setSaving] = useState(false);
 
   const [clients, setClients] = useState<Client[]>([]);
@@ -86,9 +107,12 @@ export default function DealForm({ open, onOpenChange, deal, stages, onSuccess }
   const [users, setUsers] = useState<User[]>([]);
   const [loadingOptions, setLoadingOptions] = useState(false);
 
+  const { errors, touched, validateField, validateAll, setFieldTouched, clearErrors } = useFormValidation<DealFormValues>(validationSchema);
+
   // Reset form when deal changes or dialog opens
   useEffect(() => {
     if (open) {
+      clearErrors();
       if (deal) {
         setForm({
           title: deal.title || "",
@@ -111,7 +135,7 @@ export default function DealForm({ open, onOpenChange, deal, stages, onSuccess }
         });
       }
     }
-  }, [open, deal, stages]);
+  }, [open, deal, stages, clearErrors]);
 
   // Load dropdown options when dialog opens
   useEffect(() => {
@@ -153,18 +177,29 @@ export default function DealForm({ open, onOpenChange, deal, stages, onSuccess }
     loadOptions();
   }, [open]);
 
-  const handleChange = useCallback((field: string, value: string) => {
+  const handleChange = useCallback((field: keyof DealFormValues, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   }, []);
 
-  const handleSubmit = useCallback(async () => {
-    if (!form.title.trim()) {
-      toast({ title: "Title is required", variant: "destructive" });
-      return;
-    }
+  const handleBlur = useCallback(
+    (field: keyof DealFormValues) => {
+      setFieldTouched(field);
+      validateField(field, form[field]);
+    },
+    [form, setFieldTouched, validateField]
+  );
 
-    if (!form.stageId) {
-      toast({ title: "Stage is required", variant: "destructive" });
+  // Check if form is valid for submission
+  const canSubmit = useMemo(() => {
+    const title = form.title.trim();
+    const stageId = form.stageId;
+    return Boolean(title && stageId);
+  }, [form.title, form.stageId]);
+
+  const handleSubmit = useCallback(async () => {
+    const formIsValid = validateAll(form);
+    if (!formIsValid) {
+      toast({ title: "Please fix the errors before saving", variant: "destructive" });
       return;
     }
 
@@ -203,7 +238,7 @@ export default function DealForm({ open, onOpenChange, deal, stages, onSuccess }
     } finally {
       setSaving(false);
     }
-  }, [form, isEditing, deal, toast, onSuccess]);
+  }, [form, isEditing, deal, toast, onSuccess, validateAll]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -218,61 +253,69 @@ export default function DealForm({ open, onOpenChange, deal, stages, onSuccess }
         <DialogBody>
           <div className="space-y-4">
             {/* Title */}
-            <div>
-              <label className="block text-xs font-semibold text-[var(--muted-foreground)] mb-1.5">
-                Title <span className="text-red-500">*</span>
-              </label>
-              <input
+            <FormField
+              label="Title"
+              required
+              error={errors.title}
+              touched={touched.title}
+              htmlFor="deal-title"
+            >
+              <FormInput
+                id="deal-title"
                 type="text"
                 value={form.title}
                 onChange={(e) => handleChange("title", e.target.value)}
+                onBlur={() => handleBlur("title")}
                 placeholder="Deal title"
-                className="w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)]"
+                hasError={Boolean(errors.title && touched.title)}
+                className="w-full"
               />
-            </div>
+            </FormField>
 
             {/* Value & Probability */}
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-[var(--muted-foreground)] mb-1.5">
-                  Value
-                </label>
-                <input
+              <FormField label="Value" htmlFor="deal-value">
+                <FormInput
+                  id="deal-value"
                   type="number"
                   min="0"
                   step="0.01"
                   value={form.value}
                   onChange={(e) => handleChange("value", e.target.value)}
                   placeholder="0.00"
-                  className="w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)]"
+                  className="w-full"
                 />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-[var(--muted-foreground)] mb-1.5">
-                  Probability (%)
-                </label>
-                <input
+              </FormField>
+              <FormField label="Probability (%)" htmlFor="deal-probability">
+                <FormInput
+                  id="deal-probability"
                   type="number"
                   min="0"
                   max="100"
                   value={form.probability}
                   onChange={(e) => handleChange("probability", e.target.value)}
                   placeholder="50"
-                  className="w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)]"
+                  className="w-full"
                 />
-              </div>
+              </FormField>
             </div>
 
             {/* Stage & Expected Close Date */}
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-[var(--muted-foreground)] mb-1.5">
-                  Stage <span className="text-red-500">*</span>
-                </label>
-                <select
+              <FormField
+                label="Stage"
+                required
+                error={errors.stageId}
+                touched={touched.stageId}
+                htmlFor="deal-stage"
+              >
+                <FormSelect
+                  id="deal-stage"
                   value={form.stageId}
                   onChange={(e) => handleChange("stageId", e.target.value)}
-                  className="w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)]"
+                  onBlur={() => handleBlur("stageId")}
+                  hasError={Boolean(errors.stageId && touched.stageId)}
+                  className="w-full"
                 >
                   <option value="">Select stage</option>
                   {stages.map((stage) => (
@@ -280,31 +323,27 @@ export default function DealForm({ open, onOpenChange, deal, stages, onSuccess }
                       {stage.name}
                     </option>
                   ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-[var(--muted-foreground)] mb-1.5">
-                  Expected Close
-                </label>
-                <input
+                </FormSelect>
+              </FormField>
+              <FormField label="Expected Close" htmlFor="deal-expectedClose">
+                <FormInput
+                  id="deal-expectedClose"
                   type="date"
                   value={form.expectedCloseDate}
                   onChange={(e) => handleChange("expectedCloseDate", e.target.value)}
-                  className="w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)]"
+                  className="w-full"
                 />
-              </div>
+              </FormField>
             </div>
 
             {/* Client */}
-            <div>
-              <label className="block text-xs font-semibold text-[var(--muted-foreground)] mb-1.5">
-                Client
-              </label>
-              <select
+            <FormField label="Client" htmlFor="deal-client">
+              <FormSelect
+                id="deal-client"
                 value={form.clientId}
                 onChange={(e) => handleChange("clientId", e.target.value)}
                 disabled={loadingOptions}
-                className="w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)]"
+                className="w-full"
               >
                 <option value="">Select client (optional)</option>
                 {clients.map((client) => (
@@ -312,20 +351,18 @@ export default function DealForm({ open, onOpenChange, deal, stages, onSuccess }
                     {client.name}
                   </option>
                 ))}
-              </select>
-            </div>
+              </FormSelect>
+            </FormField>
 
             {/* Contact (if available) */}
             {contacts.length > 0 && (
-              <div>
-                <label className="block text-xs font-semibold text-[var(--muted-foreground)] mb-1.5">
-                  Contact
-                </label>
-                <select
+              <FormField label="Contact" htmlFor="deal-contact">
+                <FormSelect
+                  id="deal-contact"
                   value={form.contactId}
                   onChange={(e) => handleChange("contactId", e.target.value)}
                   disabled={loadingOptions}
-                  className="w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)]"
+                  className="w-full"
                 >
                   <option value="">Select contact (optional)</option>
                   {contacts.map((contact) => (
@@ -333,20 +370,18 @@ export default function DealForm({ open, onOpenChange, deal, stages, onSuccess }
                       {contact.firstName} {contact.lastName}
                     </option>
                   ))}
-                </select>
-              </div>
+                </FormSelect>
+              </FormField>
             )}
 
             {/* Owner */}
-            <div>
-              <label className="block text-xs font-semibold text-[var(--muted-foreground)] mb-1.5">
-                Owner
-              </label>
-              <select
+            <FormField label="Owner" htmlFor="deal-owner">
+              <FormSelect
+                id="deal-owner"
                 value={form.ownerId}
                 onChange={(e) => handleChange("ownerId", e.target.value)}
                 disabled={loadingOptions}
-                className="w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)]"
+                className="w-full"
               >
                 <option value="">Select owner (optional)</option>
                 {users.map((user) => (
@@ -354,36 +389,32 @@ export default function DealForm({ open, onOpenChange, deal, stages, onSuccess }
                     {user.name || user.email}
                   </option>
                 ))}
-              </select>
-            </div>
+              </FormSelect>
+            </FormField>
 
             {/* Source */}
-            <div>
-              <label className="block text-xs font-semibold text-[var(--muted-foreground)] mb-1.5">
-                Source
-              </label>
-              <input
+            <FormField label="Source" htmlFor="deal-source">
+              <FormInput
+                id="deal-source"
                 type="text"
                 value={form.source}
                 onChange={(e) => handleChange("source", e.target.value)}
                 placeholder="e.g., Website, Referral, Cold Call"
-                className="w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)]"
+                className="w-full"
               />
-            </div>
+            </FormField>
 
             {/* Notes */}
-            <div>
-              <label className="block text-xs font-semibold text-[var(--muted-foreground)] mb-1.5">
-                Notes
-              </label>
-              <textarea
+            <FormField label="Notes" htmlFor="deal-notes">
+              <FormTextarea
+                id="deal-notes"
                 value={form.notes}
                 onChange={(e) => handleChange("notes", e.target.value)}
                 placeholder="Additional notes..."
                 rows={3}
-                className="w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] resize-none"
+                className="w-full resize-none"
               />
-            </div>
+            </FormField>
           </div>
         </DialogBody>
 
@@ -391,8 +422,17 @@ export default function DealForm({ open, onOpenChange, deal, stages, onSuccess }
           <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={saving}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={saving}>
-            {saving ? "Saving..." : isEditing ? "Save Changes" : "Create Deal"}
+          <Button onClick={handleSubmit} disabled={saving || !canSubmit}>
+            {saving ? (
+              <>
+                <LoadingSpinner className="mr-2" />
+                Saving...
+              </>
+            ) : isEditing ? (
+              "Save Changes"
+            ) : (
+              "Create Deal"
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

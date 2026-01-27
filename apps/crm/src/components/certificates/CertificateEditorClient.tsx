@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/useToast";
-import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
+import { Breadcrumbs, type BreadcrumbItem } from "@/components/ui/Breadcrumbs";
 import { certificateIsReadyForCompletion, normalizeCertificateData, signatureIsPresent, type CertificateData, type CertificateType } from "@/lib/certificates";
 
 type CertificateStatus = "draft" | "completed" | "issued" | "void";
@@ -84,6 +84,16 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
   const readiness = useMemo(() => (data ? certificateIsReadyForCompletion(data) : { ok: false, missing: [] }), [data]);
   const canIssue = cert?.status === "completed" && mode === "admin";
   const canEdit = cert?.status !== "issued" && cert?.status !== "void";
+
+  const breadcrumbItems: BreadcrumbItem[] = useMemo(() => {
+    const basePath = mode === "admin" ? "/admin" : "/engineer";
+    const certLabel = cert?.type ? `${cert.type} Certificate` : `Certificate #${certificateId.slice(0, 8)}`;
+    return [
+      { label: "Dashboard", href: basePath },
+      { label: "Certificates", href: `${basePath}/certificates` },
+      { label: certLabel },
+    ];
+  }, [mode, certificateId, cert?.type]);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -264,7 +274,7 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
 
   return (
     <div className="space-y-4">
-      <Breadcrumbs />
+      <Breadcrumbs items={breadcrumbItems} />
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="min-w-0">
           <div className="text-sm font-semibold text-[var(--foreground)]">Certificate {certificateId}</div>

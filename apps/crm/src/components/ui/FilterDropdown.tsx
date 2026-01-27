@@ -48,7 +48,7 @@ export function FilterDropdown({
     setLocalFilters(filters);
   }, [filters]);
 
-  // Close dropdown when clicking outside
+  // Close dropdown when clicking outside or pressing Escape
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -56,9 +56,19 @@ export function FilterDropdown({
       }
     }
 
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setIsOpen(false);
+      }
+    }
+
     if (isOpen) {
       document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
+      document.addEventListener("keydown", handleKeyDown);
+      return () => {
+        document.removeEventListener("mousedown", handleClickOutside);
+        document.removeEventListener("keydown", handleKeyDown);
+      };
     }
   }, [isOpen]);
 
@@ -145,15 +155,18 @@ export function FilterDropdown({
         size="sm"
         onClick={() => setIsOpen(!isOpen)}
         className="gap-2"
+        aria-expanded={isOpen}
+        aria-haspopup="dialog"
+        aria-label={`Filter${activeFilterCount > 0 ? ` (${activeFilterCount} active)` : ""}`}
       >
-        <Filter className="w-4 h-4" />
+        <Filter className="w-4 h-4" aria-hidden="true" />
         Filter
         {activeFilterCount > 0 && (
           <Badge variant="default" className="ml-1 px-1.5 py-0.5 text-xs min-w-[20px] h-5">
             {activeFilterCount}
           </Badge>
         )}
-        <ChevronDown className={cn("w-4 h-4 transition-transform", isOpen && "rotate-180")} />
+        <ChevronDown className={cn("w-4 h-4 transition-transform", isOpen && "rotate-180")} aria-hidden="true" />
       </Button>
 
       {/* Dropdown Panel */}
@@ -196,20 +209,30 @@ export function FilterDropdown({
 
                 {/* Multi-Select with checkboxes */}
                 {config.type === "multiselect" && (
-                  <div className="space-y-2">
+                  <div className="space-y-2" role="group" aria-label={config.label}>
                     <div className="max-h-40 overflow-y-auto space-y-1 border border-[var(--border)] rounded-lg p-2 bg-[var(--background)]">
                       {config.options?.map((opt) => {
                         const isChecked = ((localFilters[config.key] as string[]) || []).includes(opt.value);
                         return (
                           <div
                             key={opt.value}
-                            className="flex items-center gap-2 py-1 px-1 rounded hover:bg-[var(--muted)] cursor-pointer"
+                            className="flex items-center gap-2 py-1 px-1 rounded hover:bg-[var(--muted)] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-inset"
                             onClick={() => handleMultiselectToggle(config.key, opt.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                handleMultiselectToggle(config.key, opt.value);
+                              }
+                            }}
+                            tabIndex={0}
+                            role="checkbox"
+                            aria-checked={isChecked}
                           >
                             <Checkbox
                               checked={isChecked}
                               onChange={() => {}}
                               className="pointer-events-none"
+                              aria-hidden="true"
                             />
                             <span className="text-sm text-[var(--foreground)]">{opt.label}</span>
                           </div>
@@ -244,12 +267,21 @@ export function FilterDropdown({
                             <div
                               key={opt.value}
                               className={cn(
-                                "flex items-center gap-2 py-1.5 px-2 rounded cursor-pointer text-sm transition-colors",
+                                "flex items-center gap-2 py-1.5 px-2 rounded cursor-pointer text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-inset",
                                 isSelected
                                   ? "bg-[var(--primary)] text-[var(--primary-foreground)]"
                                   : "hover:bg-[var(--muted)] text-[var(--foreground)]"
                               )}
                               onClick={() => handleFilterChange(config.key, isSelected ? "" : opt.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                  e.preventDefault();
+                                  handleFilterChange(config.key, isSelected ? "" : opt.value);
+                                }
+                              }}
+                              tabIndex={0}
+                              role="option"
+                              aria-selected={isSelected}
                             >
                               {opt.label}
                             </div>

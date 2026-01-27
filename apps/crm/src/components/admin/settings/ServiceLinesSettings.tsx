@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/badge";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Plus, Settings, Receipt, Check, X, Sparkles, Briefcase } from "lucide-react";
 import { cn } from "@/lib/cn";
 
@@ -30,6 +31,8 @@ export function ServiceLinesSettings() {
   const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showNew, setShowNew] = useState(false);
+  const [serviceLineToDelete, setServiceLineToDelete] = useState<ServiceLine | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -98,10 +101,15 @@ export function ServiceLinesSettings() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this service line?")) return;
+  const requestDelete = (serviceLine: ServiceLine) => {
+    setServiceLineToDelete(serviceLine);
+  };
+
+  const handleDelete = async () => {
+    if (!serviceLineToDelete) return;
+    setDeleting(true);
     try {
-      const res = await fetch(`/api/admin/service-lines/${id}`, {
+      const res = await fetch(`/api/admin/service-lines/${serviceLineToDelete.id}`, {
         method: "DELETE",
       });
       const data = await res.json();
@@ -112,6 +120,9 @@ export function ServiceLinesSettings() {
       }
     } catch {
       setError("Failed to delete service line");
+    } finally {
+      setDeleting(false);
+      setServiceLineToDelete(null);
     }
   };
 
@@ -173,7 +184,7 @@ export function ServiceLinesSettings() {
               <ServiceLineCard
                 serviceLine={serviceLine}
                 onEdit={() => setEditingId(serviceLine.id)}
-                onDelete={() => handleDelete(serviceLine.id)}
+                onDelete={() => requestDelete(serviceLine)}
                 onSetDefault={() => handleSetDefault(serviceLine.id)}
               />
             )}
@@ -194,6 +205,17 @@ export function ServiceLinesSettings() {
           </Button>
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={Boolean(serviceLineToDelete)}
+        title="Delete service line?"
+        message={serviceLineToDelete ? `This will permanently delete the service line "${serviceLineToDelete.name}".` : ""}
+        confirmLabel="Delete service line"
+        onCancel={() => setServiceLineToDelete(null)}
+        onConfirm={handleDelete}
+        busy={deleting}
+      />
     </div>
   );
 }

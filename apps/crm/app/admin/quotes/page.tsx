@@ -1,15 +1,21 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { AppShell } from "@/components/AppShell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FilterDropdown, type Filters, type FilterConfig } from "@/components/ui/FilterDropdown";
-import { FileText, Plus } from "lucide-react";
+import { DataTable, BulkActionBar, formatRelativeTime, type Column, type Action, type SortDirection } from "@/components/ui/DataTable";
+import { TableSkeletonInline } from "@/components/ui/TableSkeleton";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { useToast } from "@/components/ui/useToast";
+import { FileText, Plus, SquarePen, Copy, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 type Quote = {
+  id: string;
   quoteId: string;
   quoteNumber: string;
   clientName: string;
@@ -18,6 +24,7 @@ type Quote = {
   status: string;
   lastSentAt?: string;
   acceptedAt?: string;
+  updatedAt?: string;
 };
 
 const STATUS_OPTIONS = [
@@ -30,16 +37,49 @@ const STATUS_OPTIONS = [
 ];
 
 export default function QuotesPage() {
+  const router = useRouter();
+  const { toast } = useToast();
   const [items, setItems] = useState<Quote[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState<Filters>({});
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [sortKey, setSortKey] = useState<string>('updatedAt');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+
+  const loadQuotes = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/admin/quotes/summary');
+      const json = await response.json();
+
+      // Handle API errors
+      if (!response.ok || json.error) {
+        toast({ title: "Error", description: json.error || "Failed to load quotes", variant: "destructive" });
+        setItems([]);
+        return;
+      }
+
+      // Ensure we always have an array (defensive coding)
+      const data = Array.isArray(json.data) ? json.data : Array.isArray(json) ? json : [];
+      // Normalize items to have consistent id field
+      setItems(data.map((q: Quote & { quoteId?: string }) => ({
+        ...q,
+        id: q.id || q.quoteId,
+      })));
+    } catch {
+      toast({ title: "Error", description: "Failed to load quotes", variant: "destructive" });
+      setItems([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
 
   useEffect(() => {
-    fetch('/api/admin/quotes/summary')
-      .then(r => r.json())
-      .then(j => { setItems(j.data || []); setLoading(false); });
-  }, []);
+    loadQuotes();
+  }, [loadQuotes]);
 
   // Extract unique clients for filter options
   const clientOptions = useMemo(() => {
@@ -79,7 +119,7 @@ export default function QuotesPage() {
 
   // Apply filters and search
   const filteredItems = useMemo(() => {
-    return items.filter(quote => {
+    let result = items.filter(quote => {
       // Search filter
       if (searchTerm) {
         const search = searchTerm.toLowerCase();
@@ -120,7 +160,32 @@ export default function QuotesPage() {
 
       return true;
     });
-  }, [items, searchTerm, filters]);
+
+    // Apply sorting
+    if (sortKey) {
+      result = [...result].sort((a, b) => {
+        const aVal = (a as Record<string, unknown>)[sortKey];
+        const bVal = (b as Record<string, unknown>)[sortKey];
+
+        if (aVal == null && bVal == null) return 0;
+        if (aVal == null) return 1;
+        if (bVal == null) return -1;
+
+        let comparison = 0;
+        if (typeof aVal === 'string' && typeof bVal === 'string') {
+          comparison = aVal.localeCompare(bVal);
+        } else if (typeof aVal === 'number' && typeof bVal === 'number') {
+          comparison = aVal - bVal;
+        } else {
+          comparison = String(aVal).localeCompare(String(bVal));
+        }
+
+        return sortDirection === 'asc' ? comparison : -comparison;
+      });
+    }
+
+    return result;
+  }, [items, searchTerm, filters, sortKey, sortDirection]);
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, "success" | "warning" | "destructive" | "secondary"> = {
@@ -133,6 +198,139 @@ export default function QuotesPage() {
     };
     return <Badge variant={variants[status?.toLowerCase()] || "secondary"}>{status || 'Draft'}</Badge>;
   };
+
+  const handleSort = (key: string, direction: SortDirection) => {
+    setSortKey(key);
+    setSortDirection(direction);
+  };
+
+  const handleEdit = (quote: Quote) => {
+    router.push(`/admin/quotes/${quote.id || quote.quoteId}`);
+  };
+
+  const handleDuplicate = async (quote: Quote) => {
+    try {
+      const response = await fetch(`/api/admin/quotes/${quote.id || quote.quoteId}/duplicate`, {
+        method: 'POST',
+      });
+      if (response.ok) {
+        toast({ title: "Success", description: "Quote duplicated", variant: "success" });
+        loadQuotes();
+      } else {
+        throw new Error('Failed to duplicate');
+      }
+    } catch {
+      toast({ title: "Error", description: "Failed to duplicate quote", variant: "destructive" });
+    }
+  };
+
+  const handleDelete = async (quote: Quote) => {
+    try {
+      const response = await fetch(`/api/admin/quotes/${quote.id || quote.quoteId}`, {
+        method: 'DELETE',
+      });
+      if (response.ok) {
+        toast({ title: "Deleted", description: "Quote deleted", variant: "success" });
+        loadQuotes();
+        setSelectedIds(ids => ids.filter(id => id !== (quote.id || quote.quoteId)));
+      } else {
+        throw new Error('Failed to delete');
+      }
+    } catch {
+      toast({ title: "Error", description: "Failed to delete quote", variant: "destructive" });
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    setBulkDeleting(true);
+    try {
+      await Promise.all(
+        selectedIds.map(id =>
+          fetch(`/api/admin/quotes/${id}`, { method: 'DELETE' })
+        )
+      );
+      toast({ title: "Deleted", description: `${selectedIds.length} quotes deleted`, variant: "success" });
+      loadQuotes();
+      setSelectedIds([]);
+    } catch {
+      toast({ title: "Error", description: "Failed to delete some quotes", variant: "destructive" });
+    } finally {
+      setBulkDeleting(false);
+      setBulkDeleteOpen(false);
+    }
+  };
+
+  const columns: Column<Quote>[] = [
+    {
+      key: 'quoteNumber',
+      label: 'Quote',
+      sortable: true,
+      render: (quote) => (
+        <Link href={`/admin/quotes/${quote.id || quote.quoteId}`} className="text-[var(--primary)] font-medium hover:underline">
+          {quote.quoteNumber || `Q-${(quote.id || quote.quoteId)?.slice(0, 8)}`}
+        </Link>
+      ),
+    },
+    {
+      key: 'clientName',
+      label: 'Client',
+      sortable: true,
+      render: (quote) => <span className="text-[var(--foreground)]">{quote.clientName || '-'}</span>,
+    },
+    {
+      key: 'siteName',
+      label: 'Site',
+      sortable: true,
+      render: (quote) => <span className="text-[var(--muted-foreground)]">{quote.siteName || '-'}</span>,
+    },
+    {
+      key: 'total',
+      label: 'Total',
+      sortable: true,
+      className: 'text-right',
+      headerClassName: 'text-right',
+      render: (quote) => (
+        <span className="font-semibold text-[var(--foreground)]">
+          {'\u00A3'}{((quote.total || 0) / 100).toFixed(2)}
+        </span>
+      ),
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      sortable: true,
+      render: (quote) => getStatusBadge(quote.status),
+    },
+    {
+      key: 'updatedAt',
+      label: 'Last Updated',
+      sortable: true,
+      render: (quote) => (
+        <span className="text-[var(--muted-foreground)]">
+          {formatRelativeTime(quote.updatedAt || quote.acceptedAt || quote.lastSentAt)}
+        </span>
+      ),
+    },
+  ];
+
+  const actions: Action<Quote>[] = [
+    {
+      label: 'Edit',
+      onClick: handleEdit,
+      icon: <SquarePen className="w-4 h-4" />,
+    },
+    {
+      label: 'Duplicate',
+      onClick: handleDuplicate,
+      icon: <Copy className="w-4 h-4" />,
+    },
+    {
+      label: 'Delete',
+      onClick: handleDelete,
+      variant: 'danger',
+      icon: <Trash2 className="w-4 h-4" />,
+    },
+  ];
 
   return (
     <AppShell role="admin" title="Quotes" subtitle="Manage and track all your quotes">
@@ -161,69 +359,73 @@ export default function QuotesPage() {
           </Link>
         </div>
 
+        {/* Bulk Action Bar */}
+        <BulkActionBar
+          selectedCount={selectedIds.length}
+          onDelete={() => setBulkDeleteOpen(true)}
+          onClearSelection={() => setSelectedIds([])}
+          deleteLabel="Delete selected"
+        />
+
         {/* Quotes Table */}
         <Card>
           <CardContent className="p-0">
             {loading ? (
-              <div className="p-8 text-center text-[var(--muted-foreground)]">
-                <div className="w-8 h-8 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                Loading quotes...
+              <TableSkeletonInline columns={6} rows={5} />
+            ) : items.length === 0 ? (
+              <div className="p-12 text-center">
+                <FileText className="w-12 h-12 text-[var(--muted-foreground)] mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-[var(--foreground)] mb-2">
+                  No quotes yet
+                </h3>
+                <p className="text-[var(--muted-foreground)] mb-4">
+                  Create your first quote to get started
+                </p>
+                <Link href="/admin/quotes/new">
+                  <Button variant="gradient">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create Quote
+                  </Button>
+                </Link>
               </div>
             ) : filteredItems.length === 0 ? (
               <div className="p-12 text-center">
                 <FileText className="w-12 h-12 text-[var(--muted-foreground)] mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-[var(--foreground)] mb-2">
-                  {items.length === 0 ? 'No quotes yet' : 'No quotes match your filters'}
+                  No quotes match your filters
                 </h3>
                 <p className="text-[var(--muted-foreground)] mb-4">
-                  {items.length === 0
-                    ? 'Create your first quote to get started'
-                    : 'Try adjusting your search or filter criteria'}
+                  Try adjusting your search or filter criteria
                 </p>
-                {items.length === 0 && (
-                  <Link href="/admin/quotes/new">
-                    <Button variant="gradient">
-                      <Plus className="w-4 h-4 mr-2" />
-                      Create Quote
-                    </Button>
-                  </Link>
-                )}
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-[var(--border)]">
-                      <th className="text-left p-4 text-sm font-semibold text-[var(--foreground)]">Quote</th>
-                      <th className="text-left p-4 text-sm font-semibold text-[var(--foreground)]">Client</th>
-                      <th className="text-left p-4 text-sm font-semibold text-[var(--foreground)]">Site</th>
-                      <th className="text-right p-4 text-sm font-semibold text-[var(--foreground)]">Total</th>
-                      <th className="text-left p-4 text-sm font-semibold text-[var(--foreground)]">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredItems.map((q, index) => (
-                      <tr key={q.quoteId} className={`border-b border-[var(--border)] hover:bg-[var(--muted)] transition-colors cursor-pointer ${
-                        index % 2 === 0 ? 'bg-[var(--card)]' : 'bg-[var(--muted)]/50'
-                      }`}>
-                        <td className="p-4">
-                          <Link href={`/admin/quotes/${q.quoteId}`} className="text-[var(--primary)] font-medium hover:underline">
-                            {q.quoteNumber || `Q-${q.quoteId?.slice(0, 8)}`}
-                          </Link>
-                        </td>
-                        <td className="p-4 text-[var(--foreground)]">{q.clientName || '—'}</td>
-                        <td className="p-4 text-[var(--muted-foreground)]">{q.siteName || '—'}</td>
-                        <td className="p-4 text-right font-semibold text-[var(--foreground)]">£{((q.total || 0) / 100).toFixed(2)}</td>
-                        <td className="p-4">{getStatusBadge(q.status)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <DataTable
+                columns={columns}
+                data={filteredItems}
+                sortKey={sortKey}
+                sortDirection={sortDirection}
+                onSort={handleSort}
+                selectedIds={selectedIds}
+                onSelectionChange={setSelectedIds}
+                actions={actions}
+                getRowId={(row) => row.id || row.quoteId}
+                onRowClick={(row) => router.push(`/admin/quotes/${row.id || row.quoteId}`)}
+              />
             )}
           </CardContent>
         </Card>
       </div>
+
+      {/* Bulk Delete Confirmation */}
+      <ConfirmDialog
+        open={bulkDeleteOpen}
+        title={`Delete ${selectedIds.length} quote${selectedIds.length === 1 ? '' : 's'}?`}
+        description="This action cannot be undone. All selected quotes will be permanently deleted."
+        confirmLabel="Delete"
+        onCancel={() => setBulkDeleteOpen(false)}
+        onConfirm={handleBulkDelete}
+        busy={bulkDeleting}
+      />
     </AppShell>
   );
 }

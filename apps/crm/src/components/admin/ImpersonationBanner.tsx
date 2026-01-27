@@ -115,10 +115,11 @@ export function ImpersonationBanner() {
             
             <button
               onClick={handleStop}
-              className="flex items-center gap-2 px-5 py-3 bg-white/20 hover:bg-white/30 rounded-lg transition-all duration-200 font-semibold border-2 border-white/40 hover:border-white/60"
+              className="flex items-center gap-2 px-5 py-3 bg-white/20 hover:bg-white/30 rounded-lg transition-all duration-200 font-semibold border-2 border-white/40 hover:border-white/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-orange-500"
               title="Exit Impersonation (ESC)"
+              aria-label="Exit Impersonation mode (Press Escape)"
             >
-              <X className="h-5 w-5" />
+              <X className="h-5 w-5" aria-hidden="true" />
               <span className="hidden sm:inline">Exit Impersonation</span>
             </button>
           </div>

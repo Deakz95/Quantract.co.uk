@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { AppShell } from "@/components/AppShell";
+import { Breadcrumbs, type BreadcrumbItem } from "@/components/ui/Breadcrumbs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,8 +20,14 @@ export default function SettingsPage() {
       .catch(() => setLoading(false));
   }, []);
 
+  const breadcrumbItems: BreadcrumbItem[] = [
+    { label: "Dashboard", href: "/admin" },
+    { label: "Settings" },
+  ];
+
   return (
     <AppShell role="admin" title="Settings" subtitle="Manage your business settings and preferences">
+      <Breadcrumbs items={breadcrumbItems} />
       {loading ? (
         <div className="p-8 text-center text-[var(--muted-foreground)]">
           <div className="w-8 h-8 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin mx-auto mb-4" />

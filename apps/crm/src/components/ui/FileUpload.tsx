@@ -156,23 +156,35 @@ export function FileUpload({
               size="icon"
               onClick={handleClear}
               className="shrink-0"
+              aria-label="Remove selected file"
             >
-              <X className="h-4 w-4" />
+              <X className="h-4 w-4" aria-hidden="true" />
             </Button>
           </div>
         </div>
       ) : (
         <div
           onClick={handleClick}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              handleClick();
+            }
+          }}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
+          tabIndex={disabled ? -1 : 0}
+          role="button"
+          aria-label="Upload file"
+          aria-disabled={disabled}
           className={cn(
             "relative rounded-xl border-2 border-dashed transition-all duration-200 cursor-pointer",
             isDragOver
               ? "border-[var(--primary)] bg-[var(--primary)]/5"
               : "border-[var(--border)] hover:border-[var(--primary)]/50 hover:bg-[var(--muted)]/50",
-            disabled && "opacity-50 cursor-not-allowed"
+            disabled && "opacity-50 cursor-not-allowed",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2"
           )}
         >
           <div className="flex flex-col items-center justify-center p-8 text-center">

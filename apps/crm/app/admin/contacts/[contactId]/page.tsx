@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { getAuthContext } from "@/lib/serverAuth";
 import { getPrisma } from "@/lib/server/prisma";
 import { Mail, Phone, Smartphone, Briefcase, Building2, MessageSquare, Calendar, Clock } from "lucide-react";
@@ -121,8 +122,15 @@ export default async function ContactDetailPage({ params }: Props) {
 
   const displayName = `${contact.firstName} ${contact.lastName}`.trim();
 
+  const breadcrumbItems = [
+    { label: "Dashboard", href: "/admin" },
+    { label: "Contacts", href: "/admin/contacts" },
+    { label: displayName },
+  ];
+
   return (
     <div className="space-y-6">
+      <Breadcrumbs items={breadcrumbItems} />
       {/* Header Card */}
       <Card>
         <CardHeader>

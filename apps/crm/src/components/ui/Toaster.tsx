@@ -1,15 +1,28 @@
 "use client";
 
 import { Toast } from "@/components/ui/Toast";
-import { ToastProviderInternal, useToast } from "@/components/ui/useToast";
+import { ToastProvider, useToast } from "@/components/ui/ToastContext";
 
-function ToasterInner() {
+function ToasterContent() {
   const { toasts, dismiss } = useToast();
 
   return (
-    <div className="fixed right-4 top-4 z-50 flex w-[360px] max-w-[calc(100vw-2rem)] flex-col gap-2">
-      {toasts.map((t) => (
-        <Toast key={t.id} variant={t.variant} open={t.open} onClose={() => dismiss(t.id)} title={t.title} description={t.description} />
+    <div
+      className="fixed bottom-4 right-4 z-50 flex w-[360px] max-w-[calc(100vw-2rem)] flex-col-reverse gap-2 pointer-events-none"
+      aria-label="Notifications"
+    >
+      {toasts.map((toast) => (
+        <Toast
+          key={toast.id}
+          id={toast.id}
+          type={toast.type}
+          message={toast.message}
+          title={toast.title}
+          description={toast.description}
+          action={toast.action}
+          open={toast.open}
+          onDismiss={dismiss}
+        />
       ))}
     </div>
   );
@@ -17,8 +30,8 @@ function ToasterInner() {
 
 export function Toaster() {
   return (
-    <ToastProviderInternal>
-      <ToasterInner />
-    </ToastProviderInternal>
+    <ToastProvider>
+      <ToasterContent />
+    </ToastProvider>
   );
 }

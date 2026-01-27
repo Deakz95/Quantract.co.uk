@@ -10,13 +10,13 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 }
 
 const variantStyles: Record<ButtonVariant, string> = {
-  default: "bg-gradient-to-r from-[var(--primary)] to-[var(--primary-dark)] text-[var(--primary-foreground)] shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]",
-  secondary: "bg-[var(--secondary)] text-[var(--secondary-foreground)] border border-[var(--border)] hover:bg-[var(--muted)] hover:border-[var(--primary)] shadow-sm",
-  destructive: "bg-gradient-to-r from-[var(--error)] to-[var(--error-light)] text-[var(--error-foreground)] shadow-md hover:shadow-lg hover:scale-[1.02]",
-  ghost: "bg-transparent text-[var(--foreground)] hover:bg-[var(--muted)]",
-  outline: "bg-transparent text-[var(--primary)] border-2 border-[var(--primary)] hover:bg-[var(--primary)] hover:text-[var(--primary-foreground)]",
-  gradient: "bg-gradient-to-r from-[var(--primary)] via-[var(--accent)] to-[var(--primary-dark)] text-[var(--primary-foreground)] shadow-lg hover:shadow-xl hover:scale-[1.02] bg-[length:200%_auto] hover:bg-right-top transition-all duration-500",
-  glass: "glass text-[var(--foreground)] hover:bg-[var(--muted)]/40 shadow-lg",
+  default: "bg-gradient-to-r from-[var(--primary)] to-[var(--primary-dark)] text-[var(--primary-foreground)] shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] focus-visible:ring-[var(--primary)]",
+  secondary: "bg-[var(--secondary)] text-[var(--secondary-foreground)] border border-[var(--border)] hover:bg-[var(--muted)] hover:border-[var(--primary)] shadow-sm focus-visible:ring-[var(--primary)]",
+  destructive: "bg-gradient-to-r from-[var(--error)] to-[var(--error-light)] text-[var(--error-foreground)] shadow-md hover:shadow-lg hover:scale-[1.02] focus-visible:ring-[var(--error)]",
+  ghost: "bg-transparent text-[var(--foreground)] hover:bg-[var(--muted)] focus-visible:ring-[var(--primary)]",
+  outline: "bg-transparent text-[var(--primary)] border-2 border-[var(--primary)] hover:bg-[var(--primary)] hover:text-[var(--primary-foreground)] focus-visible:ring-[var(--primary)]",
+  gradient: "bg-gradient-to-r from-[var(--primary)] via-[var(--accent)] to-[var(--primary-dark)] text-[var(--primary-foreground)] shadow-lg hover:shadow-xl hover:scale-[1.02] bg-[length:200%_auto] hover:bg-right-top transition-all duration-500 focus-visible:ring-[var(--primary)]",
+  glass: "glass text-[var(--foreground)] hover:bg-[var(--muted)]/40 shadow-lg focus-visible:ring-[var(--primary)]",
 };
 
 const sizeStyles: Record<ButtonSize, string> = {

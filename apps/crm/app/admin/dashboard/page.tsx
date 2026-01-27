@@ -5,11 +5,31 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { OnboardingChecklist } from "@/components/admin/OnboardingChecklist";
-import { FileText, Receipt, Briefcase, TrendingUp, Clock, ArrowUpRight, Zap, Settings, Menu, X, Plus, Users } from "lucide-react";
+import {
+  FileText,
+  Receipt,
+  Briefcase,
+  TrendingUp,
+  TrendingDown,
+  Clock,
+  ArrowUpRight,
+  Zap,
+  Settings,
+  Menu,
+  X,
+  Plus,
+  Users,
+  RefreshCw,
+  CheckCircle,
+  Send,
+  DollarSign,
+  Calendar,
+  Award
+} from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useCallback } from "react";
 
-type WidgetType = 'stats' | 'quickActions' | 'recentActivity' | 'teamOverview' | 'performance' | 'calendar' | 'invoiceChart' | 'jobsMap';
+type WidgetType = 'stats' | 'quickActions' | 'recentActivity' | 'teamOverview' | 'performance' | 'calendar' | 'invoiceChart' | 'jobsMap' | 'revenue';
 
 type Widget = {
   id: string;
@@ -60,9 +80,38 @@ type ScheduleEntry = {
   notes?: string;
 };
 
+type ActivityItem = {
+  id: string;
+  type: "quote_sent" | "quote_accepted" | "invoice_sent" | "invoice_paid" | "job_completed" | "job_scheduled" | "certificate_issued" | "general";
+  description: string;
+  entityId: string;
+  entityType: string;
+  timestamp: string;
+  link: string;
+};
+
+type RevenueData = {
+  thisMonth: {
+    total: number;
+    monthName: string;
+  };
+  lastMonth: {
+    total: number;
+    monthName: string;
+  };
+  percentChange: number;
+  dailyRevenue: Array<{
+    date: string;
+    amount: number;
+    percentage: number;
+  }>;
+  maxDailyRevenue: number;
+};
+
 const DEFAULT_WIDGETS: Widget[] = [
   { id: 'stats', type: 'stats', title: 'Stats Overview', description: 'Key business metrics', size: 'full' },
   { id: 'quickActions', type: 'quickActions', title: 'Quick Actions', description: 'Frequently used actions', size: 'full' },
+  { id: 'revenue', type: 'revenue', title: 'Revenue This Month', description: 'Monthly revenue with comparison', size: 'medium' },
   { id: 'recentActivity', type: 'recentActivity', title: 'Recent Activity', description: 'Latest business activity', size: 'medium' },
   { id: 'teamOverview', type: 'teamOverview', title: 'Team Overview', description: 'Team member status', size: 'medium' },
   { id: 'performance', type: 'performance', title: 'Performance Banner', description: 'Business performance summary', size: 'full' },
@@ -90,18 +139,86 @@ function formatCurrency(value: number): string {
   return `£${value.toFixed(0)}`;
 }
 
+// Helper to format currency with full precision for large numbers
+function formatCurrencyFull(value: number): string {
+  return new Intl.NumberFormat('en-GB', {
+    style: 'currency',
+    currency: 'GBP',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
+// Helper to format relative time
+function formatRelativeTime(timestamp: string): string {
+  const now = new Date();
+  const date = new Date(timestamp);
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins} min${diffMins !== 1 ? 's' : ''} ago`;
+  if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+  if (diffDays < 7) return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+}
+
 // Helper to get job count by status
 function getJobCountByStatus(jobs: Array<{ status: string; _count: number }>, statuses: string[]): number {
   return jobs.filter(j => statuses.includes(j.status)).reduce((sum, j) => sum + j._count, 0);
 }
 
-// Helper to get quote count by status
-function getQuoteCountByStatus(quotes: Array<{ status: string; _count: number }>, statuses: string[]): number {
-  return quotes.filter(q => statuses.includes(q.status)).reduce((sum, q) => sum + q._count, 0);
+// Helper to get activity icon
+function getActivityIcon(type: ActivityItem['type']) {
+  switch (type) {
+    case 'quote_sent': return Send;
+    case 'quote_accepted': return CheckCircle;
+    case 'invoice_sent': return Receipt;
+    case 'invoice_paid': return DollarSign;
+    case 'job_completed': return CheckCircle;
+    case 'job_scheduled': return Calendar;
+    case 'certificate_issued': return Award;
+    default: return Briefcase;
+  }
+}
+
+// Helper to get activity color
+function getActivityColor(type: ActivityItem['type']): string {
+  switch (type) {
+    case 'quote_sent': return 'text-blue-500';
+    case 'quote_accepted': return 'text-green-500';
+    case 'invoice_sent': return 'text-amber-500';
+    case 'invoice_paid': return 'text-green-500';
+    case 'job_completed': return 'text-green-500';
+    case 'job_scheduled': return 'text-purple-500';
+    case 'certificate_issued': return 'text-teal-500';
+    default: return 'text-gray-500';
+  }
+}
+
+// Refresh button component
+function RefreshButton({ onClick, isRefreshing }: { onClick: (e?: React.MouseEvent) => void; isRefreshing: boolean }) {
+  return (
+    <button
+      onClick={(e) => { e.stopPropagation(); e.preventDefault(); onClick(e); }}
+      disabled={isRefreshing}
+      className="p-1.5 rounded-lg hover:bg-[var(--muted)] transition-colors disabled:opacity-50"
+      title="Refresh"
+    >
+      <RefreshCw className={`w-4 h-4 text-[var(--muted-foreground)] ${isRefreshing ? 'animate-spin' : ''}`} />
+    </button>
+  );
 }
 
 // Widget Components
-function StatsWidget({ data, loading }: { data: DashboardData | null; loading: boolean }) {
+function StatsWidget({ data, loading, onRefresh, isRefreshing }: {
+  data: DashboardData | null;
+  loading: boolean;
+  onRefresh: () => void;
+  isRefreshing: boolean;
+}) {
   const stats = data ? [
     {
       label: "Open Quotes",
@@ -239,15 +356,17 @@ function QuickActionsWidget() {
   );
 }
 
-function RecentActivityWidget({ jobs, loading }: { jobs: Job[]; loading: boolean }) {
-  // Build activity from recent jobs
-  const recentActivity = jobs.slice(0, 5).map((job) => ({
-    type: 'job',
-    title: job.title || `Job ${job.id.slice(0, 8)}`,
-    status: job.status === 'completed' ? 'success' : job.status === 'cancelled' ? 'error' : 'pending',
-    statusLabel: job.status?.replace('_', ' ') || 'unknown',
-  }));
-
+function RecentActivityWidget({
+  activities,
+  loading,
+  onRefresh,
+  isRefreshing
+}: {
+  activities: ActivityItem[];
+  loading: boolean;
+  onRefresh: () => void;
+  isRefreshing: boolean;
+}) {
   if (loading) {
     return (
       <Card className="h-full">
@@ -259,11 +378,11 @@ function RecentActivityWidget({ jobs, loading }: { jobs: Job[]; loading: boolean
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {[1, 2, 3, 4].map((i) => (
+            {[1, 2, 3, 4, 5].map((i) => (
               <div key={i} className="flex items-center gap-4 p-3 rounded-xl">
-                <div className="w-2 h-2 rounded-full bg-[var(--muted)] animate-pulse" />
+                <div className="w-8 h-8 rounded-full bg-[var(--muted)] animate-pulse" />
                 <div className="flex-1 space-y-2">
-                  <div className="h-4 w-32 bg-[var(--muted)] rounded animate-pulse" />
+                  <div className="h-4 w-48 bg-[var(--muted)] rounded animate-pulse" />
                   <div className="h-3 w-20 bg-[var(--muted)] rounded animate-pulse" />
                 </div>
               </div>
@@ -278,31 +397,49 @@ function RecentActivityWidget({ jobs, loading }: { jobs: Job[]; loading: boolean
     <Card className="h-full">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle>Recent Activity</CardTitle>
-          <Badge variant="secondary">Last 7 days</Badge>
+          <Link href="/admin/reports" className="hover:text-[var(--primary)] transition-colors">
+            <CardTitle className="flex items-center gap-2 cursor-pointer">
+              Recent Activity
+              <ArrowUpRight className="w-4 h-4 opacity-0 group-hover:opacity-100" />
+            </CardTitle>
+          </Link>
+          <div className="flex items-center gap-2">
+            <RefreshButton onClick={onRefresh} isRefreshing={isRefreshing} />
+            <Badge variant="secondary">Last 10</Badge>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
-        {recentActivity.length === 0 ? (
+        {activities.length === 0 ? (
           <div className="text-center py-8 text-[var(--muted-foreground)]">
             <Briefcase className="w-8 h-8 mx-auto mb-2 opacity-50" />
             <p className="text-sm">No recent activity</p>
-            <p className="text-xs mt-1">Create your first job to see activity here</p>
+            <p className="text-xs mt-1">Create your first quote or job to see activity here</p>
           </div>
         ) : (
-          <div className="space-y-4">
-            {recentActivity.map((item, i) => (
-              <div key={i} className="flex items-center gap-4 p-3 rounded-xl hover:bg-[var(--muted)] transition-colors">
-                <div className={`w-2 h-2 rounded-full ${item.status === 'success' ? 'bg-[var(--success)]' : item.status === 'error' ? 'bg-[var(--error)]' : 'bg-[var(--warning)]'}`} />
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-[var(--foreground)] truncate">{item.title}</div>
-                  <div className="text-xs text-[var(--muted-foreground)] capitalize">{item.statusLabel}</div>
-                </div>
-                <Badge variant={item.status === 'success' ? 'success' : item.status === 'error' ? 'destructive' : 'warning'} className="text-xs capitalize">
-                  {item.statusLabel}
-                </Badge>
-              </div>
-            ))}
+          <div className="space-y-3">
+            {activities.map((activity) => {
+              const IconComponent = getActivityIcon(activity.type);
+              const colorClass = getActivityColor(activity.type);
+              return (
+                <Link key={activity.id} href={activity.link}>
+                  <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-[var(--muted)] transition-colors cursor-pointer group">
+                    <div className={`w-8 h-8 rounded-full bg-[var(--muted)] flex items-center justify-center ${colorClass}`}>
+                      <IconComponent className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-[var(--foreground)] truncate group-hover:text-[var(--primary)]">
+                        {activity.description}
+                      </div>
+                      <div className="text-xs text-[var(--muted-foreground)]">
+                        {formatRelativeTime(activity.timestamp)}
+                      </div>
+                    </div>
+                    <ArrowUpRight className="w-4 h-4 text-[var(--muted-foreground)] opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         )}
       </CardContent>
@@ -310,7 +447,130 @@ function RecentActivityWidget({ jobs, loading }: { jobs: Job[]; loading: boolean
   );
 }
 
-function TeamOverviewWidget({ engineers, loading }: { engineers: Engineer[]; loading: boolean }) {
+function RevenueWidget({
+  data,
+  loading,
+  onRefresh,
+  isRefreshing
+}: {
+  data: RevenueData | null;
+  loading: boolean;
+  onRefresh: () => void;
+  isRefreshing: boolean;
+}) {
+  if (loading) {
+    return (
+      <Card className="h-full">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Revenue This Month</CardTitle>
+            <Badge variant="secondary">Loading...</Badge>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="h-10 w-32 bg-[var(--muted)] rounded animate-pulse" />
+            <div className="h-4 w-40 bg-[var(--muted)] rounded animate-pulse" />
+            <div className="h-24 w-full bg-[var(--muted)] rounded animate-pulse" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const isPositive = (data?.percentChange || 0) >= 0;
+  const showChart = data && data.dailyRevenue.length > 0;
+
+  // Get last 14 days for the mini chart
+  const chartDays = data?.dailyRevenue.slice(-14) || [];
+
+  return (
+    <Link href="/admin/reports/revenue">
+      <Card className="h-full group cursor-pointer hover:border-[var(--primary)]/30 transition-colors">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              Revenue This Month
+              <ArrowUpRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              <RefreshButton onClick={() => onRefresh()} isRefreshing={isRefreshing} />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {/* Total Revenue */}
+            <div>
+              <div className="text-3xl font-bold text-[var(--foreground)]">
+                {data ? formatCurrencyFull(data.thisMonth.total) : '£0'}
+              </div>
+              <div className="text-sm text-[var(--muted-foreground)] mt-1">
+                {data?.thisMonth.monthName || 'This Month'}
+              </div>
+            </div>
+
+            {/* Comparison */}
+            <div className="flex items-center gap-2">
+              {isPositive ? (
+                <div className="flex items-center text-green-500">
+                  <TrendingUp className="w-4 h-4 mr-1" />
+                  <span className="text-sm font-medium">+{data?.percentChange || 0}%</span>
+                </div>
+              ) : (
+                <div className="flex items-center text-red-500">
+                  <TrendingDown className="w-4 h-4 mr-1" />
+                  <span className="text-sm font-medium">{data?.percentChange || 0}%</span>
+                </div>
+              )}
+              <span className="text-sm text-[var(--muted-foreground)]">
+                vs {data?.lastMonth.monthName || 'last month'}
+              </span>
+            </div>
+
+            {/* Mini Bar Chart */}
+            {showChart && (
+              <div className="pt-4 border-t border-[var(--border)]">
+                <div className="flex items-end gap-1 h-16">
+                  {chartDays.map((day, i) => (
+                    <div
+                      key={day.date}
+                      className="flex-1 bg-[var(--primary)] rounded-t opacity-60 hover:opacity-100 transition-opacity"
+                      style={{
+                        height: `${Math.max(day.percentage, 4)}%`,
+                        minHeight: day.amount > 0 ? '4px' : '2px'
+                      }}
+                      title={`${new Date(day.date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric' })}: ${formatCurrencyFull(day.amount)}`}
+                    />
+                  ))}
+                </div>
+                <div className="flex justify-between mt-2 text-xs text-[var(--muted-foreground)]">
+                  <span>{chartDays[0] ? new Date(chartDays[0].date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : ''}</span>
+                  <span>Last 14 days</span>
+                  <span>{chartDays[chartDays.length - 1] ? new Date(chartDays[chartDays.length - 1].date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : ''}</span>
+                </div>
+              </div>
+            )}
+
+            {!showChart && (
+              <div className="pt-4 border-t border-[var(--border)] text-center py-4 text-[var(--muted-foreground)]">
+                <DollarSign className="w-6 h-6 mx-auto mb-1 opacity-50" />
+                <p className="text-xs">No revenue data yet</p>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
+  );
+}
+
+function TeamOverviewWidget({ engineers, loading, onRefresh, isRefreshing }: {
+  engineers: Engineer[];
+  loading: boolean;
+  onRefresh: () => void;
+  isRefreshing: boolean;
+}) {
   if (loading) {
     return (
       <Card className="h-full">
@@ -342,11 +602,14 @@ function TeamOverviewWidget({ engineers, loading }: { engineers: Engineer[]; loa
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle>Team Overview</CardTitle>
-          <Link href="/admin/engineers">
-            <Badge variant="outline" className="cursor-pointer hover:bg-[var(--muted)]">
-              View All <ArrowUpRight className="w-3 h-3 ml-1" />
-            </Badge>
-          </Link>
+          <div className="flex items-center gap-2">
+            <RefreshButton onClick={onRefresh} isRefreshing={isRefreshing} />
+            <Link href="/admin/engineers">
+              <Badge variant="outline" className="cursor-pointer hover:bg-[var(--muted)]">
+                View All <ArrowUpRight className="w-3 h-3 ml-1" />
+              </Badge>
+            </Link>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -394,38 +657,44 @@ function PerformanceWidget({ data }: { data: DashboardData | null }) {
   );
 
   return (
-    <Card className="bg-gradient-to-r from-[var(--primary)] to-[var(--primary-dark)] text-white border-0">
-      <CardContent className="p-6">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div>
-            {hasActivity ? (
-              <>
-                <h3 className="text-lg font-bold">Keep the momentum going!</h3>
-                <p className="text-white/80 text-sm mt-1">
-                  {data.quotes.pendingCount > 0 && `${data.quotes.pendingCount} quote${data.quotes.pendingCount !== 1 ? 's' : ''} pending. `}
-                  {data.invoices.unpaidTotal > 0 && `${formatCurrency(data.invoices.unpaidTotal)} outstanding. `}
-                  Check your reports for insights.
-                </p>
-              </>
-            ) : (
-              <>
-                <h3 className="text-lg font-bold">Welcome to Quantract!</h3>
-                <p className="text-white/80 text-sm mt-1">Get started by creating your first quote or adding team members.</p>
-              </>
-            )}
-          </div>
-          <Link href="/admin/reports/profitability">
-            <button className="px-6 py-2.5 bg-white text-[var(--primary)] rounded-xl font-semibold hover:bg-white/90 transition-colors">
+    <Link href="/admin/reports/profitability">
+      <Card className="bg-gradient-to-r from-[var(--primary)] to-[var(--primary-dark)] text-white border-0 cursor-pointer hover:shadow-lg transition-shadow">
+        <CardContent className="p-6">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div>
+              {hasActivity ? (
+                <>
+                  <h3 className="text-lg font-bold">Keep the momentum going!</h3>
+                  <p className="text-white/80 text-sm mt-1">
+                    {data.quotes.pendingCount > 0 && `${data.quotes.pendingCount} quote${data.quotes.pendingCount !== 1 ? 's' : ''} pending. `}
+                    {data.invoices.unpaidTotal > 0 && `${formatCurrency(data.invoices.unpaidTotal)} outstanding. `}
+                    Check your reports for insights.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h3 className="text-lg font-bold">Welcome to Quantract!</h3>
+                  <p className="text-white/80 text-sm mt-1">Get started by creating your first quote or adding team members.</p>
+                </>
+              )}
+            </div>
+            <div className="px-6 py-2.5 bg-white text-[var(--primary)] rounded-xl font-semibold hover:bg-white/90 transition-colors flex items-center gap-2">
               View Reports
-            </button>
-          </Link>
-        </div>
-      </CardContent>
-    </Card>
+              <ArrowUpRight className="w-4 h-4" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
   );
 }
 
-function CalendarWidget({ schedule, loading }: { schedule: ScheduleEntry[]; loading: boolean }) {
+function CalendarWidget({ schedule, loading, onRefresh, isRefreshing }: {
+  schedule: ScheduleEntry[];
+  loading: boolean;
+  onRefresh: () => void;
+  isRefreshing: boolean;
+}) {
   // Format date for display
   const formatScheduleTime = (isoString: string) => {
     const date = new Date(isoString);
@@ -470,7 +739,10 @@ function CalendarWidget({ schedule, loading }: { schedule: ScheduleEntry[]; load
   return (
     <Card className="h-full">
       <CardHeader>
-        <CardTitle>Upcoming Schedule</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle>Upcoming Schedule</CardTitle>
+          <RefreshButton onClick={onRefresh} isRefreshing={isRefreshing} />
+        </div>
       </CardHeader>
       <CardContent>
         {schedule.length === 0 ? (
@@ -502,9 +774,13 @@ function CalendarWidget({ schedule, loading }: { schedule: ScheduleEntry[]; load
   );
 }
 
-function InvoiceChartWidget({ data, loading }: { data: DashboardData | null; loading: boolean }) {
+function InvoiceChartWidget({ data, loading, onRefresh, isRefreshing }: {
+  data: DashboardData | null;
+  loading: boolean;
+  onRefresh: () => void;
+  isRefreshing: boolean;
+}) {
   const unpaidTotal = data?.invoices.unpaidTotal || 0;
-  // We don't have paid invoices in the API, so we'll show what we have
   const total = unpaidTotal;
   const unpaidPercentage = total > 0 ? 100 : 0;
 
@@ -527,46 +803,60 @@ function InvoiceChartWidget({ data, loading }: { data: DashboardData | null; loa
   }
 
   return (
-    <Card className="h-full">
-      <CardHeader>
-        <CardTitle>Invoice Summary</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {total === 0 ? (
-          <div className="text-center py-8 text-[var(--muted-foreground)]">
-            <Receipt className="w-8 h-8 mx-auto mb-2 opacity-50" />
-            <p className="text-sm">No invoices yet</p>
-            <Link href="/admin/invoices/new" className="text-xs text-[var(--primary)] hover:underline mt-1 block">
-              Create your first invoice
-            </Link>
+    <Link href="/admin/invoices">
+      <Card className="h-full group cursor-pointer hover:border-[var(--primary)]/30 transition-colors">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              Invoice Summary
+              <ArrowUpRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </CardTitle>
+            <RefreshButton onClick={() => onRefresh()} isRefreshing={isRefreshing} />
           </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-[var(--muted-foreground)]">Unpaid</span>
-              <span className="text-sm font-semibold text-[var(--warning)]">{formatCurrency(unpaidTotal)}</span>
+        </CardHeader>
+        <CardContent>
+          {total === 0 ? (
+            <div className="text-center py-8 text-[var(--muted-foreground)]">
+              <Receipt className="w-8 h-8 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">No invoices yet</p>
+              <span className="text-xs text-[var(--primary)] hover:underline mt-1 block">
+                Create your first invoice
+              </span>
             </div>
-            <div className="h-3 bg-[var(--muted)] rounded-full overflow-hidden">
-              <div className="h-full bg-[var(--warning)] rounded-full" style={{ width: `${unpaidPercentage}%` }} />
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-[var(--muted-foreground)]">Overdue</span>
-              <span className="text-sm font-semibold text-[var(--error)]">{data?.invoices.overdueCount || 0} invoices</span>
-            </div>
-            <div className="pt-4 border-t border-[var(--border)]">
+          ) : (
+            <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Outstanding Total</span>
-                <span className="text-lg font-bold">{formatCurrency(total)}</span>
+                <span className="text-sm text-[var(--muted-foreground)]">Unpaid</span>
+                <span className="text-sm font-semibold text-[var(--warning)]">{formatCurrency(unpaidTotal)}</span>
+              </div>
+              <div className="h-3 bg-[var(--muted)] rounded-full overflow-hidden">
+                <div className="h-full bg-[var(--warning)] rounded-full" style={{ width: `${unpaidPercentage}%` }} />
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-[var(--muted-foreground)]">Overdue</span>
+                <span className="text-sm font-semibold text-[var(--error)]">{data?.invoices.overdueCount || 0} invoices</span>
+              </div>
+              <div className="pt-4 border-t border-[var(--border)]">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium">Outstanding Total</span>
+                  <span className="text-lg font-bold">{formatCurrency(total)}</span>
+                </div>
               </div>
             </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          )}
+        </CardContent>
+      </Card>
+    </Link>
   );
 }
 
-function JobsMapWidget({ data, jobs, loading }: { data: DashboardData | null; jobs: Job[]; loading: boolean }) {
+function JobsMapWidget({ data, jobs, loading, onRefresh, isRefreshing }: {
+  data: DashboardData | null;
+  jobs: Job[];
+  loading: boolean;
+  onRefresh: () => void;
+  isRefreshing: boolean;
+}) {
   const activeCount = data ? getJobCountByStatus(data.counts.jobs, ['in_progress']) : 0;
   const scheduledCount = data ? getJobCountByStatus(data.counts.jobs, ['scheduled', 'quoted']) : 0;
   const completedCount = data ? getJobCountByStatus(data.counts.jobs, ['completed']) : 0;
@@ -593,44 +883,52 @@ function JobsMapWidget({ data, jobs, loading }: { data: DashboardData | null; jo
   }
 
   return (
-    <Card className="h-full">
-      <CardHeader>
-        <CardTitle>Job Locations</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="aspect-video bg-[var(--muted)] rounded-xl flex items-center justify-center">
-          {jobs.length === 0 ? (
-            <div className="text-center text-[var(--muted-foreground)]">
-              <Briefcase className="w-8 h-8 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">No jobs to display</p>
-              <Link href="/admin/jobs/new" className="text-xs text-[var(--primary)] hover:underline mt-1 block">
-                Create your first job
-              </Link>
+    <Link href="/admin/jobs">
+      <Card className="h-full group cursor-pointer hover:border-[var(--primary)]/30 transition-colors">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              Job Locations
+              <ArrowUpRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </CardTitle>
+            <RefreshButton onClick={() => onRefresh()} isRefreshing={isRefreshing} />
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="aspect-video bg-[var(--muted)] rounded-xl flex items-center justify-center">
+            {jobs.length === 0 ? (
+              <div className="text-center text-[var(--muted-foreground)]">
+                <Briefcase className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No jobs to display</p>
+                <span className="text-xs text-[var(--primary)] hover:underline mt-1 block">
+                  Create your first job
+                </span>
+              </div>
+            ) : (
+              <div className="text-center text-[var(--muted-foreground)]">
+                <div className="text-4xl mb-2">&#128506;</div>
+                <p className="text-sm">Map integration coming soon</p>
+                <p className="text-xs mt-1">{jobs.length} job{jobs.length !== 1 ? 's' : ''} to display</p>
+              </div>
+            )}
+          </div>
+          <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+            <div className="p-2 bg-[var(--muted)] rounded-lg">
+              <div className="text-lg font-bold">{activeCount}</div>
+              <div className="text-xs text-[var(--muted-foreground)]">Active</div>
             </div>
-          ) : (
-            <div className="text-center text-[var(--muted-foreground)]">
-              <div className="text-4xl mb-2">🗺️</div>
-              <p className="text-sm">Map integration coming soon</p>
-              <p className="text-xs mt-1">{jobs.length} job{jobs.length !== 1 ? 's' : ''} to display</p>
+            <div className="p-2 bg-[var(--muted)] rounded-lg">
+              <div className="text-lg font-bold">{scheduledCount}</div>
+              <div className="text-xs text-[var(--muted-foreground)]">Scheduled</div>
             </div>
-          )}
-        </div>
-        <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-          <div className="p-2 bg-[var(--muted)] rounded-lg">
-            <div className="text-lg font-bold">{activeCount}</div>
-            <div className="text-xs text-[var(--muted-foreground)]">Active</div>
+            <div className="p-2 bg-[var(--muted)] rounded-lg">
+              <div className="text-lg font-bold">{completedCount}</div>
+              <div className="text-xs text-[var(--muted-foreground)]">Completed</div>
+            </div>
           </div>
-          <div className="p-2 bg-[var(--muted)] rounded-lg">
-            <div className="text-lg font-bold">{scheduledCount}</div>
-            <div className="text-xs text-[var(--muted-foreground)]">Scheduled</div>
-          </div>
-          <div className="p-2 bg-[var(--muted)] rounded-lg">
-            <div className="text-lg font-bold">{completedCount}</div>
-            <div className="text-xs text-[var(--muted-foreground)]">Completed</div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </Link>
   );
 }
 
@@ -639,32 +937,17 @@ type DashboardState = {
   engineers: Engineer[];
   jobs: Job[];
   schedule: ScheduleEntry[];
+  activities: ActivityItem[];
+  revenue: RevenueData | null;
   loading: boolean;
+  refreshing: {
+    stats: boolean;
+    activity: boolean;
+    revenue: boolean;
+    team: boolean;
+    schedule: boolean;
+  };
 };
-
-function renderWidget(widget: Widget, state: DashboardState) {
-  switch (widget.type) {
-    case 'stats': return <StatsWidget data={state.data} loading={state.loading} />;
-    case 'quickActions': return <QuickActionsWidget />;
-    case 'recentActivity': return <RecentActivityWidget jobs={state.jobs} loading={state.loading} />;
-    case 'teamOverview': return <TeamOverviewWidget engineers={state.engineers} loading={state.loading} />;
-    case 'performance': return <PerformanceWidget data={state.data} />;
-    case 'calendar': return <CalendarWidget schedule={state.schedule} loading={state.loading} />;
-    case 'invoiceChart': return <InvoiceChartWidget data={state.data} loading={state.loading} />;
-    case 'jobsMap': return <JobsMapWidget data={state.data} jobs={state.jobs} loading={state.loading} />;
-    default: return null;
-  }
-}
-
-function getWidgetClassName(size: Widget['size']) {
-  switch (size) {
-    case 'small': return 'col-span-1';
-    case 'medium': return 'col-span-1 lg:col-span-1';
-    case 'large': return 'col-span-1 lg:col-span-2';
-    case 'full': return 'col-span-1 lg:col-span-2';
-    default: return 'col-span-1';
-  }
-}
 
 export default function DashboardPage() {
   const [widgets, setWidgets] = useState<Widget[]>(DEFAULT_WIDGETS);
@@ -678,7 +961,16 @@ export default function DashboardPage() {
     engineers: [],
     jobs: [],
     schedule: [],
+    activities: [],
+    revenue: null,
     loading: true,
+    refreshing: {
+      stats: false,
+      activity: false,
+      revenue: false,
+      team: false,
+      schedule: false,
+    },
   });
 
   // Fetch all dashboard data
@@ -686,11 +978,13 @@ export default function DashboardPage() {
     setDashboardState((prev) => ({ ...prev, loading: true }));
 
     try {
-      const [dashboardRes, engineersRes, jobsRes, scheduleRes] = await Promise.all([
+      const [dashboardRes, engineersRes, jobsRes, scheduleRes, activityRes, revenueRes] = await Promise.all([
         fetch('/api/admin/dashboard').then((r) => r.json()).catch(() => null),
         fetch('/api/admin/engineers').then((r) => r.json()).catch(() => null),
         fetch('/api/admin/jobs').then((r) => r.json()).catch(() => []),
         fetch('/api/admin/schedule').then((r) => r.json()).catch(() => null),
+        fetch('/api/admin/dashboard/activity').then((r) => r.json()).catch(() => null),
+        fetch('/api/admin/dashboard/revenue').then((r) => r.json()).catch(() => null),
       ]);
 
       setDashboardState({
@@ -698,11 +992,96 @@ export default function DashboardPage() {
         engineers: engineersRes?.ok ? (engineersRes.engineers || []) : [],
         jobs: Array.isArray(jobsRes) ? jobsRes : (jobsRes?.data || []),
         schedule: scheduleRes?.ok ? (scheduleRes.entries || []) : [],
+        activities: activityRes?.ok ? (activityRes.activities || []) : [],
+        revenue: revenueRes?.ok ? revenueRes.data : null,
         loading: false,
+        refreshing: {
+          stats: false,
+          activity: false,
+          revenue: false,
+          team: false,
+          schedule: false,
+        },
       });
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
       setDashboardState((prev) => ({ ...prev, loading: false }));
+    }
+  }, []);
+
+  // Individual refresh functions
+  const refreshStats = useCallback(async () => {
+    setDashboardState((prev) => ({ ...prev, refreshing: { ...prev.refreshing, stats: true } }));
+    try {
+      const res = await fetch('/api/admin/dashboard');
+      const data = await res.json();
+      setDashboardState((prev) => ({
+        ...prev,
+        data: data?.ok ? data.data : prev.data,
+        refreshing: { ...prev.refreshing, stats: false }
+      }));
+    } catch {
+      setDashboardState((prev) => ({ ...prev, refreshing: { ...prev.refreshing, stats: false } }));
+    }
+  }, []);
+
+  const refreshActivity = useCallback(async () => {
+    setDashboardState((prev) => ({ ...prev, refreshing: { ...prev.refreshing, activity: true } }));
+    try {
+      const res = await fetch('/api/admin/dashboard/activity');
+      const data = await res.json();
+      setDashboardState((prev) => ({
+        ...prev,
+        activities: data?.ok ? (data.activities || []) : prev.activities,
+        refreshing: { ...prev.refreshing, activity: false }
+      }));
+    } catch {
+      setDashboardState((prev) => ({ ...prev, refreshing: { ...prev.refreshing, activity: false } }));
+    }
+  }, []);
+
+  const refreshRevenue = useCallback(async () => {
+    setDashboardState((prev) => ({ ...prev, refreshing: { ...prev.refreshing, revenue: true } }));
+    try {
+      const res = await fetch('/api/admin/dashboard/revenue');
+      const data = await res.json();
+      setDashboardState((prev) => ({
+        ...prev,
+        revenue: data?.ok ? data.data : prev.revenue,
+        refreshing: { ...prev.refreshing, revenue: false }
+      }));
+    } catch {
+      setDashboardState((prev) => ({ ...prev, refreshing: { ...prev.refreshing, revenue: false } }));
+    }
+  }, []);
+
+  const refreshTeam = useCallback(async () => {
+    setDashboardState((prev) => ({ ...prev, refreshing: { ...prev.refreshing, team: true } }));
+    try {
+      const res = await fetch('/api/admin/engineers');
+      const data = await res.json();
+      setDashboardState((prev) => ({
+        ...prev,
+        engineers: data?.ok ? (data.engineers || []) : prev.engineers,
+        refreshing: { ...prev.refreshing, team: false }
+      }));
+    } catch {
+      setDashboardState((prev) => ({ ...prev, refreshing: { ...prev.refreshing, team: false } }));
+    }
+  }, []);
+
+  const refreshSchedule = useCallback(async () => {
+    setDashboardState((prev) => ({ ...prev, refreshing: { ...prev.refreshing, schedule: true } }));
+    try {
+      const res = await fetch('/api/admin/schedule');
+      const data = await res.json();
+      setDashboardState((prev) => ({
+        ...prev,
+        schedule: data?.ok ? (data.entries || []) : prev.schedule,
+        refreshing: { ...prev.refreshing, schedule: false }
+      }));
+    } catch {
+      setDashboardState((prev) => ({ ...prev, refreshing: { ...prev.refreshing, schedule: false } }));
     }
   }, []);
 
@@ -784,6 +1163,91 @@ export default function DashboardPage() {
   };
 
   const availableToAdd = AVAILABLE_WIDGETS.filter(aw => !widgets.some(w => w.id === aw.id));
+
+  function getWidgetClassName(size: Widget['size']) {
+    switch (size) {
+      case 'small': return 'col-span-1';
+      case 'medium': return 'col-span-1 lg:col-span-1';
+      case 'large': return 'col-span-1 lg:col-span-2';
+      case 'full': return 'col-span-1 lg:col-span-2';
+      default: return 'col-span-1';
+    }
+  }
+
+  function renderWidget(widget: Widget) {
+    switch (widget.type) {
+      case 'stats':
+        return (
+          <StatsWidget
+            data={dashboardState.data}
+            loading={dashboardState.loading}
+            onRefresh={refreshStats}
+            isRefreshing={dashboardState.refreshing.stats}
+          />
+        );
+      case 'quickActions':
+        return <QuickActionsWidget />;
+      case 'recentActivity':
+        return (
+          <RecentActivityWidget
+            activities={dashboardState.activities}
+            loading={dashboardState.loading}
+            onRefresh={refreshActivity}
+            isRefreshing={dashboardState.refreshing.activity}
+          />
+        );
+      case 'revenue':
+        return (
+          <RevenueWidget
+            data={dashboardState.revenue}
+            loading={dashboardState.loading}
+            onRefresh={refreshRevenue}
+            isRefreshing={dashboardState.refreshing.revenue}
+          />
+        );
+      case 'teamOverview':
+        return (
+          <TeamOverviewWidget
+            engineers={dashboardState.engineers}
+            loading={dashboardState.loading}
+            onRefresh={refreshTeam}
+            isRefreshing={dashboardState.refreshing.team}
+          />
+        );
+      case 'performance':
+        return <PerformanceWidget data={dashboardState.data} />;
+      case 'calendar':
+        return (
+          <CalendarWidget
+            schedule={dashboardState.schedule}
+            loading={dashboardState.loading}
+            onRefresh={refreshSchedule}
+            isRefreshing={dashboardState.refreshing.schedule}
+          />
+        );
+      case 'invoiceChart':
+        return (
+          <InvoiceChartWidget
+            data={dashboardState.data}
+            loading={dashboardState.loading}
+            onRefresh={refreshStats}
+            isRefreshing={dashboardState.refreshing.stats}
+          />
+        );
+      case 'jobsMap':
+        return (
+          <JobsMapWidget
+            data={dashboardState.data}
+            jobs={dashboardState.jobs}
+            loading={dashboardState.loading}
+            onRefresh={refreshStats}
+            isRefreshing={dashboardState.refreshing.stats}
+          />
+        );
+      default:
+        return null;
+    }
+  }
 
   return (
     <AppShell role="admin" title="Dashboard" subtitle="Overview of your business performance and recent activity.">
@@ -877,7 +1341,7 @@ export default function DashboardPage() {
               {isCustomizing && (
                 <div className="absolute inset-0 border-2 border-dashed border-[var(--primary)] rounded-2xl pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" />
               )}
-              {renderWidget(widget, dashboardState)}
+              {renderWidget(widget)}
             </div>
           ))}
         </div>

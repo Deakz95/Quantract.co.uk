@@ -125,8 +125,14 @@ export default function SignaturePad({ value, onChange }: Props) {
           Clear
         </Button>
       </div>
-      <div className="mt-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-2 shadow-sm">
-        <canvas ref={canvasRef} className="h-40 w-full touch-none rounded-xl" aria-label="Signature pad" />
+      <div className="mt-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-2 shadow-sm focus-within:ring-2 focus-within:ring-[var(--primary)] focus-within:ring-offset-2">
+        <canvas
+          ref={canvasRef}
+          className="h-40 w-full touch-none rounded-xl focus-visible:outline-none"
+          aria-label="Signature pad - Draw your signature here"
+          tabIndex={0}
+          role="img"
+        />
       </div>
       <p className="mt-2 text-xs text-[var(--muted-foreground)]">Use your finger, mouse or stylus.</p>
     </div>

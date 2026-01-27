@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { AppShell } from "@/components/AppShell";
+import { Breadcrumbs, type BreadcrumbItem } from "@/components/ui/Breadcrumbs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -59,14 +60,16 @@ export default function SecuritySettingsPage() {
     });
   };
 
+  const breadcrumbItems: BreadcrumbItem[] = [
+    { label: "Dashboard", href: "/admin" },
+    { label: "Settings", href: "/admin/settings" },
+    { label: "Security" },
+  ];
+
   return (
     <AppShell role="admin" title="Security" subtitle="Manage your account security settings">
+      <Breadcrumbs items={breadcrumbItems} />
       <div className="space-y-6 max-w-2xl">
-        {/* Back Link */}
-        <Link href="/admin/settings" className="inline-flex items-center gap-2 text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)]">
-          <ArrowLeft className="w-4 h-4" />
-          Back to Settings
-        </Link>
 
         {/* Change Password */}
         <Card>

@@ -218,6 +218,22 @@ export default function QuantractAIWidget({
     return () => window.removeEventListener("qt:open-ai", handler as any);
   }, []);
 
+  // Handle Escape key to close widget
+  useEffect(() => {
+    if (!isOpen) return;
+
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setIsOpen(false);
+        setIsFullscreen(false);
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen]);
+
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -340,7 +356,7 @@ export default function QuantractAIWidget({
       <button
         onClick={() => setIsOpen(true)}
         className={cn(
-          `fixed bottom-4 sm:bottom-6 ${positionClasses} z-50 h-14 w-14 rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-110 hover:shadow-xl`
+          `fixed bottom-4 sm:bottom-6 ${positionClasses} z-50 h-14 w-14 rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-110 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2`
         )}
         style={{ backgroundColor: accentColor }}
         aria-label="Open AI Assistant"
@@ -367,20 +383,20 @@ export default function QuantractAIWidget({
             <div className="flex items-center gap-1">
               <Button
                 variant="ghost"
-                className="h-9 w-9 p-0 text-white/80 hover:text-white"
+                className="h-9 w-9 p-0 text-white/80 hover:text-white focus-visible:ring-white"
                 onClick={() => setIsFullscreen((v) => !v)}
-                title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+                aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
               >
                 {isFullscreen ? <IconMinimize className="h-4 w-4" /> : <IconExpand className="h-4 w-4" />}
               </Button>
               <Button
                 variant="ghost"
-                className="h-9 w-9 p-0 text-white/80 hover:text-white"
+                className="h-9 w-9 p-0 text-white/80 hover:text-white focus-visible:ring-white"
                 onClick={() => {
                   setIsOpen(false);
                   setIsFullscreen(false);
                 }}
-                title="Close"
+                aria-label="Close AI Assistant"
               >
                 <IconX className="h-4 w-4" />
               </Button>
@@ -409,7 +425,7 @@ export default function QuantractAIWidget({
                       <button
                         key={prompt}
                         onClick={() => void sendMessage(prompt)}
-                        className="w-full text-left p-2.5 rounded-lg bg-[var(--card)] hover:bg-[var(--muted)] text-[var(--muted-foreground)] text-sm transition-colors"
+                        className="w-full text-left p-2.5 rounded-lg bg-[var(--card)] hover:bg-[var(--muted)] text-[var(--muted-foreground)] text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2"
                       >
                         {prompt}
                       </button>
@@ -459,8 +475,16 @@ export default function QuantractAIWidget({
                             {m.suggestedActions.map((a, i) => (
                               <Badge
                                 key={`${a.type}-${i}`}
-                                className="text-[10px] bg-[var(--muted)] text-[var(--foreground)] cursor-pointer hover:bg-[var(--muted)]"
+                                className="text-[10px] bg-[var(--muted)] text-[var(--foreground)] cursor-pointer hover:bg-[var(--muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-1"
                                 onClick={() => void handleAction(a)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter" || e.key === " ") {
+                                    e.preventDefault();
+                                    void handleAction(a);
+                                  }
+                                }}
+                                tabIndex={0}
+                                role="button"
                               >
                                 {a.label}
                               </Badge>
@@ -522,8 +546,9 @@ export default function QuantractAIWidget({
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask a question..."
               disabled={isLoading || !aiConfigured}
-              className="flex-1 h-10 px-3 rounded-lg border bg-[var(--background)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:ring-2 text-sm"
+              className="flex-1 h-10 px-3 rounded-lg border bg-[var(--background)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ borderColor: accentColor }}
+              aria-label="Ask the AI assistant a question"
             />
             <Button
               type="submit"
