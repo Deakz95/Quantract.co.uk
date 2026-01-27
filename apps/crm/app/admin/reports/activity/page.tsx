@@ -20,6 +20,7 @@ import {
   Users,
   MessageSquare,
   CheckSquare,
+  type LucideIcon,
 } from "lucide-react";
 import { ChartWidget, type ChartDataPoint } from "@/components/admin/reports/ChartWidget";
 import { MetricCard } from "@/components/admin/reports/MetricCard";
@@ -42,7 +43,7 @@ type ActivityData = {
   };
 };
 
-const activityTypeConfig: Record<string, { label: string; icon: React.ComponentType<{ className?: string }>; color: string }> = {
+const activityTypeConfig: Record<string, { label: string; icon: LucideIcon; color: string }> = {
   NOTE: { label: "Notes", icon: FileText, color: "from-blue-500 to-blue-600" },
   CALL: { label: "Calls", icon: Phone, color: "from-emerald-500 to-teal-500" },
   EMAIL: { label: "Emails", icon: Mail, color: "from-amber-500 to-orange-500" },
