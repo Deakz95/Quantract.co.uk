@@ -9,7 +9,8 @@ services:
     region: frankfurt
     rootDir: apps/crm
     buildCommand: npm ci && npm run build
-    startCommand: npm run prisma:migrate:deploy && npm run start
+    preDeployCommand: npx prisma generate && npx prisma migrate deploy
+    startCommand: npm run start
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV

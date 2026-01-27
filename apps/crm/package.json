@@ -32,6 +32,7 @@
     "docker:reset": "docker-compose -f docker-compose.dev.yml down -v && docker-compose -f docker-compose.dev.yml up -d"
   },
   "prisma": {
+    "schema": "./prisma/schema.prisma",
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
