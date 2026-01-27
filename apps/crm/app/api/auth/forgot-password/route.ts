@@ -25,9 +25,8 @@ export async function POST(request: Request) {
 
     // Use Neon Auth to send password reset email
     const authClient = createAuthClient();
-    const { error } = await authClient.forgetPassword({
+    const { error } = await authClient.forgetPassword.emailOtp({
       email,
-      redirectTo: `${process.env.APP_ORIGIN || process.env.NEXT_PUBLIC_APP_ORIGIN}/auth/reset-password`,
     });
 
     if (error) {

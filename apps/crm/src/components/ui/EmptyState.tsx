@@ -10,11 +10,13 @@ type PrimaryAction = {
   label: string;
   href?: string;
   onClick?: () => void;
+  disabled?: boolean;
 };
 
 type SecondaryAction = {
   label: string;
   href: string;
+  external?: boolean;
 };
 
 type EmptyStateProps = {
@@ -66,7 +68,7 @@ export function EmptyState({
   const renderPrimaryAction = () => {
     if (primaryAction) {
       const button = (
-        <Button variant="gradient">
+        <Button variant="gradient" disabled={primaryAction.disabled}>
           <Plus className="w-4 h-4 mr-2" />
           {primaryAction.label}
         </Button>
@@ -77,7 +79,7 @@ export function EmptyState({
       }
 
       return (
-        <Button variant="gradient" onClick={primaryAction.onClick}>
+        <Button variant="gradient" onClick={primaryAction.onClick} disabled={primaryAction.disabled}>
           <Plus className="w-4 h-4 mr-2" />
           {primaryAction.label}
         </Button>
@@ -133,12 +135,23 @@ export function EmptyState({
         {renderPrimaryAction()}
 
         {secondaryAction && (
-          <Link
-            href={secondaryAction.href}
-            className="text-sm text-[var(--primary)] hover:text-[var(--primary-dark)] hover:underline transition-colors rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2"
-          >
-            {secondaryAction.label}
-          </Link>
+          secondaryAction.external ? (
+            <a
+              href={secondaryAction.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-[var(--primary)] hover:text-[var(--primary-dark)] hover:underline transition-colors rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2"
+            >
+              {secondaryAction.label}
+            </a>
+          ) : (
+            <Link
+              href={secondaryAction.href}
+              className="text-sm text-[var(--primary)] hover:text-[var(--primary-dark)] hover:underline transition-colors rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2"
+            >
+              {secondaryAction.label}
+            </Link>
+          )
         )}
       </div>
     </div>

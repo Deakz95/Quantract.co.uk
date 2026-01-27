@@ -56,6 +56,7 @@ type NavItem = {
   label: string;
   href: string;
   icon: ComponentType<{ className?: string }>;
+  external?: boolean;
 };
 
 const adminNav: NavItem[] = [
@@ -75,6 +76,8 @@ const adminNav: NavItem[] = [
   { label: "Engineers", href: "/admin/engineers", icon: Users },
   { label: "Invites", href: "/admin/invites", icon: Mail },
   { label: "Settings", href: "/admin/settings", icon: Settings },
+  // External tools
+  { label: "Certificate Generator", href: "https://certificates.quantract.co.uk", icon: BadgeCheck, external: true },
   // Admin portal access
   { label: "→ Client Portal", href: "/client", icon: ChevronRight },
   { label: "→ Engineer Portal", href: "/engineer", icon: ChevronRight },
@@ -426,18 +429,33 @@ export function AppShell({
           >
             <nav className="space-y-1">
               {nav.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setMobileNavOpen(false)}
-                  className={cn(
-                    "nav-item flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium",
-                    isActive(item.href) && "active"
-                  )}
-                >
-                  <item.icon className="h-4 w-4" />
-                  {item.label}
-                </Link>
+                item.external ? (
+                  <a
+                    key={item.href}
+                    href={item.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setMobileNavOpen(false)}
+                    className="nav-item flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--foreground)]"
+                  >
+                    <item.icon className="h-4 w-4" />
+                    {item.label}
+                    <ChevronRight className="h-3 w-3 ml-auto opacity-50" />
+                  </a>
+                ) : (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setMobileNavOpen(false)}
+                    className={cn(
+                      "nav-item flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium",
+                      isActive(item.href) && "active"
+                    )}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    {item.label}
+                  </Link>
+                )
               ))}
             </nav>
           </div>
@@ -452,18 +470,32 @@ export function AppShell({
             <div className="sticky top-20">
               <nav className="space-y-1">
                 {nav.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={cn(
-                      "nav-item flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium",
-                      isActive(item.href) && "active"
-                    )}
-                  >
-                    <item.icon className="h-4 w-4" />
-                    {item.label}
-                    {isActive(item.href) && <ChevronRight className="h-4 w-4 ml-auto" />}
-                  </Link>
+                  item.external ? (
+                    <a
+                      key={item.href}
+                      href={item.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="nav-item flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--foreground)]"
+                    >
+                      <item.icon className="h-4 w-4" />
+                      {item.label}
+                      <ChevronRight className="h-3 w-3 ml-auto opacity-50" />
+                    </a>
+                  ) : (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={cn(
+                        "nav-item flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium",
+                        isActive(item.href) && "active"
+                      )}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      {item.label}
+                      {isActive(item.href) && <ChevronRight className="h-4 w-4 ml-auto" />}
+                    </Link>
+                  )
                 ))}
               </nav>
             </div>

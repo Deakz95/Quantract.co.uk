@@ -46,6 +46,38 @@ export default function CertificatesPage() {
       />
 
       <div className="relative z-[1] py-12 px-6 max-w-[1200px] mx-auto">
+        {/* CRM Upsell Banner */}
+        <div className="mb-8 rounded-2xl bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] p-[1px]">
+          <div className="rounded-2xl bg-[var(--card)] p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--primary)] to-[var(--accent)] flex items-center justify-center text-white shrink-0">
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-[var(--foreground)]">
+                    Manage Your Electrical Business
+                  </h3>
+                  <p className="text-sm text-[var(--muted-foreground)]">
+                    Store certificates, track jobs, send invoices, and manage clients - all in one place.
+                  </p>
+                </div>
+              </div>
+              <a
+                href="https://www.quantract.co.uk/auth/signup"
+                className="shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] text-white font-semibold text-sm hover:opacity-90 transition-opacity"
+              >
+                Try Quantract CRM Free
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </a>
+            </div>
+          </div>
+        </div>
+
         {/* Header */}
         <div className="text-center mb-12">
           <div className="w-[72px] h-[72px] rounded-2xl bg-gradient-to-br from-[var(--primary)] to-[var(--primary-dark)] flex items-center justify-center mx-auto mb-6 shadow-[0_0_40px_rgba(59,130,246,0.3)]">
@@ -164,17 +196,94 @@ export default function CertificatesPage() {
           </div>
         </div>
 
+        {/* CRM Benefits Section */}
+        <div className="mb-12 rounded-2xl border border-[var(--border)] bg-[var(--card)] overflow-hidden">
+          <div className="p-8 text-center border-b border-[var(--border)] bg-gradient-to-br from-[var(--primary)]/5 to-transparent">
+            <h3 className="text-xl font-bold text-[var(--foreground)] mb-2">
+              Ready to streamline your electrical business?
+            </h3>
+            <p className="text-[var(--muted-foreground)] max-w-lg mx-auto">
+              Quantract CRM helps electrical contractors manage jobs, store certificates, send invoices, and track payments - all linked together.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-[var(--border)]">
+            {[
+              {
+                title: "Link to Jobs",
+                description: "Certificates auto-attach to jobs for complete audit trails",
+                icon: (
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                  </svg>
+                ),
+              },
+              {
+                title: "Cloud Storage",
+                description: "All certificates stored securely and accessible anywhere",
+                icon: (
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                ),
+              },
+              {
+                title: "Client Portal",
+                description: "Clients can view and download their certificates online",
+                icon: (
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                ),
+              },
+            ].map((item) => (
+              <div key={item.title} className="p-6 text-center">
+                <div className="w-10 h-10 rounded-xl bg-[var(--muted)] flex items-center justify-center text-[var(--primary)] mx-auto mb-3">
+                  {item.icon}
+                </div>
+                <h4 className="text-sm font-semibold text-[var(--foreground)] mb-1">{item.title}</h4>
+                <p className="text-xs text-[var(--muted-foreground)]">{item.description}</p>
+              </div>
+            ))}
+          </div>
+          <div className="p-6 bg-[var(--muted)]/30 text-center">
+            <a
+              href="https://www.quantract.co.uk/auth/signup"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] text-white font-semibold text-sm hover:opacity-90 transition-opacity"
+            >
+              Start Free Trial - No Card Required
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+            </a>
+          </div>
+        </div>
+
         {/* Footer */}
         <div className="text-center pt-6 border-t border-[var(--border)]">
-          <a
-            href="https://www.quantract.co.uk/admin/dashboard"
-            className="inline-flex items-center gap-2 text-[var(--muted-foreground)] hover:text-[var(--foreground)] text-sm transition-colors"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Back to Quantract CRM
-          </a>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-sm">
+            <a
+              href="https://www.quantract.co.uk/admin/dashboard"
+              className="inline-flex items-center gap-2 text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              Back to CRM Dashboard
+            </a>
+            <span className="hidden sm:inline text-[var(--border)]">|</span>
+            <a
+              href="https://www.quantract.co.uk/auth/signup"
+              className="inline-flex items-center gap-2 text-[var(--primary)] hover:text-[var(--primary-dark)] font-medium transition-colors"
+            >
+              Create Free Account
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+              </svg>
+            </a>
+          </div>
+          <p className="mt-4 text-xs text-[var(--muted-foreground)]">
+            Quantract Certificates is a free tool for electrical contractors. Upgrade to Quantract CRM for job management, invoicing, and more.
+          </p>
         </div>
       </div>
     </main>
