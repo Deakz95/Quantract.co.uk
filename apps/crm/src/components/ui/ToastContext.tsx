@@ -170,17 +170,23 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+// Stable no-op fallback to prevent infinite loops if used outside provider
+const noopToast = (_input: ToastInput) => "";
+const noopDismiss = (_id: string) => {};
+const noopDismissAll = () => {};
+const noopFallback = {
+  toasts: [] as ToastData[],
+  toast: noopToast,
+  dismiss: noopDismiss,
+  dismissAll: noopDismissAll,
+};
+
 export function useToast() {
   const context = React.useContext(ToastContext);
 
   if (!context) {
-    // Return a no-op version if used outside provider (for safety)
-    return {
-      toasts: [] as ToastData[],
-      toast: (_input: ToastInput) => "",
-      dismiss: (_id: string) => {},
-      dismissAll: () => {},
-    };
+    // Return a stable no-op version if used outside provider (for safety)
+    return noopFallback;
   }
 
   return context;

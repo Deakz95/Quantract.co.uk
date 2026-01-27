@@ -140,7 +140,8 @@ export function NotificationsSettings() {
     } catch {
       toast({ title: "Error", description: "Failed to load settings", variant: "destructive" });
     }
-  }, [toast]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // toast is intentionally excluded - it's a side-effect function that shouldn't trigger re-fetching
 
   // Fetch rules
   const fetchRules = useCallback(async () => {

@@ -86,7 +86,8 @@ export default function JobsPage() {
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // toast is intentionally excluded - it's a side-effect function that shouldn't trigger re-fetching
 
   useEffect(() => {
     loadJobs();
