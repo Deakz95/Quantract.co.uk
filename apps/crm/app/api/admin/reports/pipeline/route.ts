@@ -8,6 +8,13 @@ function jsonOk(data: Record<string, unknown>, status = 200) {
 }
 
 function jsonErr(error: unknown, status = 400) {
+  // Never expose raw Prisma/database errors to users
+  if (error instanceof Error) {
+    const msg = error.message.toLowerCase();
+    if (msg.includes("prisma") || msg.includes("does not exist") || msg.includes("findmany") || msg.includes("table")) {
+      return NextResponse.json({ ok: false, error: "Database tables are being set up. Please try again later." }, { status: 503 });
+    }
+  }
   const msg = error instanceof Error ? error.message : String(error || "Request failed");
   return NextResponse.json({ ok: false, error: msg }, { status });
 }

@@ -35,11 +35,17 @@ export const GET = withRequestLogging(async function GET() {
 
     return NextResponse.json({ ok: true, stages: stages || [] });
   } catch (error) {
+    logError(error, { route: "/api/admin/deal-stages", action: "list" });
+
+    // Check for missing table errors (migration not applied)
+    const errMsg = error instanceof Error ? error.message.toLowerCase() : "";
+    if (errMsg.includes("does not exist") || errMsg.includes("table") || errMsg.includes("relation")) {
+      return NextResponse.json({ ok: false, error: "Database setup in progress. Please try again later.", stages: [] }, { status: 503 });
+    }
+
     if (error instanceof PrismaClientKnownRequestError) {
-      logError(error, { route: "/api/admin/deal-stages", action: "list" });
       return NextResponse.json({ ok: false, error: "database_error", code: error.code }, { status: 409 });
     }
-    logError(error, { route: "/api/admin/deal-stages", action: "list" });
     return NextResponse.json({ ok: false, error: "load_failed" }, { status: 500 });
   }
 });
