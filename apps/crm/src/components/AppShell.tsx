@@ -25,6 +25,10 @@ import {
   ChevronRight,
   Plus,
   Inbox,
+  Target,
+  Activity,
+  Upload,
+  FileBarChart,
 } from "lucide-react";
 
 import { ImpersonationBanner } from "@/components/ImpersonationBanner";
@@ -46,16 +50,18 @@ const adminNav: NavItem[] = [
   { label: "Quotes", href: "/admin/quotes", icon: FileText },
   { label: "Invoices", href: "/admin/invoices", icon: Receipt },
   { label: "Jobs", href: "/admin/jobs", icon: Briefcase },
-  { label: "Profitability", href: "/admin/reports/profitability", icon: Receipt },
+  { label: "Deals", href: "/admin/deals", icon: Target },
+  { label: "Contacts", href: "/admin/contacts", icon: Users },
+  { label: "Clients", href: "/admin/clients", icon: Users },
   { label: "Certificates", href: "/admin/certificates", icon: BadgeCheck },
   { label: "Schedule", href: "/admin/schedule", icon: CalendarDays },
   { label: "Timesheets", href: "/admin/timesheets", icon: Clock },
-  { label: "Materials", href: "/admin/materials", icon: Settings },
-  { label: "Clients", href: "/admin/clients", icon: Users },
+  { label: "Reports", href: "/admin/reports", icon: FileBarChart },
+  { label: "Import", href: "/admin/import", icon: Upload },
   { label: "Engineers", href: "/admin/engineers", icon: Users },
   { label: "Invites", href: "/admin/invites", icon: Mail },
   { label: "Settings", href: "/admin/settings", icon: Settings },
-  // Admin portal access - NEW
+  // Admin portal access
   { label: "→ Client Portal", href: "/client", icon: ChevronRight },
   { label: "→ Engineer Portal", href: "/engineer", icon: ChevronRight },
 ];
