@@ -85,4 +85,3 @@ main().catch((err) => {
   console.error("[safe-migrate] Fatal error:", err.message);
   process.exit(1);
 });
-# Trigger redeploy
