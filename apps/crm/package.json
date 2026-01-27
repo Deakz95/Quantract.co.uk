@@ -13,6 +13,10 @@
     "test:e2e": "playwright test tests/playwright/e2e-*.spec.ts",
     "test:e2e:ui": "playwright test tests/playwright/e2e-*.spec.ts --ui",
     "test:smoke": "playwright test tests/playwright/e2e-*.spec.ts --project=chromium",
+    "test:unit": "vitest run",
+    "test:unit:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test": "vitest run",
     "smoke": "tsx scripts/smoke/run-smoke-tests.ts",
     "prisma:generate": "prisma generate",
     "prisma:validate": "prisma validate",
@@ -65,15 +69,20 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.57.0",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.1.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/jszip": "^3.4.1",
+    "@vitest/coverage-v8": "^2.1.8",
     "babel-plugin-react-compiler": "1.0.0",
     "dotenv-cli": "^11.0.0",
     "eslint": "^9.0.0",
     "eslint-config-next": "16.1.0",
+    "jsdom": "^25.0.1",
     "playwright": "^1.50.0",
     "prisma": "^6.0.0",
     "tsx": "^4.19.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^2.1.8"
   }
 }
