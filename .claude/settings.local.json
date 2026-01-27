@@ -39,7 +39,9 @@
       "Bash(powershell -Command:*)",
       "Bash(powershell -File:*)",
       "Bash(npx prisma format:*)",
-      "Bash(npm run lint:*)"
+      "Bash(npm run lint:*)",
+      "Bash(git fetch:*)",
+      "Bash(git rev-parse:*)"
     ]
   }
 }
