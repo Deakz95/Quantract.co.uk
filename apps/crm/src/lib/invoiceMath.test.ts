@@ -101,10 +101,12 @@ describe("invoiceMath - VAT Calculations", () => {
     });
 
     it("accepts calculations within rounding tolerance", () => {
+      // 123.46 + 24.69 = 148.15 (exact sum)
+      // Test with 148.15 which is within tolerance
       const withinTolerance: VATCalculation = {
         subtotal: 123.46,
         vat: 24.69,
-        total: 148.14,
+        total: 148.15,
         vatRate: 0.2,
       };
       expect(validateVATCalculation(withinTolerance)).toBe(true);

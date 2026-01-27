@@ -208,6 +208,8 @@ describe("Certificate Validation - Compliance and Correctness", () => {
         type: "EICR",
         overview: validOverview,
         installation: validInstallation,
+        inspection: {},
+        declarations: {},
         assessment: {
           overallAssessment: "Unsatisfactory",
           recommendations: "Immediate remedial work required",
@@ -335,6 +337,9 @@ describe("Certificate Validation - Compliance and Correctness", () => {
           supplyType: "TN-S",
           earthingArrangement: "PME",
         },
+        inspection: {},
+        declarations: {},
+        assessment: {},
         signatures: {
           engineer: {
             name: "Eng",
