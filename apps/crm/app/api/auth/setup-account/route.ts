@@ -155,7 +155,14 @@ export async function POST(req: Request) {
       },
     });
   } catch (error) {
-    console.error("Setup account error:", error);
+    const origin = req.headers.get("origin") || "(none)";
+    const host = req.headers.get("host") || "(none)";
+    console.error("Setup account error:", {
+      error: error instanceof Error ? error.message : error,
+      stack: error instanceof Error ? error.stack : undefined,
+      origin,
+      host,
+    });
     const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json({ ok: false, error: message }, { status: 500 });
   }

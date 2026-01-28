@@ -16,5 +16,12 @@ After unzip:
 5) npm run dev
 
 Env needed:
-- NEON_AUTH_BASE_URL (from Neon Console -> Auth)
-- DATABASE_URL (already)
+- NEON_AUTH_BASE_URL (from Neon Console -> Auth tab)
+- DATABASE_URL (already set)
+- BETTER_AUTH_TRUSTED_ORIGINS (comma-separated list of allowed origins)
+  - Production: https://crm.quantract.co.uk
+  - Development: http://localhost:3000
+
+Note: BETTER_AUTH_TRUSTED_ORIGINS is required for CSRF/origin validation.
+The Neon Auth library uses Better Auth internally, which validates that
+requests come from trusted origins. Without this, you'll get "Invalid origin" errors.

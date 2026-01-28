@@ -14,6 +14,34 @@ type NeonHandlerObj = {
   PATCH?: (request: Request, ctx: { params: Promise<Params> }) => Promise<Response>;
 };
 
+/**
+ * Log auth request details for debugging origin issues.
+ * Only logs non-sensitive headers (origin, host, referer).
+ */
+function logAuthRequest(method: string, req: NextRequest, path: string) {
+  const origin = req.headers.get("origin") || "(none)";
+  const host = req.headers.get("host") || "(none)";
+  const referer = req.headers.get("referer") || "(none)";
+  const trustedOrigins = process.env.BETTER_AUTH_TRUSTED_ORIGINS || "(not set)";
+
+  console.log(`[Auth] ${method} /api/auth/${path}`, {
+    origin,
+    host,
+    referer,
+    trustedOrigins,
+    neonAuthConfigured: Boolean(process.env.NEON_AUTH_BASE_URL),
+  });
+}
+
+/**
+ * Log auth response for debugging.
+ */
+function logAuthResponse(method: string, path: string, status: number) {
+  if (status >= 400) {
+    console.warn(`[Auth] ${method} /api/auth/${path} responded with ${status}`);
+  }
+}
+
 async function getNeonHandlers(): Promise<NeonHandlerObj | null> {
   const baseUrl = process.env.NEON_AUTH_BASE_URL || process.env.NEON_AUTH_URL || "";
   if (!baseUrl) return null;
@@ -26,9 +54,16 @@ async function getNeonHandlers(): Promise<NeonHandlerObj | null> {
 }
 
 async function call(method: keyof NeonHandlerObj, req: NextRequest, ctx: Ctx) {
+  const params = await ctx.params;
+  const path = Array.isArray(params.path) ? params.path.join("/") : (params.path || "");
+
+  // Log request details for debugging
+  logAuthRequest(method, req, path);
+
   const handlers = await getNeonHandlers();
 
   if (!handlers || !handlers[method]) {
+    console.error(`[Auth] Neon Auth not configured - NEON_AUTH_BASE_URL missing`);
     return NextResponse.json(
       {
         ok: false,
@@ -42,7 +77,14 @@ async function call(method: keyof NeonHandlerObj, req: NextRequest, ctx: Ctx) {
     );
   }
 
-  return handlers[method]!(req as any, ctx as any);
+  try {
+    const response = await handlers[method]!(req as any, { params: Promise.resolve(params) } as any);
+    logAuthResponse(method, path, response.status);
+    return response;
+  } catch (error) {
+    console.error(`[Auth] Error in ${method} /api/auth/${path}:`, error);
+    throw error;
+  }
 }
 
 export async function GET(req: NextRequest, ctx: Ctx) {

@@ -31,6 +31,12 @@ services:
         value: https://crm.quantract.co.uk
       - key: QT_USE_PRISMA
         value: "1"
+      # Neon Auth - set NEON_AUTH_BASE_URL in Render dashboard from Neon Console
+      - key: NEON_AUTH_BASE_URL
+        sync: false
+      # Better Auth trusted origins - comma-separated list of allowed origins
+      - key: BETTER_AUTH_TRUSTED_ORIGINS
+        value: https://crm.quantract.co.uk
       # Third-party services
       - key: SENTRY_DSN
         sync: false
