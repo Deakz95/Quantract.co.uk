@@ -31,16 +31,21 @@ export async function GET(req: Request) {
 
     return NextResponse.json({
       ok: true,
-      data: quotes.map((q: any) => ({
-        quoteId: q.id,
-        quoteNumber: q.quoteNumber,
-        clientName: q.client?.name || q.clientName,
-        siteName: q.site?.name,
-        total: q.total,
-        status: q.status,
-        lastSentAt: q.sentAt,
-        acceptedAt: q.acceptedAt
-      }))
+      data: quotes.map((q: any) => {
+        const items = (q.items as any[]) || [];
+        const subtotal = items.reduce((sum: number, item: any) => sum + (Number(item.total) || Number(item.unitPrice || 0) * Number(item.quantity || 1)), 0);
+        const total = subtotal + subtotal * (q.vatRate || 0);
+        return {
+          quoteId: q.id,
+          quoteNumber: q.token?.slice(0, 8)?.toUpperCase() || q.id.slice(0, 8),
+          clientName: q.client?.name || q.clientName,
+          siteName: q.site?.name,
+          total,
+          status: q.status,
+          lastSentAt: q.sentAt,
+          acceptedAt: q.acceptedAt,
+        };
+      })
     });
   } catch (error: any) {
     console.error("Quotes summary error:", error);

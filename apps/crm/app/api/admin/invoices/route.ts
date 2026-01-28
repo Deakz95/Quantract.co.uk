@@ -35,7 +35,7 @@ export const GET = withRequestLogging(async function GET() {
       orderBy: { createdAt: "desc" },
       include: {
         client: { select: { id: true, name: true, email: true } },
-        payments: true,
+        invoicePayments: true,
       },
     });
 
@@ -80,7 +80,6 @@ export const POST = withRequestLogging(async function POST(req: Request) {
       // Check if quote exists and belongs to this company
       const quote = await client.quote.findFirst({
         where: { id: quoteId, companyId: ctx.companyId },
-        include: { items: true },
       });
 
       if (!quote) {
@@ -95,6 +94,12 @@ export const POST = withRequestLogging(async function POST(req: Request) {
       if (existingInvoice) {
         return NextResponse.json({ ok: true, invoice: existingInvoice });
       }
+
+      // Compute totals from items JSON
+      const items = (quote.items as any[]) || [];
+      const subtotal = items.reduce((sum: number, item: any) => sum + (Number(item.total) || Number(item.unitPrice || 0) * Number(item.quantity || 1)), 0);
+      const vat = clampMoney(subtotal * (quote.vatRate || 0));
+      const total = clampMoney(subtotal + vat);
 
       // Generate invoice number
       const company = await client.company.findUnique({
@@ -124,9 +129,9 @@ export const POST = withRequestLogging(async function POST(req: Request) {
           invoiceNumber,
           clientName: quote.clientName,
           clientEmail: quote.clientEmail,
-          subtotal: quote.subtotal,
-          vat: quote.vat,
-          total: quote.total,
+          subtotal,
+          vat,
+          total,
           status: "draft",
           dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
           updatedAt: new Date(),

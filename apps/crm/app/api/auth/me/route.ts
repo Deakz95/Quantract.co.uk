@@ -1,14 +1,11 @@
 import { NextResponse } from "next/server";
 import { withRequestLogging, logError } from "@/lib/server/observability";
-import { getAuthContext } from "@/lib/serverAuth";
+import { requireCompanyContext } from "@/lib/serverAuth";
 import { getPrisma } from "@/lib/server/prisma";
 
 export const GET = withRequestLogging(async function GET() {
   try {
-    const ctx = await getAuthContext();
-    if (!ctx) {
-      return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
-    }
+    const ctx = await requireCompanyContext();
 
     const db = getPrisma();
     if (!db || process.env.QT_USE_PRISMA !== "1") {
@@ -31,7 +28,13 @@ export const GET = withRequestLogging(async function GET() {
         hasPassword: Boolean(user.passwordHash),
       }
     });
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.status === 401) {
+      return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
+    }
+    if (error?.status === 403) {
+      return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
+    }
     logError(error, { route: "/api/auth/me", action: "get_session" });
     return NextResponse.json({ ok: false, error: "internal_error" }, { status: 500 });
   }

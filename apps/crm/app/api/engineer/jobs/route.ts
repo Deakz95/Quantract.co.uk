@@ -49,7 +49,7 @@ export const GET = withRequestLogging(async function GET() {
     const jobs = await client.job.findMany({
       where: {
         companyId: authCtx.companyId,
-        assignedEngineerId: engineer.id,
+        engineerId: engineer.id,
       },
       orderBy: { createdAt: "desc" },
       include: {

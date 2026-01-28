@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 import { NextResponse } from "next/server";
-import { getAuthContext } from "@/lib/serverAuth";
+import { requireCompanyContext, getEffectiveRole } from "@/lib/serverAuth";
 import { getPrisma } from "@/lib/server/prisma";
 import { withRequestLogging, logError } from "@/lib/server/observability";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
@@ -21,17 +21,11 @@ type ActivityItem = {
 
 export const GET = withRequestLogging(async function GET() {
   try {
-    const authCtx = await getAuthContext();
-    if (!authCtx) {
-      return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
-    }
+    const authCtx = await requireCompanyContext();
+    const effectiveRole = getEffectiveRole(authCtx);
 
-    if (authCtx.role !== "admin") {
+    if (effectiveRole !== "admin" && effectiveRole !== "office") {
       return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
-    }
-
-    if (!authCtx.companyId) {
-      return NextResponse.json({ ok: false, error: "no_company" }, { status: 401 });
     }
 
     const prisma = getPrisma();
@@ -302,7 +296,13 @@ export const GET = withRequestLogging(async function GET() {
       ok: true,
       activities: topActivities,
     });
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.status === 401) {
+      return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
+    }
+    if (error?.status === 403) {
+      return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
+    }
     if (error instanceof PrismaClientKnownRequestError) {
       logError(error, { route: "/api/admin/dashboard/activity", action: "get" });
       return NextResponse.json({ ok: false, error: "database_error", code: error.code }, { status: 409 });

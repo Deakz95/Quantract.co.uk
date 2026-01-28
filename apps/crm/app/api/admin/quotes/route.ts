@@ -32,7 +32,6 @@ export const GET = withRequestLogging(async function GET() {
       where: { companyId: authCtx.companyId },
       orderBy: { createdAt: "desc" },
       include: {
-        items: true,
         client: { select: { id: true, name: true, email: true } },
         site: { select: { id: true, name: true, address1: true, city: true, postcode: true } },
       },
@@ -94,25 +93,15 @@ export const POST = withRequestLogging(async function POST(req: Request) {
       select: { invoiceNumberPrefix: true, nextInvoiceNumber: true },
     });
 
-    const quoteNumber = `Q-${String(company?.nextInvoiceNumber || 1).padStart(5, "0")}`;
-
     // Calculate totals from items
     const items = Array.isArray(body?.items) ? body.items : [];
     const vatRate = typeof body?.vatRate === "number" ? body.vatRate : 0.2;
-    const subtotal = items.reduce((sum: number, item: any) => {
-      const qty = Number(item.quantity || 1);
-      const price = Number(item.unitPrice || 0);
-      return sum + qty * price;
-    }, 0);
-    const vat = subtotal * vatRate;
-    const total = subtotal + vat;
 
     const quote = await client.quote.create({
       data: {
         id: randomUUID(),
         companyId: authCtx.companyId,
         token,
-        quoteNumber,
         clientId: typeof body?.clientId === "string" ? body.clientId : null,
         clientName,
         clientEmail,
@@ -120,23 +109,9 @@ export const POST = withRequestLogging(async function POST(req: Request) {
         siteAddress: body?.siteAddress || null,
         notes: body?.notes || null,
         vatRate,
-        subtotal,
-        vat,
-        total,
+        items: items as any,
         status: "draft",
         updatedAt: new Date(),
-        items: items.length > 0 ? {
-          create: items.map((item: any, index: number) => ({
-            id: randomUUID(),
-            description: String(item.description || ""),
-            quantity: Number(item.quantity || 1),
-            unitPrice: Number(item.unitPrice || 0),
-            sortOrder: index,
-          })),
-        } : undefined,
-      },
-      include: {
-        items: true,
       },
     });
 

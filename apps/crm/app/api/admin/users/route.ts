@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAuthContext } from "@/lib/serverAuth";
+import { requireCompanyContext, getEffectiveRole } from "@/lib/serverAuth";
 import { getPrisma } from "@/lib/server/prisma";
 import { withRequestLogging, logError } from "@/lib/server/observability";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
@@ -25,12 +25,10 @@ type UserRow = {
 
 export const GET = withRequestLogging(async function GET() {
   try {
-    const authCtx = await getAuthContext();
-    if (!authCtx) {
-      return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
-    }
+    const authCtx = await requireCompanyContext();
+    const effectiveRole = getEffectiveRole(authCtx);
 
-    if (authCtx.role !== "admin") {
+    if (effectiveRole !== "admin" && effectiveRole !== "office") {
       return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
     }
 
@@ -54,7 +52,13 @@ export const GET = withRequestLogging(async function GET() {
         createdAt: u.createdAt,
       })),
     });
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.status === 401) {
+      return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
+    }
+    if (error?.status === 403) {
+      return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
+    }
     if (error instanceof PrismaClientKnownRequestError) {
       logError(error, { route: "/api/admin/users", action: "list" });
       return NextResponse.json({ ok: false, error: "database_error", code: error.code }, { status: 409 });
@@ -66,12 +70,10 @@ export const GET = withRequestLogging(async function GET() {
 
 export const POST = withRequestLogging(async function POST(req: Request) {
   try {
-    const authCtx = await getAuthContext();
-    if (!authCtx) {
-      return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
-    }
+    const authCtx = await requireCompanyContext();
+    const effectiveRole = getEffectiveRole(authCtx);
 
-    if (authCtx.role !== "admin") {
+    if (effectiveRole !== "admin" && effectiveRole !== "office") {
       return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
     }
 
@@ -127,7 +129,13 @@ export const POST = withRequestLogging(async function POST(req: Request) {
         role: user.role,
       },
     });
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.status === 401) {
+      return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
+    }
+    if (error?.status === 403) {
+      return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
+    }
     if (error instanceof PrismaClientKnownRequestError) {
       logError(error, { route: "/api/admin/users", action: "create" });
       return NextResponse.json({ ok: false, error: "database_error", code: error.code }, { status: 409 });

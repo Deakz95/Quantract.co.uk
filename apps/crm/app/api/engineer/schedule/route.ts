@@ -68,7 +68,7 @@ export const GET = withRequestLogging(async function GET(req: Request) {
       },
       orderBy: { startAt: "asc" },
       include: {
-        job: { select: { id: true, title: true, jobNumber: true } },
+        job: { select: { id: true, title: true } },
       },
     });
 
@@ -78,7 +78,6 @@ export const GET = withRequestLogging(async function GET(req: Request) {
       endAtISO: e.endAt.toISOString(),
       jobId: e.jobId,
       jobTitle: e.job?.title,
-      jobNumber: e.job?.jobNumber,
       notes: e.notes,
     }));
 

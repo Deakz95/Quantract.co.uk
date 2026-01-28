@@ -83,7 +83,7 @@ export const GET = withRequestLogging(async function GET(req: Request) {
       },
       orderBy: { date: "asc" },
       include: {
-        job: { select: { id: true, title: true, jobNumber: true } },
+        job: { select: { id: true, title: true } },
       },
     });
 

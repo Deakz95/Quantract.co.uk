@@ -35,7 +35,7 @@ export const GET = withRequestLogging(async function GET(req: Request) {
       where: { jobId, companyId: authCtx.companyId },
       orderBy: { createdAt: "desc" },
       include: {
-        job: { select: { id: true, title: true, jobNumber: true } },
+        job: { select: { id: true, title: true } },
       },
     });
 

@@ -31,8 +31,8 @@ export const GET = withRequestLogging(async function GET() {
       include: {
         client: { select: { id: true, name: true, email: true } },
         site: { select: { id: true, name: true, address1: true, city: true, postcode: true } },
-        quote: { select: { id: true, quoteNumber: true, total: true } },
-        assignedEngineer: { select: { id: true, name: true, email: true } },
+        quote: { select: { id: true, token: true, status: true } },
+        engineer: { select: { id: true, name: true, email: true } },
       },
     });
 
@@ -118,7 +118,7 @@ export const POST = withRequestLogging(async function POST(req: Request) {
         data: {
           id: randomUUID(),
           companyId: ctx.companyId,
-          jobNumber,
+          // jobNumber not yet in schema
           clientId,
           siteId,
           title,
@@ -168,21 +168,21 @@ export const POST = withRequestLogging(async function POST(req: Request) {
       data: {
         id: randomUUID(),
         companyId: ctx.companyId,
-        jobNumber,
+        // jobNumber not yet in schema
         quoteId,
         clientId: quote.clientId,
         siteId: quote.siteId,
-        title: `Job from Quote ${quote.quoteNumber || quoteId}`,
+        title: `Job from Quote ${quoteId.slice(0, 8)}`,
         status: "pending",
-        budgetSubtotal: quote.subtotal,
-        budgetVat: quote.vat,
-        budgetTotal: quote.total,
+        budgetSubtotal: 0,
+        budgetVat: 0,
+        budgetTotal: 0,
         updatedAt: new Date(),
       },
       include: {
         client: { select: { id: true, name: true } },
         site: { select: { id: true, name: true, address1: true } },
-        quote: { select: { id: true, quoteNumber: true } },
+        quote: { select: { id: true, token: true } },
       },
     });
 
