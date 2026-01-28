@@ -66,7 +66,7 @@ export default function KanbanBoard() {
           { cache: "no-store" }
         ),
         apiRequest<{ ok: boolean; stages: DealStage[]; error?: string }>(
-          "/api/admin/deals/stages",
+          "/api/admin/deal-stages",
           { cache: "no-store" }
         ),
       ]);

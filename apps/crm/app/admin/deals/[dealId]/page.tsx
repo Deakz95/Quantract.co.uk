@@ -92,7 +92,7 @@ export default function DealDetailPage() {
     try {
       const [dealRes, stagesRes] = await Promise.all([
         apiRequest<{ ok: boolean; deal: Deal; error?: string }>(`/api/admin/deals/${dealId}`),
-        apiRequest<{ ok: boolean; stages: DealStage[]; error?: string }>("/api/admin/deals/stages"),
+        apiRequest<{ ok: boolean; stages: DealStage[]; error?: string }>("/api/admin/deal-stages"),
       ]);
 
       if (!dealRes.ok) throw new Error(dealRes.error || "Failed to load deal");

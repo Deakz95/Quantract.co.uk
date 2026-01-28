@@ -71,7 +71,7 @@ export default function StageSettingsDialog({ open, onOpenChange, onSuccess }: S
       setLoading(true);
       try {
         const res = await apiRequest<{ ok: boolean; stages?: DealStage[]; error?: string }>(
-          "/api/admin/deals/stages",
+          "/api/admin/deal-stages",
           { cache: "no-store" }
         );
 
@@ -106,7 +106,7 @@ export default function StageSettingsDialog({ open, onOpenChange, onSuccess }: S
       };
 
       const res = await apiRequest<{ ok: boolean; stage?: DealStage; error?: string }>(
-        "/api/admin/deals/stages",
+        "/api/admin/deal-stages",
         {
           method: "POST",
           headers: { "content-type": "application/json" },
@@ -165,7 +165,7 @@ export default function StageSettingsDialog({ open, onOpenChange, onSuccess }: S
       };
 
       const res = await apiRequest<{ ok: boolean; error?: string }>(
-        `/api/admin/deals/stages/${editingStage.id}`,
+        `/api/admin/deal-stages/${editingStage.id}`,
         {
           method: "PATCH",
           headers: { "content-type": "application/json" },
@@ -202,7 +202,7 @@ export default function StageSettingsDialog({ open, onOpenChange, onSuccess }: S
     setSaving(true);
     try {
       const res = await apiRequest<{ ok: boolean; error?: string }>(
-        `/api/admin/deals/stages/${stageToDelete.id}`,
+        `/api/admin/deal-stages/${stageToDelete.id}`,
         { method: "DELETE" }
       );
 
@@ -236,7 +236,7 @@ export default function StageSettingsDialog({ open, onOpenChange, onSuccess }: S
     // Save to API
     try {
       const res = await apiRequest<{ ok: boolean; error?: string }>(
-        "/api/admin/deals/stages/reorder",
+        "/api/admin/deal-stages/reorder",
         {
           method: "POST",
           headers: { "content-type": "application/json" },

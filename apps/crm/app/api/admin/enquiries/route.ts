@@ -25,12 +25,18 @@ export const GET = withRequestLogging(async function GET() {
       where: { companyId: authCtx.companyId },
       orderBy: { createdAt: "desc" },
       include: {
-        stage: { select: { id: true, name: true, color: true } },
+        pipelineStage: { select: { id: true, name: true, color: true } },
         owner: { select: { id: true, name: true, email: true } },
       },
     });
 
-    return NextResponse.json({ ok: true, enquiries: enquiries || [] });
+    // Map pipelineStage → stage for frontend compatibility
+    const mapped = enquiries.map((e: any) => {
+      const { pipelineStage, ...rest } = e;
+      return { ...rest, stage: pipelineStage };
+    });
+
+    return NextResponse.json({ ok: true, enquiries: mapped });
   } catch (error: any) {
     if (error?.status === 401) {
       return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
@@ -93,10 +99,14 @@ export const POST = withRequestLogging(async function POST(req: Request) {
         valueEstimate: body.valueEstimate || null,
       },
       include: {
-        stage: { select: { id: true, name: true, color: true } },
+        pipelineStage: { select: { id: true, name: true, color: true } },
         owner: { select: { id: true, name: true, email: true } },
       },
     });
+
+    // Map pipelineStage → stage for frontend compatibility
+    const { pipelineStage, ...enquiryRest } = enquiry as any;
+    const mappedEnquiry = { ...enquiryRest, stage: pipelineStage };
 
     // Audit event for enquiry creation
     await repo.recordAuditEvent({
@@ -112,7 +122,7 @@ export const POST = withRequestLogging(async function POST(req: Request) {
       },
     });
 
-    return NextResponse.json({ ok: true, enquiry });
+    return NextResponse.json({ ok: true, enquiry: mappedEnquiry });
   } catch (error: any) {
     if (error?.status === 401) {
       return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
