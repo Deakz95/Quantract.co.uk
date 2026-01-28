@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAuthContext } from "@/lib/serverAuth";
+import { requireCompanyContext, getEffectiveRole } from "@/lib/serverAuth";
 import { getPrisma } from "@/lib/server/prisma";
 import * as repo from "@/lib/server/repo";
 import { withRequestLogging, logError } from "@/lib/server/observability";
@@ -10,18 +10,13 @@ export const runtime = "nodejs";
 
 export const GET = withRequestLogging(async function GET() {
   try {
-    const authCtx = await getAuthContext();
-    if (!authCtx) {
-      return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
-    }
+    // Use requireCompanyContext for company-scoped data access
+    const ctx = await requireCompanyContext();
+    const effectiveRole = getEffectiveRole(ctx);
 
-    // Only admin role can access this endpoint
-    if (authCtx.role !== "admin") {
+    // Only admin and office roles can list clients
+    if (effectiveRole !== "admin" && effectiveRole !== "office") {
       return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
-    }
-
-    if (!authCtx.companyId) {
-      return NextResponse.json({ ok: false, error: "no_company" }, { status: 401 });
     }
 
     const client = getPrisma();
@@ -30,8 +25,9 @@ export const GET = withRequestLogging(async function GET() {
     }
 
     // Select only columns that exist in production to avoid schema mismatch errors
+    // companyId is guaranteed non-null by requireCompanyContext
     const clients = await client.client.findMany({
-      where: { companyId: authCtx.companyId },
+      where: { companyId: ctx.companyId },
       orderBy: { createdAt: "desc" },
       select: {
         id: true,
@@ -54,7 +50,14 @@ export const GET = withRequestLogging(async function GET() {
     });
 
     return NextResponse.json({ ok: true, clients: clients || [] });
-  } catch (error) {
+  } catch (error: any) {
+    // Handle auth errors with appropriate status codes
+    if (error?.status === 401) {
+      return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
+    }
+    if (error?.status === 403) {
+      return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
+    }
     if (error instanceof PrismaClientKnownRequestError) {
       logError(error, { route: "/api/admin/clients", action: "list" });
       return NextResponse.json({ ok: false, error: "database_error", code: error.code }, { status: 409 });
@@ -66,18 +69,13 @@ export const GET = withRequestLogging(async function GET() {
 
 export const POST = withRequestLogging(async function POST(req: Request) {
   try {
-    const authCtx = await getAuthContext();
-    if (!authCtx) {
-      return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
-    }
+    // Use requireCompanyContext for company-scoped data access
+    const ctx = await requireCompanyContext();
+    const effectiveRole = getEffectiveRole(ctx);
 
-    // Only admin role can access this endpoint
-    if (authCtx.role !== "admin") {
+    // Only admin can create clients
+    if (effectiveRole !== "admin") {
       return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
-    }
-
-    if (!authCtx.companyId) {
-      return NextResponse.json({ ok: false, error: "no_company" }, { status: 401 });
     }
 
     const client = getPrisma();
@@ -96,10 +94,11 @@ export const POST = withRequestLogging(async function POST(req: Request) {
       );
     }
 
+    // companyId is guaranteed non-null by requireCompanyContext
     const created = await client.client.create({
       data: {
         id: randomUUID(),
-        companyId: authCtx.companyId,
+        companyId: ctx.companyId,
         name,
         email,
         phone: body?.phone ? String(body.phone).trim() : null,
@@ -121,13 +120,20 @@ export const POST = withRequestLogging(async function POST(req: Request) {
       entityType: "client",
       entityId: created.id,
       action: "client.created",
-      actorRole: "admin",
-      actor: authCtx.email,
+      actorRole: effectiveRole,
+      actor: ctx.email,
       meta: { name, email },
     });
 
     return NextResponse.json({ ok: true, client: created });
-  } catch (error) {
+  } catch (error: any) {
+    // Handle auth errors with appropriate status codes
+    if (error?.status === 401) {
+      return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
+    }
+    if (error?.status === 403) {
+      return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
+    }
     if (error instanceof PrismaClientKnownRequestError) {
       logError(error, { route: "/api/admin/clients", action: "create" });
       return NextResponse.json({ ok: false, error: "database_error", code: error.code }, { status: 409 });

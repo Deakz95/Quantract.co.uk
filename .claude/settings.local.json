@@ -41,7 +41,9 @@
       "Bash(npx prisma format:*)",
       "Bash(npm run lint:*)",
       "Bash(git fetch:*)",
-      "Bash(git rev-parse:*)"
+      "Bash(git rev-parse:*)",
+      "Bash(npx prisma validate:*)",
+      "Bash(npx prisma migrate dev:*)"
     ]
   }
 }

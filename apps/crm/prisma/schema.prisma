@@ -294,15 +294,20 @@ model Company {
 model CompanyUser {
   id        String   @id
   companyId String
-  email     String
-  role      String
+  userId    String?  // FK to User - nullable during migration, will be backfilled
+  email     String   // Kept for backwards compatibility and invite flows
+  role      String   // Authoritative role for company-scoped permissions
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime
+
   company   Company  @relation(fields: [companyId], references: [id])
+  user      User?    @relation("UserMemberships", fields: [userId], references: [id])
 
   @@unique([companyId, email])
+  @@unique([companyId, userId]) // Unique membership per user per company (when userId is set)
   @@index([email])
+  @@index([userId])
 }
 
 // Legal Entity - represents a trading company/LTD under the organization
@@ -1277,6 +1282,8 @@ model User {
   activitiesCreated         Activity[]               @relation("ActivityCreator")
   savedViews                SavedView[]              @relation("UserSavedViews")
   importJobs                ImportJob[]              @relation("UserImports")
+  // Company memberships (authoritative for company-scoped permissions)
+  memberships               CompanyUser[]            @relation("UserMemberships")
 
   @@unique([role, email])
   @@index([companyId])

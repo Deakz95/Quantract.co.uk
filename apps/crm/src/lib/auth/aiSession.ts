@@ -1,8 +1,9 @@
 import { neonAuth } from "@neondatabase/auth/next/server";
-import { getAuthContext } from "@/lib/serverAuth";
+import { getAuthContext, type Role } from "@/lib/serverAuth";
 import { getPrisma } from "@/lib/server/prisma";
 
-export type AIRole = "admin" | "engineer" | "client";
+// Use Role from serverAuth for consistency
+export type AIRole = Role;
 
 export type AISessionData = {
   role: AIRole;

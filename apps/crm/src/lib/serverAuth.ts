@@ -5,7 +5,15 @@ import { neonAuth } from "@neondatabase/auth/next/server";
 import { cookies } from "next/headers";
 import { randomUUID } from "crypto";
 
-export type Role = "admin" | "client" | "engineer";
+/**
+ * Supported roles in the system.
+ * - admin: Full access to company data and settings
+ * - office: Back-office staff with limited permissions
+ * - finance: Finance team with billing/invoice access
+ * - engineer: Field engineers with job-specific access
+ * - client: External clients with portal access
+ */
+export type Role = "admin" | "office" | "finance" | "engineer" | "client";
 
 // ============================================================================
 // COOKIE CONFIGURATION - Centralized security settings
@@ -63,12 +71,15 @@ function getClearCookieOptions() {
 
 export { getSession }; // ✅ fixes imports like: import { getSession } from "@/lib/serverAuth"
 
+/** All valid roles for iteration */
+export const ALL_ROLES: Role[] = ["admin", "office", "finance", "engineer", "client"];
+
 /**
  * Alias for requireRoles - allows any authenticated user
  * Used by task/checklist routes that need basic auth but no specific role
  */
 export async function requireAuth() {
-  return await requireRoles(["admin", "client", "engineer"]);
+  return await requireRoles(ALL_ROLES);
 }
 
 /**
@@ -139,8 +150,10 @@ export async function getRoleFromCookie(): Promise<Role | null> {
     // Check both prefixed and non-prefixed for migration compatibility
     const raw = jar.get(ROLE_COOKIE)?.value || jar.get("qt_session_v1")?.value || "";
     if (raw === "role:admin") return "admin";
-    if (raw === "role:client") return "client";
+    if (raw === "role:office") return "office";
+    if (raw === "role:finance") return "finance";
     if (raw === "role:engineer") return "engineer";
+    if (raw === "role:client") return "client";
     return null;
   } catch {
     return null;
@@ -173,6 +186,29 @@ export type AuthContext = {
   companyId: string | null;
   userId: string;
   sessionId: string;
+};
+
+/**
+ * AuthContext with guaranteed companyId - returned by requireCompanyContext()
+ */
+export type CompanyAuthContext = AuthContext & {
+  companyId: string;
+  /** Role from CompanyUser membership (authoritative for company-scoped permissions) */
+  membershipRole?: Role;
+  /** Whether the membership is active */
+  membershipActive?: boolean;
+};
+
+/**
+ * Membership record from CompanyUser table
+ */
+export type Membership = {
+  id: string;
+  companyId: string;
+  userId: string | null;
+  email: string;
+  role: Role;
+  isActive: boolean;
 };
 
 /**
@@ -292,6 +328,150 @@ export async function requireCompanyId(): Promise<string> {
   return companyId;
 }
 
+// ============================================================================
+// COMPANY CONTEXT & MEMBERSHIP HELPERS
+// ============================================================================
+
+/**
+ * Get membership record for a user in a company.
+ * Tries userId first (if available), then falls back to email.
+ * Returns null if no membership found.
+ */
+export async function getMembership(
+  companyId: string,
+  opts: { userId?: string; email?: string }
+): Promise<Membership | null> {
+  const prisma = p();
+
+  // Try by userId first if available (faster, more reliable)
+  if (opts.userId) {
+    const byUserId = await prisma.companyUser.findFirst({
+      where: { companyId, userId: opts.userId },
+    });
+    if (byUserId) {
+      return {
+        id: byUserId.id,
+        companyId: byUserId.companyId,
+        userId: byUserId.userId ?? null,
+        email: byUserId.email,
+        role: byUserId.role as Role,
+        isActive: byUserId.isActive,
+      };
+    }
+  }
+
+  // Fall back to email lookup
+  if (opts.email) {
+    const byEmail = await prisma.companyUser.findUnique({
+      where: { companyId_email: { companyId, email: opts.email.toLowerCase() } },
+    });
+    if (byEmail) {
+      return {
+        id: byEmail.id,
+        companyId: byEmail.companyId,
+        userId: byEmail.userId ?? null,
+        email: byEmail.email,
+        role: byEmail.role as Role,
+        isActive: byEmail.isActive,
+      };
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Require a valid, active membership for the current user in the given company.
+ * Throws 403 if membership not found or inactive.
+ */
+export async function requireMembership(
+  companyId: string,
+  opts: { userId?: string; email?: string }
+): Promise<Membership> {
+  const membership = await getMembership(companyId, opts);
+
+  if (!membership) {
+    const err: any = new Error("No membership found for this company");
+    err.status = 403;
+    throw err;
+  }
+
+  if (!membership.isActive) {
+    const err: any = new Error("Membership is inactive");
+    err.status = 403;
+    throw err;
+  }
+
+  return membership;
+}
+
+/**
+ * Require authenticated user with a valid company context.
+ * This is the PRIMARY auth helper for all CRM data routes.
+ *
+ * - Ensures user is authenticated
+ * - Ensures user has a companyId
+ * - Optionally resolves membership for role-based permissions
+ *
+ * Use this instead of requireAuth() for any route that accesses company-scoped data.
+ *
+ * @throws 401 if not authenticated
+ * @throws 401 if no company context (user not associated with a company)
+ * @throws 403 if membership exists but is inactive
+ */
+export async function requireCompanyContext(): Promise<CompanyAuthContext> {
+  // Get base auth context
+  const ctx = await requireAuth();
+
+  if (!ctx.companyId) {
+    const err: any = new Error("No company context - user not associated with a company");
+    err.status = 401;
+    throw err;
+  }
+
+  // Build the company context
+  const companyCtx: CompanyAuthContext = {
+    ...ctx,
+    companyId: ctx.companyId,
+  };
+
+  // Try to resolve membership for authoritative role
+  try {
+    const membership = await getMembership(ctx.companyId, {
+      userId: ctx.userId,
+      email: ctx.email,
+    });
+
+    if (membership) {
+      // Check if membership is active
+      if (!membership.isActive) {
+        const err: any = new Error("Membership is inactive");
+        err.status = 403;
+        throw err;
+      }
+      companyCtx.membershipRole = membership.role;
+      companyCtx.membershipActive = membership.isActive;
+    }
+    // If no membership record exists, we allow access based on User.companyId
+    // This maintains backwards compatibility during migration
+  } catch (e: any) {
+    // If it's a 403 from inactive membership, rethrow
+    if (e?.status === 403) throw e;
+    // Otherwise, DB might not be available - continue without membership info
+    console.warn("[requireCompanyContext] Could not resolve membership:", e);
+  }
+
+  return companyCtx;
+}
+
+/**
+ * Get the effective role for permission checks.
+ * Uses membership role if available (authoritative), otherwise falls back to User.role.
+ */
+export function getEffectiveRole(ctx: CompanyAuthContext): Role {
+  return ctx.membershipRole ?? ctx.role;
+}
+
 /** ✅ used by engineer/client routes */
 export async function getUserEmail(): Promise<string | null> {
   const ctx = await getAuthContext();
@@ -300,24 +480,36 @@ export async function getUserEmail(): Promise<string | null> {
 }
 
 
+/**
+ * Require a specific capability for the current user.
+ * Uses membership role (authoritative) if available, otherwise falls back to User.role.
+ *
+ * Capability checks:
+ * 1. Check if role defaults include the capability
+ * 2. Check UserPermission table for explicit grants
+ */
 export async function requireCapability(required: Capability) {
-  const ctx = await requireRole("admin"); // baseline: only admins can access these routes unless broadened later
-  
-  // ADMIN role has all capabilities by default - no need to check DB
-  const roleKey = ctx.role.toUpperCase();
+  // Use requireCompanyContext to ensure we have company context and membership info
+  const ctx = await requireCompanyContext();
+
+  // Use effective role (membership role if available, else User.role)
+  const effectiveRole = getEffectiveRole(ctx);
+  const roleKey = effectiveRole.toUpperCase();
+
+  // Check if role defaults include the capability
   if (ROLE_DEFAULTS[roleKey]?.includes(required)) {
     return ctx;
   }
-  
+
   // Check for explicit permissions in database
   const prisma = p();
   try {
     const rows = await prisma.userPermission.findMany({
-      where: { companyId: ctx.companyId, userId: ctx.userId, enabled: true }
+      where: { companyId: ctx.companyId, userId: ctx.userId, enabled: true },
     });
 
     const caps = rows.map((r: { key: string }) => r.key) as Capability[];
-    if (!hasCapability(ctx.role, caps, required)) {
+    if (!hasCapability(effectiveRole, caps, required)) {
       const err: any = new Error("Forbidden");
       err.status = 403;
       throw err;
@@ -332,7 +524,7 @@ export async function requireCapability(required: Capability) {
       throw err;
     }
   }
-  
+
   return ctx;
 }
 

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAuthContext } from "@/lib/serverAuth";
+import { requireCompanyContext, getEffectiveRole } from "@/lib/serverAuth";
 import { getPrisma } from "@/lib/server/prisma";
 import { clampMoney } from "@/lib/invoiceMath";
 import { withRequestLogging, logError } from "@/lib/server/observability";
@@ -8,19 +8,20 @@ import { randomBytes, randomUUID } from "crypto";
 
 export const runtime = "nodejs";
 
+/** Roles that can view invoices (matches invoices.view capability) */
+const INVOICE_VIEW_ROLES = ["admin", "office", "finance"];
+/** Roles that can create/manage invoices (matches invoices.manage capability) */
+const INVOICE_MANAGE_ROLES = ["admin", "finance"];
+
 export const GET = withRequestLogging(async function GET() {
   try {
-    const authCtx = await getAuthContext();
-    if (!authCtx) {
-      return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
-    }
+    // Use requireCompanyContext for company-scoped data access
+    const ctx = await requireCompanyContext();
+    const effectiveRole = getEffectiveRole(ctx);
 
-    if (authCtx.role !== "admin") {
+    // Only roles with invoices.view capability can list invoices
+    if (!INVOICE_VIEW_ROLES.includes(effectiveRole)) {
       return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
-    }
-
-    if (!authCtx.companyId) {
-      return NextResponse.json({ ok: false, error: "no_company" }, { status: 401 });
     }
 
     const client = getPrisma();
@@ -28,8 +29,9 @@ export const GET = withRequestLogging(async function GET() {
       return NextResponse.json({ ok: false, error: "service_unavailable" }, { status: 503 });
     }
 
+    // companyId is guaranteed non-null by requireCompanyContext
     const invoices = await client.invoice.findMany({
-      where: { companyId: authCtx.companyId },
+      where: { companyId: ctx.companyId },
       orderBy: { createdAt: "desc" },
       include: {
         client: { select: { id: true, name: true, email: true } },
@@ -38,7 +40,13 @@ export const GET = withRequestLogging(async function GET() {
     });
 
     return NextResponse.json({ ok: true, invoices: invoices || [] });
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.status === 401) {
+      return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
+    }
+    if (error?.status === 403) {
+      return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
+    }
     if (error instanceof PrismaClientKnownRequestError) {
       logError(error, { route: "/api/admin/invoices", action: "list" });
       return NextResponse.json({ ok: false, error: "database_error", code: error.code }, { status: 409 });
@@ -50,17 +58,13 @@ export const GET = withRequestLogging(async function GET() {
 
 export const POST = withRequestLogging(async function POST(req: Request) {
   try {
-    const authCtx = await getAuthContext();
-    if (!authCtx) {
-      return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
-    }
+    // Use requireCompanyContext for company-scoped data access
+    const ctx = await requireCompanyContext();
+    const effectiveRole = getEffectiveRole(ctx);
 
-    if (authCtx.role !== "admin") {
+    // Only roles with invoices.manage capability can create invoices
+    if (!INVOICE_MANAGE_ROLES.includes(effectiveRole)) {
       return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
-    }
-
-    if (!authCtx.companyId) {
-      return NextResponse.json({ ok: false, error: "no_company" }, { status: 401 });
     }
 
     const client = getPrisma();
@@ -75,7 +79,7 @@ export const POST = withRequestLogging(async function POST(req: Request) {
     if (quoteId) {
       // Check if quote exists and belongs to this company
       const quote = await client.quote.findFirst({
-        where: { id: quoteId, companyId: authCtx.companyId },
+        where: { id: quoteId, companyId: ctx.companyId },
         include: { items: true },
       });
 
@@ -85,7 +89,7 @@ export const POST = withRequestLogging(async function POST(req: Request) {
 
       // Check if invoice already exists for this quote
       const existingInvoice = await client.invoice.findFirst({
-        where: { quoteId, companyId: authCtx.companyId },
+        where: { quoteId, companyId: ctx.companyId },
       });
 
       if (existingInvoice) {
@@ -94,7 +98,7 @@ export const POST = withRequestLogging(async function POST(req: Request) {
 
       // Generate invoice number
       const company = await client.company.findUnique({
-        where: { id: authCtx.companyId },
+        where: { id: ctx.companyId },
         select: { invoiceNumberPrefix: true, nextInvoiceNumber: true },
       });
 
@@ -104,7 +108,7 @@ export const POST = withRequestLogging(async function POST(req: Request) {
 
       // Increment next invoice number
       await client.company.update({
-        where: { id: authCtx.companyId },
+        where: { id: ctx.companyId },
         data: { nextInvoiceNumber: num + 1 },
       });
 
@@ -113,7 +117,7 @@ export const POST = withRequestLogging(async function POST(req: Request) {
       const invoice = await client.invoice.create({
         data: {
           id: randomUUID(),
-          companyId: authCtx.companyId,
+          companyId: ctx.companyId,
           quoteId,
           clientId: quote.clientId,
           token,
@@ -145,7 +149,7 @@ export const POST = withRequestLogging(async function POST(req: Request) {
 
     // Generate invoice number
     const company = await client.company.findUnique({
-      where: { id: authCtx.companyId },
+      where: { id: ctx.companyId },
       select: { invoiceNumberPrefix: true, nextInvoiceNumber: true },
     });
 
@@ -154,7 +158,7 @@ export const POST = withRequestLogging(async function POST(req: Request) {
     const invoiceNumber = `${prefix}${String(num).padStart(5, "0")}`;
 
     await client.company.update({
-      where: { id: authCtx.companyId },
+      where: { id: ctx.companyId },
       data: { nextInvoiceNumber: num + 1 },
     });
 
@@ -163,7 +167,7 @@ export const POST = withRequestLogging(async function POST(req: Request) {
     const invoice = await client.invoice.create({
       data: {
         id: randomUUID(),
-        companyId: authCtx.companyId,
+        companyId: ctx.companyId,
         token,
         invoiceNumber,
         clientName,
@@ -178,7 +182,13 @@ export const POST = withRequestLogging(async function POST(req: Request) {
     });
 
     return NextResponse.json({ ok: true, invoice });
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.status === 401) {
+      return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
+    }
+    if (error?.status === 403) {
+      return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
+    }
     if (error instanceof PrismaClientKnownRequestError) {
       logError(error, { route: "/api/admin/invoices", action: "create" });
       return NextResponse.json({ ok: false, error: "database_error", code: error.code }, { status: 409 });

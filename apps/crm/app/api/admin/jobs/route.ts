@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAuthContext } from "@/lib/serverAuth";
+import { requireCompanyContext, getEffectiveRole } from "@/lib/serverAuth";
 import { getPrisma } from "@/lib/server/prisma";
 import { withRequestLogging, logError } from "@/lib/server/observability";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
@@ -9,17 +9,13 @@ export const runtime = "nodejs";
 
 export const GET = withRequestLogging(async function GET() {
   try {
-    const authCtx = await getAuthContext();
-    if (!authCtx) {
-      return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
-    }
+    // Use requireCompanyContext for company-scoped data access
+    const ctx = await requireCompanyContext();
+    const effectiveRole = getEffectiveRole(ctx);
 
-    if (authCtx.role !== "admin") {
+    // Only admin and office roles can list all jobs
+    if (effectiveRole !== "admin" && effectiveRole !== "office") {
       return NextResponse.json({ error: "forbidden" }, { status: 403 });
-    }
-
-    if (!authCtx.companyId) {
-      return NextResponse.json({ error: "no_company" }, { status: 401 });
     }
 
     const client = getPrisma();
@@ -28,8 +24,9 @@ export const GET = withRequestLogging(async function GET() {
     }
 
     // IMPORTANT: return the array directly (UI + Playwright expect an array)
+    // companyId is guaranteed non-null by requireCompanyContext
     const jobs = await client.job.findMany({
-      where: { companyId: authCtx.companyId },
+      where: { companyId: ctx.companyId },
       orderBy: { createdAt: "desc" },
       include: {
         client: { select: { id: true, name: true, email: true } },
@@ -40,7 +37,14 @@ export const GET = withRequestLogging(async function GET() {
     });
 
     return NextResponse.json(jobs || []);
-  } catch (error) {
+  } catch (error: any) {
+    // Handle auth errors with appropriate status codes
+    if (error?.status === 401) {
+      return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
+    }
+    if (error?.status === 403) {
+      return NextResponse.json({ error: "forbidden" }, { status: 403 });
+    }
     if (error instanceof PrismaClientKnownRequestError) {
       logError(error, { route: "/api/admin/jobs", action: "list" });
       return NextResponse.json({ error: "database_error", code: error.code }, { status: 409 });
@@ -52,17 +56,13 @@ export const GET = withRequestLogging(async function GET() {
 
 export const POST = withRequestLogging(async function POST(req: Request) {
   try {
-    const authCtx = await getAuthContext();
-    if (!authCtx) {
-      return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
-    }
+    // Use requireCompanyContext for company-scoped data access
+    const ctx = await requireCompanyContext();
+    const effectiveRole = getEffectiveRole(ctx);
 
-    if (authCtx.role !== "admin") {
+    // Only admin can create jobs
+    if (effectiveRole !== "admin") {
       return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
-    }
-
-    if (!authCtx.companyId) {
-      return NextResponse.json({ ok: false, error: "no_company" }, { status: 401 });
     }
 
     const client = getPrisma();
@@ -80,7 +80,7 @@ export const POST = withRequestLogging(async function POST(req: Request) {
     };
 
     // Generate job number
-    const jobCount = await client.job.count({ where: { companyId: authCtx.companyId } });
+    const jobCount = await client.job.count({ where: { companyId: ctx.companyId } });
     const jobNumber = `JOB-${String(jobCount + 1).padStart(5, "0")}`;
 
     // Manual job creation
@@ -101,14 +101,14 @@ export const POST = withRequestLogging(async function POST(req: Request) {
 
       // Verify client and site belong to this company
       const clientRecord = await client.client.findFirst({
-        where: { id: clientId, companyId: authCtx.companyId },
+        where: { id: clientId, companyId: ctx.companyId },
       });
       if (!clientRecord) {
         return NextResponse.json({ ok: false, error: "client_not_found" }, { status: 404 });
       }
 
       const site = await client.site.findFirst({
-        where: { id: siteId, companyId: authCtx.companyId },
+        where: { id: siteId, companyId: ctx.companyId },
       });
       if (!site) {
         return NextResponse.json({ ok: false, error: "site_not_found" }, { status: 404 });
@@ -117,7 +117,7 @@ export const POST = withRequestLogging(async function POST(req: Request) {
       const job = await client.job.create({
         data: {
           id: randomUUID(),
-          companyId: authCtx.companyId,
+          companyId: ctx.companyId,
           jobNumber,
           clientId,
           siteId,
@@ -144,7 +144,7 @@ export const POST = withRequestLogging(async function POST(req: Request) {
 
     // Check if job already exists for this quote
     const existingJob = await client.job.findFirst({
-      where: { quoteId, companyId: authCtx.companyId },
+      where: { quoteId, companyId: ctx.companyId },
     });
 
     if (existingJob) {
@@ -153,7 +153,7 @@ export const POST = withRequestLogging(async function POST(req: Request) {
 
     // Get the quote
     const quote = await client.quote.findFirst({
-      where: { id: quoteId, companyId: authCtx.companyId },
+      where: { id: quoteId, companyId: ctx.companyId },
     });
 
     if (!quote) {
@@ -167,7 +167,7 @@ export const POST = withRequestLogging(async function POST(req: Request) {
     const job = await client.job.create({
       data: {
         id: randomUUID(),
-        companyId: authCtx.companyId,
+        companyId: ctx.companyId,
         jobNumber,
         quoteId,
         clientId: quote.clientId,
