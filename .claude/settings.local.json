@@ -43,7 +43,8 @@
       "Bash(git fetch:*)",
       "Bash(git rev-parse:*)",
       "Bash(npx prisma validate:*)",
-      "Bash(npx prisma migrate dev:*)"
+      "Bash(npx prisma migrate dev:*)",
+      "Bash(npx prisma migrate:*)"
     ]
   }
 }
