@@ -44,7 +44,11 @@
       "Bash(git rev-parse:*)",
       "Bash(npx prisma validate:*)",
       "Bash(npx prisma migrate dev:*)",
-      "Bash(npx prisma migrate:*)"
+      "Bash(npx prisma migrate:*)",
+      "Bash(DATABASE_URL='postgresql://neondb_owner:npg_bopvBOL5mts8@ep-damp-lake-ab5zv5f0-pooler.eu-west-2.aws.neon.tech/neondb?sslmode=require' DIRECT_URL='postgresql://neondb_owner:npg_bopvBOL5mts8@ep-damp-lake-ab5zv5f0.eu-west-2.aws.neon.tech/neondb?sslmode=require' npx prisma migrate:*)",
+      "Bash(DATABASE_URL='postgresql://neondb_owner:npg_bopvBOL5mts8@ep-damp-lake-ab5zv5f0-pooler.eu-west-2.aws.neon.tech/neondb?sslmode=require' DIRECT_URL='postgresql://neondb_owner:npg_bopvBOL5mts8@ep-damp-lake-ab5zv5f0.eu-west-2.aws.neon.tech/neondb?sslmode=require' npx prisma db push:*)",
+      "Bash(DATABASE_URL='postgresql://neondb_owner:npg_bopvBOL5mts8@ep-damp-lake-ab5zv5f0-pooler.eu-west-2.aws.neon.tech/neondb?sslmode=require' DIRECT_URL='postgresql://neondb_owner:npg_bopvBOL5mts8@ep-damp-lake-ab5zv5f0.eu-west-2.aws.neon.tech/neondb?sslmode=require' npx prisma:*)",
+      "Bash(PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION=\"yes\" DATABASE_URL='postgresql://neondb_owner:npg_bopvBOL5mts8@ep-damp-lake-ab5zv5f0-pooler.eu-west-2.aws.neon.tech/neondb?sslmode=require' DIRECT_URL='postgresql://neondb_owner:npg_bopvBOL5mts8@ep-damp-lake-ab5zv5f0.eu-west-2.aws.neon.tech/neondb?sslmode=require' npx prisma migrate reset:*)"
     ]
   }
 }
