@@ -1,43 +1,33 @@
 import { NextResponse } from "next/server";
 import { createAuthClient } from "@neondatabase/auth/next";
-import { cookies } from "next/headers";
+import { requireAuth } from "@/lib/serverAuth";
 
 export const runtime = "nodejs";
 
 export async function POST() {
   try {
+    let ctx;
+    try {
+      ctx = await requireAuth();
+    } catch (e: any) {
+      return NextResponse.json(
+        { ok: false, error: e?.message || "Not authenticated" },
+        { status: e?.status || 401 }
+      );
+    }
+
+    if (!ctx.email) {
+      return NextResponse.json(
+        { ok: false, error: "No email found for user" },
+        { status: 401 }
+      );
+    }
+
     const authClient = createAuthClient();
-
-    // Get current session from cookies
-    const cookieStore = await cookies();
-    const sessionToken = cookieStore.get("auth-token")?.value;
-
-    if (!sessionToken) {
-      return NextResponse.json(
-        { ok: false, error: "Not authenticated" },
-        { status: 401 }
-      );
-    }
-
-    // Get current user
-    const session = await authClient.getSession({
-      fetchOptions: {
-        headers: {
-          cookie: `auth-token=${sessionToken}`,
-        },
-      },
-    });
-
-    if (!session?.data?.user?.email) {
-      return NextResponse.json(
-        { ok: false, error: "No user found in session" },
-        { status: 401 }
-      );
-    }
 
     // Send verification email
     const { error } = await authClient.sendVerificationEmail({
-      email: session.data.user.email,
+      email: ctx.email,
     });
 
     if (error) {
@@ -53,6 +43,10 @@ export async function POST() {
       message: "Verification email sent",
     });
   } catch (error) {
+    const err = error as any;
+    if (err?.status === 401 || err?.status === 403) {
+      return NextResponse.json({ ok: false, error: err.message || "forbidden" }, { status: err.status });
+    }
     console.error("[resend-verification] Unexpected error:", error);
     return NextResponse.json(
       { ok: false, error: "Failed to send verification email" },

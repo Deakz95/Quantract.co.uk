@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAuthContext } from "@/lib/serverAuth";
+import { requireCompanyContext, getEffectiveRole } from "@/lib/serverAuth";
 import { getPrisma } from "@/lib/server/prisma";
 import * as repo from "@/lib/server/repo";
 import { withRequestLogging, logError } from "@/lib/server/observability";
@@ -28,17 +28,10 @@ function pickDefined<T extends Record<string, any>>(obj: T) {
 export const GET = withRequestLogging(
   async function GET(_req: Request, ctx: { params: Promise<{ contactId: string }> }) {
     try {
-      const authCtx = await getAuthContext();
-      if (!authCtx) {
-        return jsonErr("unauthenticated", 401);
-      }
-
-      if (authCtx.role !== "admin") {
+      const authCtx = await requireCompanyContext();
+      const effectiveRole = getEffectiveRole(authCtx);
+      if (effectiveRole !== "admin" && effectiveRole !== "office") {
         return jsonErr("forbidden", 403);
-      }
-
-      if (!authCtx.companyId) {
-        return jsonErr("no_company", 401);
       }
 
       const client = getPrisma();
@@ -73,6 +66,10 @@ export const GET = withRequestLogging(
 
       return jsonOk({ contact });
     } catch (e) {
+      const err = e as any;
+      if (err?.status === 401 || err?.status === 403) {
+        return NextResponse.json({ ok: false, error: err.message || "forbidden" }, { status: err.status });
+      }
       logError(e, { route: "/api/admin/contacts/[contactId]", action: "get" });
       const msg = e instanceof Error ? e.message : "";
       const status = msg.toLowerCase().includes("unauthorized") ? 401 : 400;
@@ -84,17 +81,10 @@ export const GET = withRequestLogging(
 export const PATCH = withRequestLogging(
   async function PATCH(req: Request, ctx: { params: Promise<{ contactId: string }> }) {
     try {
-      const authCtx = await getAuthContext();
-      if (!authCtx) {
-        return jsonErr("unauthenticated", 401);
-      }
-
-      if (authCtx.role !== "admin") {
+      const authCtx = await requireCompanyContext();
+      const effectiveRole = getEffectiveRole(authCtx);
+      if (effectiveRole !== "admin" && effectiveRole !== "office") {
         return jsonErr("forbidden", 403);
-      }
-
-      if (!authCtx.companyId) {
-        return jsonErr("no_company", 401);
       }
 
       const client = getPrisma();
@@ -177,6 +167,10 @@ export const PATCH = withRequestLogging(
 
       return jsonOk({ contact: updated });
     } catch (e) {
+      const err = e as any;
+      if (err?.status === 401 || err?.status === 403) {
+        return NextResponse.json({ ok: false, error: err.message || "forbidden" }, { status: err.status });
+      }
       logError(e, { route: "/api/admin/contacts/[contactId]", action: "update" });
       if (e instanceof PrismaClientKnownRequestError && e.code === "P2002") {
         return jsonErr("email_already_exists", 409);
@@ -191,17 +185,10 @@ export const PATCH = withRequestLogging(
 export const DELETE = withRequestLogging(
   async function DELETE(_req: Request, ctx: { params: Promise<{ contactId: string }> }) {
     try {
-      const authCtx = await getAuthContext();
-      if (!authCtx) {
-        return jsonErr("unauthenticated", 401);
-      }
-
-      if (authCtx.role !== "admin") {
+      const authCtx = await requireCompanyContext();
+      const effectiveRole = getEffectiveRole(authCtx);
+      if (effectiveRole !== "admin" && effectiveRole !== "office") {
         return jsonErr("forbidden", 403);
-      }
-
-      if (!authCtx.companyId) {
-        return jsonErr("no_company", 401);
       }
 
       const client = getPrisma();
@@ -240,6 +227,10 @@ export const DELETE = withRequestLogging(
 
       return jsonOk({ deleted: true });
     } catch (e) {
+      const err = e as any;
+      if (err?.status === 401 || err?.status === 403) {
+        return NextResponse.json({ ok: false, error: err.message || "forbidden" }, { status: err.status });
+      }
       logError(e, { route: "/api/admin/contacts/[contactId]", action: "delete" });
       const msg = e instanceof Error ? e.message : "";
       const status = msg.toLowerCase().includes("unauthorized") ? 401 : 400;

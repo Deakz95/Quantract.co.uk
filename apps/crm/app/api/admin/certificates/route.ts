@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAuthContext } from "@/lib/serverAuth";
+import { requireCompanyContext, getEffectiveRole } from "@/lib/serverAuth";
 import { getPrisma } from "@/lib/server/prisma";
 import { withRequestLogging, logError } from "@/lib/server/observability";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
@@ -9,17 +9,10 @@ export const runtime = "nodejs";
 
 export const GET = withRequestLogging(async function GET(req: Request) {
   try {
-    const authCtx = await getAuthContext();
-    if (!authCtx) {
-      return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
-    }
-
-    if (authCtx.role !== "admin") {
+    const authCtx = await requireCompanyContext();
+    const effectiveRole = getEffectiveRole(authCtx);
+    if (effectiveRole !== "admin" && effectiveRole !== "office") {
       return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
-    }
-
-    if (!authCtx.companyId) {
-      return NextResponse.json({ ok: false, error: "no_company" }, { status: 401 });
     }
 
     const client = getPrisma();
@@ -45,6 +38,10 @@ export const GET = withRequestLogging(async function GET(req: Request) {
       logError(error, { route: "/api/admin/certificates", action: "list" });
       return NextResponse.json({ ok: false, error: "database_error", code: error.code }, { status: 409 });
     }
+    const err = error as any;
+    if (err?.status === 401 || err?.status === 403) {
+      return NextResponse.json({ ok: false, error: err.message || "forbidden" }, { status: err.status });
+    }
     logError(error, { route: "/api/admin/certificates", action: "list" });
     return NextResponse.json({ ok: false, error: "load_failed" }, { status: 500 });
   }
@@ -52,17 +49,10 @@ export const GET = withRequestLogging(async function GET(req: Request) {
 
 export const POST = withRequestLogging(async function POST(req: Request) {
   try {
-    const authCtx = await getAuthContext();
-    if (!authCtx) {
-      return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
-    }
-
-    if (authCtx.role !== "admin") {
+    const authCtx = await requireCompanyContext();
+    const effectiveRole = getEffectiveRole(authCtx);
+    if (effectiveRole !== "admin" && effectiveRole !== "office") {
       return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
-    }
-
-    if (!authCtx.companyId) {
-      return NextResponse.json({ ok: false, error: "no_company" }, { status: 401 });
     }
 
     const client = getPrisma();
@@ -119,6 +109,10 @@ export const POST = withRequestLogging(async function POST(req: Request) {
     if (error instanceof PrismaClientKnownRequestError) {
       logError(error, { route: "/api/admin/certificates", action: "create" });
       return NextResponse.json({ ok: false, error: "database_error", code: error.code }, { status: 409 });
+    }
+    const err = error as any;
+    if (err?.status === 401 || err?.status === 403) {
+      return NextResponse.json({ ok: false, error: err.message || "forbidden" }, { status: err.status });
     }
     logError(error, { route: "/api/admin/certificates", action: "create" });
     return NextResponse.json({ ok: false, error: "create_failed" }, { status: 500 });

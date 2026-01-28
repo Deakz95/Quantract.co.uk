@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAuthContext } from "@/lib/serverAuth";
+import { requireCompanyContext, getEffectiveRole } from "@/lib/serverAuth";
 import { getPrisma } from "@/lib/server/prisma";
 import { withRequestLogging, logError } from "@/lib/server/observability";
 import { getRouteParams } from "@/lib/server/routeParams";
@@ -18,17 +18,10 @@ function jsonErr(error: unknown, status = 400) {
 export const GET = withRequestLogging(
   async function GET(_req: Request, ctx: { params: Promise<{ clientId: string }> }) {
     try {
-      const authCtx = await getAuthContext();
-      if (!authCtx) {
-        return jsonErr("unauthenticated", 401);
-      }
-
-      if (authCtx.role !== "admin") {
+      const authCtx = await requireCompanyContext();
+      const effectiveRole = getEffectiveRole(authCtx);
+      if (effectiveRole !== "admin" && effectiveRole !== "office") {
         return jsonErr("forbidden", 403);
-      }
-
-      if (!authCtx.companyId) {
-        return jsonErr("no_company", 401);
       }
 
       const client = getPrisma();
@@ -69,6 +62,10 @@ export const GET = withRequestLogging(
 
       return jsonOk({ contacts: contacts || [] });
     } catch (e) {
+      const err = e as any;
+      if (err?.status === 401 || err?.status === 403) {
+        return NextResponse.json({ ok: false, error: err.message || "forbidden" }, { status: err.status });
+      }
       logError(e, { route: "/api/admin/clients/[clientId]/contacts", action: "list" });
       const msg = e instanceof Error ? e.message : "";
       const status = msg.toLowerCase().includes("unauthorized") ? 401 : 400;

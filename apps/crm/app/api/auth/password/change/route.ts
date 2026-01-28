@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { withRequestLogging } from "@/lib/server/observability";
-import { getAuthContext } from "@/lib/serverAuth";
+import { requireAuth } from "@/lib/serverAuth";
 import { getPrisma } from "@/lib/server/prisma";
 
 const schema = z.object({
@@ -11,8 +11,12 @@ const schema = z.object({
 });
 
 export const POST = withRequestLogging(async function POST(req: Request) {
-  const ctx = await getAuthContext();
-  if (!ctx) return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+  let ctx;
+  try {
+    ctx = await requireAuth();
+  } catch (e: any) {
+    return NextResponse.json({ ok: false, error: e?.message || "unauthorized" }, { status: e?.status || 401 });
+  }
 
   const body = await req.json().catch(() => null);
   const parsed = schema.safeParse(body);

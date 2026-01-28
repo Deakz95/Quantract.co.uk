@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAuthContext } from "@/lib/serverAuth";
+import { requireCompanyContext, getEffectiveRole } from "@/lib/serverAuth";
 import { getPrisma } from "@/lib/server/prisma";
 import { withRequestLogging, logError } from "@/lib/server/observability";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
@@ -17,17 +17,10 @@ function getWeekStart(date: Date): Date {
 
 export const GET = withRequestLogging(async function GET(req: Request) {
   try {
-    const authCtx = await getAuthContext();
-    if (!authCtx) {
-      return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
-    }
-
-    if (authCtx.role !== "engineer" && authCtx.role !== "admin") {
+    const authCtx = await requireCompanyContext();
+    const effectiveRole = getEffectiveRole(authCtx);
+    if (effectiveRole !== "engineer" && effectiveRole !== "admin") {
       return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
-    }
-
-    if (!authCtx.email || !authCtx.companyId) {
-      return NextResponse.json({ ok: false, error: "missing_context" }, { status: 401 });
     }
 
     const client = getPrisma();
@@ -93,6 +86,10 @@ export const GET = withRequestLogging(async function GET(req: Request) {
       logError(error, { route: "/api/engineer/timesheets", action: "get" });
       return NextResponse.json({ ok: false, error: "database_error", code: error.code }, { status: 409 });
     }
+    const err = error as any;
+    if (err?.status === 401 || err?.status === 403) {
+      return NextResponse.json({ ok: false, error: err.message || "forbidden" }, { status: err.status });
+    }
     logError(error, { route: "/api/engineer/timesheets", action: "get" });
     return NextResponse.json({ ok: false, error: "load_failed" }, { status: 500 });
   }
@@ -100,17 +97,10 @@ export const GET = withRequestLogging(async function GET(req: Request) {
 
 export const POST = withRequestLogging(async function POST(req: Request) {
   try {
-    const authCtx = await getAuthContext();
-    if (!authCtx) {
-      return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
-    }
-
-    if (authCtx.role !== "engineer" && authCtx.role !== "admin") {
+    const authCtx = await requireCompanyContext();
+    const effectiveRole = getEffectiveRole(authCtx);
+    if (effectiveRole !== "engineer" && effectiveRole !== "admin") {
       return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
-    }
-
-    if (!authCtx.email || !authCtx.companyId) {
-      return NextResponse.json({ ok: false, error: "missing_context" }, { status: 401 });
     }
 
     const client = getPrisma();
@@ -161,6 +151,10 @@ export const POST = withRequestLogging(async function POST(req: Request) {
     if (error instanceof PrismaClientKnownRequestError) {
       logError(error, { route: "/api/engineer/timesheets", action: "submit" });
       return NextResponse.json({ ok: false, error: "database_error", code: error.code }, { status: 409 });
+    }
+    const err = error as any;
+    if (err?.status === 401 || err?.status === 403) {
+      return NextResponse.json({ ok: false, error: err.message || "forbidden" }, { status: err.status });
     }
     logError(error, { route: "/api/engineer/timesheets", action: "submit" });
     return NextResponse.json({ ok: false, error: "submit_failed" }, { status: 500 });

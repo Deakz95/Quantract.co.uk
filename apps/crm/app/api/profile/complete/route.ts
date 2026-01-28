@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getPrisma } from "@/lib/server/prisma";
-import { getAuthContext, requireAuth } from "@/lib/serverAuth";
+import { requireAuth } from "@/lib/serverAuth";
 import { withRequestLogging } from "@/lib/server/observability";
 import { setCompanyId, setProfileComplete } from "@/lib/serverAuth";
 
@@ -248,6 +248,10 @@ export const POST = withRequestLogging(async function POST(req: Request) {
     await setProfileComplete(true);
     return NextResponse.json({ ok: true, companyId });
   } catch (err) {
+    const error = err as any;
+    if (error?.status === 401 || error?.status === 403) {
+      return NextResponse.json({ ok: false, error: error.message || "forbidden" }, { status: error.status });
+    }
     console.error("Profile completion failed:", err);
     return NextResponse.json(
       { ok: false, error: "Profile completion failed" },

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAuthContext } from "@/lib/serverAuth";
+import { requireCompanyContext, getEffectiveRole } from "@/lib/serverAuth";
 import { getPrisma } from "@/lib/server/prisma";
 import { withRequestLogging, logError } from "@/lib/server/observability";
 import { initializeDefaultTemplates } from "@/lib/server/notifications";
@@ -13,17 +13,10 @@ export const runtime = "nodejs";
  */
 export const GET = withRequestLogging(async function GET() {
   try {
-    const authCtx = await getAuthContext();
-    if (!authCtx) {
-      return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
-    }
-
-    if (authCtx.role !== "admin") {
+    const authCtx = await requireCompanyContext();
+    const effectiveRole = getEffectiveRole(authCtx);
+    if (effectiveRole !== "admin" && effectiveRole !== "office") {
       return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
-    }
-
-    if (!authCtx.companyId) {
-      return NextResponse.json({ ok: false, error: "no_company" }, { status: 401 });
     }
 
     const client = getPrisma();
@@ -73,6 +66,10 @@ export const GET = withRequestLogging(async function GET() {
       return NextResponse.json({ ok: false, error: "database_error", code: error.code }, { status: 409 });
     }
     logError(error, { route: "/api/admin/notifications/settings", action: "get" });
+    const err = error as any;
+    if (err?.status === 401 || err?.status === 403) {
+      return NextResponse.json({ ok: false, error: err.message || "forbidden" }, { status: err.status });
+    }
     return NextResponse.json({ ok: false, error: "load_failed" }, { status: 500 });
   }
 });
@@ -83,17 +80,10 @@ export const GET = withRequestLogging(async function GET() {
  */
 export const PATCH = withRequestLogging(async function PATCH(req: Request) {
   try {
-    const authCtx = await getAuthContext();
-    if (!authCtx) {
-      return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
-    }
-
-    if (authCtx.role !== "admin") {
+    const authCtx = await requireCompanyContext();
+    const effectiveRole = getEffectiveRole(authCtx);
+    if (effectiveRole !== "admin" && effectiveRole !== "office") {
       return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
-    }
-
-    if (!authCtx.companyId) {
-      return NextResponse.json({ ok: false, error: "no_company" }, { status: 401 });
     }
 
     const companyId = authCtx.companyId;
@@ -175,6 +165,10 @@ export const PATCH = withRequestLogging(async function PATCH(req: Request) {
       return NextResponse.json({ ok: false, error: "database_error", code: error.code }, { status: 409 });
     }
     logError(error, { route: "/api/admin/notifications/settings", action: "update" });
+    const err = error as any;
+    if (err?.status === 401 || err?.status === 403) {
+      return NextResponse.json({ ok: false, error: err.message || "forbidden" }, { status: err.status });
+    }
     return NextResponse.json({ ok: false, error: "update_failed" }, { status: 500 });
   }
 });

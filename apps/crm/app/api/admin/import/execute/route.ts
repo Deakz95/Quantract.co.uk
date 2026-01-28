@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireRole, requireCompanyId, getAuthContext } from "@/lib/serverAuth";
+import { requireCompanyContext, getEffectiveRole } from "@/lib/serverAuth";
 import { getPrisma } from "@/lib/server/prisma";
 import { withRequestLogging } from "@/lib/server/observability";
 import { readUploadBytes } from "@/lib/server/storage";
@@ -19,33 +19,14 @@ export const runtime = "nodejs";
  * Execute the import and create records
  */
 export const POST = withRequestLogging(async function POST(req: Request) {
-  // RBAC guard
-  try {
-    await requireRole("admin");
-  } catch {
-    return NextResponse.json(
-      { ok: false, error: "unauthorized" },
-      { status: 401 }
-    );
+  const authCtx = await requireCompanyContext();
+  const effectiveRole = getEffectiveRole(authCtx);
+  if (effectiveRole !== "admin" && effectiveRole !== "office") {
+    return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
   }
 
-  let companyId: string;
-  try {
-    companyId = await requireCompanyId();
-  } catch {
-    return NextResponse.json(
-      { ok: false, error: "unauthorized" },
-      { status: 401 }
-    );
-  }
-
-  const auth = await getAuthContext();
-  if (!auth) {
-    return NextResponse.json(
-      { ok: false, error: "unauthorized" },
-      { status: 401 }
-    );
-  }
+  const companyId = authCtx.companyId;
+  const auth = authCtx;
 
   const prisma = getPrisma();
 
@@ -250,6 +231,10 @@ export const POST = withRequestLogging(async function POST(req: Request) {
     });
   } catch (error: any) {
     console.error("[import/execute] Error:", error);
+    const err = error as any;
+    if (err?.status === 401 || err?.status === 403) {
+      return NextResponse.json({ ok: false, error: err.message || "forbidden" }, { status: err.status });
+    }
     return NextResponse.json(
       { ok: false, error: "Failed to execute import" },
       { status: 500 }

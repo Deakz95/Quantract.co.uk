@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAuthContext } from "@/lib/serverAuth";
+import { requireCompanyContext, getEffectiveRole } from "@/lib/serverAuth";
 import { getPrisma } from "@/lib/server/prisma";
 import { logError } from "@/lib/server/observability";
 
@@ -23,22 +23,10 @@ const SAFE_DEFAULT = {
  */
 export async function GET() {
   try {
-    // Use getAuthContext instead of requireRole to avoid throwing
-    const ctx = await getAuthContext();
-
-    // No session = safe default (not authenticated)
-    if (!ctx) {
-      return NextResponse.json(SAFE_DEFAULT);
-    }
-
-    // Non-admin = safe default (no impersonation capability)
-    if (ctx.role !== "admin") {
-      return NextResponse.json(SAFE_DEFAULT);
-    }
-
-    // No company = safe default
-    if (!ctx.companyId) {
-      return NextResponse.json(SAFE_DEFAULT);
+    const ctx = await requireCompanyContext();
+    const effectiveRole = getEffectiveRole(ctx);
+    if (effectiveRole !== "admin" && effectiveRole !== "office") {
+      return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
     }
 
     const prisma = getPrisma();
@@ -107,6 +95,10 @@ export async function GET() {
   } catch (error) {
     // Log error to Sentry but NEVER return 500
     logError(error, { route: "/api/admin/impersonate/status", action: "get_status" });
+    const err = error as any;
+    if (err?.status === 401 || err?.status === 403) {
+      return NextResponse.json({ ok: false, error: err.message || "forbidden" }, { status: err.status });
+    }
     return NextResponse.json(SAFE_DEFAULT);
   }
 }
