@@ -1,18 +1,85 @@
 -- Add Lead Capture System Tables
 
--- Extend Enquiry model with new fields
-ALTER TABLE "Enquiry" ADD COLUMN IF NOT EXISTS "formConfigId" TEXT;
-ALTER TABLE "Enquiry" ADD COLUMN IF NOT EXISTS "postcode" TEXT;
-ALTER TABLE "Enquiry" ADD COLUMN IF NOT EXISTS "message" TEXT;
-ALTER TABLE "Enquiry" ADD COLUMN IF NOT EXISTS "source" TEXT NOT NULL DEFAULT 'manual';
-ALTER TABLE "Enquiry" ADD COLUMN IF NOT EXISTS "pageUrl" TEXT;
-ALTER TABLE "Enquiry" ADD COLUMN IF NOT EXISTS "referrer" TEXT;
-ALTER TABLE "Enquiry" ADD COLUMN IF NOT EXISTS "utmSource" TEXT;
-ALTER TABLE "Enquiry" ADD COLUMN IF NOT EXISTS "utmMedium" TEXT;
-ALTER TABLE "Enquiry" ADD COLUMN IF NOT EXISTS "utmCampaign" TEXT;
-ALTER TABLE "Enquiry" ADD COLUMN IF NOT EXISTS "utmTerm" TEXT;
-ALTER TABLE "Enquiry" ADD COLUMN IF NOT EXISTS "utmContent" TEXT;
-ALTER TABLE "Enquiry" ADD COLUMN IF NOT EXISTS "metaJson" JSONB;
+-- Create PipelineStage table (required by Enquiry)
+CREATE TABLE IF NOT EXISTS "PipelineStage" (
+    "id" TEXT NOT NULL,
+    "companyId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "sortOrder" INTEGER NOT NULL DEFAULT 0,
+    "color" TEXT,
+    "isWon" BOOLEAN NOT NULL DEFAULT false,
+    "isLost" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "PipelineStage_pkey" PRIMARY KEY ("id")
+);
+
+CREATE INDEX IF NOT EXISTS "PipelineStage_companyId_sortOrder_idx" ON "PipelineStage"("companyId", "sortOrder");
+
+-- Create Enquiry table
+CREATE TABLE IF NOT EXISTS "Enquiry" (
+    "id" TEXT NOT NULL,
+    "companyId" TEXT NOT NULL,
+    "stageId" TEXT NOT NULL,
+    "ownerId" TEXT,
+    "formConfigId" TEXT,
+    "name" TEXT,
+    "email" TEXT,
+    "phone" TEXT,
+    "postcode" TEXT,
+    "message" TEXT,
+    "notes" TEXT,
+    "valueEstimate" INTEGER,
+    "quoteId" TEXT,
+    "source" TEXT NOT NULL DEFAULT 'manual',
+    "pageUrl" TEXT,
+    "referrer" TEXT,
+    "utmSource" TEXT,
+    "utmMedium" TEXT,
+    "utmCampaign" TEXT,
+    "utmTerm" TEXT,
+    "utmContent" TEXT,
+    "metaJson" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Enquiry_pkey" PRIMARY KEY ("id")
+);
+
+CREATE INDEX IF NOT EXISTS "Enquiry_companyId_stageId_idx" ON "Enquiry"("companyId", "stageId");
+
+-- Create EnquiryEvent table
+CREATE TABLE IF NOT EXISTS "EnquiryEvent" (
+    "id" TEXT NOT NULL,
+    "companyId" TEXT NOT NULL,
+    "enquiryId" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "note" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "EnquiryEvent_pkey" PRIMARY KEY ("id")
+);
+
+-- Add foreign keys for PipelineStage
+ALTER TABLE "PipelineStage" ADD CONSTRAINT "PipelineStage_companyId_fkey"
+    FOREIGN KEY ("companyId") REFERENCES "Company"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- Add foreign keys for Enquiry
+ALTER TABLE "Enquiry" ADD CONSTRAINT "Enquiry_companyId_fkey"
+    FOREIGN KEY ("companyId") REFERENCES "Company"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE "Enquiry" ADD CONSTRAINT "Enquiry_stageId_fkey"
+    FOREIGN KEY ("stageId") REFERENCES "PipelineStage"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+ALTER TABLE "Enquiry" ADD CONSTRAINT "Enquiry_ownerId_fkey"
+    FOREIGN KEY ("ownerId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- Add foreign keys for EnquiryEvent
+ALTER TABLE "EnquiryEvent" ADD CONSTRAINT "EnquiryEvent_enquiryId_fkey"
+    FOREIGN KEY ("enquiryId") REFERENCES "Enquiry"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- Note: Enquiry columns are now created in the CREATE TABLE above
 
 -- Create InboundIntegrationKey table
 CREATE TABLE IF NOT EXISTS "InboundIntegrationKey" (
@@ -91,9 +158,10 @@ CREATE INDEX IF NOT EXISTS "InboundFormConfig_companyId_idx" ON "InboundFormConf
 CREATE INDEX IF NOT EXISTS "InboundFormConfig_slug_idx" ON "InboundFormConfig"("slug");
 CREATE INDEX IF NOT EXISTS "InboundFormConfig_isActive_idx" ON "InboundFormConfig"("isActive");
 
--- Create indexes for Enquiry new fields
+-- Create additional indexes for Enquiry
 CREATE INDEX IF NOT EXISTS "Enquiry_source_idx" ON "Enquiry"("source");
 CREATE INDEX IF NOT EXISTS "Enquiry_formConfigId_idx" ON "Enquiry"("formConfigId");
+CREATE INDEX IF NOT EXISTS "Enquiry_ownerId_idx" ON "Enquiry"("ownerId");
 
 -- Add foreign key constraints
 ALTER TABLE "InboundIntegrationKey" ADD CONSTRAINT "InboundIntegrationKey_companyId_fkey"
