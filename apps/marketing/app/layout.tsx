@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { CookieConsent } from "../src/components/CookieConsent";
+import { ChatWidget } from "../src/components/ChatWidget";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.quantract.co.uk"),
@@ -121,6 +122,7 @@ export default function RootLayout({
       <body>
         {children}
         <CookieConsent />
+        <ChatWidget />
       </body>
     </html>
   );
