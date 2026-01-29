@@ -81,14 +81,14 @@ export function Shell({
           <aside className="hidden md:block md:col-span-3">
             <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-2 shadow-sm">
               {items.filter(it => !it.section).map((it) => {
-                const active = pathname === it.href || pathname.startsWith(it.href + "/");
+                const active = pathname === it.href || (it.href !== `/${role}` && pathname.startsWith(it.href + "/"));
                 return (
                   <Link
                     key={it.href}
                     href={it.href}
                     className={cn(
                       "block rounded-xl px-3 py-2 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2",
-                      active ? "bg-[var(--primary)] text-[var(--primary-foreground)]" : "text-[var(--muted-foreground)] hover:bg-[var(--muted)]"
+                      active ? "bg-[var(--primary)] text-white" : "text-[var(--muted-foreground)] hover:bg-[var(--muted)]"
                     )}
                   >
                     {it.label}
@@ -105,14 +105,14 @@ export function Shell({
                     </div>
                   </div>
                   {items.filter(it => it.section === "portals").map((it) => {
-                    const active = pathname === it.href || pathname.startsWith(it.href + "/");
+                    const active = pathname === it.href;
                     return (
                       <Link
                         key={it.href}
                         href={it.href}
                         className={cn(
                           "block rounded-xl px-3 py-2 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2",
-                          active ? "bg-[var(--accent)] text-[var(--accent-foreground)]" : "text-[var(--accent)] hover:bg-[var(--muted)]"
+                          active ? "bg-[var(--accent)] text-white" : "text-[var(--accent)] hover:bg-[var(--muted)]"
                         )}
                       >
                         {it.label}
@@ -151,7 +151,7 @@ export function Shell({
       <nav className="md:hidden fixed bottom-0 inset-x-0 border-t border-[var(--border)] bg-[var(--background)]">
         <div className="mx-auto flex max-w-4xl justify-around px-2 py-2">
           {items.filter(it => !it.section).slice(0, 4).map((it) => {
-            const active = pathname === it.href || pathname.startsWith(it.href + "/");
+            const active = pathname === it.href || (it.href !== `/${role}` && pathname.startsWith(it.href + "/"));
             return (
               <Link
                 key={it.href}

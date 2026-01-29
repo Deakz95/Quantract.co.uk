@@ -394,7 +394,7 @@ export default function LandingPage() {
             <div>
               <h4 className="font-semibold text-[var(--foreground)] mb-4">Company</h4>
               <ul className="space-y-2 text-sm text-[var(--muted-foreground)]">
-                <li><a href="#" className="hover:text-[var(--foreground)]">About</a></li>
+                <li><Link href="/about" className="hover:text-[var(--foreground)]">About</Link></li>
                 <li><a href="mailto:hello@quantract.co.uk" className="hover:text-[var(--foreground)]">Contact</a></li>
               </ul>
             </div>
