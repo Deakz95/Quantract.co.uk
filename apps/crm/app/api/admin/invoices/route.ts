@@ -97,7 +97,7 @@ export const POST = withRequestLogging(async function POST(req: Request) {
 
       // Compute totals from items JSON
       const items = (quote.items as any[]) || [];
-      const subtotal = items.reduce((sum: number, item: any) => sum + (Number(item.total) || Number(item.unitPrice || 0) * Number(item.quantity || 1)), 0);
+      const subtotal = items.reduce((sum: number, item: any) => sum + (Number(item.total) || Number(item.unitPrice || 0) * Number(item.qty || item.quantity || 1)), 0);
       const vat = clampMoney(subtotal * (quote.vatRate || 0));
       const total = clampMoney(subtotal + vat);
 
@@ -133,7 +133,7 @@ export const POST = withRequestLogging(async function POST(req: Request) {
           vat,
           total,
           status: "draft",
-          dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+          dueAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
           updatedAt: new Date(),
         },
       });
@@ -181,7 +181,7 @@ export const POST = withRequestLogging(async function POST(req: Request) {
         vat,
         total,
         status: "draft",
-        dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        dueAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
         updatedAt: new Date(),
       },
     });

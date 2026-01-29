@@ -1,6 +1,4 @@
-import { neonAuth } from "@neondatabase/auth/next/server";
-import { getAuthContext, type Role } from "@/lib/serverAuth";
-import { getPrisma } from "@/lib/server/prisma";
+import { requireCompanyContext, type Role } from "@/lib/serverAuth";
 
 // Use Role from serverAuth for consistency
 export type AIRole = Role;
@@ -13,44 +11,15 @@ export type AISessionData = {
 };
 
 export async function getAISessionFromRequest(_req?: Request): Promise<AISessionData | null> {
-  // First try to get full auth context with companyId
-  const authCtx = await getAuthContext();
-  if (authCtx && authCtx.companyId) {
+  try {
+    const ctx = await requireCompanyContext();
     return {
-      role: authCtx.role as AIRole,
-      companyId: authCtx.companyId,
-      userId: authCtx.userId,
-      userEmail: authCtx.email,
+      role: ctx.role as AIRole,
+      companyId: ctx.companyId,
+      userId: ctx.userId,
+      userEmail: ctx.email,
     };
+  } catch {
+    return null;
   }
-
-  // Fallback to neonAuth
-  const { user } = await neonAuth();
-  if (!user) return null;
-
-  // Look up companyId from database using email
-  const email = user?.email?.toLowerCase();
-  if (email) {
-    const client = getPrisma();
-    if (client) {
-      const companyUser = await client.companyUser.findFirst({
-        where: { email },
-        select: { companyId: true, role: true, id: true },
-      }).catch(() => null);
-
-      if (companyUser) {
-        return {
-          role: (companyUser.role || "admin") as AIRole,
-          companyId: companyUser.companyId,
-          userId: companyUser.id,
-          userEmail: email,
-        };
-      }
-    }
-  }
-
-  return {
-    role: "admin",
-    userEmail: email ?? undefined,
-  };
 }

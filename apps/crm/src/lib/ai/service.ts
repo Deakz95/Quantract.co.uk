@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import { getPrisma } from "@/lib/server/prisma";
 import type { AISessionData } from "@/lib/auth/aiSession";
 import { SYSTEM_PROMPTS } from "@/lib/ai/prompts";
@@ -117,6 +118,7 @@ async function logAI(session: AISessionData, query: string, response: AiResponse
     if (!client || !session.companyId) return;
     await client.auditEvent.create({
       data: {
+        id: randomUUID(),
         companyId: session.companyId,
         entityType: "AI",
         entityId: session.userEmail || session.role,

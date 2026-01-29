@@ -73,25 +73,25 @@ export default function QuoteDetailClient({ quoteId }: { quoteId: string }) {
 
 
 
-async function attachClient(clientId: string) {
-  if (!quote) return;
-  setBusy(true);
-  try {
-    const res = await fetch(`/api/admin/quotes/${quoteId}`, {
-      method: "PATCH",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ clientId }),
-    });
-    const data = await res.json();
-    if (!data.ok) throw new Error(data.error || "Failed");
-    setQuote(data.quote);
-    toast({ title: "Client attached", variant: "success" });
-  } catch (e: any) {
-    toast({ title: "Couldn't attach client", description: e?.message || "Unknown error", variant: "destructive" });
-  } finally {
-    setBusy(false);
+  async function attachClient(clientId: string) {
+    if (!quote) return;
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/admin/quotes/${quoteId}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ clientId }),
+      });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || "Failed");
+      setQuote(data.quote);
+      toast({ title: "Client attached", variant: "success" });
+    } catch (e: any) {
+      toast({ title: "Couldn't attach client", description: e?.message || "Unknown error", variant: "destructive" });
+    } finally {
+      setBusy(false);
+    }
   }
-}
 
   async function markSent() {
     if (!quote) return;
@@ -245,6 +245,12 @@ async function attachClient(clientId: string) {
     }
   }
 
+  const breadcrumbItems: BreadcrumbItem[] = useMemo(() => [
+    { label: "Dashboard", href: "/admin" },
+    { label: "Quotes", href: "/admin/quotes" },
+    { label: `Quote #${quoteId.slice(0, 8)}` },
+  ], [quoteId]);
+
   if (!quote) {
     return (
       <Card>
@@ -255,12 +261,6 @@ async function attachClient(clientId: string) {
       </Card>
     );
   }
-
-  const breadcrumbItems: BreadcrumbItem[] = useMemo(() => [
-    { label: "Dashboard", href: "/admin" },
-    { label: "Quotes", href: "/admin/quotes" },
-    { label: `Quote #${quoteId.slice(0, 8)}` },
-  ], [quoteId]);
 
   return (
     <div className="grid gap-4">

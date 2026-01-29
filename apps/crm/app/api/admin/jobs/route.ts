@@ -75,6 +75,7 @@ export const POST = withRequestLogging(async function POST(req: Request) {
       manual?: boolean;
       clientId?: string;
       siteId?: string;
+      siteAddress?: string;
       title?: string;
       description?: string;
     };
@@ -86,20 +87,18 @@ export const POST = withRequestLogging(async function POST(req: Request) {
     // Manual job creation
     if (body?.manual) {
       const clientId = String(body?.clientId ?? "").trim();
-      const siteId = String(body?.siteId ?? "").trim();
+      const siteIdInput = String(body?.siteId ?? "").trim();
       const title = String(body?.title ?? "").trim();
+      const siteAddress = String(body?.siteAddress ?? "").trim();
 
       if (!clientId) {
         return NextResponse.json({ ok: false, error: "missing_client_id" }, { status: 400 });
-      }
-      if (!siteId) {
-        return NextResponse.json({ ok: false, error: "missing_site_id" }, { status: 400 });
       }
       if (!title) {
         return NextResponse.json({ ok: false, error: "missing_title" }, { status: 400 });
       }
 
-      // Verify client and site belong to this company
+      // Verify client belongs to this company
       const clientRecord = await client.client.findFirst({
         where: { id: clientId, companyId: ctx.companyId },
       });
@@ -107,11 +106,37 @@ export const POST = withRequestLogging(async function POST(req: Request) {
         return NextResponse.json({ ok: false, error: "client_not_found" }, { status: 404 });
       }
 
-      const site = await client.site.findFirst({
-        where: { id: siteId, companyId: ctx.companyId },
-      });
-      if (!site) {
-        return NextResponse.json({ ok: false, error: "site_not_found" }, { status: 404 });
+      // Resolve siteId: use provided siteId, or find/create a site for the client
+      let siteId = siteIdInput;
+      if (!siteId) {
+        // Try to find an existing site for this client
+        const existingSite = await client.site.findFirst({
+          where: { clientId, companyId: ctx.companyId },
+          orderBy: { createdAt: "desc" },
+        });
+        if (existingSite) {
+          siteId = existingSite.id;
+        } else {
+          // Create a default site from the address or client name
+          const newSite = await client.site.create({
+            data: {
+              id: randomUUID(),
+              companyId: ctx.companyId,
+              clientId,
+              name: siteAddress || `${clientRecord.name} - Default Site`,
+              address1: siteAddress || "",
+              updatedAt: new Date(),
+            },
+          });
+          siteId = newSite.id;
+        }
+      } else {
+        const site = await client.site.findFirst({
+          where: { id: siteId, companyId: ctx.companyId },
+        });
+        if (!site) {
+          return NextResponse.json({ ok: false, error: "site_not_found" }, { status: 404 });
+        }
       }
 
       const job = await client.job.create({
