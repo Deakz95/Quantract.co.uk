@@ -454,12 +454,12 @@ async function attachClient(clientId: string) {
                   </tr>
                 </thead>
                 <tbody>
-                  {quote.items.map((it) => (
-                    <tr key={it.id} className="border-t border-[var(--border)]">
+                  {quote.items.map((it, idx) => (
+                    <tr key={it.id || idx} className="border-t border-[var(--border)]">
                       <td className="py-3 pr-3">{it.description}</td>
                       <td className="py-3 pr-3">{it.qty}</td>
-                      <td className="py-3 pr-3">£{it.unitPrice.toFixed(2)}</td>
-                      <td className="py-3 pr-0 text-right">£{(it.qty * it.unitPrice).toFixed(2)}</td>
+                      <td className="py-3 pr-3">£{Number(it.unitPrice || 0).toFixed(2)}</td>
+                      <td className="py-3 pr-0 text-right">£{(Number(it.qty || 0) * Number(it.unitPrice || 0)).toFixed(2)}</td>
                     </tr>
                   ))}
                   {quote.items.length === 0 ? (

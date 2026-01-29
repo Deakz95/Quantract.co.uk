@@ -362,7 +362,7 @@ export default function QuantractAIWidget({
         aria-label="Open AI Assistant"
       >
         <IconMessage className="h-6 w-6 text-white" />
-        <span className="text-white text-sm font-semibold hidden sm:inline">AI Assistant</span>
+        <span className="text-white text-sm font-semibold">AI</span>
       </button>
     );
   }

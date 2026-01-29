@@ -83,8 +83,14 @@ export const POST = withRequestLogging(async function POST(req: Request) {
       select: { invoiceNumberPrefix: true, nextInvoiceNumber: true },
     });
 
-    // Calculate totals from items
-    const items = Array.isArray(body?.items) ? body.items : [];
+    // Calculate totals from items — normalise each item to ensure id + numeric fields
+    const rawItems = Array.isArray(body?.items) ? body.items : [];
+    const items = rawItems.map((it: any) => ({
+      id: it.id || randomUUID(),
+      description: String(it.description ?? ""),
+      qty: typeof it.qty === "number" && Number.isFinite(it.qty) ? it.qty : (Number(it.qty) || 0),
+      unitPrice: typeof it.unitPrice === "number" && Number.isFinite(it.unitPrice) ? it.unitPrice : (Number(it.unitPrice) || 0),
+    }));
     const vatRate = typeof body?.vatRate === "number" ? body.vatRate : 0.2;
 
     const quote = await client.quote.create({

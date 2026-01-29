@@ -49,7 +49,14 @@ export const GET = withRequestLogging(async function GET() {
       },
     });
 
-    return NextResponse.json({ ok: true, clients: clients || [] });
+    // Map Date fields to ISO strings for frontend compatibility
+    const mapped = (clients || []).map((c: any) => ({
+      ...c,
+      createdAtISO: c.createdAt ? new Date(c.createdAt).toISOString() : null,
+      updatedAtISO: c.updatedAt ? new Date(c.updatedAt).toISOString() : null,
+    }));
+
+    return NextResponse.json({ ok: true, clients: mapped });
   } catch (error: any) {
     // Handle auth errors with appropriate status codes
     if (error?.status === 401) {
@@ -136,6 +143,9 @@ export const POST = withRequestLogging(async function POST(req: Request) {
     }
     if (error instanceof PrismaClientKnownRequestError) {
       logError(error, { route: "/api/admin/clients", action: "create" });
+      if (error.code === "P2002") {
+        return NextResponse.json({ ok: false, error: "A client with this email already exists" }, { status: 409 });
+      }
       return NextResponse.json({ ok: false, error: "database_error", code: error.code }, { status: 409 });
     }
     logError(error, { route: "/api/admin/clients", action: "create" });

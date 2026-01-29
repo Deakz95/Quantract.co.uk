@@ -1164,7 +1164,9 @@ async function addAudit(event: Omit<AuditEvent, "id" | "createdAtISO">, companyI
   }
   const companyId = companyIdOverride ?? (await requireCompanyIdForPrisma());
   await client.auditEvent.create({
-    data: { companyId,
+    data: {
+      id: crypto.randomUUID(),
+      companyId,
       entityType: event.entityType,
       entityId: event.entityId,
       action: event.action,
