@@ -112,7 +112,6 @@ export function AppShell({
 }) {
   const nav = useMemo(() => (role === "admin" ? adminNav : role === "engineer" ? engineerNav : clientNav), [role]);
   const pathname = usePathname();
-  const [supportOpen, setSupportOpen] = useState(false);
   const [newOpen, setNewOpen] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -171,7 +170,6 @@ export function AppShell({
   const openAI = () => {
     if (typeof window !== "undefined") {
       window.dispatchEvent(new CustomEvent("qt:open-ai"));
-      setSupportOpen(false);
     }
   };
 
@@ -293,10 +291,32 @@ export function AppShell({
                 )}
               </div>
             )}
-            <Button variant="ghost" size="sm" onClick={() => setSupportOpen(true)}>
-              <Sparkles className="w-4 h-4 mr-1.5" />
-              <span className="hidden sm:inline">Support</span>
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm">
+                  <Sparkles className="w-4 h-4 mr-1.5" />
+                  <span className="hidden sm:inline">Support</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={openAI}>
+                  <Sparkles className="w-4 h-4 mr-2 inline" />
+                  AI Assistant
+                </DropdownMenuItem>
+                <a href="mailto:support@quantract.co.uk">
+                  <DropdownMenuItem>
+                    <Mail className="w-4 h-4 mr-2 inline" />
+                    Email Support
+                  </DropdownMenuItem>
+                </a>
+                <a href="https://docs.quantract.co.uk" target="_blank" rel="noopener noreferrer">
+                  <DropdownMenuItem>
+                    <HelpCircle className="w-4 h-4 mr-2 inline" />
+                    Help Centre
+                  </DropdownMenuItem>
+                </a>
+              </DropdownMenuContent>
+            </DropdownMenu>
             {role === "admin" && (
               <Button variant="gradient" size="sm" onClick={() => setNewOpen(true)}>
                 <Plus className="w-4 h-4 mr-1.5" />
@@ -347,37 +367,6 @@ export function AppShell({
         </div>
       </header>
 
-      {/* Support Dialog */}
-      {supportOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setSupportOpen(false)}>
-          <div onClick={(e) => e.stopPropagation()} className="w-full max-w-md animate-fade-in">
-            <DialogContent>
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <div className="text-lg font-bold text-[var(--foreground)]">Support</div>
-                  <div className="mt-1 text-sm text-[var(--muted-foreground)]">Get help or use our AI assistant.</div>
-                </div>
-                <Button variant="ghost" size="icon" onClick={() => setSupportOpen(false)}>
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-
-              <div className="mt-6 space-y-3">
-                <Button variant="gradient" onClick={openAI} className="w-full justify-start">
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Open AI assistant
-                </Button>
-                <a className="block" href="mailto:support@quantract.co.uk">
-                  <Button variant="secondary" className="w-full justify-start">
-                    <Mail className="w-4 h-4 mr-2" />
-                    Email support
-                  </Button>
-                </a>
-              </div>
-            </DialogContent>
-          </div>
-        </div>
-      )}
 
       {/* New Item Dialog */}
       {newOpen && (
@@ -518,6 +507,9 @@ export function AppShell({
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <span>Welcome to {BRAND_NAME} - Professional Business Management</span>
             <div className="flex items-center gap-4">
+              <Link href="/about" className="hover:text-[var(--primary)] transition-colors">
+                About
+              </Link>
               <Link href="/admin/settings/appearance" className="hover:text-[var(--primary)] transition-colors">
                 Customize Theme
               </Link>

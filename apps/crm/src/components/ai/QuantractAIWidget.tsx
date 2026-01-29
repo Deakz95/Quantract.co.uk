@@ -356,12 +356,13 @@ export default function QuantractAIWidget({
       <button
         onClick={() => setIsOpen(true)}
         className={cn(
-          `fixed bottom-4 sm:bottom-6 ${positionClasses} z-50 h-14 w-14 rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-110 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2`
+          `fixed bottom-4 sm:bottom-6 ${positionClasses} z-50 rounded-full shadow-lg flex items-center gap-2 px-4 h-14 transition-all hover:scale-105 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2`
         )}
         style={{ backgroundColor: accentColor }}
         aria-label="Open AI Assistant"
       >
         <IconMessage className="h-6 w-6 text-white" />
+        <span className="text-white text-sm font-semibold hidden sm:inline">AI Assistant</span>
       </button>
     );
   }

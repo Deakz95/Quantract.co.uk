@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import type { Viewport } from "next/dist/lib/metadata/types/metadata-interface";
 import type { ReactNode } from "react";
-import { ImpersonationBanner } from '@/components/admin/ImpersonationBanner';
 import { AdminContextBanner } from '@/components/admin/AdminContextBanner';
 import "./globals.css";
 import "@/lib/env";
@@ -25,7 +24,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en" suppressHydrationWarning>
       <body className="antialiased">
         <ThemeInitializer />
-        <ImpersonationBanner />
         <AdminContextBanner />
         <NeonAuthUIProvider authClient={authClient}>{children}</NeonAuthUIProvider>
         <QuantractAIWidget />

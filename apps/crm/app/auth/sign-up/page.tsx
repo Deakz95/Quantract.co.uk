@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { authClient } from "@/lib/auth/client";
@@ -17,6 +17,21 @@ export default function SignUpPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+
+  // Redirect authenticated users to dashboard
+  useEffect(() => {
+    fetch("/api/auth/me", { cache: "no-store" })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.ok && data?.user) {
+          router.replace("/admin");
+        } else {
+          setCheckingAuth(false);
+        }
+      })
+      .catch(() => setCheckingAuth(false));
+  }, [router]);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -155,6 +170,14 @@ export default function SignUpPage() {
       setError(err instanceof Error ? err.message : "An error occurred");
       setLoading(false);
     }
+  }
+
+  if (checkingAuth) {
+    return (
+      <main className="min-h-screen flex items-center justify-center p-4 bg-[var(--background)]">
+        <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      </main>
+    );
   }
 
   return (
