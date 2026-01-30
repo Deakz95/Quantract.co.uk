@@ -69,7 +69,7 @@ export const GET = withRequestLogging(async function GET(req: Request) {
         },
       });
 
-      // Group deals by stageId
+      // Group deals by stageId and embed into each stage object
       const dealsByStage: Record<string, typeof deals> = {};
       for (const stage of stages) {
         dealsByStage[stage.id] = [];
@@ -80,7 +80,12 @@ export const GET = withRequestLogging(async function GET(req: Request) {
         }
       }
 
-      return NextResponse.json({ ok: true, stages, dealsByStage });
+      const stagesWithDeals = stages.map((stage: (typeof stages)[number]) => ({
+        ...stage,
+        deals: dealsByStage[stage.id] ?? [],
+      }));
+
+      return NextResponse.json({ ok: true, stages: stagesWithDeals });
     }
 
     // Standard list response

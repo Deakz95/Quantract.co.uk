@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -20,15 +20,31 @@ const passwordSchema = magicSchema.extend({
 });
 
 export default function AdminLogin() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") || "/admin/dashboard";
   const [mode, setMode] = useState<"magic" | "password">("magic");
+  const [checkingAuth, setCheckingAuth] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [rememberMe, setRememberMe] = useState(false);
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    fetch("/api/auth/me", { cache: "no-store" })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.ok && data?.user) {
+          router.replace(next);
+        } else {
+          setCheckingAuth(false);
+        }
+      })
+      .catch(() => setCheckingAuth(false));
+  }, [router, next]);
 
   const canSubmit = useMemo(() => {
     if (mode === "magic") return magicSchema.safeParse({ email }).success;
@@ -64,6 +80,14 @@ export default function AdminLogin() {
     } finally {
       setBusy(false);
     }
+  }
+
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen bg-[var(--background)] flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-[var(--primary)] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
   }
 
   return (

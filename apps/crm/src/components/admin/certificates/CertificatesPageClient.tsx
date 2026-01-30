@@ -12,7 +12,15 @@ import { useToast } from "@/components/ui/useToast";
 import { apiRequest, getApiErrorMessage, requireOk } from "@/lib/apiClient";
 import { BadgeCheck, Plus, ExternalLink, FileText, Briefcase } from "lucide-react";
 
-type Job = { id: string; clientName: string; status: string; siteAddress?: string };
+type Job = {
+  id: string;
+  clientName: string;
+  status: string;
+  siteAddress?: string;
+  name?: string;
+  client?: { id: string; name: string };
+  site?: { id: string; name: string; address1?: string };
+};
 
 type Certificate = {
   id: string;
@@ -289,11 +297,16 @@ export default function CertificatesPageClient() {
                   onChange={(e) => setJobId(e.target.value)}
                 >
                   <option value="">Select job...</option>
-                  {jobs.map((j) => (
-                    <option key={j.id} value={j.id}>
-                      {j.clientName} - {j.status} ({j.id.slice(0, 8)})
-                    </option>
-                  ))}
+                  {jobs.map((j) => {
+                    const label = j.client?.name || j.clientName || "Unnamed";
+                    const site = j.site?.name || j.siteAddress || "";
+                    const shortId = j.id.slice(0, 8);
+                    return (
+                      <option key={j.id} value={j.id}>
+                        {label}{site ? ` — ${site}` : ""} — {j.status} (#{shortId})
+                      </option>
+                    );
+                  })}
                 </select>
               </label>
 

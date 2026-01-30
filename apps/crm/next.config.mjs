@@ -70,6 +70,14 @@ const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
 
+  async redirects() {
+    return [
+      { source: "/login", destination: "/admin/login", permanent: true },
+      { source: "/register", destination: "/auth/sign-up", permanent: true },
+      { source: "/signup", destination: "/auth/sign-up", permanent: true },
+    ];
+  },
+
   async headers() {
     return [
       {

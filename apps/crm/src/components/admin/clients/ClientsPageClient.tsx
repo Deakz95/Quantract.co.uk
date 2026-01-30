@@ -365,7 +365,13 @@ export default function ClientsPageClient() {
       render: (client) => (
         <div>
           <Link href={`/admin/clients/${client.id}`} className="font-semibold text-[var(--primary)] hover:underline">{client.name}</Link>
-          {client.phone && <div className="mt-0.5 text-xs text-[var(--muted-foreground)]">{client.phone}</div>}
+          {client.phone && (
+            <div className="mt-0.5 text-xs">
+              <a href={`tel:${client.phone}`} className="text-[var(--muted-foreground)] hover:text-[var(--primary)] hover:underline" onClick={(e) => e.stopPropagation()}>
+                {client.phone}
+              </a>
+            </div>
+          )}
         </div>
       ),
     },
@@ -373,7 +379,14 @@ export default function ClientsPageClient() {
       key: "email",
       label: "Email",
       sortable: true,
-      render: (client) => <span className="text-[var(--foreground)]">{client.email || "-"}</span>,
+      render: (client) =>
+        client.email ? (
+          <a href={`mailto:${client.email}`} className="text-[var(--primary)] hover:underline" onClick={(e) => e.stopPropagation()}>
+            {client.email}
+          </a>
+        ) : (
+          <span className="text-[var(--muted-foreground)]">-</span>
+        ),
     },
     {
       key: "address1",

@@ -98,12 +98,13 @@ export default function KanbanBoard() {
       // Find the deal in current stages
       let movedDeal: Deal | null = null;
       const updatedStages = stagesWithDeals.map((stage) => {
-        const dealIndex = stage.deals.findIndex((d) => d.id === dealId);
+        const deals = stage.deals ?? [];
+        const dealIndex = deals.findIndex((d) => d.id === dealId);
         if (dealIndex !== -1) {
-          movedDeal = { ...stage.deals[dealIndex] };
+          movedDeal = { ...deals[dealIndex] };
           return {
             ...stage,
-            deals: stage.deals.filter((d) => d.id !== dealId),
+            deals: deals.filter((d) => d.id !== dealId),
           };
         }
         return stage;
@@ -120,7 +121,7 @@ export default function KanbanBoard() {
           return {
             ...stage,
             deals: [
-              ...stage.deals,
+              ...(stage.deals ?? []),
               { ...movedDeal!, stage: targetStage },
             ],
           };
@@ -174,9 +175,9 @@ export default function KanbanBoard() {
     );
   }
 
-  const totalDeals = stagesWithDeals.reduce((sum, s) => sum + s.deals.length, 0);
+  const totalDeals = stagesWithDeals.reduce((sum, s) => sum + (s.deals ?? []).length, 0);
   const totalValue = stagesWithDeals.reduce(
-    (sum, s) => sum + s.deals.reduce((dSum, d) => dSum + d.value, 0),
+    (sum, s) => sum + (s.deals ?? []).reduce((dSum, d) => dSum + d.value, 0),
     0
   );
 
@@ -232,7 +233,7 @@ export default function KanbanBoard() {
             <KanbanColumn
               key={stage.id}
               stage={stage}
-              deals={stage.deals}
+              deals={stage.deals ?? []}
               onDrop={handleDrop}
             />
           ))}
