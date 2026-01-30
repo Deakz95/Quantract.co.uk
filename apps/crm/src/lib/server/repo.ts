@@ -571,7 +571,7 @@ function toCostItem(row: any): CostItem {
     markupPct: Number(row.markupPct ?? 0),
     incurredAtISO: row.incurredAt ? new Date(row.incurredAt).toISOString() : undefined,
     totalCost: Number(row.totalCost ?? 0),
-    attachments: Array.isArray(row.attachments) ? row.attachments.map(toCostItemAttachment) : undefined,
+    attachments: Array.isArray(row.costItemAttachments) ? row.costItemAttachments.map(toCostItemAttachment) : undefined,
     createdAtISO: new Date(row.createdAt).toISOString(),
     updatedAtISO: new Date(row.updatedAt).toISOString(),
   };
@@ -611,7 +611,7 @@ function toVariation(row: any): Variation {
     quoteId: row.quoteId ?? undefined,
     jobId: row.jobId ?? undefined,
     stageId: row.stageId ?? undefined,
-    stageName: row.stage?.name ?? undefined,
+    stageName: row.jobStage?.name ?? undefined,
     title: row.title,
     reason: row.reason ?? undefined,
     notes: row.notes ?? undefined,
@@ -1508,7 +1508,7 @@ if (existing) {
 }
 
 
-type VariationLite = { id: string; subtotal?: unknown; vat?: unknown; stage?: { name?: string | null } | null };
+type VariationLite = { id: string; subtotal?: unknown; vat?: unknown; jobStage?: { name?: string | null } | null };
 type InvoiceVariationRowLite = { variationId: string | null };
 
 export async function createInvoiceForJob(input: {
@@ -1615,12 +1615,12 @@ export async function createInvoiceForJob(input: {
     }
 
     const approvedVariations = await client.variation
-      .findMany({ where: { jobId: job.id, status: "approved" }, include: { stage: true } })
+      .findMany({ where: { jobId: job.id, status: "approved" }, include: { jobStage: true } })
       .catch(() => [] as any[]);
 
     const scopedVariations = approvedVariations.filter((variation: VariationLite) => {
       if (!stageName) return true;
-      const vStageName = String(variation.stage?.name || "").trim().toLowerCase();
+      const vStageName = String(variation.jobStage?.name || "").trim().toLowerCase();
       return vStageName && vStageName === stageName;
     });
 
@@ -2960,7 +2960,7 @@ export async function listCostItems(jobId: string): Promise<CostItem[]> {
   const client = p();
   if (!client) return [];
   const companyId = await requireCompanyIdForPrisma();
-  const rows = await client.costItem.findMany({ where: { jobId, companyId }, orderBy: { createdAt: "desc" }, include: { attachments: true } });
+  const rows = await client.costItem.findMany({ where: { jobId, companyId }, orderBy: { createdAt: "desc" }, include: { costItemAttachments: true } });
   return rows.map(toCostItem);
 }
 
@@ -3000,7 +3000,7 @@ export async function addCostItem(input: {
         incurredAt: input.incurredAtISO ? new Date(input.incurredAtISO) : null,
         totalCost,
       },
-      include: { attachments: true },
+      include: { costItemAttachments: true },
     })
     .catch(() => null);
   return row ? toCostItem(row) : null;
@@ -3048,7 +3048,7 @@ export async function updateCostItem(id: string, input: {
       supplier: input.supplier !== undefined ? (input.supplier?.trim() || null) : undefined,
       totalCost,
     },
-    include: { attachments: true },
+    include: { costItemAttachments: true },
   }).catch(() => null);
 
   return row ? toCostItem(row) : null;
@@ -3752,14 +3752,14 @@ export async function updateSnagItem(
 export async function listVariationsForJob(jobId: string): Promise<Variation[]> {
   const client = p();
   if (!client) return [];
-  const rows = await client.variation.findMany({ where: { jobId }, orderBy: { createdAt: "desc" }, include: { stage: true } }).catch(() => [] as any[]);
+  const rows = await client.variation.findMany({ where: { jobId }, orderBy: { createdAt: "desc" }, include: { jobStage: true } }).catch(() => [] as any[]);
   return rows.map(toVariation);
 }
 
 export async function listVariationsForQuote(quoteId: string): Promise<Variation[]> {
   const client = p();
   if (!client) return [];
-  const rows = await client.variation.findMany({ where: { quoteId }, orderBy: { createdAt: "desc" }, include: { stage: true } }).catch(() => [] as any[]);
+  const rows = await client.variation.findMany({ where: { quoteId }, orderBy: { createdAt: "desc" }, include: { jobStage: true } }).catch(() => [] as any[]);
   return rows.map(toVariation);
 }
 
@@ -3768,14 +3768,14 @@ export async function getVariationByToken(token: string): Promise<Variation | nu
   if (!client) return null;
   const t = String(token || "").trim();
   if (!t) return null;
-  const row = await client.variation.findUnique({ where: { token: t }, include: { stage: true } }).catch(() => null);
+  const row = await client.variation.findUnique({ where: { token: t }, include: { jobStage: true } }).catch(() => null);
   return row ? toVariation(row) : null;
 }
 
 export async function getVariationById(id: string): Promise<Variation | null> {
   const client = p();
   if (!client) return null;
-  const row = await client.variation.findUnique({ where: { id }, include: { stage: true } }).catch(() => null);
+  const row = await client.variation.findUnique({ where: { id }, include: { jobStage: true } }).catch(() => null);
   return row ? toVariation(row) : null;
 }
 
@@ -3827,7 +3827,7 @@ export async function updateVariationDraft(input: {
         vat: totals.vat,
         total: totals.total,
       },
-      include: { stage: true },
+      include: { jobStage: true },
     })
     .catch(() => null);
   if (!row) return null;
@@ -3884,7 +3884,7 @@ export async function createVariationForJob(input: {
         vat: totals.vat,
         total: totals.total,
       },
-      include: { stage: true },
+      include: { jobStage: true },
     })
     .catch(() => null);
   if (!row) return null;
@@ -3895,10 +3895,10 @@ export async function createVariationForJob(input: {
 export async function sendVariation(id: string): Promise<Variation | null> {
   const client = p();
   if (!client) return null;
-  const existing = await client.variation.findUnique({ where: { id }, include: { stage: true } }).catch(() => null);
+  const existing = await client.variation.findUnique({ where: { id }, include: { jobStage: true } }).catch(() => null);
   if (!existing) return null;
   if (existing.status !== "draft") return toVariation(existing);
-  const row = await client.variation.update({ where: { id }, data: { status: "sent", sentAt: existing.sentAt ?? new Date() }, include: { stage: true } }).catch(() => null);
+  const row = await client.variation.update({ where: { id }, data: { status: "sent", sentAt: existing.sentAt ?? new Date() }, include: { jobStage: true } }).catch(() => null);
   if (!row) return null;
   await addAudit({ entityType: "job", entityId: row.jobId ?? "", action: "variation.sent" as any, actorRole: "admin", meta: { variationId: id } });
   return toVariation(row);
@@ -3911,7 +3911,7 @@ export async function decideVariationByToken(token: string, decision: "approved"
   // Fetch variation with job data for approver resolution
   const v = await client.variation.findUnique({
     where: { token },
-    include: { stage: true, job: { include: { client: true, quote: true } } }
+    include: { jobStage: true, job: { include: { client: true, quote: true } } }
   }).catch(() => null);
 
   if (!v) return null;
@@ -3955,7 +3955,7 @@ export async function decideVariationByToken(token: string, decision: "approved"
           rejectedAt,
           approvedBy: decision === "approved" ? approver : null,
         },
-        include: { stage: true },
+        include: { jobStage: true },
       });
 
       // REVENUE IMPACT: Only increment budget if approved AND has jobId
@@ -3984,7 +3984,7 @@ export async function decideVariationByToken(token: string, decision: "approved"
     // Transaction rolled back (likely due to race condition)
     if (!result) {
       // Re-fetch current state and return it
-      const current = await client.variation.findUnique({ where: { id: v.id }, include: { stage: true } });
+      const current = await client.variation.findUnique({ where: { id: v.id }, include: { jobStage: true } });
       return current ? toVariation(current) : null;
     }
 
@@ -4035,7 +4035,7 @@ export async function listEnquiries(opts?: { stageId?: string }): Promise<any[]>
 
   const rows = await client.enquiry.findMany({
     where,
-    include: { stage: true, owner: true, events: { orderBy: { createdAt: "desc" }, take: 5 } },
+    include: { pipelineStage: true, owner: true, events: { orderBy: { createdAt: "desc" }, take: 5 } },
     orderBy: { createdAt: "desc" },
   }).catch(() => []);
 
@@ -4046,8 +4046,8 @@ export async function listEnquiries(opts?: { stageId?: string }): Promise<any[]>
     ownerId: e.ownerId,
     ownerName: e.owner?.name,
     ownerEmail: e.owner?.email,
-    stageName: e.stage.name,
-    stageColor: e.stage.color,
+    stageName: e.pipelineStage.name,
+    stageColor: e.pipelineStage.color,
     name: e.name,
     email: e.email,
     phone: e.phone,
@@ -4073,7 +4073,7 @@ export async function getEnquiryById(id: string): Promise<any | null> {
 
   const e = await client.enquiry.findUnique({
     where: { id, companyId },
-    include: { stage: true, owner: true, events: { orderBy: { createdAt: "desc" } } },
+    include: { pipelineStage: true, owner: true, events: { orderBy: { createdAt: "desc" } } },
   }).catch(() => null);
 
   if (!e) return null;
@@ -4085,8 +4085,8 @@ export async function getEnquiryById(id: string): Promise<any | null> {
     ownerId: e.ownerId,
     ownerName: e.owner?.name,
     ownerEmail: e.owner?.email,
-    stageName: e.stage.name,
-    stageColor: e.stage.color,
+    stageName: e.pipelineStage.name,
+    stageColor: e.pipelineStage.color,
     name: e.name,
     email: e.email,
     phone: e.phone,
@@ -4121,7 +4121,7 @@ export async function createEnquiry(data: { stageId: string; ownerId?: string; n
       notes: data.notes,
       valueEstimate: data.valueEstimate,
     },
-    include: { stage: true, owner: true },
+    include: { pipelineStage: true, owner: true },
   }).catch(() => null);
 
   if (!e) return null;
@@ -4143,8 +4143,8 @@ export async function createEnquiry(data: { stageId: string; ownerId?: string; n
     ownerId: e.ownerId,
     ownerName: e.owner?.name,
     ownerEmail: e.owner?.email,
-    stageName: e.stage.name,
-    stageColor: e.stage.color,
+    stageName: e.pipelineStage.name,
+    stageColor: e.pipelineStage.color,
     name: e.name,
     email: e.email,
     phone: e.phone,
@@ -4180,7 +4180,7 @@ export async function updateEnquiry(id: string, data: { stageId?: string; ownerI
   const e = await client.enquiry.update({
     where: { id, companyId },
     data: updateData,
-    include: { stage: true, owner: true },
+    include: { pipelineStage: true, owner: true },
   }).catch(() => null);
 
   if (!e) return null;
@@ -4192,7 +4192,7 @@ export async function updateEnquiry(id: string, data: { stageId?: string; ownerI
         companyId,
         enquiryId: e.id,
         type: "stage_changed",
-        note: `Moved to ${e.stage.name}`,
+        note: `Moved to ${e.pipelineStage.name}`,
       },
     }).catch(() => null);
   }
@@ -4217,8 +4217,8 @@ export async function updateEnquiry(id: string, data: { stageId?: string; ownerI
     ownerId: e.ownerId,
     ownerName: e.owner?.name,
     ownerEmail: e.owner?.email,
-    stageName: e.stage.name,
-    stageColor: e.stage.color,
+    stageName: e.pipelineStage.name,
+    stageColor: e.pipelineStage.color,
     name: e.name,
     email: e.email,
     phone: e.phone,
