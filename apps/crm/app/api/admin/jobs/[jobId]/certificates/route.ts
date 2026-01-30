@@ -25,7 +25,12 @@ export async function POST(req: Request, ctx: { params: Promise<{ jobId: string 
   const type = String(body?.type ?? "").trim();
   if (!type) return NextResponse.json({ ok: false, error: "Missing type" }, { status: 400 });
 
-  const cert = await repo.createCertificate({ jobId, type: type as any });
-  if (!cert) return NextResponse.json({ ok: false, error: "Create failed" }, { status: 500 });
-  return NextResponse.json({ ok: true, certificate: cert });
+  try {
+    const cert = await repo.createCertificate({ jobId, type: type as any });
+    if (!cert) return NextResponse.json({ ok: false, error: "Create failed" }, { status: 500 });
+    return NextResponse.json({ ok: true, certificate: cert });
+  } catch (err: any) {
+    console.error("[POST certificates] error:", err?.message ?? err, err?.stack);
+    return NextResponse.json({ ok: false, error: err?.message || "Internal error" }, { status: 500 });
+  }
 }

@@ -3432,7 +3432,7 @@ export async function createCertificate(input: { jobId: string; type: Certificat
         data: template as any,
       } as any,
     })
-    .catch(() => null);
+    .catch((err: any) => { console.error("[createCertificate] create failed:", err?.message ?? err); return null; });
   if (!row) return null;
   await addAudit({ entityType: "certificate", entityId: row.id, action: "certificate.created" as any, actorRole: "admin", meta: { jobId: job.id } });
   return toCertificate(row);
@@ -3907,7 +3907,7 @@ export async function createVariationForJob(input: {
       },
       include: { jobStage: true },
     })
-    .catch(() => null);
+    .catch((err: any) => { console.error("[createVariationForJob] create failed:", err?.message ?? err); return null; });
   if (!row) return null;
   await addAudit({ entityType: "job", entityId: input.jobId, action: "variation.created" as any, actorRole: input.actorRole ?? "admin", actor: input.actor, meta: { variationId: row.id } });
   return toVariation(row);

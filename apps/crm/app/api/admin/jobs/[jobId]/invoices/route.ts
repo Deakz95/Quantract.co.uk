@@ -28,23 +28,28 @@ export const POST = withRequestLogging(async function POST(req: Request, ctx: { 
   }, {
     status: 400
   });
-  const invoice = await repo.createInvoiceForJob({
-    jobId,
-    type,
-    stageName,
-    variationId,
-    subtotal,
-    vatRate,
-    status: "draft"
-  });
-  if (!invoice) return NextResponse.json({
-    ok: false,
-    error: "not_found"
-  }, {
-    status: 404
-  });
-  return NextResponse.json({
-    ok: true,
-    invoice
-  });
+  try {
+    const invoice = await repo.createInvoiceForJob({
+      jobId,
+      type,
+      stageName,
+      variationId,
+      subtotal,
+      vatRate,
+      status: "draft"
+    });
+    if (!invoice) return NextResponse.json({
+      ok: false,
+      error: "not_found"
+    }, {
+      status: 404
+    });
+    return NextResponse.json({
+      ok: true,
+      invoice
+    });
+  } catch (err: any) {
+    console.error("[POST invoices] error:", err?.message ?? err, err?.stack);
+    return NextResponse.json({ ok: false, error: err?.message || "Internal error" }, { status: 500 });
+  }
 });

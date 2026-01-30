@@ -35,23 +35,28 @@ export const POST = withRequestLogging(async function POST(req: Request, ctx: { 
   }, {
     status: 400
   });
-  const v = await repo.createVariationForJob({
-    jobId,
-    title,
-    reason,
-    notes,
-    stageId,
-    vatRate,
-    items
-  });
-  if (!v) return NextResponse.json({
-    ok: false,
-    error: "not_found"
-  }, {
-    status: 404
-  });
-  return NextResponse.json({
-    ok: true,
-    variation: v
-  });
+  try {
+    const v = await repo.createVariationForJob({
+      jobId,
+      title,
+      reason,
+      notes,
+      stageId,
+      vatRate,
+      items
+    });
+    if (!v) return NextResponse.json({
+      ok: false,
+      error: "not_found"
+    }, {
+      status: 404
+    });
+    return NextResponse.json({
+      ok: true,
+      variation: v
+    });
+  } catch (err: any) {
+    console.error("[POST variations] error:", err?.message ?? err, err?.stack);
+    return NextResponse.json({ ok: false, error: err?.message || "Internal error" }, { status: 500 });
+  }
 });
