@@ -16,6 +16,18 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "no_company" }, { status: 400 });
     }
 
+    const prisma = getPrisma();
+    if (!prisma) {
+      return NextResponse.json({ ok: false, error: "service_unavailable" }, { status: 503 });
+    }
+
+    // Paywall: only pro/enterprise can apply
+    const company = await prisma.company.findUnique({ where: { id: companyId }, select: { plan: true } });
+    const plan = (company?.plan ?? "").toLowerCase();
+    if (!plan.includes("pro") && !plan.includes("enterprise")) {
+      return NextResponse.json({ ok: false, error: "Upgrade required" }, { status: 403 });
+    }
+
     const body = await req.json().catch(() => null);
     const actionId = typeof body?.actionId === "string" ? body.actionId : "";
 
@@ -24,10 +36,6 @@ export async function POST(req: Request) {
     }
 
     const action = APPLY_ACTIONS[actionId];
-    const prisma = getPrisma();
-    if (!prisma) {
-      return NextResponse.json({ ok: false, error: "service_unavailable" }, { status: 503 });
-    }
 
     // Execute the action — all current actions are company settings updates
     await prisma.company.update({

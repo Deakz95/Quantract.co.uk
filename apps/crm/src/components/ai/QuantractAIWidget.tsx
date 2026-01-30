@@ -65,6 +65,12 @@ function parseConfidence(title: string): { label: string; confidence: number | n
   return { label, confidence };
 }
 
+function isPaidPlan(plan: string | undefined | null): boolean {
+  if (!plan) return false;
+  const p = plan.toLowerCase();
+  return p.includes("pro") || p.includes("enterprise");
+}
+
 // Minimal client-side analytics — debounced, no third-party deps
 const _loggedEvents = new Set<string>();
 function trackEvent(event: string, data?: Record<string, unknown>) {
@@ -282,6 +288,8 @@ export default function QuantractAIWidget({
   const [expandedRec, setExpandedRec] = useState<number | null>(null);
   const [showRisks, setShowRisks] = useState(false);
   const [recsError, setRecsError] = useState(false);
+  const [aiPlan, setAiPlan] = useState<string | null>(null);
+  const isFree = !isPaidPlan(aiPlan);
   const [applyingAction, setApplyingAction] = useState<string | null>(null);
   const [appliedActions, setAppliedActions] = useState<Set<string>>(new Set());
   const [applyError, setApplyError] = useState<string | null>(null);
@@ -345,6 +353,7 @@ export default function QuantractAIWidget({
     fetch(`${apiBaseUrl}/admin/ai/recommendations`, { credentials: "include" })
       .then((r) => r.json())
       .then((data) => {
+        if (data?._plan) setAiPlan(data._plan);
         if (data?.ok && data?.summary) {
           setRecommendations(data);
           // Inject summary + questions as initial assistant messages
@@ -620,7 +629,16 @@ export default function QuantractAIWidget({
                                   </div>
                                   {recAction && (
                                     <div className="pt-1">
-                                      {isApplied ? (
+                                      {isFree ? (
+                                        <Button
+                                          size="sm"
+                                          variant="secondary"
+                                          onClick={(e) => { e.stopPropagation(); router.push("/admin/billing"); }}
+                                          className="text-xs h-7 opacity-80"
+                                        >
+                                          Upgrade to apply
+                                        </Button>
+                                      ) : isApplied ? (
                                         <span className="inline-flex items-center gap-1 text-xs text-green-500 font-medium">
                                           <IconCheckCircle className="h-3.5 w-3.5" /> Applied
                                         </span>
@@ -667,6 +685,26 @@ export default function QuantractAIWidget({
                             ))}
                           </div>
                         )}
+                      </div>
+                    )}
+
+                    {/* Upgrade CTA for free tier */}
+                    {isFree && (
+                      <div className="rounded-xl border border-[var(--primary)]/30 bg-[var(--primary)]/5 p-4 space-y-3">
+                        <div className="text-sm font-semibold text-[var(--foreground)]">Unlock Smart CRM Assistant</div>
+                        <ul className="text-xs text-[var(--muted-foreground)] space-y-1.5">
+                          <li className="flex items-start gap-2"><IconCheckCircle className="h-3.5 w-3.5 text-[var(--primary)] shrink-0 mt-0.5" /> Personalised recommendations based on your CRM usage</li>
+                          <li className="flex items-start gap-2"><IconCheckCircle className="h-3.5 w-3.5 text-[var(--primary)] shrink-0 mt-0.5" /> Confidence scoring</li>
+                          <li className="flex items-start gap-2"><IconCheckCircle className="h-3.5 w-3.5 text-[var(--primary)] shrink-0 mt-0.5" /> One-click apply actions</li>
+                        </ul>
+                        <Button
+                          size="sm"
+                          variant="default"
+                          onClick={() => router.push("/admin/billing")}
+                          className="w-full text-xs"
+                        >
+                          Upgrade to Pro
+                        </Button>
                       </div>
                     )}
 

@@ -5,6 +5,12 @@ import { CRM_ADVISOR_SYSTEM_PROMPT } from "@/lib/ai/prompts/crmAdvisor";
 import { getOpenAIClient, DEFAULT_MODEL } from "@/lib/llm/openaiClient";
 import type { CrmRecommendations } from "@/lib/ai/types";
 import * as repo from "@/lib/server/repo";
+import { getPrisma } from "@/lib/server/prisma";
+
+function isPaidPlan(plan: string): boolean {
+  const p = plan.toLowerCase();
+  return p.includes("pro") || p.includes("enterprise");
+}
 
 export const runtime = "nodejs";
 
@@ -41,14 +47,49 @@ export async function GET() {
       return NextResponse.json({ ok: false, error: "no_company" }, { status: 400 });
     }
 
-    // 0. Check cache
+    // 0. Check plan for paywall
+    const prisma = getPrisma();
+    const company = prisma
+      ? await prisma.company.findUnique({ where: { id: companyId }, select: { plan: true } })
+      : null;
+    const plan = company?.plan ?? "trial";
+    const paid = isPaidPlan(plan);
+
+    // Free-tier: return static teaser without calling the LLM
+    if (!paid) {
+      const teaser: CrmRecommendations = {
+        summary: "Upgrade to Pro to unlock AI-powered recommendations personalised to your CRM data, with confidence scoring and one-click apply actions.",
+        top_recommendations: [
+          {
+            title: "Keep your client records up to date",
+            why_it_matters: "Complete client profiles help you follow up faster and win more repeat work.",
+            steps_in_app: ["Go to Clients", "Fill in missing contact details and site addresses"],
+            expected_impact: "Better follow-up and fewer missed opportunities",
+            effort: "low",
+          },
+          {
+            title: "Send quotes promptly after enquiries",
+            why_it_matters: "The faster you quote, the more likely you are to win the job — especially in competitive trades.",
+            steps_in_app: ["Go to Enquiries", "Convert open enquiries to quotes"],
+            expected_impact: "Higher quote-to-job conversion rate",
+            effort: "low",
+          },
+        ],
+        quick_wins: [],
+        risks_or_gaps: [],
+        questions: [],
+      };
+      return NextResponse.json({ ok: true, ...teaser, _plan: plan });
+    }
+
+    // 1. Check cache (paid only)
     const cacheKey = `${companyId}:${userId}`;
     const cached = cache.get(cacheKey);
     if (cached && cached.expiresAt > Date.now()) {
-      return NextResponse.json({ ok: true, ...cached.data });
+      return NextResponse.json({ ok: true, ...cached.data, _plan: plan });
     }
 
-    // 1. Build CRM context
+    // 2. Build CRM context
     const context = await buildCrmContext(companyId, userId);
 
     // 2. Build prompt — replace placeholder with context JSON
@@ -129,7 +170,7 @@ export async function GET() {
     // 8. Cache
     cache.set(cacheKey, { data: result, expiresAt: Date.now() + CACHE_TTL_MS });
 
-    return NextResponse.json({ ok: true, ...result });
+    return NextResponse.json({ ok: true, ...result, _plan: plan });
   } catch (error: any) {
     if (error?.status === 401) {
       return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
