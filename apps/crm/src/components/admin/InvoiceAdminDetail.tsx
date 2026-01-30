@@ -27,6 +27,13 @@ type Invoice = {
   paymentUrl?: string;
 };
 
+type LineItem = {
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+};
+
 const STATUS_LABEL: Record<Invoice["status"], string> = {
   draft: "Draft",
   sent: "Sent",
@@ -37,6 +44,7 @@ const STATUS_LABEL: Record<Invoice["status"], string> = {
 export default function InvoiceAdminDetail({ invoiceId }: { invoiceId: string }) {
   const { toast } = useToast();
   const [inv, setInv] = useState<Invoice | null>(null);
+  const [lineItems, setLineItems] = useState<LineItem[]>([]);
   const [busy, setBusy] = useState(false);
 
   const clientLink = useMemo(() => (inv ? `/client/invoices/${inv.token}` : ""), [inv]);
@@ -54,6 +62,7 @@ export default function InvoiceAdminDetail({ invoiceId }: { invoiceId: string })
       .then((d) => {
         if (!mounted) return;
         setInv(d.invoice ?? null);
+        setLineItems(Array.isArray(d.lineItems) ? d.lineItems : []);
       })
       .catch(() => {});
     return () => {
@@ -135,7 +144,14 @@ export default function InvoiceAdminDetail({ invoiceId }: { invoiceId: string })
               <div className="text-xs font-semibold text-[var(--muted-foreground)]">Client</div>
               <div className="mt-1 text-sm font-semibold text-[var(--foreground)]">{inv.clientName}</div>
               <div className="mt-1 text-xs text-[var(--muted-foreground)]">{inv.clientEmail}</div>
-              {inv.quoteId ? <div className="mt-2 text-xs text-[var(--muted-foreground)]">Quote: {inv.quoteId}</div> : null}
+              {inv.quoteId ? (
+                <div className="mt-2 text-xs text-[var(--muted-foreground)]">
+                  Quote:{" "}
+                  <Link href={`/admin/quotes/${inv.quoteId}`} className="text-[var(--primary)] hover:underline">
+                    #{inv.quoteId.slice(0, 8)}
+                  </Link>
+                </div>
+              ) : null}
             </div>
 
             <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4">
@@ -170,6 +186,34 @@ export default function InvoiceAdminDetail({ invoiceId }: { invoiceId: string })
               ) : null}
             </div>
           </div>
+
+          {lineItems.length > 0 && (
+            <div className="mt-5 rounded-2xl border border-[var(--border)] bg-[var(--background)] overflow-hidden">
+              <div className="px-4 py-3 border-b border-[var(--border)]">
+                <div className="text-xs font-semibold text-[var(--muted-foreground)]">Line Items</div>
+              </div>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-[var(--border)] text-xs text-[var(--muted-foreground)]">
+                    <th className="px-4 py-2 text-left font-semibold">Description</th>
+                    <th className="px-4 py-2 text-right font-semibold">Qty</th>
+                    <th className="px-4 py-2 text-right font-semibold">Unit Price</th>
+                    <th className="px-4 py-2 text-right font-semibold">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lineItems.map((item, i) => (
+                    <tr key={i} className="border-b border-[var(--border)] last:border-0">
+                      <td className="px-4 py-2 text-[var(--foreground)]">{item.description || "—"}</td>
+                      <td className="px-4 py-2 text-right text-[var(--muted-foreground)]">{item.quantity}</td>
+                      <td className="px-4 py-2 text-right text-[var(--muted-foreground)]">£{item.unitPrice.toFixed(2)}</td>
+                      <td className="px-4 py-2 text-right font-semibold text-[var(--foreground)]">£{item.total.toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
 
           <div className="mt-5 flex flex-wrap gap-2">
             <Button type="button" onClick={() => setStatus("draft")} disabled={busy || inv.status === "draft"}>Draft</Button>

@@ -239,8 +239,8 @@ export function EnquiryListClient() {
                       </Link>
                     </CardTitle>
                     <div className="flex gap-2 mt-2">
-                      <Badge style={{ backgroundColor: enq.stageColor || "#gray" }}>
-                        {enq.stageName}
+                      <Badge style={{ backgroundColor: enq.stageColor || "#6b7280", color: "#fff" }}>
+                        {enq.stageName || "Unknown"}
                       </Badge>
                       {enq.ownerName && (
                         <Badge variant="outline">Owner: {enq.ownerName}</Badge>
