@@ -133,6 +133,7 @@ const AVAILABLE_WIDGETS: Widget[] = [
 
 const quickActions = [
   { label: "Create Quote", href: "/admin/quotes/new", icon: FileText },
+  { label: "Quick Quote", href: "#quick-quote", icon: Zap },
   { label: "New Invoice", href: "/admin/invoices/new", icon: Receipt },
   { label: "Add Job", href: "/admin/jobs/new", icon: Briefcase },
   { label: "View Schedule", href: "/admin/schedule", icon: Clock },
@@ -359,7 +360,7 @@ function StatsWidget({ data, loading, onRefresh, isRefreshing }: {
   );
 }
 
-function QuickActionsWidget() {
+function QuickActionsWidget({ onQuickQuote }: { onQuickQuote?: () => void }) {
   return (
     <Card>
       <CardHeader>
@@ -369,14 +370,23 @@ function QuickActionsWidget() {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           {quickActions.map((action) => (
-            <Link key={action.href} href={action.href}>
-              <div className="p-4 rounded-xl border border-[var(--border)] hover:border-[var(--primary)] hover:bg-[var(--muted)] transition-all duration-200 text-center group">
-                <action.icon className="w-6 h-6 mx-auto text-[var(--muted-foreground)] group-hover:text-[var(--primary)] transition-colors" />
-                <div className="mt-2 text-sm font-medium text-[var(--foreground)]">{action.label}</div>
-              </div>
-            </Link>
+            action.href === "#quick-quote" ? (
+              <button key={action.href} type="button" onClick={onQuickQuote}>
+                <div className="p-4 rounded-xl border border-[var(--border)] hover:border-[var(--primary)] hover:bg-[var(--muted)] transition-all duration-200 text-center group">
+                  <action.icon className="w-6 h-6 mx-auto text-[var(--muted-foreground)] group-hover:text-[var(--primary)] transition-colors" />
+                  <div className="mt-2 text-sm font-medium text-[var(--foreground)]">{action.label}</div>
+                </div>
+              </button>
+            ) : (
+              <Link key={action.href} href={action.href}>
+                <div className="p-4 rounded-xl border border-[var(--border)] hover:border-[var(--primary)] hover:bg-[var(--muted)] transition-all duration-200 text-center group">
+                  <action.icon className="w-6 h-6 mx-auto text-[var(--muted-foreground)] group-hover:text-[var(--primary)] transition-colors" />
+                  <div className="mt-2 text-sm font-medium text-[var(--foreground)]">{action.label}</div>
+                </div>
+              </Link>
+            )
           ))}
         </div>
       </CardContent>
@@ -960,6 +970,203 @@ function JobsMapWidget({ data, jobs, loading, onRefresh, isRefreshing }: {
   );
 }
 
+function QuickQuoteModal({ onClose }: { onClose: () => void }) {
+  const [clientName, setClientName] = useState("");
+  const [clientEmail, setClientEmail] = useState("");
+  const [clientPhone, setClientPhone] = useState("");
+  const [description, setDescription] = useState("");
+  const [price, setPrice] = useState("");
+  const [includeVat, setIncludeVat] = useState(true);
+  const [sendEmail, setSendEmail] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [existingClients, setExistingClients] = useState<Array<{ id: string; name: string; email: string; phone?: string }>>([]);
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+  const [clientSearch, setClientSearch] = useState("");
+
+  useEffect(() => {
+    fetch("/api/admin/clients", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => { if (d.ok) setExistingClients(d.clients || []); })
+      .catch(() => null);
+  }, []);
+
+  const filteredClients = clientSearch.length >= 2
+    ? existingClients.filter((c) => c.name.toLowerCase().includes(clientSearch.toLowerCase()) || c.email.toLowerCase().includes(clientSearch.toLowerCase()))
+    : [];
+
+  function selectClient(c: { id: string; name: string; email: string; phone?: string }) {
+    setSelectedClientId(c.id);
+    setClientName(c.name);
+    setClientEmail(c.email);
+    setClientPhone(c.phone || "");
+    setClientSearch("");
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!clientName || !description || !price) return;
+    setBusy(true);
+    try {
+      // 1. Create or use existing client
+      let clientId = selectedClientId;
+      if (!clientId) {
+        const cr = await fetch("/api/admin/clients", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ name: clientName, email: clientEmail, phone: clientPhone }),
+        });
+        const cd = await cr.json();
+        if (!cd.ok) throw new Error(cd.error || "Failed to create client");
+        clientId = cd.client?.id;
+      }
+
+      // 2. Create quote with one line item
+      const priceNum = Number(price);
+      const vatRate = includeVat ? 0.2 : 0;
+      const qr = await fetch("/api/admin/quotes", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          clientId,
+          clientName,
+          clientEmail,
+          vatRate,
+          items: [{ description, qty: 1, unitPrice: priceNum }],
+        }),
+      });
+      const qd = await qr.json();
+      if (!qd.ok) throw new Error(qd.error || "Failed to create quote");
+      const quoteId = qd.quote?.id;
+
+      // 3. Optionally send email
+      if (sendEmail && quoteId) {
+        await fetch(`/api/admin/quotes/${quoteId}/send`, { method: "POST" }).catch(() => null);
+      }
+
+      // Navigate to quote
+      window.location.href = `/admin/quotes/${quoteId}`;
+    } catch {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={onClose}>
+      <div onClick={(e) => e.stopPropagation()} className="w-full max-w-lg bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-2xl overflow-hidden animate-fade-in">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-lg font-bold text-[var(--foreground)]">Quick Quote</h2>
+              <p className="text-sm text-[var(--muted-foreground)]">Create and send a quote in under 60 seconds</p>
+            </div>
+            <button onClick={onClose} className="p-2 rounded-lg hover:bg-[var(--muted)]">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Client */}
+            <div>
+              <label className="text-sm font-medium text-[var(--foreground)]">Client</label>
+              {selectedClientId ? (
+                <div className="mt-1 flex items-center gap-2">
+                  <span className="text-sm text-[var(--foreground)]">{clientName}</span>
+                  <button type="button" onClick={() => { setSelectedClientId(null); setClientName(""); setClientEmail(""); setClientPhone(""); }} className="text-xs text-[var(--primary)] hover:underline">Change</button>
+                </div>
+              ) : (
+                <div className="mt-1 relative">
+                  <input
+                    placeholder="Search existing or type new name..."
+                    value={clientSearch || clientName}
+                    onChange={(e) => { setClientSearch(e.target.value); setClientName(e.target.value); }}
+                    className="w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
+                    required
+                  />
+                  {filteredClients.length > 0 && (
+                    <div className="absolute left-0 right-0 mt-1 bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-lg z-10 max-h-40 overflow-auto">
+                      {filteredClients.slice(0, 5).map((c) => (
+                        <button key={c.id} type="button" onClick={() => selectClient(c)} className="w-full text-left px-3 py-2 text-sm hover:bg-[var(--muted)]">
+                          <div className="font-medium">{c.name}</div>
+                          <div className="text-xs text-[var(--muted-foreground)]">{c.email}</div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+              {!selectedClientId && (
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  <input placeholder="Email" value={clientEmail} onChange={(e) => setClientEmail(e.target.value)} className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm" />
+                  <input placeholder="Phone" value={clientPhone} onChange={(e) => setClientPhone(e.target.value)} className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm" />
+                </div>
+              )}
+            </div>
+
+            {/* Description */}
+            <div>
+              <label className="text-sm font-medium text-[var(--foreground)]">Description</label>
+              <input
+                placeholder="e.g., Full rewire of 3-bed semi"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="mt-1 w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
+                required
+              />
+            </div>
+
+            {/* Price + VAT */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-sm font-medium text-[var(--foreground)]">Price (£)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                  className="mt-1 w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
+                  required
+                />
+              </div>
+              <div className="flex items-end">
+                <label className="flex items-center gap-2 text-sm text-[var(--foreground)] cursor-pointer">
+                  <input type="checkbox" checked={includeVat} onChange={(e) => setIncludeVat(e.target.checked)} className="rounded" />
+                  Include VAT (20%)
+                </label>
+              </div>
+            </div>
+
+            {/* Send email toggle */}
+            <label className="flex items-center gap-2 text-sm text-[var(--foreground)] cursor-pointer">
+              <input type="checkbox" checked={sendEmail} onChange={(e) => setSendEmail(e.target.checked)} className="rounded" />
+              Send quote email to client immediately
+            </label>
+
+            {/* Total preview */}
+            {price && (
+              <div className="p-3 rounded-xl bg-[var(--muted)] text-sm">
+                <div className="flex justify-between"><span>Subtotal</span><span>£{Number(price).toFixed(2)}</span></div>
+                {includeVat && <div className="flex justify-between text-[var(--muted-foreground)]"><span>VAT (20%)</span><span>£{(Number(price) * 0.2).toFixed(2)}</span></div>}
+                <div className="flex justify-between font-bold mt-1 pt-1 border-t border-[var(--border)]">
+                  <span>Total</span>
+                  <span>£{(Number(price) * (includeVat ? 1.2 : 1)).toFixed(2)}</span>
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button type="button" variant="secondary" onClick={onClose} disabled={busy}>Cancel</Button>
+              <Button type="submit" disabled={busy || !clientName || !description || !price}>
+                {busy ? "Creating..." : sendEmail ? "Create & Send" : "Create Quote"}
+              </Button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 type DashboardState = {
   data: DashboardData | null;
   engineers: Engineer[];
@@ -982,6 +1189,7 @@ export default function DashboardPage() {
   const [isCustomizing, setIsCustomizing] = useState(false);
   const [showAddWidget, setShowAddWidget] = useState(false);
   const [draggedWidget, setDraggedWidget] = useState<string | null>(null);
+  const [quickQuoteOpen, setQuickQuoteOpen] = useState(false);
 
   // Dashboard data state
   const [dashboardState, setDashboardState] = useState<DashboardState>({
@@ -1214,7 +1422,7 @@ export default function DashboardPage() {
           />
         );
       case 'quickActions':
-        return <QuickActionsWidget />;
+        return <QuickActionsWidget onQuickQuote={() => setQuickQuoteOpen(true)} />;
       case 'recentActivity':
         return (
           <RecentActivityWidget
@@ -1384,6 +1592,11 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+
+      {/* Quick Quote Modal */}
+      {quickQuoteOpen && (
+        <QuickQuoteModal onClose={() => setQuickQuoteOpen(false)} />
+      )}
     </AppShell>
   );
 }

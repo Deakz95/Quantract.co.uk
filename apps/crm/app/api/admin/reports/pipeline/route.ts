@@ -42,6 +42,20 @@ export const GET = withRequestLogging(async function GET(req: Request) {
     // Set end date to end of day
     endDate.setHours(23, 59, 59, 999);
 
+    // Ensure default deal stages exist (lazy-seed)
+    const existingStageCount = await db.dealStage.count({ where: { companyId } });
+    if (existingStageCount === 0) {
+      await db.dealStage.createMany({
+        data: [
+          { companyId, name: "Prospect", sortOrder: 0, color: "#3b82f6", probability: 10, isWon: false, isLost: false, updatedAt: new Date() },
+          { companyId, name: "Proposal", sortOrder: 1, color: "#8b5cf6", probability: 30, isWon: false, isLost: false, updatedAt: new Date() },
+          { companyId, name: "Negotiation", sortOrder: 2, color: "#f59e0b", probability: 60, isWon: false, isLost: false, updatedAt: new Date() },
+          { companyId, name: "Won", sortOrder: 3, color: "#10b981", probability: 100, isWon: true, isLost: false, updatedAt: new Date() },
+          { companyId, name: "Lost", sortOrder: 4, color: "#ef4444", probability: 0, isWon: false, isLost: true, updatedAt: new Date() },
+        ],
+      }).catch(() => null);
+    }
+
     // Get all deal stages for this company
     const dealStages = await db.dealStage.findMany({
       where: { companyId },

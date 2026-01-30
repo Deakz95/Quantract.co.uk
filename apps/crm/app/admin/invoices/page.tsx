@@ -297,7 +297,11 @@ export default function InvoicesPage() {
       key: 'clientName',
       label: 'Client',
       sortable: true,
-      render: (invoice) => <span className="text-[var(--foreground)]">{invoice.client?.name || '-'}</span>,
+      render: (invoice) => invoice.client?.id ? (
+        <Link href={`/admin/clients/${invoice.client.id}`} className="text-[var(--primary)] hover:underline">{invoice.client.name || '-'}</Link>
+      ) : (
+        <span className="text-[var(--foreground)]">{invoice.client?.name || '-'}</span>
+      ),
     },
     {
       key: 'total',

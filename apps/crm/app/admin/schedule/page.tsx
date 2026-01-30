@@ -221,12 +221,14 @@ export default function AdminSchedulePage() {
                     <span className="text-sm font-medium text-[var(--foreground)]">Engineer</span>
                     <select name="engineerEmail" required className="rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)]">
                       <option value="">Select…</option>
-                      {engineers.map((en) => (
-                        <option key={en.id} value={en.email}>
-                          {en.name ? `${en.name} — ` : ""}
-                          {en.email}
-                        </option>
-                      ))}
+                      {engineers.map((en) => {
+                        const displayName = en.name || en.email.split("@")[0];
+                        return (
+                          <option key={en.id} value={en.email}>
+                            {displayName}
+                          </option>
+                        );
+                      })}
                     </select>
                   </label>
 
@@ -290,7 +292,7 @@ export default function AdminSchedulePage() {
                                   <div className="rounded-lg bg-[var(--primary)]/10 border border-[var(--primary)]/20 p-1.5 text-xs hover:bg-[var(--primary)]/20 transition-colors cursor-pointer">
                                     <div className="font-semibold text-[var(--foreground)] truncate">{e.notes || `Job ${e.jobId.slice(0, 6)}`}</div>
                                     <div className="text-[var(--muted-foreground)]">{time}</div>
-                                    {eng && <div className="text-[var(--muted-foreground)] truncate">{eng.name || eng.email}</div>}
+                                    {eng && <div className="text-[var(--muted-foreground)] truncate">{eng.name || eng.email.split("@")[0]}</div>}
                                   </div>
                                 </Link>
                               );
@@ -322,7 +324,7 @@ export default function AdminSchedulePage() {
                     return (
                       <div key={en.id} className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-4">
                         <div className="flex flex-wrap items-center justify-between gap-2">
-                          <div className="font-semibold text-[var(--foreground)]">{en.name || en.email}</div>
+                          <div className="font-semibold text-[var(--foreground)]">{en.name || en.email.split("@")[0]}</div>
                           <Badge variant="secondary">{list.length} entries</Badge>
                         </div>
 

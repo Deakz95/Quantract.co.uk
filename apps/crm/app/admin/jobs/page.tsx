@@ -21,6 +21,8 @@ type Job = {
   jobNumber?: string;
   name?: string;
   title?: string;
+  description?: string;
+  notes?: string;
   status: string;
   startDate?: string;
   createdAt?: string;
@@ -308,10 +310,26 @@ export default function JobsPage() {
       ),
     },
     {
+      key: 'description',
+      label: 'Description',
+      render: (job) => {
+        const desc = job.description || job.notes || '';
+        return (
+          <span className="text-[var(--muted-foreground)] text-xs line-clamp-1" title={desc}>
+            {desc ? (desc.length > 60 ? desc.slice(0, 57) + '...' : desc) : '-'}
+          </span>
+        );
+      },
+    },
+    {
       key: 'clientName',
       label: 'Client',
       sortable: true,
-      render: (job) => <span className="text-[var(--foreground)]">{job.client?.name || '-'}</span>,
+      render: (job) => job.client?.id ? (
+        <Link href={`/admin/clients/${job.client.id}`} className="text-[var(--primary)] hover:underline">{job.client.name || '-'}</Link>
+      ) : (
+        <span className="text-[var(--foreground)]">{job.client?.name || '-'}</span>
+      ),
     },
     {
       key: 'status',

@@ -46,6 +46,7 @@ import {
 
 import { ImpersonationBanner } from "@/components/ImpersonationBanner";
 import { CommandPalette } from "@/components/ui/CommandPalette";
+import { useBillingStatus } from "@/components/billing/useBillingStatus";
 
 const BRAND_NAME = process.env.NEXT_PUBLIC_QT_BRAND_NAME || "Quantract";
 const BRAND_TAGLINE = process.env.NEXT_PUBLIC_QT_BRAND_TAGLINE || "Electrical & Building Services";
@@ -169,7 +170,16 @@ export function AppShell({
   hideNav?: boolean;
   children: ReactNode;
 }) {
-  const nav = useMemo(() => (role === "admin" ? adminNav : role === "engineer" ? engineerNav : clientNav), [role]);
+  const { status: billingStatus } = useBillingStatus();
+  const plan = billingStatus?.plan ?? "";
+  const isFree = !plan || plan === "free" || plan === "trial";
+  const nav = useMemo(() => {
+    const base = role === "admin" ? adminNav : role === "engineer" ? engineerNav : clientNav;
+    if (role === "admin" && isFree) {
+      return base.filter((item) => item.label !== "Deals");
+    }
+    return base;
+  }, [role, isFree]);
   const pathname = usePathname();
   const [newOpen, setNewOpen] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
@@ -519,7 +529,9 @@ export function AppShell({
               <div className="mt-6 grid gap-3">
                 {[
                   { label: "New Quote", href: "/admin/quotes/new", icon: FileText },
+                  { label: "New Enquiry", href: "/admin/enquiries?new=1", icon: Inbox },
                   { label: "New Client", href: "/admin/clients", icon: Users },
+                  { label: "New Contact", href: "/admin/contacts?new=1", icon: User },
                   { label: "New Job", href: "/admin/jobs", icon: Briefcase },
                   { label: "New Invoice", href: "/admin/invoices", icon: Receipt },
                 ].map((item) => (

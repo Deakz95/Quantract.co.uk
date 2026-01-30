@@ -19,6 +19,7 @@ type Quote = {
   quoteId: string;
   quoteNumber: string;
   clientName: string;
+  clientId?: string;
   siteName?: string;
   total: number;
   status: string;
@@ -276,7 +277,11 @@ export default function QuotesPage() {
       key: 'clientName',
       label: 'Client',
       sortable: true,
-      render: (quote) => <span className="text-[var(--foreground)]">{quote.clientName || '-'}</span>,
+      render: (quote) => quote.clientId ? (
+        <Link href={`/admin/clients/${quote.clientId}`} className="text-[var(--primary)] hover:underline">{quote.clientName || '-'}</Link>
+      ) : (
+        <span className="text-[var(--foreground)]">{quote.clientName || '-'}</span>
+      ),
     },
     {
       key: 'siteName',

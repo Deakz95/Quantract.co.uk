@@ -241,6 +241,18 @@ export default function QuantractAIWidget({
   const [session, setSession] = useState<QuantractAIWidgetProps["session"]>(externalSession ?? null);
   const [prompts, setPrompts] = useState<string[]>([]);
   const [aiConfigured, setAiConfigured] = useState(true);
+  const [recommendations, setRecommendations] = useState<{
+    summary?: string;
+    top_recommendations?: Array<{ title: string; why_it_matters: string; steps_in_app: string[]; expected_impact: string; effort: string }>;
+    quick_wins?: string[];
+    risks_or_gaps?: string[];
+    questions?: string[];
+  } | null>(null);
+  const [recsLoading, setRecsLoading] = useState(false);
+  const [recsFetched, setRecsFetched] = useState(false);
+  const [expandedRec, setExpandedRec] = useState<number | null>(null);
+  const [showRisks, setShowRisks] = useState(false);
+  const [recsError, setRecsError] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
@@ -260,6 +272,45 @@ export default function QuantractAIWidget({
       .then((data) => setAiConfigured(Boolean(data?.configured)))
       .catch(() => setAiConfigured(false));
   }, [apiBaseUrl]);
+
+  // Fetch CRM recommendations on first open (admin only)
+  useEffect(() => {
+    if (!isOpen || recsFetched || recsLoading) return;
+    const role = session?.role;
+    if (role !== "ADMIN" && String(role).toLowerCase() !== "admin") return;
+    setRecsLoading(true);
+    setRecsFetched(true);
+    fetch(`${apiBaseUrl}/admin/ai/recommendations`, { credentials: "include" })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.ok && data?.summary) {
+          setRecommendations(data);
+          // Inject summary + questions as initial assistant messages
+          const msgs: Message[] = [];
+          msgs.push({
+            id: crypto.randomUUID(),
+            role: "assistant",
+            content: data.summary,
+            timestamp: new Date(),
+          });
+          if (Array.isArray(data.questions)) {
+            for (const q of data.questions) {
+              msgs.push({
+                id: crypto.randomUUID(),
+                role: "assistant",
+                content: q,
+                timestamp: new Date(),
+              });
+            }
+          }
+          setMessages((prev) => (prev.length === 0 ? msgs : prev));
+        }
+      })
+      .catch(() => {
+        setRecsError(true);
+      })
+      .finally(() => setRecsLoading(false));
+  }, [isOpen, recsFetched, recsLoading, session?.role, apiBaseUrl]);
 
   useEffect(() => {
     if (customPrompts?.length) return setPrompts(customPrompts);
@@ -416,22 +467,150 @@ export default function QuantractAIWidget({
 
             {messages.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center px-4">
-                <div className="h-16 w-16 rounded-2xl bg-[var(--card)] flex items-center justify-center mb-4">
-                  <IconSparkles className="h-8 w-8 text-[var(--muted-foreground)]" />
-                </div>
-                <p className="text-[var(--muted-foreground)] text-sm mb-4">How can I help you today?</p>
-                {derivedPrompts.length > 0 && (
-                  <div className="w-full space-y-2">
-                    {derivedPrompts.map((prompt) => (
-                      <button
-                        key={prompt}
-                        onClick={() => void sendMessage(prompt)}
-                        className="w-full text-left p-2.5 rounded-lg bg-[var(--card)] hover:bg-[var(--muted)] text-[var(--muted-foreground)] text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2"
-                      >
-                        {prompt}
-                      </button>
-                    ))}
+                {recsLoading ? (
+                  <div className="flex flex-col items-center gap-3">
+                    <IconSpinner className="h-8 w-8 animate-spin text-[var(--muted-foreground)]" />
+                    <p className="text-[var(--muted-foreground)] text-sm">Analysing your CRM...</p>
                   </div>
+                ) : recsError && !recommendations ? (
+                  <div className="flex flex-col items-center gap-3">
+                    <IconAlertCircle className="h-8 w-8 text-red-400" />
+                    <p className="text-[var(--muted-foreground)] text-sm">Couldn&apos;t load recommendations.</p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setRecsError(false);
+                        setRecsFetched(false);
+                      }}
+                    >
+                      Retry
+                    </Button>
+                  </div>
+                ) : recommendations ? (
+                  <div className="w-full text-left space-y-4 overflow-auto max-h-full">
+                    {/* Summary */}
+                    <div className="p-3 rounded-xl bg-[var(--card)] border border-[var(--border)]">
+                      <p className="text-sm text-[var(--foreground)]">{recommendations.summary}</p>
+                    </div>
+
+                    {/* Quick wins as chips */}
+                    {recommendations.quick_wins && recommendations.quick_wins.length > 0 && (
+                      <div>
+                        <p className="text-xs font-semibold text-[var(--muted-foreground)] mb-2 flex items-center gap-1">
+                          <IconCheckCircle className="h-3 w-3" /> Quick wins
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {recommendations.quick_wins.map((qw, i) => (
+                            <button
+                              key={i}
+                              onClick={() => void sendMessage(`How do I: ${qw}`)}
+                              className="px-2.5 py-1.5 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] text-[var(--foreground)] text-xs transition-colors text-left"
+                            >
+                              {qw}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Top recommendations as expandable cards */}
+                    {recommendations.top_recommendations && recommendations.top_recommendations.length > 0 && (
+                      <div>
+                        <p className="text-xs font-semibold text-[var(--muted-foreground)] mb-2 flex items-center gap-1">
+                          <IconSparkles className="h-3 w-3" /> Recommendations
+                        </p>
+                        <div className="space-y-2">
+                          {recommendations.top_recommendations.map((rec, i) => (
+                            <div key={i} className="rounded-xl border border-[var(--border)] bg-[var(--card)] overflow-hidden">
+                              <button
+                                onClick={() => setExpandedRec(expandedRec === i ? null : i)}
+                                className="w-full text-left p-3 flex items-start justify-between gap-2 hover:bg-[var(--muted)] transition-colors"
+                              >
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-sm font-medium text-[var(--foreground)]">{rec.title}</div>
+                                  <div className="text-xs text-[var(--muted-foreground)] mt-0.5">{rec.expected_impact}</div>
+                                </div>
+                                <Badge className="shrink-0 text-[10px] bg-[var(--muted)] text-[var(--muted-foreground)]">{rec.effort}</Badge>
+                              </button>
+                              {expandedRec === i && (
+                                <div className="px-3 pb-3 space-y-2 border-t border-[var(--border)] pt-2">
+                                  <p className="text-xs text-[var(--muted-foreground)]">{rec.why_it_matters}</p>
+                                  <div className="space-y-1">
+                                    {rec.steps_in_app.map((step, si) => (
+                                      <div key={si} className="flex items-start gap-2 text-xs text-[var(--foreground)]">
+                                        <span className="shrink-0 w-4 h-4 rounded-full bg-[var(--muted)] flex items-center justify-center text-[10px] font-semibold mt-0.5">{si + 1}</span>
+                                        <span>{step}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Risks / gaps — collapsible */}
+                    {recommendations.risks_or_gaps && recommendations.risks_or_gaps.length > 0 && (
+                      <div>
+                        <button
+                          onClick={() => setShowRisks(!showRisks)}
+                          className="text-xs font-semibold text-[var(--muted-foreground)] mb-2 flex items-center gap-1 hover:text-[var(--foreground)] transition-colors"
+                        >
+                          <IconAlertTriangle className="h-3 w-3" /> Things to watch {showRisks ? "▾" : "▸"}
+                        </button>
+                        {showRisks && (
+                          <div className="space-y-1.5">
+                            {recommendations.risks_or_gaps.map((risk, i) => (
+                              <div key={i} className="text-xs text-[var(--muted-foreground)] p-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                                {risk}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Prompt suggestions */}
+                    {derivedPrompts.length > 0 && (
+                      <div className="pt-2 border-t border-[var(--border)]">
+                        <p className="text-xs text-[var(--muted-foreground)] mb-2">Or ask me anything:</p>
+                        <div className="space-y-1.5">
+                          {derivedPrompts.map((prompt) => (
+                            <button
+                              key={prompt}
+                              onClick={() => void sendMessage(prompt)}
+                              className="w-full text-left p-2 rounded-lg bg-[var(--card)] hover:bg-[var(--muted)] text-[var(--muted-foreground)] text-xs transition-colors"
+                            >
+                              {prompt}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <>
+                    <div className="h-16 w-16 rounded-2xl bg-[var(--card)] flex items-center justify-center mb-4">
+                      <IconSparkles className="h-8 w-8 text-[var(--muted-foreground)]" />
+                    </div>
+                    <p className="text-[var(--muted-foreground)] text-sm mb-4">How can I help you today?</p>
+                    {derivedPrompts.length > 0 && (
+                      <div className="w-full space-y-2">
+                        {derivedPrompts.map((prompt) => (
+                          <button
+                            key={prompt}
+                            onClick={() => void sendMessage(prompt)}
+                            className="w-full text-left p-2.5 rounded-lg bg-[var(--card)] hover:bg-[var(--muted)] text-[var(--muted-foreground)] text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2"
+                          >
+                            {prompt}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             ) : (

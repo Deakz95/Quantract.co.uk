@@ -364,7 +364,7 @@ export default function ClientsPageClient() {
       sortable: true,
       render: (client) => (
         <div>
-          <div className="font-semibold text-[var(--foreground)]">{client.name}</div>
+          <Link href={`/admin/clients/${client.id}`} className="font-semibold text-[var(--primary)] hover:underline">{client.name}</Link>
           {client.phone && <div className="mt-0.5 text-xs text-[var(--muted-foreground)]">{client.phone}</div>}
         </div>
       ),

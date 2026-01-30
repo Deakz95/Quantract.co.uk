@@ -22,7 +22,18 @@ export const GET = withRequestLogging(async function GET() {
     }
 
     // Lazy-seed default stages for orgs that don't have any yet
-    await repo.ensureDefaultPipelineStages().catch(() => null);
+    const existingCount = await prisma.pipelineStage.count({ where: { companyId: authCtx.companyId } });
+    if (existingCount === 0) {
+      await prisma.pipelineStage.createMany({
+        data: [
+          { companyId: authCtx.companyId, name: "New", sortOrder: 0, color: "#3b82f6" },
+          { companyId: authCtx.companyId, name: "Contacted", sortOrder: 1, color: "#8b5cf6" },
+          { companyId: authCtx.companyId, name: "Quoted", sortOrder: 2, color: "#f59e0b" },
+          { companyId: authCtx.companyId, name: "Won", sortOrder: 3, color: "#10b981", isWon: true },
+          { companyId: authCtx.companyId, name: "Lost", sortOrder: 4, color: "#ef4444", isLost: true },
+        ],
+      }).catch(() => null);
+    }
 
     const stages = await prisma.pipelineStage.findMany({
       where: { companyId: authCtx.companyId },

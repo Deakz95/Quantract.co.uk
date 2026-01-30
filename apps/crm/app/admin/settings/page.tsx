@@ -60,7 +60,7 @@ export default function SettingsPage() {
                 </div>
                 <div className="space-y-1">
                   <label className="text-sm font-medium text-[var(--muted-foreground)]">Tagline</label>
-                  <p className="text-[var(--foreground)]">{data.brandTagline || 'Not set'}</p>
+                  <p className="text-[var(--foreground)]">{data.brandTagline || data.brandName || 'Not set'}</p>
                 </div>
               </div>
               <div className="mt-4 pt-4 border-t border-[var(--border)]">

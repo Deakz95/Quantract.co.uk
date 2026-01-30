@@ -2504,9 +2504,16 @@ export async function ensureJobForQuote(quoteId: string): Promise<Job | null> {
       quoteId,
       clientId: (q as any).clientId ?? null,
       siteId,
-      title: (q as any).clientName
-        ? `${(q as any).clientName}${(q as any).ref ? ` — ${(q as any).ref}` : ""}`
-        : `Job from Quote ${quoteId.slice(0, 8)}`,
+      title: (() => {
+        const clientName = (q as any).clientName || "";
+        const firstDesc = quote.items?.[0]?.description || "";
+        if (clientName && firstDesc) {
+          const desc = firstDesc.length > 60 ? firstDesc.slice(0, 57) + "..." : firstDesc;
+          return `${clientName} — ${desc}`;
+        }
+        if (clientName) return clientName;
+        return `Job from Quote ${quoteId.slice(0, 8)}`;
+      })(),
       status: "new",
       budgetSubtotal: totals.subtotal,
       budgetVat: totals.vat,

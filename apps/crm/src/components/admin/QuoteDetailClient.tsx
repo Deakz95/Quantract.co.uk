@@ -293,6 +293,48 @@ export default function QuoteDetailClient({ quoteId }: { quoteId: string }) {
     }
   }
 
+  const [editingItems, setEditingItems] = useState(false);
+  const [editItems, setEditItems] = useState<Array<{ id: string; description: string; qty: number; unitPrice: number }>>([]);
+
+  function startEditItems() {
+    if (!quote) return;
+    setEditItems(quote.items.map((it) => ({ ...it })));
+    setEditingItems(true);
+  }
+
+  function addItem() {
+    setEditItems((prev) => [...prev, { id: `new-${Date.now()}`, description: "", qty: 1, unitPrice: 0 }]);
+  }
+
+  function removeItem(index: number) {
+    setEditItems((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function updateItem(index: number, field: string, value: string | number) {
+    setEditItems((prev) => prev.map((it, i) => i === index ? { ...it, [field]: value } : it));
+  }
+
+  async function saveItems() {
+    if (!quote) return;
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/admin/quotes/${quoteId}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ items: editItems.map((it) => ({ description: it.description, qty: it.qty, unitPrice: it.unitPrice })) }),
+      });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || "Failed");
+      setQuote(data.quote);
+      setEditingItems(false);
+      toast({ title: "Line items updated", variant: "success" });
+    } catch (e: any) {
+      toast({ title: "Couldn't save items", description: e?.message || "Unknown error", variant: "destructive" });
+    } finally {
+      setBusy(false);
+    }
+  }
+
   const breadcrumbItems: BreadcrumbItem[] = useMemo(() => [
     { label: "Dashboard", href: "/admin" },
     { label: "Quotes", href: "/admin/quotes" },
@@ -501,36 +543,84 @@ export default function QuoteDetailClient({ quoteId }: { quoteId: string }) {
           ) : null}
 
           <div className="mt-4">
-            <div className="text-xs font-semibold text-[var(--muted-foreground)]">Line items</div>
-            <div className="mt-2 overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-xs text-[var(--muted-foreground)]">
-                    <th className="py-2 pr-3">Description</th>
-                    <th className="py-2 pr-3">Qty</th>
-                    <th className="py-2 pr-3">Unit</th>
-                    <th className="py-2 pr-0 text-right">Line</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {quote.items.map((it, idx) => (
-                    <tr key={it.id || idx} className="border-t border-[var(--border)]">
-                      <td className="py-3 pr-3">{it.description}</td>
-                      <td className="py-3 pr-3">{it.qty}</td>
-                      <td className="py-3 pr-3">£{Number(it.unitPrice || 0).toFixed(2)}</td>
-                      <td className="py-3 pr-0 text-right">£{(Number(it.qty || 0) * Number(it.unitPrice || 0)).toFixed(2)}</td>
-                    </tr>
-                  ))}
-                  {quote.items.length === 0 ? (
-                    <tr>
-                      <td colSpan={4} className="py-6 text-center text-[var(--muted-foreground)]">
-                        No items.
-                      </td>
-                    </tr>
-                  ) : null}
-                </tbody>
-              </table>
+            <div className="flex items-center justify-between">
+              <div className="text-xs font-semibold text-[var(--muted-foreground)]">Line items</div>
+              {(quote.status === "draft" || quote.status === "sent") && !editingItems && (
+                <Button type="button" variant="secondary" onClick={startEditItems} disabled={busy}>
+                  Edit Line Items
+                </Button>
+              )}
             </div>
+            {editingItems ? (
+              <div className="mt-2 space-y-2">
+                {editItems.map((it, idx) => (
+                  <div key={it.id} className="flex gap-2 items-start">
+                    <input
+                      className="flex-1 rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
+                      placeholder="Description"
+                      value={it.description}
+                      onChange={(e) => updateItem(idx, "description", e.target.value)}
+                    />
+                    <input
+                      className="w-20 rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
+                      type="number"
+                      placeholder="Qty"
+                      value={it.qty}
+                      onChange={(e) => updateItem(idx, "qty", Number(e.target.value))}
+                    />
+                    <input
+                      className="w-28 rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
+                      type="number"
+                      step="0.01"
+                      placeholder="Unit price"
+                      value={it.unitPrice}
+                      onChange={(e) => updateItem(idx, "unitPrice", Number(e.target.value))}
+                    />
+                    <div className="w-20 py-2 text-sm text-right text-[var(--foreground)]">
+                      £{(it.qty * it.unitPrice).toFixed(2)}
+                    </div>
+                    <Button type="button" variant="ghost" onClick={() => removeItem(idx)} className="text-red-500 px-2">
+                      ✕
+                    </Button>
+                  </div>
+                ))}
+                <div className="flex items-center gap-2 pt-2">
+                  <Button type="button" variant="secondary" onClick={addItem}>+ Add item</Button>
+                  <Button type="button" onClick={saveItems} disabled={busy}>Save items</Button>
+                  <Button type="button" variant="ghost" onClick={() => setEditingItems(false)} disabled={busy}>Cancel</Button>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-2 overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-xs text-[var(--muted-foreground)]">
+                      <th className="py-2 pr-3">Description</th>
+                      <th className="py-2 pr-3">Qty</th>
+                      <th className="py-2 pr-3">Unit</th>
+                      <th className="py-2 pr-0 text-right">Line</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {quote.items.map((it, idx) => (
+                      <tr key={it.id || idx} className="border-t border-[var(--border)]">
+                        <td className="py-3 pr-3">{it.description}</td>
+                        <td className="py-3 pr-3">{it.qty}</td>
+                        <td className="py-3 pr-3">£{Number(it.unitPrice || 0).toFixed(2)}</td>
+                        <td className="py-3 pr-0 text-right">£{(Number(it.qty || 0) * Number(it.unitPrice || 0)).toFixed(2)}</td>
+                      </tr>
+                    ))}
+                    {quote.items.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="py-6 text-center text-[var(--muted-foreground)]">
+                          No items.
+                        </td>
+                      </tr>
+                    ) : null}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
 
           {quote.audit ? (

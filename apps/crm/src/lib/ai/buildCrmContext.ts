@@ -1,0 +1,149 @@
+import { prisma } from "@/lib/server/prisma";
+import type { CrmInputJson } from "./types";
+
+const TRADE_INDUSTRIES = ["electrical", "plumbing", "construction", "building", "hvac", "mechanical", "trade"];
+
+export async function buildCrmContext(companyId: string, userId: string): Promise<CrmInputJson> {
+  const [
+    company,
+    membership,
+    user,
+    enquiryCount,
+    quoteCount,
+    invoiceCount,
+    jobCount,
+    clientCount,
+    contactCount,
+    engineerCount,
+    dealCount,
+    pipelineStages,
+    dealStages,
+    recentAudit,
+    openQuotes,
+    acceptedQuotes,
+    activeJobs,
+    unpaidInvoices,
+    openEnquiries,
+    draftInvoices,
+  ] = await Promise.all([
+    prisma.company.findUnique({
+      where: { id: companyId },
+      select: { name: true, plan: true, brandName: true, createdAt: true },
+    }),
+    prisma.companyUser.findFirst({
+      where: { companyId, userId },
+      select: { role: true, createdAt: true },
+    }),
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true, createdAt: true },
+    }),
+    prisma.enquiry.count({ where: { companyId } }),
+    prisma.quote.count({ where: { companyId } }),
+    prisma.invoice.count({ where: { companyId } }),
+    prisma.job.count({ where: { companyId } }),
+    prisma.client.count({ where: { companyId } }),
+    prisma.contact.count({ where: { companyId } }),
+    prisma.companyUser.count({ where: { companyId, role: "engineer" } }),
+    prisma.deal.count({ where: { companyId } }),
+    prisma.pipelineStage.findMany({
+      where: { companyId },
+      orderBy: { sortOrder: "asc" },
+      select: { name: true },
+    }),
+    prisma.dealStage.findMany({
+      where: { companyId },
+      orderBy: { sortOrder: "asc" },
+      select: { name: true },
+    }),
+    prisma.auditEvent.findMany({
+      where: { companyId },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+      select: { action: true },
+    }),
+    prisma.quote.count({ where: { companyId, status: { in: ["draft", "sent"] } } }),
+    prisma.quote.count({ where: { companyId, status: "accepted" } }),
+    prisma.job.count({ where: { companyId, status: { in: ["new", "pending", "scheduled", "in_progress"] } } }),
+    prisma.invoice.count({ where: { companyId, status: { in: ["sent", "unpaid"] } } }),
+    prisma.enquiry.count({ where: { companyId, status: { notIn: ["won", "lost", "closed"] } } }),
+    prisma.invoice.count({ where: { companyId, status: "draft" } }),
+  ]);
+
+  // Experience level
+  const accountCreatedAt = membership?.createdAt ?? user?.createdAt ?? new Date();
+  const daysSinceCreation = Math.floor((Date.now() - new Date(accountCreatedAt).getTime()) / (1000 * 60 * 60 * 24));
+  const experience_level = daysSinceCreation < 7 ? "new" : daysSinceCreation < 30 ? "intermediate" : "power";
+
+  // Role
+  const role = membership?.role ?? user?.role ?? "admin";
+
+  // Industry inference (no explicit field — derive from brand/company name)
+  const nameLower = (company?.brandName ?? company?.name ?? "").toLowerCase();
+  const industry = TRADE_INDUSTRIES.find((t) => nameLower.includes(t)) ?? "trade";
+
+  // Sales cycle
+  const sales_cycle = TRADE_INDUSTRIES.some((t) => nameLower.includes(t)) ? "short" : "medium";
+
+  // Primary goal inference
+  let primary_goal = "better follow-up";
+  if (enquiryCount === 0 && openEnquiries === 0) {
+    primary_goal = "more leads";
+  } else if (draftInvoices > 3) {
+    primary_goal = "better follow-up";
+  } else {
+    // Default — no reports-viewed signal available yet
+    primary_goal = "visibility";
+  }
+
+  // Budget sensitivity from plan
+  const plan = company?.plan ?? "trial";
+  const budget_sensitivity = plan === "enterprise" ? "low" : plan === "pro" ? "medium" : "high";
+
+  // Modules enabled
+  const modules_enabled: string[] = [];
+  if (enquiryCount > 0) modules_enabled.push("enquiries");
+  if (quoteCount > 0) modules_enabled.push("quotes");
+  if (invoiceCount > 0) modules_enabled.push("invoices");
+  if (jobCount > 0) modules_enabled.push("jobs");
+  if (clientCount > 0) modules_enabled.push("clients");
+  if (contactCount > 0) modules_enabled.push("contacts");
+  if (engineerCount > 0) modules_enabled.push("engineers");
+  if (dealCount > 0) modules_enabled.push("deals");
+
+  // Company size inference
+  const size = engineerCount >= 20 ? "large" : engineerCount >= 5 ? "medium" : "small";
+
+  return {
+    user: { role, experience_level },
+    company: { industry, size, sales_cycle, primary_goal },
+    current_setup: {
+      modules_enabled,
+      pipeline_stages: pipelineStages.map((s: { name: string }) => s.name),
+      deal_stages: dealStages.map((s: { name: string }) => s.name),
+      integrations: [],
+      custom_fields_count: 0,
+      automations_count: 0,
+    },
+    signals_from_site: {
+      pages_visited: [],
+      recent_actions: recentAudit.map((e: { action: string }) => e.action),
+      pain_points_stated: [],
+      usage_metrics: {
+        open_quotes: openQuotes,
+        accepted_quotes: acceptedQuotes,
+        active_jobs: activeJobs,
+        unpaid_invoices: unpaidInvoices,
+        open_enquiries: openEnquiries,
+        clients: clientCount,
+        contacts: contactCount,
+        engineers: engineerCount,
+      },
+    },
+    constraints: {
+      gdpr_relevant: true,
+      budget_sensitivity,
+      plan,
+    },
+  };
+}
