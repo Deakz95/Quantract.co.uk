@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireCompanyContext } from "@/lib/serverAuth";
 import { APPLY_ACTIONS, isValidActionId } from "@/lib/ai/applyActions";
+import { validateAttrib } from "@/lib/ai/attrib";
 import * as repo from "@/lib/server/repo";
 import { getPrisma } from "@/lib/server/prisma";
 
@@ -30,6 +31,7 @@ export async function POST(req: Request) {
 
     const body = await req.json().catch(() => null);
     const actionId = typeof body?.actionId === "string" ? body.actionId : "";
+    const attrib = validateAttrib(body?.attrib);
 
     if (!isValidActionId(actionId)) {
       return NextResponse.json({ ok: false, error: "unknown_action" }, { status: 400 });
@@ -44,16 +46,40 @@ export async function POST(req: Request) {
     });
 
     // Audit
+    const auditMeta: Record<string, unknown> = { actionId, label: action.label };
+    if (attrib) {
+      auditMeta.attrib = { source: attrib.source, startedAt: attrib.startedAt, recId: attrib.recId, actionId: attrib.actionId };
+    }
     repo.recordAuditEvent({
       entityType: "company" as any,
       entityId: companyId,
       action: "ai.apply_action" as any,
       actorRole: "admin",
       actor: userId,
-      meta: { actionId, label: action.label },
+      meta: auditMeta,
     }).catch(() => {
       console.info("[ai-apply]", JSON.stringify({ actionId, companyId, userId }));
     });
+
+    // Separate attributed audit event for digest funnel reporting
+    if (attrib) {
+      repo.recordAuditEvent({
+        entityType: "company" as any,
+        entityId: companyId,
+        action: "ai_apply_attributed" as any,
+        actorRole: "admin",
+        actor: userId,
+        meta: {
+          source: attrib.source,
+          actionId,
+          recId: attrib.recId ?? null,
+          startedAt: attrib.startedAt,
+          appliedAt: Date.now(),
+        },
+      }).catch(() => {
+        console.info("[ai-apply-attrib]", JSON.stringify({ actionId, companyId, userId, source: attrib.source }));
+      });
+    }
 
     return NextResponse.json({ ok: true, actionId, label: action.label });
   } catch (error: any) {

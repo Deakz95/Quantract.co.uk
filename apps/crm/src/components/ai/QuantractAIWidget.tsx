@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { makeRecId } from "@/lib/ai/recId";
+import { storeAttrib, loadAttrib, clearAttrib } from "@/lib/ai/attrib";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -245,7 +247,27 @@ export default function QuantractAIWidget({
   position = "bottom-right",
 }: QuantractAIWidgetProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isOpen, setIsOpen] = useState(false);
+  const deepLinkHandled = useRef(false);
+
+  // Auto-open widget when ?ai=1 is present (deep link from digest email)
+  useEffect(() => {
+    if (deepLinkHandled.current) return;
+    if (searchParams?.get("ai") === "1") {
+      deepLinkHandled.current = true;
+      setIsOpen(true);
+      trackEvent("ai_weekly_digest_deeplink_opened");
+      // Store attribution token for apply funnel tracking
+      storeAttrib({
+        source: "weekly_digest",
+        startedAt: Date.now(),
+        recId: searchParams.get("aiRec") ?? undefined,
+        actionId: searchParams.get("aiAction") ?? undefined,
+      });
+      trackEvent("ai_weekly_digest_attrib_session_started");
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const handler = () => setIsOpen(true);
@@ -298,16 +320,21 @@ export default function QuantractAIWidget({
     setApplyingAction(actionId);
     setApplyError(null);
     try {
+      const attrib = loadAttrib();
       const res = await fetch(`${apiBaseUrl}/admin/ai/apply`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ actionId }),
+        body: JSON.stringify({ actionId, ...(attrib ? { attrib } : {}) }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error || "Failed");
       setAppliedActions((prev) => new Set(prev).add(actionId));
       trackEvent("action.applied", { actionId });
+      if (attrib) {
+        trackEvent("ai_weekly_digest_attrib_applied", { actionId, recId: attrib.recId });
+        clearAttrib();
+      }
     } catch {
       setApplyError(actionId);
     } finally {
@@ -382,6 +409,22 @@ export default function QuantractAIWidget({
       })
       .finally(() => setRecsLoading(false));
   }, [isOpen, recsFetched, recsLoading, session?.role, apiBaseUrl]);
+
+  // Auto-expand matching recommendation from deep link (?aiRec=<recId>)
+  const deepLinkExpanded = useRef(false);
+  useEffect(() => {
+    if (deepLinkExpanded.current) return;
+    const aiRecParam = searchParams?.get("aiRec");
+    if (!aiRecParam || !recommendations?.top_recommendations?.length) return;
+    const idx = recommendations.top_recommendations.findIndex(
+      (rec) => makeRecId(rec.title) === aiRecParam,
+    );
+    if (idx !== -1) {
+      deepLinkExpanded.current = true;
+      setExpandedRec(idx);
+      trackEvent("ai_weekly_digest_deeplink_rec_expanded", { recId: aiRecParam });
+    }
+  }, [searchParams, recommendations]);
 
   useEffect(() => {
     if (customPrompts?.length) return setPrompts(customPrompts);
@@ -633,10 +676,10 @@ export default function QuantractAIWidget({
                                         <Button
                                           size="sm"
                                           variant="secondary"
-                                          onClick={(e) => { e.stopPropagation(); router.push("/admin/billing"); }}
+                                          onClick={(e) => { e.stopPropagation(); trackEvent("ai_upgrade_to_apply_clicked"); router.push("/admin/billing"); }}
                                           className="text-xs h-7 opacity-80"
                                         >
-                                          Upgrade to apply
+                                          Upgrade to apply this
                                         </Button>
                                       ) : isApplied ? (
                                         <span className="inline-flex items-center gap-1 text-xs text-green-500 font-medium">
@@ -688,6 +731,11 @@ export default function QuantractAIWidget({
                       </div>
                     )}
 
+                    {/* Weekly digest note for paid users */}
+                    {!isFree && (
+                      <p className="text-[10px] text-[var(--muted-foreground)] text-center">You'll receive a weekly setup digest by email.</p>
+                    )}
+
                     {/* Upgrade CTA for free tier */}
                     {isFree && (
                       <div className="rounded-xl border border-[var(--primary)]/30 bg-[var(--primary)]/5 p-4 space-y-3">
@@ -700,11 +748,12 @@ export default function QuantractAIWidget({
                         <Button
                           size="sm"
                           variant="default"
-                          onClick={() => router.push("/admin/billing")}
+                          onClick={() => { trackEvent("ai_upgrade_cta_clicked"); router.push("/admin/billing"); }}
                           className="w-full text-xs"
                         >
                           Upgrade to Pro
                         </Button>
+                        <p className="text-[10px] text-[var(--muted-foreground)] text-center">Takes under 1 minute &bull; Cancel anytime</p>
                       </div>
                     )}
 
