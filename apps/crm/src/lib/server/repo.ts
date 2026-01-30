@@ -2284,7 +2284,7 @@ export async function listJobProfitability(opts?: { status?: string; query?: str
 
     // Use centralized pure functions for all financial calculations
     const financials = calculateJobFinancials(
-      row.budgetLines as any,
+      row.jobBudgetLines as any,
       row.budgetSubtotal,
       items as any
     );
@@ -3329,14 +3329,14 @@ async function createLabourCostItemsForTimesheet(timesheetId: string) {
 export async function getJobCosting(jobId: string, _opts?: { includeUnapproved?: boolean }): Promise<JobCostingSummary | null> {
   const client = p();
   if (!client) return null;
-  const job = await client.job.findUnique({ where: { id: jobId }, include: { budgetLines: true } }).catch(() => null);
+  const job = await client.job.findUnique({ where: { id: jobId }, include: { jobBudgetLines: true } }).catch(() => null);
   if (!job) return null;
 
   const costs = await client.costItem.findMany({ where: { jobId } });
 
   // Use centralized pure functions for all financial calculations
   const financials = calculateJobFinancials(
-    job.budgetLines as any,
+    job.jobBudgetLines as any,
     job.budgetSubtotal,
     costs as any
   );
