@@ -19,6 +19,8 @@ export async function GET() {
         autoChaseSecondDays: true,
         autoChaseThirdDays: true,
         quoteValidityDays: true,
+        defaultVatRate: true,
+        invoiceNumberPrefix: true,
         termsAndConditions: true,
       },
     });
@@ -32,6 +34,8 @@ export async function GET() {
         autoChaseSecondDays: company?.autoChaseSecondDays ?? 14,
         autoChaseThirdDays: company?.autoChaseThirdDays ?? 21,
         quoteValidityDays: company?.quoteValidityDays ?? 30,
+        defaultVatRate: company?.defaultVatRate ?? 0.2,
+        invoiceNumberPrefix: company?.invoiceNumberPrefix ?? "INV-",
         termsAndConditions: company?.termsAndConditions ?? "",
       },
     });
@@ -70,6 +74,12 @@ export async function POST(req: Request) {
     }
     if (typeof body.quoteValidityDays === "number") {
       updateData.quoteValidityDays = Math.max(1, Math.min(365, body.quoteValidityDays));
+    }
+    if (typeof body.defaultVatRate === "number") {
+      updateData.defaultVatRate = Math.max(0, Math.min(1, body.defaultVatRate));
+    }
+    if (typeof body.invoiceNumberPrefix === "string") {
+      updateData.invoiceNumberPrefix = body.invoiceNumberPrefix.slice(0, 20);
     }
     if (typeof body.termsAndConditions === "string") {
       updateData.termsAndConditions = body.termsAndConditions.slice(0, 50000); // Limit size

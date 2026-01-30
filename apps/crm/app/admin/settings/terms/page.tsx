@@ -16,6 +16,8 @@ type Settings = {
   autoChaseThirdDays?: number;
   termsAndConditions?: string;
   quoteValidityDays?: number;
+  defaultVatRate?: number;
+  invoiceNumberPrefix?: string;
 };
 
 export default function TermsSettingsPage() {
@@ -29,6 +31,8 @@ export default function TermsSettingsPage() {
   const [autoChaseFirstDays, setAutoChaseFirstDays] = useState(7);
   const [autoChaseSecondDays, setAutoChaseSecondDays] = useState(14);
   const [autoChaseThirdDays, setAutoChaseThirdDays] = useState(21);
+  const [defaultVatRate, setDefaultVatRate] = useState(20);
+  const [invoiceNumberPrefix, setInvoiceNumberPrefix] = useState("INV-");
   const [quoteValidityDays, setQuoteValidityDays] = useState(30);
   const [termsAndConditions, setTermsAndConditions] = useState(`TERMS AND CONDITIONS
 
@@ -77,6 +81,8 @@ Any disputes will be resolved through negotiation in the first instance. If nece
         if (s.autoChaseSecondDays !== undefined) setAutoChaseSecondDays(s.autoChaseSecondDays);
         if (s.autoChaseThirdDays !== undefined) setAutoChaseThirdDays(s.autoChaseThirdDays);
         if (s.quoteValidityDays !== undefined) setQuoteValidityDays(s.quoteValidityDays);
+        if (s.defaultVatRate !== undefined) setDefaultVatRate(Math.round(s.defaultVatRate * 100));
+        if (s.invoiceNumberPrefix) setInvoiceNumberPrefix(s.invoiceNumberPrefix);
         if (s.termsAndConditions) setTermsAndConditions(s.termsAndConditions);
       }
     } catch {
@@ -104,6 +110,8 @@ Any disputes will be resolved through negotiation in the first instance. If nece
           autoChaseSecondDays,
           autoChaseThirdDays,
           quoteValidityDays,
+          defaultVatRate: defaultVatRate / 100,
+          invoiceNumberPrefix,
           termsAndConditions,
         }),
       });
@@ -171,6 +179,32 @@ Any disputes will be resolved through negotiation in the first instance. If nece
                   onChange={(e) => setPaymentTermsDays(Number(e.target.value))}
                 />
                 <span className="text-xs text-[var(--muted-foreground)]">Number of days from invoice date that payment is due</span>
+              </label>
+
+              <label className="grid gap-1">
+                <span className="text-sm font-medium text-[var(--muted-foreground)]">Default VAT rate (%)</span>
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  step={0.5}
+                  className="h-11 w-full max-w-xs rounded-xl border border-[var(--border)] bg-[var(--background)] px-4 text-sm text-[var(--foreground)]"
+                  value={defaultVatRate}
+                  onChange={(e) => setDefaultVatRate(Number(e.target.value))}
+                />
+                <span className="text-xs text-[var(--muted-foreground)]">Applied to new quotes when no rate is specified (UK standard: 20%)</span>
+              </label>
+
+              <label className="grid gap-1">
+                <span className="text-sm font-medium text-[var(--muted-foreground)]">Invoice number prefix</span>
+                <input
+                  type="text"
+                  maxLength={20}
+                  className="h-11 w-full max-w-xs rounded-xl border border-[var(--border)] bg-[var(--background)] px-4 text-sm text-[var(--foreground)]"
+                  value={invoiceNumberPrefix}
+                  onChange={(e) => setInvoiceNumberPrefix(e.target.value)}
+                />
+                <span className="text-xs text-[var(--muted-foreground)]">Prefix for auto-generated invoice numbers (e.g. INV-, QE-)</span>
               </label>
 
               <label className="grid gap-1">

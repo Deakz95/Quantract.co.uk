@@ -47,7 +47,9 @@
       "Bash(git add:*)",
       "Bash(node -e:*)",
       "Bash(npm ls:*)",
-      "Bash(npx prisma:*)"
+      "Bash(npx prisma:*)",
+      "Bash(fold:*)",
+      "Bash(python -c:*)"
     ]
   }
 }

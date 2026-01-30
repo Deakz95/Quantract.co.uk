@@ -216,6 +216,54 @@ export default function QuoteDetailClient({ quoteId }: { quoteId: string }) {
     }
   }
 
+  async function convertToInvoice() {
+    if (!quote) return;
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/admin/quotes/${quoteId}/invoice`, { method: "POST" });
+      const data = await res.json();
+      if (!data.invoice) throw new Error(data.error || "Failed to create invoice");
+      toast({
+        title: "Invoice created",
+        description: "Redirecting to invoice...",
+        variant: "success"
+      });
+      window.location.href = `/admin/invoices/${data.invoice.id}`;
+    } catch (e: any) {
+      toast({
+        title: "Unable to create invoice",
+        description: e?.message || "An error occurred.",
+        variant: "destructive"
+      });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function duplicateQuote() {
+    if (!quote) return;
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/admin/quotes/${quoteId}/duplicate`, { method: "POST" });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || "Failed to duplicate");
+      toast({
+        title: "Quote duplicated",
+        description: "Redirecting to new quote...",
+        variant: "success"
+      });
+      window.location.href = `/admin/quotes/${data.quote.id}`;
+    } catch (e: any) {
+      toast({
+        title: "Unable to duplicate",
+        description: e?.message || "An error occurred.",
+        variant: "destructive"
+      });
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function convertToJob() {
     if (!quote) return;
     setBusy(true);
@@ -277,6 +325,9 @@ export default function QuoteDetailClient({ quoteId }: { quoteId: string }) {
             <a href={`/api/client/quotes/${quote.token}/pdf`} target="_blank" rel="noreferrer">
               <Button type="button" variant="secondary">Quote PDF</Button>
             </a>
+            <Button type="button" variant="secondary" onClick={duplicateQuote} disabled={busy}>
+              Duplicate
+            </Button>
             <Button type="button" variant="secondary" onClick={load} disabled={busy}>
               Refresh
             </Button>
@@ -300,9 +351,14 @@ export default function QuoteDetailClient({ quoteId }: { quoteId: string }) {
               </Button>
             )}
             {quote.status === "accepted" && (
-              <Button type="button" onClick={convertToJob} disabled={busy} className="bg-blue-600 hover:bg-blue-700">
-                → Convert to Job
-              </Button>
+              <>
+                <Button type="button" onClick={convertToJob} disabled={busy} className="bg-blue-600 hover:bg-blue-700">
+                  → Convert to Job
+                </Button>
+                <Button type="button" onClick={convertToInvoice} disabled={busy} className="bg-emerald-600 hover:bg-emerald-700">
+                  → Convert to Invoice
+                </Button>
+              </>
             )}
           </div>
         </CardHeader>

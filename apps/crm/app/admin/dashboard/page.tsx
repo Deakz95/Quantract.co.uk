@@ -244,8 +244,9 @@ function StatsWidget({ data, loading, onRefresh, isRefreshing }: {
         ? `${data.invoices.overdueCount} overdue — ${formatCurrency(data.invoices.unpaidTotal)} total`
         : data.invoices.unpaidTotal > 0 ? `${formatCurrency(data.invoices.unpaidTotal)} pending` : "All paid",
       icon: Receipt,
-      color: "from-amber-500 to-orange-500",
+      color: data.invoices.overdueCount > 0 ? "from-red-500 to-red-600" : "from-amber-500 to-orange-500",
       href: "/admin/invoices",
+      alert: data.invoices.overdueCount > 0,
     },
     {
       label: "Active Jobs",
@@ -332,15 +333,23 @@ function StatsWidget({ data, loading, onRefresh, isRefreshing }: {
           <Card variant="interactive" className="group h-full">
             <CardContent className="p-5">
               <div className="flex items-start justify-between">
-                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center shadow-lg`}>
-                  <stat.icon className="w-6 h-6 text-white" />
+                <div className="relative">
+                  <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center shadow-lg`}>
+                    <stat.icon className="w-6 h-6 text-white" />
+                  </div>
+                  {(stat as any).alert && (
+                    <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500" />
+                    </span>
+                  )}
                 </div>
                 <ArrowUpRight className="w-5 h-5 text-[var(--muted-foreground)] opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
               <div className="mt-4">
                 <div className="text-3xl font-bold text-[var(--foreground)]">{stat.value}</div>
                 <div className="text-sm font-medium text-[var(--foreground)] mt-1">{stat.label}</div>
-                <div className="text-xs text-[var(--muted-foreground)] mt-1">{stat.change}</div>
+                <div className={`text-xs mt-1 ${(stat as any).alert ? "text-red-500 font-semibold" : "text-[var(--muted-foreground)]"}`}>{stat.change}</div>
               </div>
             </CardContent>
           </Card>

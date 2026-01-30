@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import * as repo from "@/lib/server/repo";
+import { prisma } from "@/lib/server/prisma";
 
 function formatGBP(n: number) {
   try {
@@ -51,6 +52,16 @@ export default async function Page({ params }: Props) {
 
   const { client, quotes, agreements, invoices } = ov;
   const sites = await repo.listSitesForClient(clientId);
+  const jobs: Array<{ id: string; title: string | null; status: string; createdAt: Date }> = await prisma.job.findMany({
+    where: { clientId },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, title: true, status: true, createdAt: true },
+  });
+  const contacts: Array<{ id: string; firstName: string | null; lastName: string | null; email: string | null; phone: string | null; jobTitle: string | null }> = await prisma.contact.findMany({
+    where: { clientId },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, firstName: true, lastName: true, email: true, phone: true, jobTitle: true },
+  });
   const siteHistory = await Promise.all(
     sites.map(async (site) => ({
       site,
@@ -196,6 +207,86 @@ export default async function Page({ params }: Props) {
                             <Button variant="secondary" type="button">
                               Open
                             </Button>
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Jobs</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {jobs.length === 0 ? (
+              <div className="text-sm text-[var(--muted-foreground)]">No jobs for this client yet.</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-xs text-[var(--muted-foreground)]">
+                      <th className="py-2">Job</th>
+                      <th className="py-2">Status</th>
+                      <th className="py-2">Date</th>
+                      <th className="py-2" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {jobs.map((j) => (
+                      <tr key={j.id} className="border-t border-[var(--border)]">
+                        <td className="py-3">
+                          <div className="font-semibold text-[var(--foreground)]">{j.title || j.id.slice(0, 8)}</div>
+                        </td>
+                        <td className="py-3"><Badge>{j.status}</Badge></td>
+                        <td className="py-3 text-[var(--muted-foreground)]">{formatDate(j.createdAt ? new Date(j.createdAt).toISOString() : "")}</td>
+                        <td className="py-3 text-right">
+                          <Link href={`/admin/jobs/${j.id}`}>
+                            <Button variant="secondary" type="button">Open</Button>
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Contacts</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {contacts.length === 0 ? (
+              <div className="text-sm text-[var(--muted-foreground)]">No contacts for this client yet.</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-xs text-[var(--muted-foreground)]">
+                      <th className="py-2">Name</th>
+                      <th className="py-2">Role</th>
+                      <th className="py-2">Email</th>
+                      <th className="py-2" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {contacts.map((c) => (
+                      <tr key={c.id} className="border-t border-[var(--border)]">
+                        <td className="py-3 font-semibold text-[var(--foreground)]">{[c.firstName, c.lastName].filter(Boolean).join(" ") || "—"}</td>
+                        <td className="py-3 text-[var(--muted-foreground)]">{c.jobTitle || "—"}</td>
+                        <td className="py-3 text-[var(--muted-foreground)]">{c.email || "—"}</td>
+                        <td className="py-3 text-right">
+                          <Link href={`/admin/contacts/${c.id}`}>
+                            <Button variant="secondary" type="button">Open</Button>
                           </Link>
                         </td>
                       </tr>

@@ -53,6 +53,7 @@ export default function AdminSchedulePage() {
   const [clashes, setClashes] = useState<Array<{ engineerEmail?: string; aId: string; bId: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [view, setView] = useState<"list" | "calendar">("list");
 
   const { status: billingStatus } = useBillingStatus();
   const scheduleEnabled = billingStatus ? isScheduleEnabled(billingStatus.plan) : true;
@@ -158,6 +159,13 @@ export default function AdminSchedulePage() {
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <CardTitle>Schedule (Week view)</CardTitle>
                 <div className="flex flex-wrap items-center gap-2">
+                  <Button type="button" variant={view === "list" ? "default" : "secondary"} onClick={() => setView("list")}>
+                    List
+                  </Button>
+                  <Button type="button" variant={view === "calendar" ? "default" : "secondary"} onClick={() => setView("calendar")}>
+                    Calendar
+                  </Button>
+                  <span className="w-px h-6 bg-[var(--border)]" />
                   <Button type="button" variant="secondary" onClick={() => setWeekStart(mondayOf(addDays(weekStart, -7)))}>
                     Prev
                   </Button>
@@ -255,7 +263,50 @@ export default function AdminSchedulePage() {
                 </form>
               </div>
 
-              {loading ? (
+              {view === "calendar" && !loading && (
+                <div className="mt-4 overflow-x-auto">
+                  <div className="grid grid-cols-7 gap-px bg-[var(--border)] rounded-xl overflow-hidden min-w-[700px]">
+                    {Array.from({ length: 7 }, (_, i) => {
+                      const day = addDays(weekStart, i);
+                      const dayStr = day.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+                      const isToday = day.toDateString() === new Date().toDateString();
+                      const dayEntries = entries.filter((e) => {
+                        const start = new Date(e.startAtISO);
+                        return start.toDateString() === day.toDateString();
+                      });
+                      return (
+                        <div key={i} className={`bg-[var(--card)] min-h-[180px] p-2 ${isToday ? "ring-2 ring-inset ring-[var(--primary)]" : ""}`}>
+                          <div className={`text-xs font-semibold mb-2 ${isToday ? "text-[var(--primary)]" : "text-[var(--muted-foreground)]"}`}>
+                            {dayStr}
+                          </div>
+                          <div className="space-y-1">
+                            {dayEntries.map((e) => {
+                              const start = new Date(e.startAtISO);
+                              const end = new Date(e.endAtISO);
+                              const time = `${start.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}–${end.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`;
+                              const eng = engineers.find((en) => en.email.toLowerCase() === (e.engineerEmail || "").toLowerCase());
+                              return (
+                                <Link key={e.id} href={`/admin/jobs/${e.jobId}`}>
+                                  <div className="rounded-lg bg-[var(--primary)]/10 border border-[var(--primary)]/20 p-1.5 text-xs hover:bg-[var(--primary)]/20 transition-colors cursor-pointer">
+                                    <div className="font-semibold text-[var(--foreground)] truncate">{e.notes || `Job ${e.jobId.slice(0, 6)}`}</div>
+                                    <div className="text-[var(--muted-foreground)]">{time}</div>
+                                    {eng && <div className="text-[var(--muted-foreground)] truncate">{eng.name || eng.email}</div>}
+                                  </div>
+                                </Link>
+                              );
+                            })}
+                            {dayEntries.length === 0 && (
+                              <div className="text-xs text-[var(--muted-foreground)] italic">No bookings</div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {view === "list" && (loading ? (
                 <div className="mt-4 text-sm text-[var(--muted-foreground)]">Loading…</div>
               ) : engineers.length === 0 ? (
                 <div className="empty-state mt-4">
@@ -304,7 +355,7 @@ export default function AdminSchedulePage() {
                     );
                   })}
                 </div>
-              )}
+              ))}
             </CardContent>
           </Card>
         </FeatureGate>

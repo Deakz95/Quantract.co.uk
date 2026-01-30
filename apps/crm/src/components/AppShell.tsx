@@ -57,30 +57,34 @@ type NavItem = {
   href: string;
   icon: ComponentType<{ className?: string }>;
   external?: boolean;
+  section?: string;
 };
 
 const adminNav: NavItem[] = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
-  { label: "Enquiries", href: "/admin/enquiries", icon: Inbox },
-  { label: "Quotes", href: "/admin/quotes", icon: FileText },
-  { label: "Invoices", href: "/admin/invoices", icon: Receipt },
-  { label: "Jobs", href: "/admin/jobs", icon: Briefcase },
-  { label: "Deals", href: "/admin/deals", icon: Target },
-  { label: "Contacts", href: "/admin/contacts", icon: Users },
-  { label: "Clients", href: "/admin/clients", icon: Users },
-  { label: "Certificates", href: "/admin/certificates", icon: BadgeCheck },
-  { label: "Schedule", href: "/admin/schedule", icon: CalendarDays },
-  { label: "Timesheets", href: "/admin/timesheets", icon: Clock },
-  { label: "Reports", href: "/admin/reports", icon: FileBarChart },
-  { label: "Import", href: "/admin/import", icon: Upload },
-  { label: "Engineers", href: "/admin/engineers", icon: Users },
-  { label: "Invites", href: "/admin/invites", icon: Mail },
-  { label: "Settings", href: "/admin/settings", icon: Settings },
-  // External tools
-  { label: "Certificate Generator", href: "https://certificates.quantract.co.uk", icon: BadgeCheck, external: true },
-  // Admin portal access
-  { label: "→ Client Portal", href: "/client", icon: ChevronRight },
-  { label: "→ Engineer Portal", href: "/engineer", icon: ChevronRight },
+  // Sales
+  { label: "Enquiries", href: "/admin/enquiries", icon: Inbox, section: "Sales" },
+  { label: "Quotes", href: "/admin/quotes", icon: FileText, section: "Sales" },
+  { label: "Deals", href: "/admin/deals", icon: Target, section: "Sales" },
+  // Work
+  { label: "Jobs", href: "/admin/jobs", icon: Briefcase, section: "Work" },
+  { label: "Schedule", href: "/admin/schedule", icon: CalendarDays, section: "Work" },
+  { label: "Timesheets", href: "/admin/timesheets", icon: Clock, section: "Work" },
+  { label: "Certificates", href: "/admin/certificates", icon: BadgeCheck, section: "Work" },
+  // Finance
+  { label: "Invoices", href: "/admin/invoices", icon: Receipt, section: "Finance" },
+  // People
+  { label: "Clients", href: "/admin/clients", icon: Users, section: "People" },
+  { label: "Contacts", href: "/admin/contacts", icon: Users, section: "People" },
+  { label: "Engineers", href: "/admin/engineers", icon: Users, section: "People" },
+  // Admin
+  { label: "Reports", href: "/admin/reports", icon: FileBarChart, section: "Admin" },
+  { label: "Import", href: "/admin/import", icon: Upload, section: "Admin" },
+  { label: "Invites", href: "/admin/invites", icon: Mail, section: "Admin" },
+  { label: "Settings", href: "/admin/settings", icon: Settings, section: "Admin" },
+  // Portal access
+  { label: "→ Client Portal", href: "/client", icon: ChevronRight, section: "Portals" },
+  { label: "→ Engineer Portal", href: "/engineer", icon: ChevronRight, section: "Portals" },
 ];
 
 const clientNav: NavItem[] = [
@@ -96,6 +100,61 @@ const engineerNav: NavItem[] = [
   { label: "Timesheets", href: "/engineer/timesheets", icon: Clock },
   { label: "Settings", href: "/engineer/settings", icon: Settings },
 ];
+
+function renderNavItems(
+  items: NavItem[],
+  isActive: (href: string) => boolean,
+  onNavigate?: () => void,
+) {
+  const elements: ReactNode[] = [];
+  let lastSection: string | undefined;
+
+  for (const item of items) {
+    if (item.section && item.section !== lastSection) {
+      lastSection = item.section;
+      elements.push(
+        <div key={`section-${item.section}`} className="pt-3 pb-1 px-4 text-[10px] font-bold uppercase tracking-widest text-[var(--muted-foreground)]">
+          {item.section}
+        </div>
+      );
+    }
+
+    if (item.external) {
+      elements.push(
+        <a
+          key={item.href}
+          href={item.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={onNavigate}
+          className="nav-item flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--foreground)]"
+        >
+          <item.icon className="h-4 w-4" />
+          {item.label}
+          <ChevronRight className="h-3 w-3 ml-auto opacity-50" />
+        </a>
+      );
+    } else {
+      elements.push(
+        <Link
+          key={item.href}
+          href={item.href}
+          onClick={onNavigate}
+          className={cn(
+            "nav-item flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium",
+            isActive(item.href) && "active"
+          )}
+        >
+          <item.icon className="h-4 w-4" />
+          {item.label}
+          {isActive(item.href) && <ChevronRight className="h-4 w-4 ml-auto" />}
+        </Link>
+      );
+    }
+  }
+
+  return elements;
+}
 
 export function AppShell({
   role,
@@ -117,6 +176,9 @@ export function AppShell({
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifCount, setNotifCount] = useState(0);
+  const [notifLogs, setNotifLogs] = useState<Array<{ id: string; channel: string; eventKey: string; recipient: string; status: string; createdAtISO: string; quoteId?: string; invoiceId?: string; jobId?: string }>>([]);
 
   // Fetch user email from auth endpoint
   useEffect(() => {
@@ -133,6 +195,22 @@ export function AppShell({
     };
     void fetchUserEmail();
   }, []);
+
+  // Fetch notification count for admin
+  useEffect(() => {
+    if (role !== "admin") return;
+    const fetchNotifs = async () => {
+      try {
+        const res = await fetch("/api/admin/notifications/recent", { cache: "no-store" });
+        const data = await res.json().catch(() => null);
+        if (res.ok && data?.ok) {
+          setNotifCount(data.unreadCount ?? 0);
+          setNotifLogs(data.logs ?? []);
+        }
+      } catch { /* ignore */ }
+    };
+    void fetchNotifs();
+  }, [role]);
 
   // Logout function
   const handleLogout = async () => {
@@ -224,6 +302,61 @@ export function AppShell({
                   <span className="text-[9px]">Cmd</span>+K
                 </kbd>
               </Button>
+            )}
+            {role === "admin" && (
+              <div className="relative">
+                <Button variant="ghost" size="sm" onClick={() => setNotifOpen(!notifOpen)}>
+                  <Inbox className="w-4 h-4" />
+                  {notifCount > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                      {notifCount > 99 ? "99+" : notifCount}
+                    </span>
+                  )}
+                </Button>
+                {notifOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setNotifOpen(false)} />
+                    <div className="absolute right-0 mt-2 w-80 bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-xl z-50 animate-fade-in overflow-hidden">
+                      <div className="p-3 border-b border-[var(--border)]">
+                        <div className="text-sm font-semibold text-[var(--foreground)]">Notifications</div>
+                        <div className="text-xs text-[var(--muted-foreground)]">{notifCount} in last 24h</div>
+                      </div>
+                      <div className="max-h-80 overflow-y-auto">
+                        {notifLogs.length === 0 ? (
+                          <div className="p-4 text-center text-sm text-[var(--muted-foreground)]">No recent notifications</div>
+                        ) : (
+                          notifLogs.map((log) => {
+                            const label = log.eventKey.replace(/_/g, " ").replace(/\./g, " ");
+                            const href = log.quoteId ? `/admin/quotes/${log.quoteId}` : log.invoiceId ? `/admin/invoices/${log.invoiceId}` : log.jobId ? `/admin/jobs/${log.jobId}` : "#";
+                            return (
+                              <Link
+                                key={log.id}
+                                href={href}
+                                onClick={() => setNotifOpen(false)}
+                                className="flex items-start gap-3 px-3 py-2.5 hover:bg-[var(--muted)] transition-colors border-b border-[var(--border)] last:border-0"
+                              >
+                                <div className={`mt-0.5 w-2 h-2 rounded-full shrink-0 ${log.status === "SENT" ? "bg-green-500" : log.status === "FAILED" ? "bg-red-500" : "bg-gray-400"}`} />
+                                <div className="min-w-0 flex-1">
+                                  <div className="text-sm font-medium text-[var(--foreground)] truncate capitalize">{label}</div>
+                                  <div className="text-xs text-[var(--muted-foreground)] truncate">{log.recipient}</div>
+                                  <div className="text-xs text-[var(--muted-foreground)]">{new Date(log.createdAtISO).toLocaleString("en-GB")}</div>
+                                </div>
+                              </Link>
+                            );
+                          })
+                        )}
+                      </div>
+                      <Link
+                        href="/admin/settings/notifications"
+                        onClick={() => setNotifOpen(false)}
+                        className="block p-3 text-center text-xs font-semibold text-[var(--primary)] hover:bg-[var(--muted)] border-t border-[var(--border)]"
+                      >
+                        Notification Settings
+                      </Link>
+                    </div>
+                  </>
+                )}
+              </div>
             )}
             {role === "admin" && (
               <div className="relative">
@@ -416,36 +549,8 @@ export function AppShell({
             className="w-72 h-full bg-[var(--card)] border-r border-[var(--border)] p-4 animate-fade-in"
             onClick={(e) => e.stopPropagation()}
           >
-            <nav className="space-y-1">
-              {nav.map((item) => (
-                item.external ? (
-                  <a
-                    key={item.href}
-                    href={item.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => setMobileNavOpen(false)}
-                    className="nav-item flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--foreground)]"
-                  >
-                    <item.icon className="h-4 w-4" />
-                    {item.label}
-                    <ChevronRight className="h-3 w-3 ml-auto opacity-50" />
-                  </a>
-                ) : (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={() => setMobileNavOpen(false)}
-                    className={cn(
-                      "nav-item flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium",
-                      isActive(item.href) && "active"
-                    )}
-                  >
-                    <item.icon className="h-4 w-4" />
-                    {item.label}
-                  </Link>
-                )
-              ))}
+            <nav className="space-y-0.5">
+              {renderNavItems(nav, isActive, () => setMobileNavOpen(false))}
             </nav>
           </div>
         </div>
@@ -457,35 +562,8 @@ export function AppShell({
         {hideNav ? null : (
           <aside className="hidden lg:block lg:col-span-3">
             <div className="sticky top-20">
-              <nav className="space-y-1">
-                {nav.map((item) => (
-                  item.external ? (
-                    <a
-                      key={item.href}
-                      href={item.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="nav-item flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--foreground)]"
-                    >
-                      <item.icon className="h-4 w-4" />
-                      {item.label}
-                      <ChevronRight className="h-3 w-3 ml-auto opacity-50" />
-                    </a>
-                  ) : (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={cn(
-                        "nav-item flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium",
-                        isActive(item.href) && "active"
-                      )}
-                    >
-                      <item.icon className="h-4 w-4" />
-                      {item.label}
-                      {isActive(item.href) && <ChevronRight className="h-4 w-4 ml-auto" />}
-                    </Link>
-                  )
-                ))}
+              <nav className="space-y-0.5">
+                {renderNavItems(nav, isActive)}
               </nav>
             </div>
           </aside>

@@ -2490,7 +2490,9 @@ export async function ensureJobForQuote(quoteId: string): Promise<Job | null> {
       quoteId,
       clientId: (q as any).clientId ?? null,
       siteId,
-      title: `Job from Quote ${quoteId.slice(0, 8)}`,
+      title: (q as any).clientName
+        ? `${(q as any).clientName}${(q as any).ref ? ` — ${(q as any).ref}` : ""}`
+        : `Job from Quote ${quoteId.slice(0, 8)}`,
       status: "new",
       budgetSubtotal: totals.subtotal,
       budgetVat: totals.vat,
