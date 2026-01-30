@@ -44,7 +44,8 @@
       "Bash(npx prisma db execute:*)",
       "Bash(npx prisma migrate diff:*)",
       "Bash(npx prisma migrate:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(node -e:*)"
     ]
   }
 }
