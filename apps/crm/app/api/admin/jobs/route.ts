@@ -147,7 +147,7 @@ export const POST = withRequestLogging(async function POST(req: Request) {
           clientId,
           siteId,
           title,
-          description: body?.description || null,
+          notes: body?.description || null,
           status: "pending",
           updatedAt: new Date(),
         },
@@ -185,18 +185,43 @@ export const POST = withRequestLogging(async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "quote_not_found" }, { status: 404 });
     }
 
-    if (!quote.siteId) {
-      return NextResponse.json({ ok: false, error: "quote_missing_site" }, { status: 400 });
+    // Resolve siteId — auto-create if quote doesn't have one
+    let quoteSiteId = quote.siteId;
+    if (!quoteSiteId) {
+      const clientId = quote.clientId;
+      if (clientId) {
+        const existingSite = await client.site.findFirst({
+          where: { clientId, companyId: ctx.companyId },
+          orderBy: { createdAt: "desc" },
+        });
+        if (existingSite) {
+          quoteSiteId = existingSite.id;
+        } else {
+          const clientRecord = await client.client.findFirst({ where: { id: clientId } });
+          const newSite = await client.site.create({
+            data: {
+              id: randomUUID(),
+              companyId: ctx.companyId,
+              clientId,
+              name: `${clientRecord?.name || "Client"} - Default Site`,
+              address1: "",
+              updatedAt: new Date(),
+            },
+          });
+          quoteSiteId = newSite.id;
+        }
+      } else {
+        return NextResponse.json({ ok: false, error: "quote_missing_client_and_site" }, { status: 400 });
+      }
     }
 
     const job = await client.job.create({
       data: {
         id: randomUUID(),
         companyId: ctx.companyId,
-        // jobNumber not yet in schema
         quoteId,
         clientId: quote.clientId,
-        siteId: quote.siteId,
+        siteId: quoteSiteId,
         title: `Job from Quote ${quoteId.slice(0, 8)}`,
         status: "pending",
         budgetSubtotal: 0,
@@ -218,6 +243,7 @@ export const POST = withRequestLogging(async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "database_error", code: error.code }, { status: 409 });
     }
     logError(error, { route: "/api/admin/jobs", action: "create" });
-    return NextResponse.json({ ok: false, error: "create_failed" }, { status: 500 });
+    const msg = error instanceof Error ? error.message : String(error);
+    return NextResponse.json({ ok: false, error: "create_failed", detail: msg }, { status: 500 });
   }
 });

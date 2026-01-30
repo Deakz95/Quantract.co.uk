@@ -995,13 +995,19 @@ export async function ensureAgreementForQuote(quoteId: string): Promise<Agreemen
 
   const token = crypto.randomBytes(24).toString("hex"); // ✅ define token
 
+  const agCompanyId = (q as any).companyId ?? (await requireCompanyIdForPrisma().catch(() => null));
+  if (!agCompanyId) return null;
+
   const row = await client.agreement.create({
-    data: { companyId: await requireCompanyIdForPrisma(),
+    data: {
+      id: crypto.randomUUID(),
+      companyId: agCompanyId,
       token,
       quoteId,
       status: "draft",
       templateVersion: "v1",
       quoteSnapshot: toQuote(q),
+      updatedAt: new Date(),
     },
   });
 
@@ -1011,7 +1017,7 @@ export async function ensureAgreementForQuote(quoteId: string): Promise<Agreemen
     action: "agreement.created" as any,
     actorRole: "system",
     meta: { quoteId },
-  });
+  }, agCompanyId);
 
   return toAgreement(row);
 }
@@ -1055,20 +1061,22 @@ export async function acceptQuoteByToken(token: string): Promise<Quote | null> {
         data: { status: "accepted", acceptedAt: new Date() },
       });
 
+  const quoteCompanyId = (row as any).companyId ?? null;
+
   await addAudit({
     entityType: "quote",
     entityId: row.id,
     action: "quote.accepted" as any,
     actorRole: "client",
     actor: row.clientEmail,
-  });
+  }, quoteCompanyId || undefined);
 
   // Ensure agreement exists (idempotent)
   await ensureAgreementForQuote(row.id);
 
   // ✅ NEW: ensure job + draft invoice exist after acceptance (idempotent)
-  await ensureInvoiceForQuote(row.id);
-  await ensureJobForQuote(row.id);
+  try { await ensureInvoiceForQuote(row.id); } catch {}
+  try { await ensureJobForQuote(row.id); } catch {}
 
   return toQuote(row);
 }
@@ -1388,12 +1396,8 @@ export async function ensureInvoiceForQuote(quoteId: string): Promise<Invoice | 
   const q = await client.quote.findUnique({ where: { id: quoteId } }).catch(() => null);
   if (!q) return null;
 
-  const companyId = (q as any).companyId ?? null;
-  if (!companyId) {
-    // fallback for older rows/envs
-    // (admin context only)
-    await requireCompanyIdForPrisma();
-  }
+  const companyId = (q as any).companyId ?? (await requireCompanyIdForPrisma().catch(() => null));
+  if (!companyId) return null;
 
   const existing = await client.invoice.findFirst({ where: { quoteId } }).catch(() => null);
 if (existing) {
@@ -1418,7 +1422,8 @@ if (existing) {
 
   const row = await client.invoice.create({
     data: {
-      companyId: companyId ?? (await requireCompanyIdForPrisma()),
+      id: crypto.randomUUID(),
+      companyId,
       token,
       invoiceNumber,
       clientId: quote.clientId ?? null,
@@ -1430,6 +1435,7 @@ if (existing) {
       vat: totals.vat,
       total: totals.total,
       status: "draft",
+      updatedAt: new Date(),
     },
   });
 
@@ -2363,13 +2369,42 @@ export async function ensureJobForQuote(quoteId: string): Promise<Job | null> {
   const quote = toQuote(q);
   const totals = fileDb.quoteTotals(quote);
 
-  const companyId = await requireCompanyIdForPrisma();
-  const siteId = (q as any).siteId ?? null;
+  const companyId = (q as any).companyId ?? (await requireCompanyIdForPrisma().catch(() => null));
+  if (!companyId) return null;
+  let siteId = (q as any).siteId ?? null;
 
-  // INVARIANT: siteId is required - jobs must belong to a site
+  // Auto-create a site if the quote doesn't have one
   if (!siteId) {
-    console.error(`[INVARIANT VIOLATION] Quote ${quoteId} has no siteId - cannot create job`);
-    throw new Error("Quote must have a site before creating job");
+    const clientId = (q as any).clientId ?? null;
+    if (clientId) {
+      // Try to find an existing site for this client
+      const existingSite = await client.site.findFirst({
+        where: { clientId, companyId },
+        orderBy: { createdAt: "desc" },
+      }).catch(() => null);
+      if (existingSite) {
+        siteId = existingSite.id;
+      } else {
+        // Create a default site
+        const newSite = await client.site.create({
+          data: {
+            id: crypto.randomUUID(),
+            companyId,
+            clientId,
+            name: quote.siteAddress || `${quote.clientName} - Default Site`,
+            address1: quote.siteAddress || "",
+            updatedAt: new Date(),
+          },
+        });
+        siteId = newSite.id;
+      }
+      // Link site back to quote
+      await client.quote.update({ where: { id: quoteId }, data: { siteId } }).catch(() => null);
+    } else {
+      // No client and no site — cannot create a job
+      console.error(`[ensureJobForQuote] Quote ${quoteId} has no clientId and no siteId — skipping job creation`);
+      return null;
+    }
   }
 
   // Verify site exists and belongs to this company
@@ -2379,28 +2414,20 @@ export async function ensureJobForQuote(quoteId: string): Promise<Job | null> {
     throw new Error("Site does not belong to company");
   }
 
-  // Ensure job has "display fields"
-  const clientName = quote.clientName;
-  const clientEmail = quote.clientEmail;
-  const siteAddress = quote.siteAddress ?? siteRecord.address ?? null;
-
   const row = await client.job.create({
     data: {
+      id: crypto.randomUUID(),
       companyId,
       quoteId,
       clientId: (q as any).clientId ?? null,
       siteId,
-
-      // ✅ These are critical for UI + tests
-      clientName,
-      clientEmail,
-      siteAddress,
-
+      title: `Job from Quote ${quoteId.slice(0, 8)}`,
       status: "new",
       budgetSubtotal: totals.subtotal,
       budgetVat: totals.vat,
       budgetTotal: totals.total,
-    } as any,
+      updatedAt: new Date(),
+    },
     include: { client: true, site: true, engineer: true },
   });
 

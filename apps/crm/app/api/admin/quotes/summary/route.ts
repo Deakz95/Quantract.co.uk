@@ -33,8 +33,8 @@ export async function GET(req: Request) {
       ok: true,
       data: quotes.map((q: any) => {
         const items = (q.items as any[]) || [];
-        const subtotal = items.reduce((sum: number, item: any) => sum + (Number(item.total) || Number(item.unitPrice || 0) * Number(item.quantity || 1)), 0);
-        const total = subtotal + subtotal * (q.vatRate || 0);
+        const subtotal = items.reduce((sum: number, item: any) => sum + Number(item.qty || 0) * Number(item.unitPrice || 0), 0);
+        const total = Math.round((subtotal + subtotal * (q.vatRate || 0)) * 100) / 100;
         return {
           quoteId: q.id,
           quoteNumber: q.token?.slice(0, 8)?.toUpperCase() || q.id.slice(0, 8),

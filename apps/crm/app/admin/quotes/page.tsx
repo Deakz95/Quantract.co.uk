@@ -292,7 +292,7 @@ export default function QuotesPage() {
       headerClassName: 'text-right',
       render: (quote) => (
         <span className="font-semibold text-[var(--foreground)]">
-          {'\u00A3'}{((quote.total || 0) / 100).toFixed(2)}
+          {'\u00A3'}{(quote.total || 0).toFixed(2)}
         </span>
       ),
     },
