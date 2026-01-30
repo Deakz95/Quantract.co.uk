@@ -49,7 +49,10 @@
       "Bash(npm ls:*)",
       "Bash(npx prisma:*)",
       "Bash(fold:*)",
-      "Bash(python -c:*)"
+      "Bash(python -c:*)",
+      "Bash(git status:*)",
+      "Bash(gh run list:*)",
+      "WebFetch(domain:api.render.com)"
     ]
   }
 }

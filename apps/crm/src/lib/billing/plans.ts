@@ -12,7 +12,7 @@
 
 // ============ Plan Types ============
 
-export type PlanTier = "trial" | "core" | "pro" | "enterprise";
+export type PlanTier = "trial" | "core" | "pro" | "pro_plus" | "enterprise";
 
 // Modules that can be enabled/disabled
 export type Module = "crm" | "certificates" | "portal" | "tools";
@@ -157,6 +157,35 @@ const PLAN_DEFINITIONS: Record<PlanTier, PlanDefinition> = {
       maxClients: Infinity,
     },
   },
+  pro_plus: {
+    id: "pro_plus",
+    label: "Pro Plus",
+    description: "Pro with advanced AI and higher limits",
+    price: 149,
+    limits: {
+      includedUsers: 20,
+      maxUsers: 100,
+      extraUserPrice: 3,
+      includedEntities: 3,
+      maxEntities: 10,
+      extraEntityPrice: 12,
+      invoicesPerMonth: 1000,
+      certificatesPerMonth: 500,
+      quotesPerMonth: Infinity,
+      storageMB: 204800, // 200GB
+      trialDays: null,
+      includedModules: ["crm", "certificates", "portal", "tools"],
+      includesSchedule: true,
+      includesTimesheets: true,
+      includesCustomSubdomain: true,
+      includesDedicatedDb: false,
+      includesXeroIntegration: true,
+      includesPortal: true,
+      maxJobs: Infinity,
+      maxEngineers: 100,
+      maxClients: Infinity,
+    },
+  },
   enterprise: {
     id: "enterprise",
     label: "Enterprise",
@@ -245,6 +274,7 @@ export function normalizePlan(plan?: string | null): PlanTier {
   if (value === "free" || value === "trial") return "trial";
   if (value === "solo") return "core"; // Old solo -> core
   if (value === "team") return "pro"; // Old team -> pro
+  if (value === "pro_plus" || value === "pro-plus" || value === "proplus") return "pro_plus";
   if (value === "pro") return "pro";
   if (value === "core") return "core";
   if (value === "enterprise") return "enterprise";
