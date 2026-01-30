@@ -38,7 +38,9 @@
       "Bash(npm run lint)",
       "Bash(npm uninstall:*)",
       "Bash(npm run build:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(git commit:*)",
+      "Bash(git push)"
     ]
   }
 }
