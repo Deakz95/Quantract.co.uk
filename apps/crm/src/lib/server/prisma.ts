@@ -36,43 +36,60 @@ function createPrismaClient(): PrismaClient {
   // The schema uses String @id without @default and DateTime updatedAt
   // without @updatedAt, so the application must supply these values.
   // Uses $extends (Prisma 5+/6+ replacement for removed $use middleware).
+  //
+  // Models that do NOT have an updatedAt field — skip updatedAt injection for these.
+  const NO_UPDATED_AT = new Set([
+    "AuditEvent", "AuthSession", "CostItemAttachment", "EnquiryEvent",
+    "InvoiceAttachment", "InvoiceChase", "InvoicePayment", "InvoiceVariation",
+    "JobBudgetLine", "JobChecklistItem", "MagicLinkToken", "MfaSession",
+    "Mention", "NotificationLog", "NotificationPreference", "PipelineStage",
+    "PurchaseOrder", "PurchaseOrderLine", "QuoteRevision", "ScheduleEntry",
+    "StockItem", "StockMovement", "SupplierBillLine",
+  ]);
+
   const client = base.$extends({
     query: {
       $allModels: {
-        async create({ args, query }: any) {
+        async create({ model, args, query }: any) {
           if (args.data) {
             if (!args.data.id) args.data.id = crypto.randomUUID();
-            if (args.data.updatedAt === undefined) args.data.updatedAt = new Date();
-          }
-          return query(args);
-        },
-        async createMany({ args, query }: any) {
-          if (Array.isArray(args.data)) {
-            for (const row of args.data) {
-              if (!row.id) row.id = crypto.randomUUID();
-              if (row.updatedAt === undefined) row.updatedAt = new Date();
+            if (!NO_UPDATED_AT.has(model) && args.data.updatedAt === undefined) {
+              args.data.updatedAt = new Date();
             }
           }
           return query(args);
         },
-        async update({ args, query }: any) {
-          if (args.data && args.data.updatedAt === undefined) {
+        async createMany({ model, args, query }: any) {
+          if (Array.isArray(args.data)) {
+            const needsUpdatedAt = !NO_UPDATED_AT.has(model);
+            for (const row of args.data) {
+              if (!row.id) row.id = crypto.randomUUID();
+              if (needsUpdatedAt && row.updatedAt === undefined) row.updatedAt = new Date();
+            }
+          }
+          return query(args);
+        },
+        async update({ model, args, query }: any) {
+          if (!NO_UPDATED_AT.has(model) && args.data && args.data.updatedAt === undefined) {
             args.data.updatedAt = new Date();
           }
           return query(args);
         },
-        async updateMany({ args, query }: any) {
-          if (args.data && args.data.updatedAt === undefined) {
+        async updateMany({ model, args, query }: any) {
+          if (!NO_UPDATED_AT.has(model) && args.data && args.data.updatedAt === undefined) {
             args.data.updatedAt = new Date();
           }
           return query(args);
         },
-        async upsert({ args, query }: any) {
+        async upsert({ model, args, query }: any) {
+          const needsUpdatedAt = !NO_UPDATED_AT.has(model);
           if (args.create) {
             if (!args.create.id) args.create.id = crypto.randomUUID();
-            if (args.create.updatedAt === undefined) args.create.updatedAt = new Date();
+            if (needsUpdatedAt && args.create.updatedAt === undefined) {
+              args.create.updatedAt = new Date();
+            }
           }
-          if (args.update && args.update.updatedAt === undefined) {
+          if (needsUpdatedAt && args.update && args.update.updatedAt === undefined) {
             args.update.updatedAt = new Date();
           }
           return query(args);
