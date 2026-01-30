@@ -2,10 +2,22 @@ import { NextResponse } from "next/server";
 import { requireCompanyContext } from "@/lib/serverAuth";
 import { buildCrmContext } from "@/lib/ai/buildCrmContext";
 import { CRM_ADVISOR_SYSTEM_PROMPT } from "@/lib/ai/prompts/crmAdvisor";
-import { getOpenAIClient, DEFAULT_MODEL } from "@/lib/llm/openaiClient";
+import { getOpenAIClient } from "@/lib/llm/openaiClient";
 import type { CrmRecommendations } from "@/lib/ai/types";
 import * as repo from "@/lib/server/repo";
 import { getPrisma } from "@/lib/server/prisma";
+import { AI_MODEL, ENGINE_MODE } from "@/lib/ai/modelConfig";
+import {
+  resolveAiTier,
+  isHardCapExceeded,
+  ALLOWANCE_REACHED_RESPONSE,
+} from "@/lib/ai/providerRouting";
+import {
+  getCompanyAiSpendThisMonth,
+  recordCompanyAiUsage,
+  estimateCostPence,
+  estimateCostPenceFromLength,
+} from "@/lib/ai/aiUsage";
 
 function isPaidPlan(plan: string): boolean {
   const p = plan.toLowerCase();
@@ -92,43 +104,67 @@ export async function GET() {
     // 2. Build CRM context
     const context = await buildCrmContext(companyId, userId);
 
-    // 2. Build prompt — replace placeholder with context JSON
+    // 3. Budget gate
+    const aiTier = resolveAiTier(plan);
+    const spendThisMonth = await getCompanyAiSpendThisMonth(companyId);
+    if (isHardCapExceeded(aiTier, spendThisMonth)) {
+      return NextResponse.json({ ok: true, ...ALLOWANCE_REACHED_RESPONSE, _plan: plan });
+    }
+
+    // 4. Build prompt
     const systemPrompt = CRM_ADVISOR_SYSTEM_PROMPT.replace(
       "{{INPUT_JSON}}",
       JSON.stringify(context, null, 2),
     );
+    const userContent = JSON.stringify(context);
 
-    // 3. Call AI
+    // 5. Call OpenAI GPT-5 mini
     const requestStart = Date.now();
     const openai = getOpenAIClient();
     const completion = await openai.chat.completions.create({
-      model: DEFAULT_MODEL,
+      model: AI_MODEL.model,
       messages: [
         { role: "system", content: systemPrompt },
-        { role: "user", content: JSON.stringify(context) },
+        { role: "user", content: userContent },
       ],
       response_format: { type: "json_object" },
       temperature: 0.2,
       max_tokens: 3000,
     });
+    const raw = completion.choices?.[0]?.message?.content ?? "";
+    const tokensIn = completion.usage?.prompt_tokens ?? 0;
+    const tokensOut = completion.usage?.completion_tokens ?? 0;
     const requestEnd = Date.now();
 
-    const raw = completion.choices?.[0]?.message?.content ?? "";
-    const tokenUsage = completion.usage
-      ? { prompt: completion.usage.prompt_tokens, completion: completion.usage.completion_tokens, total: completion.usage.total_tokens }
+    // 6. Record usage
+    const costPence =
+      tokensIn > 0 || tokensOut > 0
+        ? estimateCostPence(AI_MODEL.model, tokensIn, tokensOut)
+        : estimateCostPenceFromLength(AI_MODEL.model, systemPrompt.length + userContent.length, 3000);
+
+    recordCompanyAiUsage({
+      companyId,
+      userId,
+      estimatedCostPence: costPence,
+      requestType: "realtime_recommendations",
+      tokensIn: tokensIn || undefined,
+      tokensOut: tokensOut || undefined,
+    });
+
+    const tokenUsage = tokensIn || tokensOut
+      ? { prompt: tokensIn, completion: tokensOut, total: tokensIn + tokensOut }
       : null;
 
-    // 4. Parse JSON robustly
+    // 7. Parse JSON robustly
     let parsed: CrmRecommendations;
     let parseSuccess = true;
     try {
       parsed = JSON.parse(raw);
     } catch {
-      // Try extracting first {...} block
       const match = raw.match(/\{[\s\S]*\}/);
       if (!match) {
         parseSuccess = false;
-        logAnalytics({ companyId, userId, model: DEFAULT_MODEL, durationMs: requestEnd - requestStart, tokenUsage, parseSuccess: false, rawLength: raw.length, rawPrefix: raw.slice(0, 200) });
+        logAnalytics({ companyId, userId, durationMs: requestEnd - requestStart, tokenUsage, parseSuccess: false, rawLength: raw.length, rawPrefix: raw.slice(0, 200) });
         return NextResponse.json(
           { ok: false, error: "ai_parse_failed" },
           { status: 502 },
@@ -138,7 +174,7 @@ export async function GET() {
         parsed = JSON.parse(match[0]);
       } catch {
         parseSuccess = false;
-        logAnalytics({ companyId, userId, model: DEFAULT_MODEL, durationMs: requestEnd - requestStart, tokenUsage, parseSuccess: false, rawLength: raw.length, rawPrefix: raw.slice(0, 200) });
+        logAnalytics({ companyId, userId, durationMs: requestEnd - requestStart, tokenUsage, parseSuccess: false, rawLength: raw.length, rawPrefix: raw.slice(0, 200) });
         return NextResponse.json(
           { ok: false, error: "ai_parse_failed" },
           { status: 502 },
@@ -146,16 +182,16 @@ export async function GET() {
       }
     }
 
-    // 5. Validate shape deeply
+    // 8. Validate shape deeply
     if (!validateShape(parsed)) {
-      logAnalytics({ companyId, userId, model: DEFAULT_MODEL, durationMs: requestEnd - requestStart, tokenUsage, parseSuccess: false, rawLength: raw.length, rawPrefix: raw.slice(0, 200) });
+      logAnalytics({ companyId, userId, durationMs: requestEnd - requestStart, tokenUsage, parseSuccess: false, rawLength: raw.length, rawPrefix: raw.slice(0, 200) });
       return NextResponse.json(
         { ok: false, error: "ai_invalid_shape" },
         { status: 502 },
       );
     }
 
-    // 6. Pick only known fields (prevent leaking unexpected AI output)
+    // 9. Pick only known fields
     const result: CrmRecommendations = {
       summary: parsed.summary,
       top_recommendations: parsed.top_recommendations,
@@ -164,10 +200,10 @@ export async function GET() {
       questions: parsed.questions,
     };
 
-    // 7. Analytics — log success
-    logAnalytics({ companyId, userId, model: DEFAULT_MODEL, durationMs: requestEnd - requestStart, tokenUsage, parseSuccess, recCount: result.top_recommendations.length });
+    // 10. Analytics (engineMode only, no provider/model)
+    logAnalytics({ companyId, userId, durationMs: requestEnd - requestStart, tokenUsage, parseSuccess, recCount: result.top_recommendations.length });
 
-    // 8. Cache
+    // 11. Cache
     cache.set(cacheKey, { data: result, expiresAt: Date.now() + CACHE_TTL_MS });
 
     return NextResponse.json({ ok: true, ...result, _plan: plan });
@@ -186,7 +222,6 @@ export async function GET() {
 interface AnalyticsPayload {
   companyId: string;
   userId: string;
-  model: string;
   durationMs: number;
   tokenUsage: { prompt: number; completion: number; total: number } | null;
   parseSuccess: boolean;
@@ -196,7 +231,6 @@ interface AnalyticsPayload {
 }
 
 function logAnalytics(payload: AnalyticsPayload) {
-  // Best-effort audit record — fire and forget
   repo.recordAuditEvent({
     entityType: "company" as any,
     entityId: payload.companyId,
@@ -204,7 +238,7 @@ function logAnalytics(payload: AnalyticsPayload) {
     actorRole: "admin",
     actor: payload.userId,
     meta: {
-      model: payload.model,
+      engineMode: ENGINE_MODE,
       durationMs: payload.durationMs,
       tokenUsage: payload.tokenUsage,
       parseSuccess: payload.parseSuccess,
@@ -212,7 +246,6 @@ function logAnalytics(payload: AnalyticsPayload) {
       ...(payload.parseSuccess ? {} : { rawLength: payload.rawLength, rawPrefix: payload.rawPrefix }),
     },
   }).catch(() => {
-    // Fallback: structured console log
     console.info("[ai-recs-analytics]", JSON.stringify(payload));
   });
 }

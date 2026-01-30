@@ -1,10 +1,11 @@
-import { getOpenAIClient, DEFAULT_MODEL } from "@/lib/llm/openaiClient";
+import { getOpenAIClient } from "@/lib/llm/openaiClient";
 import { AiResponseSchema, type AiResponse } from "@/lib/ai/responseSchema";
+import { AI_MODEL } from "./modelConfig";
 
 export async function runQuantractAi(args: { system: string; user: string; dataBundle: unknown }): Promise<AiResponse> {
   const openai = getOpenAIClient();
   const res = await openai.chat.completions.create({
-    model: DEFAULT_MODEL,
+    model: AI_MODEL.model,
     messages: [
       { role: "system", content: args.system },
       { role: "user", content: JSON.stringify({ question: args.user, data: args.dataBundle }) },

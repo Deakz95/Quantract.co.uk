@@ -1,11 +1,22 @@
 import { getPrisma } from "@/lib/server/prisma";
 import { buildCrmContext } from "./buildCrmContext";
 import { CRM_ADVISOR_SYSTEM_PROMPT } from "./prompts/crmAdvisor";
-import { getOpenAIClient, DEFAULT_MODEL } from "@/lib/llm/openaiClient";
+import { getOpenAIClient } from "@/lib/llm/openaiClient";
 import { sendEmail, absoluteUrl } from "@/lib/server/email";
 import * as repo from "@/lib/server/repo";
 import type { CrmRecommendations } from "./types";
 import { makeRecId } from "./recId";
+import { AI_MODEL, ENGINE_MODE } from "./modelConfig";
+import {
+  resolveAiTier,
+  isHardCapExceeded,
+} from "./providerRouting";
+import {
+  getCompanyAiSpendThisMonth,
+  recordCompanyAiUsage,
+  estimateCostPence,
+  estimateCostPenceFromLength,
+} from "./aiUsage";
 
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -30,10 +41,10 @@ export async function runWeeklyCrmDigest(): Promise<{
     return { processed: 0, sent: 0, skipped: 0, errors: 0 };
   }
 
-  // Find all paid companies
+  // Find all paid companies (includes pro_plus)
   const companies = await prisma.company.findMany({
     where: {
-      plan: { in: ["pro", "Pro", "enterprise", "Enterprise"] },
+      plan: { in: ["pro", "Pro", "pro_plus", "Pro_Plus", "enterprise", "Enterprise"] },
     },
     select: { id: true, plan: true, brandName: true },
   });
@@ -66,6 +77,22 @@ export async function runWeeklyCrmDigest(): Promise<{
         continue;
       }
 
+      // Budget gate: skip digest if hard cap exceeded
+      const aiTier = resolveAiTier(company.plan);
+      const spendThisMonth = await getCompanyAiSpendThisMonth(company.id);
+      if (isHardCapExceeded(aiTier, spendThisMonth)) {
+        repo.recordAuditEvent({
+          entityType: "company" as any,
+          entityId: company.id,
+          action: "ai_weekly_digest_skipped_allowance" as any,
+          actorRole: "system" as any,
+          actor: "weekly-digest",
+          meta: { aiTier, spendThisMonth },
+        }).catch(() => null);
+        skipped++;
+        continue;
+      }
+
       // Get admin users for this company
       const admins = await prisma.companyUser.findMany({
         where: { companyId: company.id, role: "admin", isActive: true },
@@ -83,25 +110,44 @@ export async function runWeeklyCrmDigest(): Promise<{
       // Build CRM context (reuses existing logic)
       const context = await buildCrmContext(company.id, adminUserId);
 
-      // Call LLM (same as recommendations endpoint)
+      // Build prompt
       const systemPrompt = CRM_ADVISOR_SYSTEM_PROMPT.replace(
         "{{INPUT_JSON}}",
         JSON.stringify(context, null, 2),
       );
+      const userContent = JSON.stringify(context);
 
+      // Call OpenAI GPT-5 mini
       const openai = getOpenAIClient();
       const completion = await openai.chat.completions.create({
-        model: DEFAULT_MODEL,
+        model: AI_MODEL.model,
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: JSON.stringify(context) },
+          { role: "user", content: userContent },
         ],
         response_format: { type: "json_object" },
         temperature: 0.2,
         max_tokens: 3000,
       });
-
       const raw = completion.choices?.[0]?.message?.content ?? "";
+      const tokensIn = completion.usage?.prompt_tokens ?? 0;
+      const tokensOut = completion.usage?.completion_tokens ?? 0;
+
+      // Record usage
+      const costPence =
+        tokensIn > 0 || tokensOut > 0
+          ? estimateCostPence(AI_MODEL.model, tokensIn, tokensOut)
+          : estimateCostPenceFromLength(AI_MODEL.model, systemPrompt.length + userContent.length, 3000);
+
+      recordCompanyAiUsage({
+        companyId: company.id,
+        userId: adminUserId,
+        estimatedCostPence: costPence,
+        requestType: "weekly_digest",
+        tokensIn: tokensIn || undefined,
+        tokensOut: tokensOut || undefined,
+      });
+
       let parsed: CrmRecommendations;
       try {
         parsed = JSON.parse(raw);
@@ -140,7 +186,7 @@ export async function runWeeklyCrmDigest(): Promise<{
         }
       }
 
-      // Record audit event
+      // Record audit event (engineMode only, no provider/model)
       await repo.recordAuditEvent({
         entityType: "company" as any,
         entityId: company.id,
@@ -151,6 +197,8 @@ export async function runWeeklyCrmDigest(): Promise<{
           recipientCount: adminEmails.length,
           recCount: topRecs.length,
           riskCount: risks.length,
+          engineMode: ENGINE_MODE,
+          estimatedCostPence: costPence,
         },
       });
 
@@ -178,7 +226,7 @@ function buildDigestHtml(opts: {
       const actionMatch = r.title.match(/\[action:([a-z0-9_]+)\]/);
       const actionId = actionMatch ? actionMatch[1] : "";
       const recId = makeRecId(r.title);
-      const deepLink = `${opts.appUrl}?ai=1&aiRec=${encodeURIComponent(recId)}${actionId ? `&aiAction=${encodeURIComponent(actionId)}` : ""}`;
+      const deepLink = `${opts.appUrl}?ai=1&aiRec=${encodeURIComponent(recId)}&aiAction=${actionId ? encodeURIComponent(actionId) : ""}`;
       return `<tr><td style="padding:12px 16px;border-bottom:1px solid #e5e7eb;">
           <a href="${deepLink}" style="color:#0f172a;text-decoration:none;"><strong>${i + 1}. ${cleanTitle}</strong></a>
           <br/><span style="color:#64748b;font-size:14px;">${r.why_it_matters}</span>

@@ -38,10 +38,10 @@
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
-    "@quantract/shared": "*",
     "@mdi/font": "^7.4.47",
     "@neondatabase/auth": "latest",
     "@prisma/client": "^6.0.0",
+    "@quantract/shared": "*",
     "@radix-ui/react-slot": "^1.2.4",
     "@sentry/nextjs": "latest",
     "@tailwindcss/postcss": "^4.1.18",
