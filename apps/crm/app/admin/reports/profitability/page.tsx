@@ -280,7 +280,7 @@ export default function ProfitabilityReportPage() {
                         >
                           <td className="py-3 px-4">
                             <Link href={`/admin/jobs/${row.job.id}`} className="font-semibold text-[var(--primary)] hover:underline">
-                              {row.job.title || row.job.id}
+                              {row.job.title || `Job #${row.job.id.slice(0, 8)}`}
                             </Link>
                             <div className="text-xs text-[var(--muted-foreground)] mt-1">
                               {row.job.clientName} • {row.job.clientEmail}

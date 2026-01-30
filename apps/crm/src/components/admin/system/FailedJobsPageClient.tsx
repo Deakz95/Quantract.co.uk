@@ -161,7 +161,7 @@ export default function FailedJobsPageClient() {
                     <div className="flex items-center gap-2 mb-2">
                       <AlertCircle className="w-5 h-5 text-red-500" />
                       <Badge variant="secondary">{job.queue}</Badge>
-                      <span className="text-xs text-gray-500">Job ID: {job.id}</span>
+                      <span className="text-xs text-gray-500">Job ID: #{job.id.slice(0, 8)}</span>
                     </div>
 
                     <div className="text-sm mb-2">
@@ -219,7 +219,7 @@ export default function FailedJobsPageClient() {
       <ConfirmDialog
         open={Boolean(jobToRemove)}
         title="Remove failed job?"
-        message={jobToRemove ? `This will permanently remove the failed job ${jobToRemove.id} from the queue.` : ""}
+        message={jobToRemove ? `This will permanently remove the failed job #${jobToRemove.id.slice(0, 8)} from the queue.` : ""}
         confirmLabel="Remove job"
         onCancel={() => setJobToRemove(null)}
         onConfirm={handleRemove}

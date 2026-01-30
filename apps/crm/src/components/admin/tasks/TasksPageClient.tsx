@@ -305,7 +305,7 @@ export default function TasksPageClient() {
                                   Assigned to: {task.Assignee.name || task.Assignee.email}
                                 </span>
                               )}
-                              {task.Job && <span>Job: {task.Job.title || task.Job.id}</span>}
+                              {task.Job && <span>Job: {task.Job.title || `#${task.Job.id.slice(0, 8)}`}</span>}
                               {task.Client && <span>Client: {task.Client.name}</span>}
                               {task.Subtasks && task.Subtasks.length > 0 && (
                                 <span>
