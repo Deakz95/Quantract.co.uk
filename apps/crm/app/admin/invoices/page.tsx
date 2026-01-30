@@ -20,6 +20,8 @@ type Invoice = {
   status: string;
   total: number;
   dueDate?: string;
+  dueAt?: string;
+  dueAtISO?: string;
   createdAt?: string;
   updatedAt?: string;
   client?: {
@@ -154,8 +156,9 @@ export default function InvoicesPage() {
       // Due date range filter
       const dateRange = filters.dueDate as { from?: string; to?: string } | undefined;
       if (dateRange) {
-        if (invoice.dueDate) {
-          const date = new Date(invoice.dueDate);
+        const dueDateVal = invoice.dueDate || invoice.dueAt || invoice.dueAtISO;
+        if (dueDateVal) {
+          const date = new Date(dueDateVal);
           if (dateRange.from && date < new Date(dateRange.from)) return false;
           if (dateRange.to && date > new Date(dateRange.to + 'T23:59:59')) return false;
         } else if (dateRange.from || dateRange.to) {
@@ -318,9 +321,10 @@ export default function InvoicesPage() {
       key: 'dueDate',
       label: 'Due',
       sortable: true,
-      render: (invoice) => (
-        <span className="text-[var(--muted-foreground)]">{formatDate(invoice.dueDate || '')}</span>
-      ),
+      render: (invoice) => {
+        const due = invoice.dueDate || invoice.dueAt || invoice.dueAtISO || '';
+        return <span className="text-[var(--muted-foreground)]">{formatDate(due)}</span>;
+      },
     },
     {
       key: 'updatedAt',
@@ -451,7 +455,7 @@ export default function InvoicesPage() {
                         <div className="text-sm text-[var(--muted-foreground)]">{i.client?.name}</div>
                         <div className="flex justify-between mt-3 text-sm">
                           <span className="font-semibold text-[var(--foreground)]">{'\u00A3'}{(i.total || 0).toFixed(2)}</span>
-                          <span className="text-[var(--muted-foreground)]">Due: {formatDate(i.dueDate || '')}</span>
+                          <span className="text-[var(--muted-foreground)]">Due: {formatDate(i.dueDate || i.dueAt || i.dueAtISO || '')}</span>
                         </div>
                       </div>
                     </Link>
