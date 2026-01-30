@@ -49,8 +49,11 @@ type DashboardData = {
   quotes: {
     pendingCount: number;
     pendingValue: number;
+    draftCount: number;
+    sentCount: number;
   };
   invoices: {
+    unpaidCount: number;
     overdueCount: number;
     unpaidTotal: number;
   };
@@ -223,22 +226,26 @@ function StatsWidget({ data, loading, onRefresh, isRefreshing }: {
     {
       label: "Open Quotes",
       value: data.quotes.pendingCount.toString(),
-      change: data.quotes.pendingValue > 0 ? `${formatCurrency(data.quotes.pendingValue)} pending` : "No pending value",
+      change: data.quotes.draftCount > 0
+        ? `${data.quotes.draftCount} draft, ${data.quotes.sentCount} sent`
+        : data.quotes.pendingValue > 0 ? `${formatCurrency(data.quotes.pendingValue)} pending` : "No pending value",
       icon: FileText,
       color: "from-blue-500 to-blue-600",
       href: "/admin/quotes",
     },
     {
       label: "Unpaid Invoices",
-      value: data.invoices.overdueCount.toString(),
-      change: data.invoices.unpaidTotal > 0 ? `${formatCurrency(data.invoices.unpaidTotal)} pending` : "All paid",
+      value: data.invoices.unpaidCount.toString(),
+      change: data.invoices.overdueCount > 0
+        ? `${data.invoices.overdueCount} overdue — ${formatCurrency(data.invoices.unpaidTotal)} total`
+        : data.invoices.unpaidTotal > 0 ? `${formatCurrency(data.invoices.unpaidTotal)} pending` : "All paid",
       icon: Receipt,
       color: "from-amber-500 to-orange-500",
       href: "/admin/invoices",
     },
     {
       label: "Active Jobs",
-      value: getJobCountByStatus(data.counts.jobs, ['scheduled', 'in_progress']).toString(),
+      value: getJobCountByStatus(data.counts.jobs, ['new', 'pending', 'scheduled', 'in_progress']).toString(),
       change: getJobCountByStatus(data.counts.jobs, ['completed']) > 0
         ? `${getJobCountByStatus(data.counts.jobs, ['completed'])} completed`
         : "No completed jobs yet",

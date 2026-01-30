@@ -26,13 +26,20 @@ export const GET = withRequestLogging(async function GET() {
     const [jobs, quotes, quotesList, invoices, timesheets] = await Promise.all([
       prisma.job.groupBy({ by: ["status"], where: { companyId: authCtx.companyId }, _count: true }),
       prisma.quote.groupBy({ by: ["status"], where: { companyId: authCtx.companyId }, _count: true }),
-      prisma.quote.findMany({ where: { companyId: authCtx.companyId, status: "sent" } }),
-      prisma.invoice.findMany({ where: { companyId: authCtx.companyId, status: "sent" } }),
+      prisma.quote.findMany({ where: { companyId: authCtx.companyId, status: { in: ["draft", "sent"] } } }),
+      prisma.invoice.findMany({ where: { companyId: authCtx.companyId, status: { in: ["draft", "sent"] } } }),
       prisma.timesheet.count({ where: { companyId: authCtx.companyId, status: "submitted" } })
     ]);
 
-    // Calculate quote totals
-    const pendingQuoteValue = quotesList.reduce((a: number, q: any) => a + Number(q.total || 0), 0);
+    // Calculate quote totals (draft + sent)
+    const openQuoteValue = quotesList.reduce((a: number, q: any) => a + Number(q.total || 0), 0);
+    const draftQuotes = quotesList.filter((q: any) => q.status === "draft");
+    const sentQuotes = quotesList.filter((q: any) => q.status === "sent");
+
+    // Calculate invoice totals (draft + sent = unpaid)
+    const now = new Date();
+    const unpaidTotal = invoices.reduce((a: number, i: any) => a + Number(i.total || 0), 0);
+    const overdueCount = invoices.filter((i: any) => i.dueAt && new Date(i.dueAt) < now).length;
 
     return NextResponse.json({
       ok: true,
@@ -44,11 +51,14 @@ export const GET = withRequestLogging(async function GET() {
         },
         quotes: {
           pendingCount: quotesList.length,
-          pendingValue: pendingQuoteValue
+          pendingValue: openQuoteValue,
+          draftCount: draftQuotes.length,
+          sentCount: sentQuotes.length,
         },
         invoices: {
-          overdueCount: invoices.filter((i: any) => i.dueDate && i.dueDate < new Date()).length,
-          unpaidTotal: invoices.reduce((a: number, i: any) => a + Number(i.total || 0), 0)
+          unpaidCount: invoices.length,
+          overdueCount,
+          unpaidTotal,
         }
       }
     });
