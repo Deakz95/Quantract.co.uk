@@ -40,7 +40,11 @@
       "Bash(npm run build:*)",
       "Bash(npx tsc:*)",
       "Bash(git commit:*)",
-      "Bash(git push)"
+      "Bash(git push)",
+      "Bash(npx prisma db execute:*)",
+      "Bash(npx prisma migrate diff:*)",
+      "Bash(npx prisma migrate:*)",
+      "Bash(git add:*)"
     ]
   }
 }
