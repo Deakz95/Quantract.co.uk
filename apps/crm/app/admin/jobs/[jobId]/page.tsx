@@ -1,10 +1,11 @@
 
 'use client';
 
-import { use } from 'react';
+import { useParams } from 'next/navigation';
 import AdminJobDetail from './AdminJobDetailClient';
 
-export default function JobPage({ params }: { params: Promise<{ jobId: string }> }) {
-  const { jobId } = use(params);
+export default function JobPage() {
+  const params = useParams();
+  const jobId = params.jobId as string;
   return <AdminJobDetail jobId={jobId} />;
 }

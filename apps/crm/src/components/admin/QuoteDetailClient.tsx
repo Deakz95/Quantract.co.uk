@@ -400,7 +400,7 @@ export default function QuoteDetailClient({ quoteId }: { quoteId: string }) {
             </div>
           </div>
 
-          {quote.agreement && quote.status !== "accepted" && (
+          {quote.agreement && (
             <div className="mt-4 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3">
               <div className="text-xs font-semibold text-[var(--muted-foreground)]">Agreement link</div>
               <div className="mt-1 flex flex-col gap-2 sm:flex-row sm:items-center">
