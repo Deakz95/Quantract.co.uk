@@ -198,7 +198,7 @@ export default function AdminSchedulePage() {
                 >
                   <label className="grid gap-2">
                     <span className="text-sm font-medium text-[var(--foreground)]">Job</span>
-                    <select name="jobId" required>
+                    <select name="jobId" required className="rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)]">
                       <option value="">Select…</option>
                       {jobs.map((j) => (
                         <option key={j.id} value={j.id}>
@@ -211,7 +211,7 @@ export default function AdminSchedulePage() {
 
                   <label className="grid gap-2">
                     <span className="text-sm font-medium text-[var(--foreground)]">Engineer</span>
-                    <select name="engineerEmail" required>
+                    <select name="engineerEmail" required className="rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)]">
                       <option value="">Select…</option>
                       {engineers.map((en) => (
                         <option key={en.id} value={en.email}>
@@ -229,6 +229,7 @@ export default function AdminSchedulePage() {
                       type="datetime-local"
                       defaultValue={toLocalInputValue(new Date().toISOString())}
                       required
+                      className="rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)]"
                     />
                   </label>
 
@@ -239,13 +240,13 @@ export default function AdminSchedulePage() {
                       type="number"
                       step="0.5"
                       defaultValue={2}
-                      className="w-28"
+                      className="w-28 rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)]"
                     />
                   </label>
 
                   <label className="grid gap-2">
                     <span className="text-sm font-medium text-[var(--foreground)]">Notes</span>
-                    <input name="notes" className="w-64" placeholder="Optional" />
+                    <input name="notes" className="w-64 rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)]" placeholder="Optional" />
                   </label>
 
                   <Button type="submit" disabled={busy}>

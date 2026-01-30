@@ -26,7 +26,14 @@ export const GET = withRequestLogging(async function GET() {
       orderBy: { createdAt: "desc" },
     });
 
-    return NextResponse.json({ ok: true, engineers: engineers || [] });
+    const mapped = (engineers || []).map((e: any) => ({
+      ...e,
+      name: e.name || e.email?.split("@")[0] || "Unknown",
+      createdAtISO: e.createdAt ? new Date(e.createdAt).toISOString() : new Date().toISOString(),
+      updatedAtISO: e.updatedAt ? new Date(e.updatedAt).toISOString() : new Date().toISOString(),
+    }));
+
+    return NextResponse.json({ ok: true, engineers: mapped });
   } catch (error: any) {
     if (error?.status === 401) {
       return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });

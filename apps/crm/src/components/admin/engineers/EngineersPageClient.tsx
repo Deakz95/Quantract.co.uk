@@ -502,13 +502,13 @@ export default function EngineersPageClient() {
                   <div>
                     <div className="text-xs font-semibold text-[var(--muted-foreground)]">Cost rate</div>
                     <div className="text-[var(--foreground)]">
-                      {typeof selected.costRatePerHour === "number" ? `£${selected.costRatePerHour.toFixed(2)}/hr` : "—"}
+                      £{(selected.costRatePerHour ?? 0).toFixed(2)}/hr
                     </div>
                   </div>
                   <div>
                     <div className="text-xs font-semibold text-[var(--muted-foreground)]">Charge rate</div>
                     <div className="text-[var(--foreground)]">
-                      {typeof selected.chargeRatePerHour === "number" ? `£${selected.chargeRatePerHour.toFixed(2)}/hr` : "—"}
+                      £{(selected.chargeRatePerHour ?? 0).toFixed(2)}/hr
                     </div>
                   </div>
                 </div>

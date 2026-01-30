@@ -1529,6 +1529,15 @@ export async function createInvoiceForJob(input: {
     .catch(() => null);
   if (!job) return null;
 
+  if (!job.clientId) {
+    console.warn(`[INVOICE] Creating invoice for job ${job.id} without a client. Assign a client to this job.`);
+  }
+
+  // Compute default due date from payment terms
+  const paymentDays = (job.client as any)?.paymentTermsDays ?? 14;
+  const dueAt = new Date();
+  dueAt.setDate(dueAt.getDate() + paymentDays);
+
   // Resolve legal entity for this invoice
   const legalEntityResolution = await resolveLegalEntity({ jobId: input.jobId });
   const legalEntityId = legalEntityResolution?.legalEntityId ?? null;
@@ -1685,6 +1694,7 @@ export async function createInvoiceForJob(input: {
             vat: totalVat,
             total,
             status: (input.status ?? "draft") as any,
+            dueAt,
           },
         });
 
@@ -1784,6 +1794,7 @@ export async function createInvoiceForJob(input: {
         vat,
         total,
         status: (input.status ?? "draft") as any,
+        dueAt,
       },
     });
 
@@ -4349,6 +4360,30 @@ export async function ensureDefaultPipelineStages(): Promise<void> {
       { companyId, name: "Quoted", sortOrder: 2, color: "#f59e0b" },
       { companyId, name: "Won", sortOrder: 3, color: "#10b981", isWon: true },
       { companyId, name: "Lost", sortOrder: 4, color: "#ef4444", isLost: true },
+    ],
+  }).catch(() => null);
+}
+
+export async function ensureDefaultDealStages(): Promise<void> {
+  const companyId = await getCompanyId();
+  const client = p();
+  if (!client) return;
+
+  if (!companyId) {
+    console.error("[SECURITY] ensureDefaultDealStages called without companyId");
+    throw new Error("Company ID required for data creation");
+  }
+
+  const existing = await client.dealStage.count({ where: { companyId } });
+  if (existing > 0) return;
+
+  await client.dealStage.createMany({
+    data: [
+      { companyId, name: "Prospect", sortOrder: 0, color: "#3b82f6", probability: 10, isWon: false, isLost: false, updatedAt: new Date() },
+      { companyId, name: "Proposal", sortOrder: 1, color: "#8b5cf6", probability: 30, isWon: false, isLost: false, updatedAt: new Date() },
+      { companyId, name: "Negotiation", sortOrder: 2, color: "#f59e0b", probability: 60, isWon: false, isLost: false, updatedAt: new Date() },
+      { companyId, name: "Won", sortOrder: 3, color: "#10b981", probability: 100, isWon: true, isLost: false, updatedAt: new Date() },
+      { companyId, name: "Lost", sortOrder: 4, color: "#ef4444", probability: 0, isWon: false, isLost: true, updatedAt: new Date() },
     ],
   }).catch(() => null);
 }

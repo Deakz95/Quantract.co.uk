@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function EnquiriesPage() {
   return (
-    <AppShell role="admin" title="Enquiries" subtitle="Manage leads and track them through your pipeline">
+    <AppShell role="admin" title="Enquiries" subtitle="Track incoming leads and new business enquiries through your sales pipeline">
       <EnquiryListClient />
     </AppShell>
   );

@@ -12,6 +12,7 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { DataTable, BulkActionBar, formatRelativeTime, type Column, type Action, type SortDirection } from "@/components/ui/DataTable";
 import { TableSkeletonInline } from "@/components/ui/TableSkeleton";
 import { apiRequest, createAbortController, getApiErrorMessage, isAbortError, requireOk } from "@/lib/apiClient";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/Dialog";
 import { ContactForm } from "./ContactForm";
 import { Users, SquarePen, Eye, Trash2 } from "lucide-react";
 
@@ -72,6 +73,7 @@ export default function ContactsPageClient({ initialClientId }: ContactsPageClie
   const [bulkDeleting, setBulkDeleting] = useState(false);
 
   const [editing, setEditing] = useState<Contact | null>(null);
+  const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [form, setForm] = useState<Partial<Contact>>({ ...emptyForm, clientId: initialClientId || "" });
 
   const [confirming, setConfirming] = useState<Contact | null>(null);
@@ -181,11 +183,13 @@ export default function ContactsPageClient({ initialClientId }: ContactsPageClie
   function startNew() {
     setEditing(null);
     setForm({ ...emptyForm, clientId: filterClientId || "" });
+    setFormDialogOpen(true);
   }
 
   function startEdit(c: Contact) {
     setEditing(c);
     setForm({ ...c });
+    setFormDialogOpen(true);
   }
 
   const handleSort = (key: string, direction: SortDirection) => {
@@ -226,8 +230,8 @@ export default function ContactsPageClient({ initialClientId }: ContactsPageClie
       requireOk(data, "Save failed");
 
       toast({ title: editing ? "Contact updated" : "Contact created", variant: "success" });
+      setFormDialogOpen(false);
       await load();
-      if (!editing) startNew();
     } catch (e: unknown) {
       toast({ title: "Could not save", description: getApiErrorMessage(e), variant: "destructive" });
     } finally {
@@ -363,8 +367,8 @@ export default function ContactsPageClient({ initialClientId }: ContactsPageClie
   ];
 
   return (
-    <div className="grid gap-6 lg:grid-cols-12">
-      <div className="lg:col-span-8">
+    <div className="space-y-6">
+      <div>
         <Card>
           <CardHeader>
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -449,24 +453,22 @@ export default function ContactsPageClient({ initialClientId }: ContactsPageClie
         </Card>
       </div>
 
-      <div className="lg:col-span-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>{editing ? "Edit contact" : "Create contact"}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ContactForm
-              form={form}
-              setForm={setForm}
-              clients={clients}
-              onSave={save}
-              onClear={startNew}
-              busy={busy}
-              isEditing={!!editing}
-            />
-          </CardContent>
-        </Card>
-      </div>
+      <Dialog open={formDialogOpen} onOpenChange={setFormDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editing ? "Edit contact" : "Create contact"}</DialogTitle>
+          </DialogHeader>
+          <ContactForm
+            form={form}
+            setForm={setForm}
+            clients={clients}
+            onSave={save}
+            onClear={() => setFormDialogOpen(false)}
+            busy={busy}
+            isEditing={!!editing}
+          />
+        </DialogContent>
+      </Dialog>
 
       {/* Single Delete Confirmation */}
       <ConfirmDialog
