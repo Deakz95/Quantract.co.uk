@@ -107,9 +107,9 @@ export default function InvoiceBuilder({ invoiceId }: { invoiceId: string }) {
 
         <CardContent>
           <div className="text-sm text-[var(--muted-foreground)]">
-            Invoice: <span className="font-semibold text-[var(--foreground)]">{inv.id}</span>
+            Invoice: <span className="font-semibold text-[var(--foreground)]">#{inv.id.slice(0, 8)}</span>
           </div>
-          {inv.quoteId ? <div className="mt-1 text-xs text-[var(--muted-foreground)]">Linked quote: {inv.quoteId}</div> : null}
+          {inv.quoteId ? <div className="mt-1 text-xs text-[var(--muted-foreground)]">Linked quote: #{inv.quoteId.slice(0, 8)}</div> : null}
 
           <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-3">
             <div>

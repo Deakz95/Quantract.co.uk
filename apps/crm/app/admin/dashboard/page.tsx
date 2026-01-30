@@ -252,9 +252,14 @@ function StatsWidget({ data, loading, onRefresh, isRefreshing }: {
     {
       label: "Active Jobs",
       value: getJobCountByStatus(data.counts.jobs, ['new', 'pending', 'scheduled', 'in_progress']).toString(),
-      change: getJobCountByStatus(data.counts.jobs, ['completed']) > 0
-        ? `${getJobCountByStatus(data.counts.jobs, ['completed'])} completed`
-        : "No completed jobs yet",
+      change: (() => {
+        const scheduled = getJobCountByStatus(data.counts.jobs, ['scheduled']);
+        const inProgress = getJobCountByStatus(data.counts.jobs, ['in_progress']);
+        const parts: string[] = [];
+        if (scheduled > 0) parts.push(`${scheduled} scheduled`);
+        if (inProgress > 0) parts.push(`${inProgress} in progress`);
+        return parts.length > 0 ? parts.join(", ") : "Tracking active work";
+      })(),
       icon: Briefcase,
       color: "from-emerald-500 to-teal-500",
       href: "/admin/jobs",

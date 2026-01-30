@@ -9,6 +9,7 @@ import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 
 type Invoice = {
   id: string;
+  invoiceNumber?: string;
   token: string;
   quoteId?: string;
   clientName: string;
@@ -133,7 +134,7 @@ export default function ClientInvoiceView({ token }: { token: string }) {
           <div className="flex items-start justify-between gap-3">
             <div>
               <CardTitle>Invoice</CardTitle>
-              <div className="mt-1 text-xs text-[var(--muted-foreground)]">Invoice ID: {inv.id}</div>
+              <div className="mt-1 text-xs text-[var(--muted-foreground)]">{inv.invoiceNumber ? `Invoice ${inv.invoiceNumber}` : `Invoice #${inv.id.slice(0, 8)}`}</div>
             </div>
             <div className="flex items-center gap-2">
               <Badge>{STATUS_LABEL[inv.status]}</Badge>
