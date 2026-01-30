@@ -70,7 +70,7 @@ export async function buildAiContext(session: AISessionData): Promise<AiDataBund
         client: { select: { id: true, name: true, email: true } },
         site: { select: { id: true, name: true, address1: true, city: true, postcode: true } },
         engineer: { select: { id: true, name: true, email: true } },
-        stages: {
+        jobStages: {
           orderBy: { sortOrder: "asc" },
           select: { id: true, name: true, status: true, sortOrder: true, completedAt: true },
         },
@@ -82,7 +82,7 @@ export async function buildAiContext(session: AISessionData): Promise<AiDataBund
       if (j.client?.id) bundle.validEntityIds.add(j.client.id);
       if (j.site?.id) bundle.validEntityIds.add(j.site.id);
       if (j.engineer?.id) bundle.validEntityIds.add(j.engineer.id);
-      for (const s of j.stages || []) bundle.validEntityIds.add(s.id);
+      for (const s of (j as any).jobStages || []) bundle.validEntityIds.add(s.id);
     }
   }
 
