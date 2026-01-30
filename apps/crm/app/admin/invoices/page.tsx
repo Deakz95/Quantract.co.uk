@@ -65,11 +65,16 @@ export default function InvoicesPage() {
       }
 
       // Ensure we always have an array (defensive coding)
-      const data = Array.isArray(json.data) ? json.data
+      const raw = Array.isArray(json.data) ? json.data
         : Array.isArray(json.items) ? json.items
         : Array.isArray(json.invoices) ? json.invoices
         : Array.isArray(json) ? json
         : [];
+      // Normalize: API returns dueAt, frontend expects dueDate
+      const data = raw.map((inv: any) => ({
+        ...inv,
+        dueDate: inv.dueDate || inv.dueAt || inv.dueAtISO || undefined,
+      }));
       setItems(data);
     } catch {
       toast({ title: "Error", description: "Failed to load invoices", variant: "destructive" });
