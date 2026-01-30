@@ -66,8 +66,9 @@ export type Site = {
 
 export type Agreement = {
   id: string;
+  companyId?: string;
   token: string;
-  clientId?: string; // ✅ add
+  clientId?: string;
   quoteId: string;
   status: AgreementStatus;
   templateVersion: string;
@@ -80,6 +81,10 @@ export type Agreement = {
   signerIp?: string;
   signerUserAgent?: string;
   certificateHash?: string;
+  clientPdfKey?: string;
+  auditPdfKey?: string;
+  clientPdfAt?: string;
+  auditPdfAt?: string;
 };
 
 

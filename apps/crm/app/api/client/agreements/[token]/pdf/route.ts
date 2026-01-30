@@ -1,5 +1,6 @@
 import * as repo from "@/lib/server/repo";
-import { renderAgreementPdf } from "@/lib/server/pdf";
+import { renderClientAgreementPdf } from "@/lib/server/pdf";
+import { readUploadBytes } from "@/lib/server/storage";
 import { withRequestLogging } from "@/lib/server/observability";
 import { getRouteParams } from "@/lib/server/routeParams";
 export const runtime = "nodejs";
@@ -19,8 +20,26 @@ if (!a) {
 }
 
 if (!a) return new Response("Not found", { status: 404 });
-  const pdf = await renderAgreementPdf(a);
-  return new Response(pdf, {
+
+  // Serve stored PDF if available
+  if (a.clientPdfKey) {
+    const stored = readUploadBytes(a.clientPdfKey);
+    if (stored) {
+      return new Response(new Uint8Array(stored), {
+        status: 200,
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Disposition": `inline; filename="agreement-${a.id}.pdf"`,
+          "Cache-Control": "no-store"
+        }
+      });
+    }
+  }
+
+  // Generate on-demand (don't store)
+  const brand = await repo.getBrandContextForAgreementToken(a.token);
+  const pdf = await renderClientAgreementPdf(a, brand);
+  return new Response(new Uint8Array(pdf), {
     status: 200,
     headers: {
       "Content-Type": "application/pdf",

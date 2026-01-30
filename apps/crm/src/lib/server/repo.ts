@@ -34,7 +34,7 @@ import * as fileDb from "@/lib/server/db";
 import type { Role } from "@/lib/serverAuth";
 import { getCompanyId } from "@/lib/serverAuth";
 import { getPrisma } from "@/lib/server/prisma";
-import { renderCertificatePdf, renderQuotePdf, renderAgreementPdf, renderInvoicePdf, renderVariationPdf, type BrandContext } from "@/lib/server/pdf";
+import { renderCertificatePdf, renderQuotePdf, renderAuditAgreementPdf, renderClientAgreementPdf, renderInvoicePdf, renderVariationPdf, type BrandContext } from "@/lib/server/pdf";
 import { writeUploadBytes, readUploadBytes } from "@/lib/server/storage";
 import { sendInvoiceReminder, absoluteUrl } from "@/lib/server/email";
 import { certificateIsReadyForCompletion, getCertificateTemplate, normalizeCertificateData } from "@/lib/certificates";
@@ -355,6 +355,7 @@ function toQuote(row: any): Quote {
 function toAgreement(row: any): Agreement {
   return {
     id: row.id,
+    companyId: row.companyId ?? undefined,
     token: row.token,
     quoteId: row.quoteId,
     status: row.status,
@@ -368,6 +369,10 @@ function toAgreement(row: any): Agreement {
     signerIp: row.signerIp ?? undefined,
     signerUserAgent: row.signerUserAgent ?? undefined,
     certificateHash: row.certificateHash ?? undefined,
+    clientPdfKey: row.clientPdfKey ?? undefined,
+    auditPdfKey: row.auditPdfKey ?? undefined,
+    clientPdfAt: row.clientPdfAt ? new Date(row.clientPdfAt).toISOString() : undefined,
+    auditPdfAt: row.auditPdfAt ? new Date(row.auditPdfAt).toISOString() : undefined,
   };
 }
 
@@ -976,6 +981,15 @@ export async function getAgreementForQuote(quoteId: string): Promise<Agreement |
   return row ? toAgreement(row) : null;
 }
 
+export async function getAgreementById(id: string): Promise<Agreement | null> {
+  const client = p();
+  if (!client) {
+    return null; // file-db mode: no direct lookup by id
+  }
+  const row = await client.agreement.findUnique({ where: { id } });
+  return row ? toAgreement(row) : null;
+}
+
 export async function getAgreementByToken(token: string): Promise<Agreement | null> {
   const client = p();
   if (!client) return fileDb.getAgreementByToken(token);
@@ -1153,7 +1167,44 @@ export async function signAgreementByToken(
   // ✅ Then draft invoice (idempotent)
   await ensureInvoiceForQuote(row.quoteId);
 
-  return toAgreement(row);
+  // Generate and store both PDFs
+  const signed = toAgreement({ ...row, certificateHash: certHash });
+  try {
+    const brand = await getBrandContextForCompanyId(row.companyId);
+    const [clientPdf, auditPdf] = await Promise.all([
+      renderClientAgreementPdf(signed, brand),
+      renderAuditAgreementPdf(signed),
+    ]);
+    const clientPdfKey = `agreements/${row.id}/client.pdf`;
+    const auditPdfKey = `agreements/${row.id}/audit.pdf`;
+    writeUploadBytes(clientPdfKey, clientPdf);
+    writeUploadBytes(auditPdfKey, auditPdf);
+    await setAgreementPdfKeys(row.id, { clientPdfKey, auditPdfKey });
+  } catch {
+    // PDF generation failures should not block signing
+  }
+
+  return signed;
+}
+
+export async function setAgreementPdfKeys(
+  agreementId: string,
+  keys: { clientPdfKey?: string; auditPdfKey?: string }
+): Promise<void> {
+  const client = p();
+  if (!client) return; // file-db mode: keys stored on disk by convention
+  const data: Record<string, unknown> = {};
+  if (keys.clientPdfKey) {
+    data.clientPdfKey = keys.clientPdfKey;
+    data.clientPdfAt = new Date();
+  }
+  if (keys.auditPdfKey) {
+    data.auditPdfKey = keys.auditPdfKey;
+    data.auditPdfAt = new Date();
+  }
+  if (Object.keys(data).length > 0) {
+    await client.agreement.update({ where: { id: agreementId }, data });
+  }
 }
 
 export async function listAuditForEntity(entityType: AuditEvent["entityType"], entityId: string): Promise<AuditEvent[]> {
@@ -2554,6 +2605,7 @@ async function syncJobBudgetLinesFromQuote(jobId: string, quote: Quote, opts?: {
   if (!items.length) return;
   await client.jobBudgetLine.createMany({
     data: items.map((item, idx) => ({
+      id: crypto.randomUUID(),
       companyId,
       jobId,
       source: "quote",
@@ -2583,6 +2635,7 @@ export async function replaceJobBudgetLines(jobId: string, lines: Array<{ id?: s
   await client.jobBudgetLine.deleteMany({ where: { jobId, companyId } }).catch(() => null);
   await client.jobBudgetLine.createMany({
     data: lines.map((line, idx) => ({
+      id: crypto.randomUUID(),
       companyId,
       jobId,
       source: line.source || "override",

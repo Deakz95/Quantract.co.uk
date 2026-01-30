@@ -134,7 +134,89 @@ export async function renderQuotePdf(q: Quote, brand?: BrandContext) {
   return Buffer.from(bytes);
 }
 
-export async function renderAgreementPdf(a: Agreement) {
+export async function renderClientAgreementPdf(a: Agreement, brand?: BrandContext) {
+  const { doc, font, bold } = await newDoc();
+  const page = doc.addPage([595.28, 841.89]);
+  let y = 800;
+  const left = 50;
+
+  const line = (text: string, opts?: { size?: number; bold?: boolean }) => {
+    const size = opts?.size ?? 11;
+    const used = opts?.bold ? bold : font;
+    page.drawText(text, { x: left, y, size, font: used });
+    y -= size + 6;
+  };
+
+  y = await drawBrandHeader({ doc, page, font, bold, brand, left, y });
+  line("Agreement for Works", { size: 14, bold: true });
+  y -= 6;
+  line(`Created: ${new Date(a.createdAtISO).toLocaleString("en-GB")}`, { size: 10 });
+  y -= 10;
+
+  const q = a.quoteSnapshot;
+
+  line("Parties", { bold: true });
+  line(`Company: ${(brand ?? DEFAULT_BRAND).name}`, { size: 10 });
+  line(`Client: ${q.clientName} (${q.clientEmail})`, { size: 10 });
+  y -= 8;
+
+  line("Scope", { bold: true });
+  line("This agreement confirms the works described in the associated quote.", { size: 10 });
+  line("Any changes must be agreed in writing before commencement.", { size: 10 });
+  y -= 8;
+
+  line("Payment Terms", { bold: true });
+  line("Invoices are payable according to the terms on the invoice.", { size: 10 });
+  y -= 12;
+
+  // Quote summary table
+  if (q.items && q.items.length > 0) {
+    line("Quote Summary", { bold: true });
+    y -= 4;
+
+    const col1 = left;
+    const col2 = 380;
+    const col3 = 470;
+    page.drawText("Description", { x: col1, y, size: 10, font: bold });
+    page.drawText("Qty", { x: col2, y, size: 10, font: bold });
+    page.drawText("Line", { x: col3, y, size: 10, font: bold });
+    y -= 18;
+
+    for (const it of q.items) {
+      const lineTotal = it.qty * it.unitPrice;
+      page.drawText(it.description.slice(0, 70), { x: col1, y, size: 10, font });
+      page.drawText(String(it.qty), { x: col2, y, size: 10, font });
+      page.drawText(pounds(lineTotal), { x: col3, y, size: 10, font });
+      y -= 14;
+      if (y < 140) break;
+    }
+
+    const { subtotal, vat, total } = quoteTotals(q);
+    y -= 10;
+    page.drawText(`Subtotal: ${pounds(subtotal)}`, { x: col3 - 40, y, size: 10, font: bold });
+    y -= 14;
+    page.drawText(`VAT (${Math.round(q.vatRate * 100)}%): ${pounds(vat)}`, { x: col3 - 40, y, size: 10, font: bold });
+    y -= 16;
+    page.drawText(`Total: ${pounds(total)}`, { x: col3 - 40, y, size: 12, font: bold });
+    y -= 20;
+  }
+
+  line("Signatures", { bold: true });
+  if (a.status !== "signed") {
+    line("Not yet signed.");
+  } else {
+    if (a.signerName) line(`Signed by: ${a.signerName}`, { size: 10 });
+    if (a.signedAtISO) line(`Signed: ${new Date(a.signedAtISO).toLocaleString("en-GB")}`, { size: 10 });
+  }
+
+  // Footer: page number
+  page.drawText("Page 1 of 1", { x: 270, y: 30, size: 8, font });
+
+  const bytes = await doc.save();
+  return Buffer.from(bytes);
+}
+
+export async function renderAuditAgreementPdf(a: Agreement) {
   const { doc, font, bold } = await newDoc();
   const page = doc.addPage([595.28, 841.89]);
   let y = 800;

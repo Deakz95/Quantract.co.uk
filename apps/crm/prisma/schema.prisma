@@ -24,6 +24,10 @@ model Agreement {
   signerIp        String?
   signerUserAgent String?
   certificateHash String?
+  clientPdfKey    String?
+  auditPdfKey     String?
+  clientPdfAt     DateTime?
+  auditPdfAt      DateTime?
   company         Company      @relation(fields: [companyId], references: [id])
   quote           Quote        @relation(fields: [quoteId], references: [id])
   auditEvents     AuditEvent[]
