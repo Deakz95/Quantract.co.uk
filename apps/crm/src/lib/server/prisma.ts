@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import crypto from "node:crypto";
 
 declare global {
   // eslint-disable-next-line no-var
@@ -29,6 +30,43 @@ function createPrismaClient(): PrismaClient {
 
   const client = new PrismaClient({
     log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"],
+  });
+
+  // Auto-populate id and updatedAt on create, updatedAt on update.
+  // The schema uses String @id without @default and DateTime updatedAt
+  // without @updatedAt, so the application must supply these values.
+  client.$use(async (params: any, next: any) => {
+    if (params.action === "create" && params.args?.data) {
+      if (!params.args.data.id) {
+        params.args.data.id = crypto.randomUUID();
+      }
+      if (params.args.data.updatedAt === undefined) {
+        params.args.data.updatedAt = new Date();
+      }
+    }
+    if (params.action === "createMany" && Array.isArray(params.args?.data)) {
+      for (const row of params.args.data) {
+        if (!row.id) row.id = crypto.randomUUID();
+        if (row.updatedAt === undefined) row.updatedAt = new Date();
+      }
+    }
+    if ((params.action === "update" || params.action === "updateMany") && params.args?.data) {
+      if (params.args.data.updatedAt === undefined) {
+        params.args.data.updatedAt = new Date();
+      }
+    }
+    if (params.action === "upsert" && params.args) {
+      if (params.args.create && !params.args.create.id) {
+        params.args.create.id = crypto.randomUUID();
+      }
+      if (params.args.create && params.args.create.updatedAt === undefined) {
+        params.args.create.updatedAt = new Date();
+      }
+      if (params.args.update && params.args.update.updatedAt === undefined) {
+        params.args.update.updatedAt = new Date();
+      }
+    }
+    return next(params);
   });
 
   if (process.env.NODE_ENV !== "production") global.__prisma = client;
