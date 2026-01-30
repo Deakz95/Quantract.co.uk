@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { makeRecId } from "@/lib/ai/recId";
 import { storeAttrib, loadAttrib, clearAttrib } from "@/lib/ai/attrib";
@@ -239,7 +239,15 @@ function IconSparkles(props: IconProps) {
 
 /** ---------------------------------------------------------------- */
 
-export default function QuantractAIWidget({
+export default function QuantractAIWidget(props: QuantractAIWidgetProps) {
+  return (
+    <Suspense fallback={null}>
+      <QuantractAIWidgetInner {...props} />
+    </Suspense>
+  );
+}
+
+function QuantractAIWidgetInner({
   session: externalSession,
   apiBaseUrl = "/api",
   suggestedPrompts: customPrompts,
