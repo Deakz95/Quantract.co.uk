@@ -580,7 +580,7 @@ export default function AdminJobDetail({ jobId }: Props) {
       <Breadcrumbs items={breadcrumbItems} />
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
-          <div className="text-sm font-semibold text-[var(--foreground)]">Job {jobId}</div>
+          <div className="text-sm font-semibold text-[var(--foreground)]">{job?.clientName || `Job #${jobId.slice(0, 8)}`}</div>
           {job ? (
             <div className="mt-1 text-xs text-[var(--muted-foreground)]">
               {job.clientName} • {job.clientEmail} • {job.siteAddress || "Site TBD"} • Quote: {job.quoteId}
@@ -1198,7 +1198,7 @@ export default function AdminJobDetail({ jobId }: Props) {
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
                           <Link href={`/admin/certificates/${c.id}`} className="text-sm font-semibold text-[var(--foreground)] hover:underline">
-                            {c.type} • {c.id}
+                            {c.type}{c.certificateNumber ? ` • ${c.certificateNumber}` : ` • #${c.id.slice(0, 8)}`}
                           </Link>
                           <Badge>{c.status}</Badge>
                           {c.certificateNumber ? <Badge>{c.certificateNumber}</Badge> : null}

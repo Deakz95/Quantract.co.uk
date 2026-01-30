@@ -488,21 +488,31 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
               </label>
               <label className="grid gap-1">
                 <span className="text-xs font-semibold text-[var(--muted-foreground)]">Supply type</span>
-                <input
+                <select
                   className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm"
                   value={data.installation.supplyType || ""}
                   onChange={(e) => updateDataField(["installation", "supplyType"], e.target.value)}
                   disabled={busy || !canEdit}
-                />
+                >
+                  <option value="">Select...</option>
+                  <option value="Single phase">Single phase</option>
+                  <option value="Three phase">Three phase</option>
+                </select>
               </label>
               <label className="grid gap-1">
                 <span className="text-xs font-semibold text-[var(--muted-foreground)]">Earthing arrangement</span>
-                <input
+                <select
                   className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm"
                   value={data.installation.earthingArrangement || ""}
                   onChange={(e) => updateDataField(["installation", "earthingArrangement"], e.target.value)}
                   disabled={busy || !canEdit}
-                />
+                >
+                  <option value="">Select...</option>
+                  <option value="TN-S">TN-S</option>
+                  <option value="TN-C-S">TN-C-S (PME)</option>
+                  <option value="TT">TT</option>
+                  <option value="IT">IT</option>
+                </select>
               </label>
               <label className="grid gap-1">
                 <span className="text-xs font-semibold text-[var(--muted-foreground)]">Distribution type</span>

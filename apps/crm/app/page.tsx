@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { FileText, Shield, Zap, Clock, Users, BarChart3, Check, ArrowRight } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { cn } from "@/lib/cn";
+import { AuthAwareNavButtons, AuthAwareHeroCTA } from "@/components/landing/AuthAwareNav";
 
 const features = [
   {
@@ -136,12 +137,7 @@ export default function LandingPage() {
             {/* Auth Buttons */}
             <div className="flex items-center gap-3">
               <ThemeToggle className="mr-2" />
-              <Link href="/admin/login" className="inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-all duration-200 bg-transparent text-[var(--foreground)] hover:bg-[var(--muted)] px-3 py-1.5 text-xs">
-                Log in
-              </Link>
-              <Link href="/auth/sign-up" className="inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-all duration-200 bg-gradient-to-r from-[var(--primary)] via-[var(--accent)] to-[var(--primary-dark)] text-[var(--primary-foreground)] shadow-lg hover:shadow-xl hover:scale-[1.02] bg-[length:200%_auto] hover:bg-right-top px-3 py-1.5 text-xs">
-                Start Free Trial
-              </Link>
+              <AuthAwareNavButtons />
             </div>
           </div>
         </div>
@@ -174,13 +170,7 @@ export default function LandingPage() {
             </p>
 
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link
-                href="/auth/sign-up"
-                className="inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-all duration-200 bg-gradient-to-r from-[var(--primary)] via-[var(--accent)] to-[var(--primary-dark)] text-[var(--primary-foreground)] shadow-xl hover:shadow-2xl hover:scale-[1.02] bg-[length:200%_auto] hover:bg-right-top px-8 py-3.5 text-base w-full sm:w-auto"
-              >
-                Start Free Trial
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Link>
+              <AuthAwareHeroCTA />
               <Link
                 href="#pricing"
                 className="inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-all duration-200 bg-transparent text-[var(--primary)] border-2 border-[var(--primary)] hover:bg-[var(--primary)] hover:text-[var(--primary-foreground)] px-8 py-3.5 text-base w-full sm:w-auto"

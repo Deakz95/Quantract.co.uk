@@ -75,7 +75,7 @@ export async function GET(req: Request) {
         type: "quote",
         id: quote.id,
         title: quote.clientName || quote.client?.name || `Quote ${quote.id.slice(0, 8)}`,
-        subtitle: `${quote.status} - ${quote.clientEmail}`,
+        subtitle: `${quote.status} — ${quote.clientEmail}`,
         url: `/admin/quotes/${quote.id}`,
       });
     }

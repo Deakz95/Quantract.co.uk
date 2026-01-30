@@ -10,6 +10,7 @@ import { Breadcrumbs, type BreadcrumbItem } from "@/components/ui/Breadcrumbs";
 
 type Invoice = {
   id: string;
+  invoiceNumber?: string;
   token: string;
   quoteId?: string;
   clientName: string;
@@ -43,8 +44,8 @@ export default function InvoiceAdminDetail({ invoiceId }: { invoiceId: string })
   const breadcrumbItems: BreadcrumbItem[] = useMemo(() => [
     { label: "Dashboard", href: "/admin" },
     { label: "Invoices", href: "/admin/invoices" },
-    { label: `Invoice #${invoiceId.slice(0, 8)}` },
-  ], [invoiceId]);
+    { label: inv?.invoiceNumber ? `Invoice ${inv.invoiceNumber}` : `Invoice #${invoiceId.slice(0, 8)}` },
+  ], [invoiceId, inv?.invoiceNumber]);
 
   useEffect(() => {
     let mounted = true;
@@ -118,8 +119,8 @@ export default function InvoiceAdminDetail({ invoiceId }: { invoiceId: string })
         <CardHeader>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <CardTitle>Invoice</CardTitle>
-              <div className="mt-1 text-xs text-[var(--muted-foreground)]">ID: {inv.id}</div>
+              <CardTitle>{inv.invoiceNumber ? `Invoice ${inv.invoiceNumber}` : "Invoice"}</CardTitle>
+              <div className="mt-1 text-xs text-[var(--muted-foreground)]">Ref: #{inv.id.slice(0, 8)}</div>
             </div>
             <div className="flex items-center gap-2">
               <Badge>{STATUS_LABEL[inv.status]}</Badge>
