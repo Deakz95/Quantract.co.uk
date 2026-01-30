@@ -177,10 +177,10 @@ export default function AdminVariationPage({ variationId }: Props) {
       <Breadcrumbs />
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="min-w-0">
-          <div className="text-sm font-semibold text-[var(--foreground)]">Variation {variationId}</div>
+          <div className="text-sm font-semibold text-[var(--foreground)]">Variation #{variationId.slice(0, 8)}</div>
           {v?.jobId ? (
             <div className="mt-1 text-xs text-[var(--muted-foreground)]">
-              Job: <Link className="hover:underline" href={`/admin/jobs/${v.jobId}`}>{v.jobId}</Link>
+              Job: <Link className="hover:underline" href={`/admin/jobs/${v.jobId}`}>#{v.jobId.slice(0, 8)}</Link>
             </div>
           ) : null}
         </div>

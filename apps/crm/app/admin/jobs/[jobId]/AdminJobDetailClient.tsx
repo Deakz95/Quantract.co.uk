@@ -759,7 +759,7 @@ export default function AdminJobDetail({ jobId }: Props) {
                   {timeEntries.map((t) => (
                     <div key={t.id} className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3 text-sm">
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div className="font-semibold text-[var(--foreground)]">{t.engineerEmail || t.engineerId}</div>
+                        <div className="font-semibold text-[var(--foreground)]">{t.engineerEmail || `Engineer #${t.engineerId.slice(0, 8)}`}</div>
                         <div className="text-xs text-[var(--muted-foreground)]">
                           {new Date(t.startedAtISO).toLocaleString("en-GB")} → {t.endedAtISO ? new Date(t.endedAtISO).toLocaleString("en-GB") : "(running)"}
                         </div>

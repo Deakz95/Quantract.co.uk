@@ -67,7 +67,7 @@ export default async function Page({ params }: Props) {
         <CardContent>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <div className="text-sm font-semibold text-[var(--foreground)]">{sheet.engineerEmail || sheet.engineerId}</div>
+              <div className="text-sm font-semibold text-[var(--foreground)]">{sheet.engineerEmail || (sheet.engineerId ? `Engineer #${sheet.engineerId.slice(0, 8)}` : "Unknown engineer")}</div>
               <div className="mt-0.5 text-xs text-[var(--muted-foreground)]">Week starting: {new Date(sheet.weekStartISO).toLocaleDateString()}</div>
               <div className="mt-0.5 text-xs text-[var(--muted-foreground)]">Status: {sheet.status}</div>
             </div>
