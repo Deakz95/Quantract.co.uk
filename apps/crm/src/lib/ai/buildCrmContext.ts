@@ -145,5 +145,16 @@ export async function buildCrmContext(companyId: string, userId: string): Promis
       budget_sensitivity,
       plan,
     },
+    available_features: {
+      automations: false,
+      custom_fields: false,
+      engineer_portal: engineerCount > 0,
+      email_templates: false,
+      reports: true,
+      integrations: false,
+      client_portal: clientCount > 0,
+      client_portal_messaging: false,
+      payments_terms: true,
+    },
   };
 }

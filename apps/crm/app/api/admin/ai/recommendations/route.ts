@@ -4,6 +4,7 @@ import { buildCrmContext } from "@/lib/ai/buildCrmContext";
 import { CRM_ADVISOR_SYSTEM_PROMPT } from "@/lib/ai/prompts/crmAdvisor";
 import { getOpenAIClient, DEFAULT_MODEL } from "@/lib/llm/openaiClient";
 import type { CrmRecommendations } from "@/lib/ai/types";
+import * as repo from "@/lib/server/repo";
 
 export const runtime = "nodejs";
 
@@ -57,6 +58,7 @@ export async function GET() {
     );
 
     // 3. Call AI
+    const requestStart = Date.now();
     const openai = getOpenAIClient();
     const completion = await openai.chat.completions.create({
       model: DEFAULT_MODEL,
@@ -68,17 +70,24 @@ export async function GET() {
       temperature: 0.2,
       max_tokens: 3000,
     });
+    const requestEnd = Date.now();
 
     const raw = completion.choices?.[0]?.message?.content ?? "";
+    const tokenUsage = completion.usage
+      ? { prompt: completion.usage.prompt_tokens, completion: completion.usage.completion_tokens, total: completion.usage.total_tokens }
+      : null;
 
     // 4. Parse JSON robustly
     let parsed: CrmRecommendations;
+    let parseSuccess = true;
     try {
       parsed = JSON.parse(raw);
     } catch {
       // Try extracting first {...} block
       const match = raw.match(/\{[\s\S]*\}/);
       if (!match) {
+        parseSuccess = false;
+        logAnalytics({ companyId, userId, model: DEFAULT_MODEL, durationMs: requestEnd - requestStart, tokenUsage, parseSuccess: false, rawLength: raw.length, rawPrefix: raw.slice(0, 200) });
         return NextResponse.json(
           { ok: false, error: "ai_parse_failed" },
           { status: 502 },
@@ -87,6 +96,8 @@ export async function GET() {
       try {
         parsed = JSON.parse(match[0]);
       } catch {
+        parseSuccess = false;
+        logAnalytics({ companyId, userId, model: DEFAULT_MODEL, durationMs: requestEnd - requestStart, tokenUsage, parseSuccess: false, rawLength: raw.length, rawPrefix: raw.slice(0, 200) });
         return NextResponse.json(
           { ok: false, error: "ai_parse_failed" },
           { status: 502 },
@@ -96,6 +107,7 @@ export async function GET() {
 
     // 5. Validate shape deeply
     if (!validateShape(parsed)) {
+      logAnalytics({ companyId, userId, model: DEFAULT_MODEL, durationMs: requestEnd - requestStart, tokenUsage, parseSuccess: false, rawLength: raw.length, rawPrefix: raw.slice(0, 200) });
       return NextResponse.json(
         { ok: false, error: "ai_invalid_shape" },
         { status: 502 },
@@ -111,7 +123,10 @@ export async function GET() {
       questions: parsed.questions,
     };
 
-    // 7. Cache
+    // 7. Analytics — log success
+    logAnalytics({ companyId, userId, model: DEFAULT_MODEL, durationMs: requestEnd - requestStart, tokenUsage, parseSuccess, recCount: result.top_recommendations.length });
+
+    // 8. Cache
     cache.set(cacheKey, { data: result, expiresAt: Date.now() + CACHE_TTL_MS });
 
     return NextResponse.json({ ok: true, ...result });
@@ -125,4 +140,38 @@ export async function GET() {
       { status: 500 },
     );
   }
+}
+
+interface AnalyticsPayload {
+  companyId: string;
+  userId: string;
+  model: string;
+  durationMs: number;
+  tokenUsage: { prompt: number; completion: number; total: number } | null;
+  parseSuccess: boolean;
+  recCount?: number;
+  rawLength?: number;
+  rawPrefix?: string;
+}
+
+function logAnalytics(payload: AnalyticsPayload) {
+  // Best-effort audit record — fire and forget
+  repo.recordAuditEvent({
+    entityType: "company" as any,
+    entityId: payload.companyId,
+    action: "ai.recommendations" as any,
+    actorRole: "admin",
+    actor: payload.userId,
+    meta: {
+      model: payload.model,
+      durationMs: payload.durationMs,
+      tokenUsage: payload.tokenUsage,
+      parseSuccess: payload.parseSuccess,
+      recCount: payload.recCount ?? null,
+      ...(payload.parseSuccess ? {} : { rawLength: payload.rawLength, rawPrefix: payload.rawPrefix }),
+    },
+  }).catch(() => {
+    // Fallback: structured console log
+    console.info("[ai-recs-analytics]", JSON.stringify(payload));
+  });
 }

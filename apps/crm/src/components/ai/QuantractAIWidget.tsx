@@ -45,6 +45,35 @@ function formatPct(n: number) {
   return `${Math.round(Math.max(0, Math.min(1, n)) * 100)}%`;
 }
 
+const CONFIDENCE_RE = /\s*\[confidence:(0\.\d{1,2})\]/;
+const ACTION_RE = /\s*\[action:([a-z0-9_]+)\]/;
+
+function parseTitleTags(title: string): { label: string; confidence: number | null; actionId: string | null } {
+  let label = title;
+  const confMatch = label.match(CONFIDENCE_RE);
+  const confidence = confMatch ? parseFloat(confMatch[1]) : null;
+  if (confMatch) label = label.replace(CONFIDENCE_RE, "");
+  const actMatch = label.match(ACTION_RE);
+  const actionId = actMatch ? actMatch[1] : null;
+  if (actMatch) label = label.replace(ACTION_RE, "");
+  return { label: label.trim(), confidence, actionId };
+}
+
+// Keep backward compat alias used nowhere else now
+function parseConfidence(title: string): { label: string; confidence: number | null } {
+  const { label, confidence } = parseTitleTags(title);
+  return { label, confidence };
+}
+
+// Minimal client-side analytics — debounced, no third-party deps
+const _loggedEvents = new Set<string>();
+function trackEvent(event: string, data?: Record<string, unknown>) {
+  const key = data ? `${event}:${JSON.stringify(data)}` : event;
+  if (_loggedEvents.has(key)) return;
+  _loggedEvents.add(key);
+  console.info(`[qt-ai-analytics] ${event}`, data ?? "");
+}
+
 /** ----------------------------------------------------------------
  * Inline icons (no dependency). All are simple SVGs using currentColor.
  * ---------------------------------------------------------------- */
@@ -253,6 +282,30 @@ export default function QuantractAIWidget({
   const [expandedRec, setExpandedRec] = useState<number | null>(null);
   const [showRisks, setShowRisks] = useState(false);
   const [recsError, setRecsError] = useState(false);
+  const [applyingAction, setApplyingAction] = useState<string | null>(null);
+  const [appliedActions, setAppliedActions] = useState<Set<string>>(new Set());
+  const [applyError, setApplyError] = useState<string | null>(null);
+
+  async function handleApplyAction(actionId: string) {
+    setApplyingAction(actionId);
+    setApplyError(null);
+    try {
+      const res = await fetch(`${apiBaseUrl}/admin/ai/apply`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ actionId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || "Failed");
+      setAppliedActions((prev) => new Set(prev).add(actionId));
+      trackEvent("action.applied", { actionId });
+    } catch {
+      setApplyError(actionId);
+    } finally {
+      setApplyingAction(null);
+    }
+  }
 
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
@@ -272,6 +325,15 @@ export default function QuantractAIWidget({
       .then((data) => setAiConfigured(Boolean(data?.configured)))
       .catch(() => setAiConfigured(false));
   }, [apiBaseUrl]);
+
+  // Track widget open (once per page load, admin only)
+  useEffect(() => {
+    if (!isOpen) return;
+    const role = session?.role;
+    if (role === "ADMIN" || String(role).toLowerCase() === "admin") {
+      trackEvent("widget.opened");
+    }
+  }, [isOpen, session?.role]);
 
   // Fetch CRM recommendations on first open (admin only)
   useEffect(() => {
@@ -504,7 +566,7 @@ export default function QuantractAIWidget({
                           {recommendations.quick_wins.map((qw, i) => (
                             <button
                               key={i}
-                              onClick={() => void sendMessage(`How do I: ${qw}`)}
+                              onClick={() => { trackEvent("quickwin.clicked", { item: qw }); void sendMessage(`How do I: ${qw}`); }}
                               className="px-2.5 py-1.5 rounded-lg bg-[var(--muted)] hover:bg-[var(--border)] text-[var(--foreground)] text-xs transition-colors text-left"
                             >
                               {qw}
@@ -521,15 +583,27 @@ export default function QuantractAIWidget({
                           <IconSparkles className="h-3 w-3" /> Recommendations
                         </p>
                         <div className="space-y-2">
-                          {recommendations.top_recommendations.map((rec, i) => (
+                          {recommendations.top_recommendations.map((rec, i) => {
+                            const { label: recTitle, confidence: recConf, actionId: recAction } = parseTitleTags(rec.title);
+                            const isApplied = recAction ? appliedActions.has(recAction) : false;
+                            const isApplying = recAction ? applyingAction === recAction : false;
+                            const hasApplyError = recAction ? applyError === recAction : false;
+                            return (
                             <div key={i} className="rounded-xl border border-[var(--border)] bg-[var(--card)] overflow-hidden">
                               <button
-                                onClick={() => setExpandedRec(expandedRec === i ? null : i)}
+                                onClick={() => { setExpandedRec(expandedRec === i ? null : i); if (expandedRec !== i) trackEvent("rec.expanded", { index: i, title: recTitle }); }}
                                 className="w-full text-left p-3 flex items-start justify-between gap-2 hover:bg-[var(--muted)] transition-colors"
                               >
                                 <div className="flex-1 min-w-0">
-                                  <div className="text-sm font-medium text-[var(--foreground)]">{rec.title}</div>
-                                  <div className="text-xs text-[var(--muted-foreground)] mt-0.5">{rec.expected_impact}</div>
+                                  <div className="text-sm font-medium text-[var(--foreground)]">{recTitle}</div>
+                                  <div className="text-xs text-[var(--muted-foreground)] mt-0.5 flex items-center gap-2">
+                                    <span>{rec.expected_impact}</span>
+                                    {recConf !== null && (
+                                      <span className={cn("text-[10px] font-medium", recConf > 0.7 ? "text-green-500" : recConf > 0.5 ? "text-yellow-500" : "text-orange-500")}>
+                                        {formatPct(recConf)} confidence
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
                                 <Badge className="shrink-0 text-[10px] bg-[var(--muted)] text-[var(--muted-foreground)]">{rec.effort}</Badge>
                               </button>
@@ -544,10 +618,33 @@ export default function QuantractAIWidget({
                                       </div>
                                     ))}
                                   </div>
+                                  {recAction && (
+                                    <div className="pt-1">
+                                      {isApplied ? (
+                                        <span className="inline-flex items-center gap-1 text-xs text-green-500 font-medium">
+                                          <IconCheckCircle className="h-3.5 w-3.5" /> Applied
+                                        </span>
+                                      ) : (
+                                        <Button
+                                          size="sm"
+                                          variant="default"
+                                          disabled={isApplying}
+                                          onClick={(e) => { e.stopPropagation(); void handleApplyAction(recAction); }}
+                                          className="text-xs h-7"
+                                        >
+                                          {isApplying ? <><IconSpinner className="h-3 w-3 animate-spin mr-1" /> Applying...</> : "Apply"}
+                                        </Button>
+                                      )}
+                                      {hasApplyError && (
+                                        <span className="ml-2 text-xs text-red-400">Failed — try again</span>
+                                      )}
+                                    </div>
+                                  )}
                                 </div>
                               )}
                             </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       </div>
                     )}
@@ -556,7 +653,7 @@ export default function QuantractAIWidget({
                     {recommendations.risks_or_gaps && recommendations.risks_or_gaps.length > 0 && (
                       <div>
                         <button
-                          onClick={() => setShowRisks(!showRisks)}
+                          onClick={() => { if (!showRisks) trackEvent("risks.opened"); setShowRisks(!showRisks); }}
                           className="text-xs font-semibold text-[var(--muted-foreground)] mb-2 flex items-center gap-1 hover:text-[var(--foreground)] transition-colors"
                         >
                           <IconAlertTriangle className="h-3 w-3" /> Things to watch {showRisks ? "▾" : "▸"}

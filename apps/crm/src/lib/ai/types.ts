@@ -16,6 +16,17 @@ export interface CrmInputJson {
     usage_metrics: Record<string, number>;
   };
   constraints: { gdpr_relevant: boolean; budget_sensitivity: string; plan: string };
+  available_features: {
+    automations: boolean;
+    custom_fields: boolean;
+    engineer_portal: boolean;
+    email_templates: boolean;
+    reports: boolean;
+    integrations: boolean;
+    client_portal: boolean;
+    client_portal_messaging: boolean;
+    payments_terms: boolean;
+  };
 }
 
 export interface CrmRecommendations {
