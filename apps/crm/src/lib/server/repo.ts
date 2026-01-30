@@ -1470,6 +1470,19 @@ if (existing) {
   const quote = toQuote(q);
   const totals = fileDb.quoteTotals(quote);
 
+  // Compute due date from client payment terms or company default
+  let paymentDays = 14;
+  if (quote.clientId) {
+    const cl = await client.client.findUnique({ where: { id: quote.clientId }, select: { paymentTermsDays: true } }).catch(() => null);
+    if (cl?.paymentTermsDays) paymentDays = cl.paymentTermsDays;
+  }
+  if (paymentDays === 14 && companyId) {
+    const co = await client.company.findUnique({ where: { id: companyId }, select: { defaultPaymentTermsDays: true } }).catch(() => null);
+    if (co?.defaultPaymentTermsDays) paymentDays = co.defaultPaymentTermsDays;
+  }
+  const dueAt = new Date();
+  dueAt.setDate(dueAt.getDate() + paymentDays);
+
   const token = crypto.randomBytes(24).toString("hex");
   const invoiceNumber = await allocateInvoiceNumber(client);
 
@@ -1488,6 +1501,7 @@ if (existing) {
       vat: totals.vat,
       total: totals.total,
       status: "draft",
+      dueAt,
       updatedAt: new Date(),
     },
   });

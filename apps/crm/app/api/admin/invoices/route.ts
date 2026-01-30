@@ -119,6 +119,18 @@ export const POST = withRequestLogging(async function POST(req: Request) {
 
       const token = randomBytes(16).toString("hex");
 
+      // Resolve payment terms from client or company default
+      let paymentDays = 30;
+      if (quote.clientId) {
+        const cl = await client.client.findUnique({ where: { id: quote.clientId }, select: { paymentTermsDays: true } }).catch(() => null);
+        if (cl?.paymentTermsDays) paymentDays = cl.paymentTermsDays;
+      }
+      if (paymentDays === 30) {
+        const co = await client.company.findUnique({ where: { id: ctx.companyId }, select: { defaultPaymentTermsDays: true } }).catch(() => null);
+        if (co?.defaultPaymentTermsDays) paymentDays = co.defaultPaymentTermsDays;
+      }
+      const dueAt = new Date(Date.now() + paymentDays * 24 * 60 * 60 * 1000);
+
       const invoice = await client.invoice.create({
         data: {
           id: randomUUID(),
@@ -133,7 +145,7 @@ export const POST = withRequestLogging(async function POST(req: Request) {
           vat,
           total,
           status: "draft",
-          dueAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+          dueAt,
           updatedAt: new Date(),
         },
       });
@@ -169,6 +181,10 @@ export const POST = withRequestLogging(async function POST(req: Request) {
 
     const token = randomBytes(16).toString("hex");
 
+    // Use company default payment terms
+    const companySettings = await client.company.findUnique({ where: { id: ctx.companyId }, select: { defaultPaymentTermsDays: true } }).catch(() => null);
+    const manualDueAt = new Date(Date.now() + (companySettings?.defaultPaymentTermsDays ?? 30) * 24 * 60 * 60 * 1000);
+
     const invoice = await client.invoice.create({
       data: {
         id: randomUUID(),
@@ -181,7 +197,7 @@ export const POST = withRequestLogging(async function POST(req: Request) {
         vat,
         total,
         status: "draft",
-        dueAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        dueAt: manualDueAt,
         updatedAt: new Date(),
       },
     });
