@@ -24,15 +24,16 @@ export const GET = withRequestLogging(async function GET() {
     // Lazy-seed default stages for orgs that don't have any yet
     const existingCount = await prisma.pipelineStage.count({ where: { companyId: authCtx.companyId } });
     if (existingCount === 0) {
+      const now = new Date();
       await prisma.pipelineStage.createMany({
         data: [
-          { companyId: authCtx.companyId, name: "New", sortOrder: 0, color: "#3b82f6" },
-          { companyId: authCtx.companyId, name: "Contacted", sortOrder: 1, color: "#8b5cf6" },
-          { companyId: authCtx.companyId, name: "Quoted", sortOrder: 2, color: "#f59e0b" },
-          { companyId: authCtx.companyId, name: "Won", sortOrder: 3, color: "#10b981", isWon: true },
-          { companyId: authCtx.companyId, name: "Lost", sortOrder: 4, color: "#ef4444", isLost: true },
+          { companyId: authCtx.companyId, name: "New", sortOrder: 0, color: "#3b82f6", updatedAt: now },
+          { companyId: authCtx.companyId, name: "Contacted", sortOrder: 1, color: "#8b5cf6", updatedAt: now },
+          { companyId: authCtx.companyId, name: "Quoted", sortOrder: 2, color: "#f59e0b", updatedAt: now },
+          { companyId: authCtx.companyId, name: "Won", sortOrder: 3, color: "#10b981", isWon: true, updatedAt: now },
+          { companyId: authCtx.companyId, name: "Lost", sortOrder: 4, color: "#ef4444", isLost: true, updatedAt: now },
         ],
-      }).catch(() => null);
+      });
     }
 
     const stages = await prisma.pipelineStage.findMany({
@@ -89,6 +90,7 @@ export const POST = withRequestLogging(async function POST(req: Request) {
         color: body.color || null,
         isWon: body.isWon || false,
         isLost: body.isLost || false,
+        updatedAt: new Date(),
       }
     });
 
