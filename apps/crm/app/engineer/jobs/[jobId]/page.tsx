@@ -49,7 +49,7 @@ export default async function Page({ params }: Props) {
       <Card>
         <CardHeader>
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <CardTitle>{job.title || `Job ${job.id}`}</CardTitle>
+            <CardTitle>{job.title || `Job #${job.id.slice(0, 8)}`}</CardTitle>
             <div className="flex items-center gap-2">
               <Badge className="border-blue-200 bg-blue-50 text-blue-700">Assigned</Badge>
               <Badge>{job.status.replace("_", " ")}</Badge>
@@ -229,7 +229,7 @@ export default async function Page({ params }: Props) {
                 <div key={cert.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <div className="text-sm font-semibold text-[var(--foreground)]">{cert.type} • {cert.id}</div>
+                      <div className="text-sm font-semibold text-[var(--foreground)]">{cert.type} • {(cert as any).certificateNumber || `#${cert.id.slice(0, 8)}`}</div>
                       <Badge>{cert.status}</Badge>
                     </div>
                     {cert.completedAtISO ? (

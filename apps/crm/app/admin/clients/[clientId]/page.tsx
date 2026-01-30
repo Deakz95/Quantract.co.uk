@@ -378,7 +378,7 @@ export default async function Page({ params }: Props) {
                         {certificates.map((cert) => (
                           <div key={cert.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--border)] bg-[var(--muted)] p-3">
                             <div className="min-w-0">
-                              <div className="text-sm font-semibold text-[var(--foreground)]">{cert.type} • {cert.id}</div>
+                              <div className="text-sm font-semibold text-[var(--foreground)]">{cert.type} • {(cert as any).certificateNumber || `#${cert.id.slice(0, 8)}`}</div>
                               <div className="mt-1 text-xs text-[var(--muted-foreground)]">
                                 Status: {cert.status}
                                 {cert.issuedAtISO ? ` • Issued ${formatDate(cert.issuedAtISO)}` : ""}

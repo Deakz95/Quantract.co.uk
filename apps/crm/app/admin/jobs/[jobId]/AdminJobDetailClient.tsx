@@ -583,7 +583,7 @@ export default function AdminJobDetail({ jobId }: Props) {
           <div className="text-sm font-semibold text-[var(--foreground)]">{job?.clientName || `Job #${jobId.slice(0, 8)}`}</div>
           {job ? (
             <div className="mt-1 text-xs text-[var(--muted-foreground)]">
-              {job.clientName} • {job.clientEmail} • {job.siteAddress || "Site TBD"} • Quote: {job.quoteId}
+              {job.clientName} • {job.clientEmail} • {job.siteAddress || "Site TBD"} • Quote: #{job.quoteId.slice(0, 8)}
             </div>
           ) : null}
         </div>

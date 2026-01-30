@@ -339,7 +339,7 @@ export default function AdminSchedulePage() {
                                   <div className="min-w-0">
                                     <div className="flex flex-wrap items-center gap-2">
                                       <Link href={`/admin/jobs/${s.jobId}`} className="font-semibold text-[var(--primary)] hover:underline">
-                                        Job {s.jobId}
+                                        Job #{s.jobId.slice(0, 8)}
                                       </Link>
                                       {clash && <Badge variant="warning">OVERBOOKED</Badge>}
                                     </div>

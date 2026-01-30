@@ -277,12 +277,12 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
       <Breadcrumbs items={breadcrumbItems} />
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="min-w-0">
-          <div className="text-sm font-semibold text-[var(--foreground)]">Certificate {certificateId}</div>
+          <div className="text-sm font-semibold text-[var(--foreground)]">{cert?.certificateNumber ? `Certificate ${cert.certificateNumber}` : `Certificate #${certificateId.slice(0, 8)}`}</div>
           {cert?.jobId ? (
             <div className="mt-1 text-xs text-[var(--muted-foreground)]">
               Job:{" "}
               <Link className="hover:underline" href={mode === "admin" ? `/admin/jobs/${cert.jobId}` : `/engineer/jobs/${cert.jobId}`}>
-                {cert.jobId}
+                #{cert.jobId.slice(0, 8)}
               </Link>
             </div>
           ) : null}
