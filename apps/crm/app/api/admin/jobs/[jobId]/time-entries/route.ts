@@ -33,6 +33,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ jobId: string 
       endedAtISO,
       breakMinutes: typeof body?.breakMinutes === "number" ? body.breakMinutes : undefined,
       notes: typeof body?.notes === "string" ? body.notes : undefined,
+      skipJobCheck: true,
     });
     if (!entry) return NextResponse.json({ ok: false, error: "Could not create time entry" }, { status: 500 });
     return NextResponse.json({ ok: true, entry });

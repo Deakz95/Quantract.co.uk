@@ -1668,6 +1668,7 @@ export async function createInvoiceForJob(input: {
       const created = await client.$transaction(async (tx: any) => {
         const inv = await tx.invoice.create({
           data: {
+            id: crypto.randomUUID(),
             companyId,
             token,
             invoiceNumber,
@@ -1690,6 +1691,7 @@ export async function createInvoiceForJob(input: {
         if (includedVariations.length) {
           await tx.invoiceVariation.createMany({
             data: includedVariations.map((v: any) => ({
+              id: crypto.randomUUID(),
               companyId,
               invoiceId: inv.id,
               variationId: v.id,
@@ -1729,6 +1731,8 @@ export async function createInvoiceForJob(input: {
           await client.invoiceAttachment
             .create({
               data: {
+                id: crypto.randomUUID(),
+                companyId,
                 invoiceId: created.id,
                 name: `${(c as any).type} Certificate`,
                 fileKey,
@@ -1763,6 +1767,7 @@ export async function createInvoiceForJob(input: {
   const created = await client.$transaction(async (tx: any) => {
     const inv = await tx.invoice.create({
       data: {
+        id: crypto.randomUUID(),
         companyId,
         token,
         invoiceNumber,
@@ -2684,23 +2689,29 @@ export async function listTimeEntries(jobId: string): Promise<TimeEntry[]> {
   return rows.map(toTimeEntry);
 }
 
-export async function addTimeEntry(input: { jobId: string; engineerEmail: string; startedAtISO: string; endedAtISO?: string; breakMinutes?: number; notes?: string }): Promise<TimeEntry | null> {
+export async function addTimeEntry(input: { jobId: string; engineerEmail: string; startedAtISO: string; endedAtISO?: string; breakMinutes?: number; notes?: string; skipJobCheck?: boolean }): Promise<TimeEntry | null> {
   const client = p();
   if (!client) return null;
+  const companyId = await requireCompanyIdForPrisma();
   const eng = await ensureEngineerByEmail(input.engineerEmail);
   if (!eng) return null;
 
-  // CRITICAL: Validate engineer has access to the job
-  const job = await getJobForEngineer(input.jobId, input.engineerEmail);
-  if (!job) {
-    console.warn(`[SECURITY] Engineer ${input.engineerEmail} attempted to log time for unauthorized job ${input.jobId}`);
-    return null;
+  // Validate engineer has access to the job (skip for admin-initiated entries)
+  if (!input.skipJobCheck) {
+    const job = await getJobForEngineer(input.jobId, input.engineerEmail);
+    if (!job) {
+      console.warn(`[SECURITY] Engineer ${input.engineerEmail} attempted to log time for unauthorized job ${input.jobId}`);
+      return null;
+    }
   }
 
   await assertTimesheetEditable(client, eng.id, input.startedAtISO);
   const row = await client.timeEntry
     .create({
-      data: { jobId: input.jobId,
+      data: {
+        id: crypto.randomUUID(),
+        companyId,
+        jobId: input.jobId,
         engineerId: eng.id,
         status: "draft",
         startedAt: new Date(input.startedAtISO),
@@ -2747,6 +2758,7 @@ export async function startEngineerTimer(input: { engineerEmail: string; jobId: 
 
   const row = await client.timeEntry.create({
     data: {
+      id: crypto.randomUUID(),
       companyId: await requireCompanyIdForPrisma(),
       jobId: input.jobId,
       engineerId: eng.id,
@@ -2986,6 +2998,7 @@ export async function addCostItem(input: {
   const row = await client.costItem
     .create({
       data: {
+        id: crypto.randomUUID(),
         companyId,
         jobId: input.jobId,
         stageId: input.stageId ?? null,
@@ -3214,6 +3227,7 @@ export async function postSupplierBill(billId: string): Promise<SupplierBill | n
         // INVARIANT: Supplier bill cost items are ALWAYS locked when posted
         const costItem = await tx.costItem.create({
           data: {
+            id: crypto.randomUUID(),
             companyId,
             jobId: txBill.jobId,
             type: "material",
@@ -3300,6 +3314,7 @@ async function createLabourCostItemsForTimesheetTx(timesheetId: string, tx: Tx) 
     // INVARIANT: Labour cost items are ALWAYS locked when created from timesheet approval
     await tx.costItem.create({
       data: {
+        id: crypto.randomUUID(),
         companyId: entry.companyId,
         jobId: entry.jobId,
         type: "labour",
@@ -3399,9 +3414,13 @@ export async function createCertificate(input: { jobId: string; type: Certificat
     jobDescription: job.title ?? job.notes ?? undefined,
     inspectorName: job.engineer?.name ?? undefined,
   });
+  const companyId = await requireCompanyIdForPrisma();
   const row = await client.certificate
     .create({
-      data: { jobId: job.id,
+      data: {
+        id: crypto.randomUUID(),
+        companyId,
+        jobId: job.id,
         siteId: job.siteId,
         clientId: job.clientId,
         legalEntityId,
@@ -3659,7 +3678,7 @@ export async function ensureJobStagesTemplate(jobId: string, template: "reactive
   const companyId = await requireCompanyIdForPrisma();
   await client.$transaction(
     stageNames.map((name, idx) =>
-      client.jobStage.create({ data: { companyId, jobId, name, sortOrder: idx, status: "not_started" } })
+      client.jobStage.create({ data: { id: crypto.randomUUID(), companyId, jobId, name, sortOrder: idx, status: "not_started" } })
     )
   ).catch(() => null);
   await addAudit({ entityType: "job", entityId: jobId, action: "job.stages.created" as any, actorRole: "admin", meta: { template } });
@@ -3712,6 +3731,7 @@ export async function createSnagItem(input: { jobId: string; title: string; desc
   const row = await client.snagItem
     .create({
       data: {
+        id: crypto.randomUUID(),
         companyId,
         jobId: input.jobId,
         title: input.title,
@@ -3869,6 +3889,7 @@ export async function createVariationForJob(input: {
   const row = await client.variation
     .create({
       data: {
+        id: crypto.randomUUID(),
         companyId: await requireCompanyIdForPrisma(),
         token,
         jobId: input.jobId,
