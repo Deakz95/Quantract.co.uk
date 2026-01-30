@@ -15,7 +15,9 @@ type Quote = {
   clientEmail?: string;
   status?: string;
   total?: number;
+  totals?: { subtotal: number; vat: number; total: number };
   createdAtISO?: string;
+  createdAt?: string;
 };
 type Client = { id: string; name: string; email: string };
 
@@ -168,7 +170,7 @@ export default function AdminInvoiceNewPage() {
                     <option value="">— Select a quote —</option>
                     {quotes.map((q) => (
                       <option key={q.id} value={q.id}>
-                        {q.clientName || q.clientEmail || "Unknown"} - £{(q.total || 0).toFixed(2)} ({q.status}) - {new Date(q.createdAtISO || "").toLocaleDateString("en-GB")}
+                        {q.clientName || q.clientEmail || "Unknown"} - £{(q.totals?.total ?? q.total ?? 0).toFixed(2)} ({q.status}) - {new Date(q.createdAtISO || q.createdAt || "").toLocaleDateString("en-GB")}
                       </option>
                     ))}
                   </select>

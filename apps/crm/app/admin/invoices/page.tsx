@@ -299,7 +299,7 @@ export default function InvoicesPage() {
       headerClassName: 'text-right',
       render: (invoice) => (
         <span className="font-semibold text-[var(--foreground)]">
-          {'\u00A3'}{((invoice.total || 0) / 100).toFixed(2)}
+          {'\u00A3'}{(invoice.total || 0).toFixed(2)}
         </span>
       ),
     },
@@ -445,7 +445,7 @@ export default function InvoicesPage() {
                         </div>
                         <div className="text-sm text-[var(--muted-foreground)]">{i.client?.name}</div>
                         <div className="flex justify-between mt-3 text-sm">
-                          <span className="font-semibold text-[var(--foreground)]">{'\u00A3'}{((i.total || 0) / 100).toFixed(2)}</span>
+                          <span className="font-semibold text-[var(--foreground)]">{'\u00A3'}{(i.total || 0).toFixed(2)}</span>
                           <span className="text-[var(--muted-foreground)]">Due: {formatDate(i.dueDate || '')}</span>
                         </div>
                       </div>

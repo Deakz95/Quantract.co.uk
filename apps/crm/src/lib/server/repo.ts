@@ -1434,8 +1434,10 @@ export async function getInvoicePaymentSummary(invoiceId: string): Promise<{ tot
   if (!inv) return null;
   const payments = await listInvoicePayments(invoiceId);
   const sum = payments.filter((p) => p.status === "succeeded").reduce((a, p) => a + Number(p.amount || 0), 0);
-  const totalPaid = Number(sum);
-  const balanceDue = Math.max(0, Number(inv.total || 0) - totalPaid);
+  const invoiceTotal = Number(inv.total || 0);
+  // If marked as paid but no payment records, treat full amount as paid
+  const totalPaid = inv.status === "paid" && sum === 0 ? invoiceTotal : Number(sum);
+  const balanceDue = Math.max(0, invoiceTotal - totalPaid);
   return { totalPaid, balanceDue, payments };
 }
 

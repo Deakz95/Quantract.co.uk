@@ -418,7 +418,10 @@ export default function QuoteDetailClient({ quoteId }: { quoteId: string }) {
                   Open
                 </a>
                 <a href={`/api/client/agreements/${quote.agreement.shareUrl.split("/").pop()}/pdf`} target="_blank" rel="noreferrer" className="text-sm font-semibold text-[var(--foreground)] underline">
-                  PDF
+                  Client PDF
+                </a>
+                <a href={`/api/admin/agreements/${quote.agreement.id}/pdf`} target="_blank" rel="noreferrer" className="text-sm font-semibold text-[var(--foreground)] underline">
+                  Audit PDF
                 </a>
                 {quote.agreement.status === "signed" && (
                   <a href={`/client/agreements/${quote.agreement.shareUrl.split("/").pop()}/certificate`} target="_blank" rel="noreferrer" className="text-sm font-semibold text-[var(--foreground)] underline">
