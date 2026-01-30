@@ -88,8 +88,9 @@ export function Shell({
                     href={it.href}
                     className={cn(
                       "block rounded-xl px-3 py-2 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2",
-                      active ? "bg-[var(--primary)] text-white" : "text-[var(--muted-foreground)] hover:bg-[var(--muted)]"
+                      active ? "bg-[var(--primary)]" : "text-[var(--muted-foreground)] hover:bg-[var(--muted)]"
                     )}
+                    style={active ? { color: "#ffffff" } : undefined}
                   >
                     {it.label}
                   </Link>

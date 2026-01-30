@@ -24,7 +24,8 @@ import {
   Send,
   DollarSign,
   Calendar,
-  Award
+  Award,
+  Inbox
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useCallback } from "react";
@@ -56,6 +57,9 @@ type DashboardData = {
     unpaidCount: number;
     overdueCount: number;
     unpaidTotal: number;
+  };
+  enquiries: {
+    openCount: number;
   };
 };
 
@@ -252,6 +256,14 @@ function StatsWidget({ data, loading, onRefresh, isRefreshing }: {
       icon: Briefcase,
       color: "from-emerald-500 to-teal-500",
       href: "/admin/jobs",
+    },
+    {
+      label: "Open Enquiries",
+      value: (data.enquiries?.openCount ?? 0).toString(),
+      change: (data.enquiries?.openCount ?? 0) > 0 ? "In pipeline" : "No open enquiries",
+      icon: Inbox,
+      color: "from-cyan-500 to-blue-500",
+      href: "/admin/enquiries",
     },
     {
       label: "Timesheets",

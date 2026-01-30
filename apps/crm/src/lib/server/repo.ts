@@ -4056,7 +4056,7 @@ export async function listEnquiries(opts?: { stageId?: string }): Promise<any[]>
 
   const rows = await client.enquiry.findMany({
     where,
-    include: { pipelineStage: true, owner: true, events: { orderBy: { createdAt: "desc" }, take: 5 } },
+    include: { pipelineStage: true, owner: true, enquiryEvents: { orderBy: { createdAt: "desc" }, take: 5 } },
     orderBy: { createdAt: "desc" },
   }).catch(() => []);
 
@@ -4075,7 +4075,7 @@ export async function listEnquiries(opts?: { stageId?: string }): Promise<any[]>
     notes: e.notes,
     valueEstimate: e.valueEstimate,
     quoteId: e.quoteId,
-    events: e.events.map((ev: any) => ({ id: ev.id, type: ev.type, note: ev.note, createdAt: ev.createdAt.toISOString() })),
+    events: (e.enquiryEvents || []).map((ev: any) => ({ id: ev.id, type: ev.type, note: ev.note, createdAt: ev.createdAt.toISOString() })),
     createdAt: e.createdAt.toISOString(),
     updatedAt: e.updatedAt.toISOString(),
   }));
@@ -4092,9 +4092,9 @@ export async function getEnquiryById(id: string): Promise<any | null> {
     throw new Error("Company ID required for data access");
   }
 
-  const e = await client.enquiry.findUnique({
+  const e = await client.enquiry.findFirst({
     where: { id, companyId },
-    include: { pipelineStage: true, owner: true, events: { orderBy: { createdAt: "desc" } } },
+    include: { pipelineStage: true, owner: true, enquiryEvents: { orderBy: { createdAt: "desc" } } },
   }).catch(() => null);
 
   if (!e) return null;
@@ -4114,7 +4114,7 @@ export async function getEnquiryById(id: string): Promise<any | null> {
     notes: e.notes,
     valueEstimate: e.valueEstimate,
     quoteId: e.quoteId,
-    events: e.events.map((ev: any) => ({ id: ev.id, type: ev.type, note: ev.note, createdAt: ev.createdAt.toISOString() })),
+    events: (e.enquiryEvents || []).map((ev: any) => ({ id: ev.id, type: ev.type, note: ev.note, createdAt: ev.createdAt.toISOString() })),
     createdAt: e.createdAt.toISOString(),
     updatedAt: e.updatedAt.toISOString(),
   };
@@ -4346,7 +4346,7 @@ export async function ensureDefaultPipelineStages(): Promise<void> {
     data: [
       { companyId, name: "New", sortOrder: 0, color: "#3b82f6" },
       { companyId, name: "Contacted", sortOrder: 1, color: "#8b5cf6" },
-      { companyId, name: "Quoting", sortOrder: 2, color: "#f59e0b" },
+      { companyId, name: "Quoted", sortOrder: 2, color: "#f59e0b" },
       { companyId, name: "Won", sortOrder: 3, color: "#10b981", isWon: true },
       { companyId, name: "Lost", sortOrder: 4, color: "#ef4444", isLost: true },
     ],

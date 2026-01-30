@@ -21,6 +21,9 @@ export const GET = withRequestLogging(async function GET() {
       return NextResponse.json({ ok: false, error: "service_unavailable" }, { status: 503 });
     }
 
+    // Lazy-seed default stages for orgs that don't have any yet
+    await repo.ensureDefaultPipelineStages().catch(() => null);
+
     const stages = await prisma.pipelineStage.findMany({
       where: { companyId: authCtx.companyId },
       orderBy: { sortOrder: "asc" }

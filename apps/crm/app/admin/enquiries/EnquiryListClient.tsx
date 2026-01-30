@@ -11,6 +11,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 import { apiRequest, requireOk } from "@/lib/apiClient";
+import Link from "next/link";
 
 type Enquiry = {
   id: string;
@@ -233,7 +234,9 @@ export function EnquiryListClient() {
                 <div className="flex justify-between items-start">
                   <div>
                     <CardTitle className="text-lg">
-                      {enq.name || enq.email || "Unnamed Enquiry"}
+                      <Link href={`/admin/enquiries/${enq.id}`} className="hover:underline">
+                        {enq.name || enq.email || "Unnamed Enquiry"}
+                      </Link>
                     </CardTitle>
                     <div className="flex gap-2 mt-2">
                       <Badge style={{ backgroundColor: enq.stageColor || "#gray" }}>
