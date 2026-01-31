@@ -68,7 +68,7 @@ function assert(condition: unknown, msg: string): asserts condition {
 async function bodySnippet(res: Response): Promise<string> {
   try {
     const text = await res.text();
-    return text.length > 500 ? text.slice(0, 500) + "..." : text;
+    return text.length > 2000 ? text.slice(0, 2000) + "..." : text;
   } catch {
     return "(unable to read body)";
   }
