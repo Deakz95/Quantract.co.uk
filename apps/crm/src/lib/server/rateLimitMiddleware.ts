@@ -122,17 +122,9 @@ export function rateLimitMagicLink(req: NextRequest, email: string) {
 /**
  * Apply rate limiting to password login attempts
  */
-export function rateLimitPasswordLogin(req: NextRequest, email: string) {
-  // Check both IP and email to prevent brute force
-  const ipCheck = rateLimitByIp(req, RATE_LIMITS.AUTH_PASSWORD_LOGIN, "login:ip");
-  if (!ipCheck.ok) {
-    return {
-      ok: false,
-      error: "Too many login attempts from this IP. Please try again later.",
-      resetAt: ipCheck.resetAt,
-    };
-  }
-
+export function rateLimitPasswordLogin(_req: NextRequest, email: string) {
+  // Rate limit by account (email) only — IP-based limiting locks out
+  // entire offices/shared networks when one user fails to log in.
   const emailCheck = rateLimitByIdentifier(email, RATE_LIMITS.AUTH_PASSWORD_LOGIN, "login:email");
   if (!emailCheck.ok) {
     return {
@@ -142,7 +134,7 @@ export function rateLimitPasswordLogin(req: NextRequest, email: string) {
     };
   }
 
-  return { ok: true, remaining: Math.min(ipCheck.remaining, emailCheck.remaining) };
+  return { ok: true, remaining: emailCheck.remaining };
 }
 
 /**
