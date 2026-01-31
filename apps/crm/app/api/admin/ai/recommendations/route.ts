@@ -18,6 +18,7 @@ import {
   estimateCostPence,
   estimateCostPenceFromLength,
 } from "@/lib/ai/aiUsage";
+import { timeStart, logPerf } from "@/lib/perf/timing";
 
 function isPaidPlan(plan: string): boolean {
   const p = plan.toLowerCase();
@@ -50,20 +51,27 @@ function validateShape(parsed: unknown): parsed is CrmRecommendations {
 }
 
 export async function GET() {
+  const stopTotal = timeStart("recommendations_total");
+  let msDb = 0;
+  let msAi = 0;
+
   try {
     const ctx = await requireCompanyContext();
     const companyId = ctx.companyId;
     const userId = ctx.userId ?? "";
 
     if (!companyId) {
+      logPerf("recommendations", { msTotal: stopTotal(), ok: false, err: "no_company" });
       return NextResponse.json({ ok: false, error: "no_company" }, { status: 400 });
     }
 
     // 0. Check plan for paywall
+    const stopDbPlan = timeStart("recommendations_db_plan");
     const prisma = getPrisma();
     const company = prisma
       ? await prisma.company.findUnique({ where: { id: companyId }, select: { plan: true } })
       : null;
+    msDb += stopDbPlan();
     const plan = company?.plan ?? "trial";
     const paid = isPaidPlan(plan);
 
@@ -91,6 +99,7 @@ export async function GET() {
         risks_or_gaps: [],
         questions: [],
       };
+      logPerf("recommendations", { msTotal: stopTotal(), msDb, ok: true, teaser: true });
       return NextResponse.json({ ok: true, ...teaser, _plan: plan });
     }
 
@@ -98,11 +107,14 @@ export async function GET() {
     const cacheKey = `${companyId}:${userId}`;
     const cached = cache.get(cacheKey);
     if (cached && cached.expiresAt > Date.now()) {
+      logPerf("recommendations", { msTotal: stopTotal(), msDb, ok: true, cached: true });
       return NextResponse.json({ ok: true, ...cached.data, _plan: plan });
     }
 
     // 2. Build CRM context
+    const stopDbContext = timeStart("recommendations_db_context");
     const context = await buildCrmContext(companyId, userId);
+    msDb += stopDbContext();
 
     // 3. Budget gate
     const aiTier = resolveAiTier(plan);
@@ -120,6 +132,7 @@ export async function GET() {
 
     // 5. Call OpenAI GPT-5 mini
     const requestStart = Date.now();
+    const stopAi = timeStart("recommendations_ai");
     const openai = getOpenAIClient();
     const completion = await openai.chat.completions.create({
       model: AI_MODEL.model,
@@ -131,6 +144,7 @@ export async function GET() {
       temperature: 0.2,
       max_tokens: 3000,
     });
+    msAi = stopAi();
     const raw = completion.choices?.[0]?.message?.content ?? "";
     const tokensIn = completion.usage?.prompt_tokens ?? 0;
     const tokensOut = completion.usage?.completion_tokens ?? 0;
@@ -206,8 +220,19 @@ export async function GET() {
     // 11. Cache
     cache.set(cacheKey, { data: result, expiresAt: Date.now() + CACHE_TTL_MS });
 
+    logPerf("recommendations", {
+      msTotal: stopTotal(),
+      msDb,
+      msAi,
+      ok: true,
+      recCount: result.top_recommendations.length,
+      modulesEnabled: context.current_setup?.modules_enabled?.length ?? 0,
+      recentActions: context.signals_from_site?.recent_actions?.length ?? 0,
+    });
+
     return NextResponse.json({ ok: true, ...result, _plan: plan });
   } catch (error: any) {
+    logPerf("recommendations", { msTotal: stopTotal(), msDb, msAi, ok: false, err: "exception" });
     if (error?.status === 401) {
       return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
     }

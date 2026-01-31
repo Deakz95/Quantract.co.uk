@@ -1321,6 +1321,7 @@ type DashboardState = {
   revenue: RevenueData | null;
   breakEven: BreakEvenData | null;
   loading: boolean;
+  secondaryLoading: boolean;
   refreshing: {
     stats: boolean;
     activity: boolean;
@@ -1348,6 +1349,7 @@ export default function DashboardPage() {
     revenue: null,
     breakEven: null,
     loading: true,
+    secondaryLoading: true,
     refreshing: {
       stats: false,
       activity: false,
@@ -1358,13 +1360,23 @@ export default function DashboardPage() {
     },
   });
 
-  // Fetch all dashboard data
+  // Fetch dashboard data in two phases: critical first, then secondary
   const fetchDashboardData = useCallback(async () => {
     setDashboardState((prev) => ({ ...prev, loading: true }));
 
     try {
-      const [dashboardRes, engineersRes, jobsRes, scheduleRes, activityRes, revenueRes, breakEvenRes] = await Promise.all([
-        fetch('/api/admin/dashboard').then((r) => r.json()).catch(() => null),
+      // Phase 1: Critical — stats KPI cards (fastest paint)
+      const dashboardRes = await fetch('/api/admin/dashboard').then((r) => r.json()).catch(() => null);
+
+      setDashboardState((prev) => ({
+        ...prev,
+        data: dashboardRes?.ok ? dashboardRes.data : null,
+        loading: false,
+        secondaryLoading: true,
+      }));
+
+      // Phase 2: Secondary — all other widgets load in background
+      const [engineersRes, jobsRes, scheduleRes, activityRes, revenueRes, breakEvenRes] = await Promise.all([
         fetch('/api/admin/engineers').then((r) => r.json()).catch(() => null),
         fetch('/api/admin/jobs').then((r) => r.json()).catch(() => []),
         fetch('/api/admin/schedule').then((r) => r.json()).catch(() => null),
@@ -1373,15 +1385,15 @@ export default function DashboardPage() {
         fetch('/api/admin/dashboard/break-even').then((r) => r.json()).catch(() => null),
       ]);
 
-      setDashboardState({
-        data: dashboardRes?.ok ? dashboardRes.data : null,
+      setDashboardState((prev) => ({
+        ...prev,
         engineers: engineersRes?.ok ? (engineersRes.engineers || []) : [],
         jobs: Array.isArray(jobsRes) ? jobsRes : (jobsRes?.data || []),
         schedule: scheduleRes?.ok ? (scheduleRes.entries || []) : [],
         activities: activityRes?.ok ? (activityRes.activities || []) : [],
         revenue: revenueRes?.ok ? revenueRes.data : null,
         breakEven: breakEvenRes?.ok ? breakEvenRes.data : null,
-        loading: false,
+        secondaryLoading: false,
         refreshing: {
           stats: false,
           activity: false,
@@ -1390,7 +1402,7 @@ export default function DashboardPage() {
           team: false,
           schedule: false,
         },
-      });
+      }));
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
       setDashboardState((prev) => ({ ...prev, loading: false }));
@@ -1578,6 +1590,7 @@ export default function DashboardPage() {
   }
 
   function renderWidget(widget: Widget) {
+    const secLoading = dashboardState.loading || dashboardState.secondaryLoading;
     switch (widget.type) {
       case 'stats':
         return (
@@ -1594,7 +1607,7 @@ export default function DashboardPage() {
         return (
           <RecentActivityWidget
             activities={dashboardState.activities}
-            loading={dashboardState.loading}
+            loading={secLoading}
             onRefresh={refreshActivity}
             isRefreshing={dashboardState.refreshing.activity}
           />
@@ -1603,7 +1616,7 @@ export default function DashboardPage() {
         return (
           <RevenueWidget
             data={dashboardState.revenue}
-            loading={dashboardState.loading}
+            loading={secLoading}
             onRefresh={refreshRevenue}
             isRefreshing={dashboardState.refreshing.revenue}
           />
@@ -1612,7 +1625,7 @@ export default function DashboardPage() {
         return (
           <TeamOverviewWidget
             engineers={dashboardState.engineers}
-            loading={dashboardState.loading}
+            loading={secLoading}
             onRefresh={refreshTeam}
             isRefreshing={dashboardState.refreshing.team}
           />
@@ -1623,7 +1636,7 @@ export default function DashboardPage() {
         return (
           <CalendarWidget
             schedule={dashboardState.schedule}
-            loading={dashboardState.loading}
+            loading={secLoading}
             onRefresh={refreshSchedule}
             isRefreshing={dashboardState.refreshing.schedule}
           />
@@ -1641,7 +1654,7 @@ export default function DashboardPage() {
         return (
           <BreakEvenWidget
             data={dashboardState.breakEven}
-            loading={dashboardState.loading}
+            loading={secLoading}
             onRefresh={refreshBreakEven}
             isRefreshing={dashboardState.refreshing.breakEven}
           />
@@ -1651,7 +1664,7 @@ export default function DashboardPage() {
           <JobsMapWidget
             data={dashboardState.data}
             jobs={dashboardState.jobs}
-            loading={dashboardState.loading}
+            loading={secLoading}
             onRefresh={refreshStats}
             isRefreshing={dashboardState.refreshing.stats}
           />

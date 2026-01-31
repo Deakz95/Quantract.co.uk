@@ -15,20 +15,26 @@ import {
   endOfLondonMonth,
   londonToday,
 } from "@/lib/time/london";
+import { timeStart, logPerf } from "@/lib/perf/timing";
 
 export const runtime = "nodejs";
 
 export const GET = withRequestLogging(async function GET() {
+  const stopTotal = timeStart("break_even_total");
+  let msDb = 0;
+
   try {
     const authCtx = await requireCompanyContext();
     const effectiveRole = getEffectiveRole(authCtx);
 
     if (effectiveRole !== "admin" && effectiveRole !== "office") {
+      logPerf("break_even", { msTotal: stopTotal(), ok: false, err: "forbidden" });
       return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
     }
 
     const prisma = getPrisma();
     if (!prisma) {
+      logPerf("break_even", { msTotal: stopTotal(), ok: false, err: "service_unavailable" });
       return NextResponse.json({ ok: false, error: "service_unavailable" }, { status: 503 });
     }
 
@@ -36,9 +42,10 @@ export const GET = withRequestLogging(async function GET() {
     const thisMonthStart = startOfLondonMonth(now);
     const thisMonthEnd = endOfLondonMonth(now);
     const lastMonthStart = startOfLondonMonth(
-      new Date(thisMonthStart.getTime() - 1), // 1ms before this month → previous month
+      new Date(thisMonthStart.getTime() - 1),
     );
 
+    const stopDb = timeStart("break_even_db");
     const [company, overheadRows, rateCardRows, thisMonthPayments, lastMonthPayments] =
       await Promise.all([
         prisma.company
@@ -74,6 +81,7 @@ export const GET = withRequestLogging(async function GET() {
           })
           .catch(() => []),
       ]);
+    msDb = stopDb();
 
     const workingDaysPerMonth = company?.workingDaysPerMonth ?? 22;
 
@@ -90,7 +98,6 @@ export const GET = withRequestLogging(async function GET() {
       isDefault: r.isDefault,
     }));
 
-    // Revenue amounts from invoicePayment are stored in pounds — convert to pence
     const thisMonthPence = Math.round(
       thisMonthPayments.reduce((s: number, p: { amount: number }) => s + (p.amount || 0), 0) * 100,
     );
@@ -98,13 +105,21 @@ export const GET = withRequestLogging(async function GET() {
       lastMonthPayments.reduce((s: number, p: { amount: number }) => s + (p.amount || 0), 0) * 100,
     );
 
-    // Use londonToday() so the break-even calculation sees the correct London date
     const result = computeBreakEven(
       overheads,
       rateCards,
       { thisMonthPence, lastMonthPence },
       londonToday(),
     );
+
+    logPerf("break_even", {
+      msTotal: stopTotal(),
+      msDb,
+      overheadCount: overheadRows.length,
+      rateCardCount: rateCardRows.length,
+      paymentCount: thisMonthPayments.length + lastMonthPayments.length,
+      ok: true,
+    });
 
     return NextResponse.json({
       ok: true,
@@ -118,6 +133,7 @@ export const GET = withRequestLogging(async function GET() {
       },
     });
   } catch (error: unknown) {
+    logPerf("break_even", { msTotal: stopTotal(), msDb, ok: false, err: "exception" });
     if (error && typeof error === "object" && "status" in error) {
       const e = error as { status: number };
       if (e.status === 401) return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
