@@ -5,6 +5,7 @@ import { AdminContextBanner } from '@/components/admin/AdminContextBanner';
 import "./globals.css";
 import "@/lib/env";
 import { Toaster } from "@/components/ui/Toaster";
+import { ToastProvider } from "@/components/ui/ToastContext";
 import QuantractAIWidget from "@/components/ai/QuantractAIWidget";
 import { NeonAuthUIProvider } from "@neondatabase/auth/react";
 import { authClient } from "@/lib/auth/client";
@@ -25,9 +26,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body className="antialiased">
         <ThemeInitializer />
         <AdminContextBanner />
-        <NeonAuthUIProvider authClient={authClient}>{children}</NeonAuthUIProvider>
-        <QuantractAIWidget />
-        <Toaster />
+        <ToastProvider>
+          <NeonAuthUIProvider authClient={authClient}>{children}</NeonAuthUIProvider>
+          <QuantractAIWidget />
+          <Toaster />
+        </ToastProvider>
       </body>
     </html>
   );

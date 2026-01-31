@@ -1,9 +1,9 @@
 "use client";
 
 import { Toast } from "@/components/ui/Toast";
-import { ToastProvider, useToast } from "@/components/ui/ToastContext";
+import { useToast } from "@/components/ui/ToastContext";
 
-function ToasterContent() {
+export function Toaster() {
   const { toasts, dismiss } = useToast();
 
   return (
@@ -25,13 +25,5 @@ function ToasterContent() {
         />
       ))}
     </div>
-  );
-}
-
-export function Toaster() {
-  return (
-    <ToastProvider>
-      <ToasterContent />
-    </ToastProvider>
   );
 }

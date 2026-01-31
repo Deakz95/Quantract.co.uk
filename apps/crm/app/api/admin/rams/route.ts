@@ -104,18 +104,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "title is required" }, { status: 400 });
     }
 
-    // Validate contentJson if provided
+    // Accept contentJson as-is for drafts (fields may be incomplete).
+    // Full validation is enforced at issue time.
     let contentJson = body.contentJson ?? null;
-    if (contentJson) {
-      const schema = type === "rams" ? ramsContentSchema : safetyAssessmentContentSchema;
-      const parsed = schema.safeParse(contentJson);
-      if (!parsed.success) {
-        return NextResponse.json(
-          { ok: false, error: "Invalid content", details: parsed.error.flatten().fieldErrors },
-          { status: 400 },
-        );
-      }
-      contentJson = parsed.data;
+    if (contentJson && typeof contentJson !== "object") {
+      return NextResponse.json(
+        { ok: false, error: "contentJson must be an object" },
+        { status: 400 },
+      );
     }
 
     // Verify job belongs to company if provided

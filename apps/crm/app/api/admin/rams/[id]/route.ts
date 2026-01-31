@@ -2,8 +2,6 @@ import { NextResponse } from "next/server";
 import { requireCompanyContext, getEffectiveRole } from "@/lib/serverAuth";
 import { getPrisma } from "@/lib/server/prisma";
 import { getRouteParams } from "@/lib/server/routeParams";
-import { ramsContentSchema } from "@/lib/tools/rams-generator";
-import { safetyAssessmentContentSchema } from "@/lib/tools/safety-assessment";
 
 export const runtime = "nodejs";
 
@@ -95,16 +93,13 @@ export async function PUT(
     }
 
     if (body.contentJson !== undefined) {
-      const schema =
-        existing.type === "rams" ? ramsContentSchema : safetyAssessmentContentSchema;
-      const parsed = schema.safeParse(body.contentJson);
-      if (!parsed.success) {
+      if (body.contentJson !== null && typeof body.contentJson !== "object") {
         return NextResponse.json(
-          { ok: false, error: "Invalid content", details: parsed.error.flatten().fieldErrors },
+          { ok: false, error: "contentJson must be an object" },
           { status: 400 },
         );
       }
-      update.contentJson = parsed.data as any;
+      update.contentJson = body.contentJson ?? {};
     }
 
     if (body.preparedBy !== undefined) update.preparedBy = body.preparedBy ? String(body.preparedBy) : null;
