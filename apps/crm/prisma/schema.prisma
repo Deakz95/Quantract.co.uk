@@ -236,6 +236,8 @@ model Company {
   smsMaxPerClientPerDay   Int                     @default(3)
   smsMaxPerJobPerDay      Int                     @default(5)
   smsCredits              Int                     @default(0)
+  // Break-even settings
+  workingDaysPerMonth     Int                     @default(22)
   createdAt               DateTime                @default(now())
   updatedAt               DateTime
   agreements              Agreement[]

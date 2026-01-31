@@ -59,6 +59,10 @@ export default function FinancialsSettingsPage() {
   const [newAmount, setNewAmount] = useState("");
   const [newFreq, setNewFreq] = useState("monthly");
 
+  // Working days setting
+  const [workingDays, setWorkingDays] = useState(22);
+  const [workingDaysSaved, setWorkingDaysSaved] = useState(22);
+
   // New rate card form
   const [newRcName, setNewRcName] = useState("");
   const [newRcCost, setNewRcCost] = useState("");
@@ -66,12 +70,16 @@ export default function FinancialsSettingsPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [oh, rc] = await Promise.all([
+    const [oh, rc, fs] = await Promise.all([
       fetch("/api/admin/overheads").then((r) => r.json()).catch(() => ({ overheads: [] })),
       fetch("/api/admin/rate-cards").then((r) => r.json()).catch(() => ({ rateCards: [] })),
+      fetch("/api/admin/settings/financials").then((r) => r.json()).catch(() => ({ settings: {} })),
     ]);
     setOverheads(Array.isArray(oh.overheads) ? oh.overheads : []);
     setRateCards(Array.isArray(rc.rateCards) ? rc.rateCards : []);
+    const wd = fs.settings?.workingDaysPerMonth ?? 22;
+    setWorkingDays(wd);
+    setWorkingDaysSaved(wd);
     setLoading(false);
   }, []);
 
@@ -127,6 +135,24 @@ export default function FinancialsSettingsPage() {
       load();
     } else {
       toast({ title: res.error || "Failed to add rate card", variant: "destructive" });
+    }
+    setBusy(false);
+  }
+
+  // ─── Working days ──────────────────────────────────────────
+
+  async function saveWorkingDays() {
+    setBusy(true);
+    const res = await fetch("/api/admin/settings/financials", {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ workingDaysPerMonth: workingDays }),
+    }).then((r) => r.json()).catch(() => ({ ok: false }));
+    if (res.ok) {
+      toast({ title: "Working days saved", variant: "success" });
+      setWorkingDaysSaved(workingDays);
+    } else {
+      toast({ title: "Failed to save", variant: "destructive" });
     }
     setBusy(false);
   }
@@ -320,6 +346,34 @@ export default function FinancialsSettingsPage() {
                 </div>
               </>
             )}
+          </CardContent>
+        </Card>
+        {/* Working Days */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Working Days per Month</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap items-end gap-3">
+              <label className="grid gap-1 w-32">
+                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Days</span>
+                <input
+                  type="number"
+                  min={20}
+                  max={26}
+                  step={1}
+                  className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
+                  value={workingDays}
+                  onChange={(e) => setWorkingDays(Math.min(26, Math.max(20, Math.round(Number(e.target.value) || 22))))}
+                />
+              </label>
+              <Button onClick={saveWorkingDays} disabled={busy || workingDays === workingDaysSaved}>
+                Save
+              </Button>
+            </div>
+            <p className="text-xs text-[var(--muted-foreground)] mt-2">
+              Used to calculate your required daily revenue. Typical range: 20–26.
+            </p>
           </CardContent>
         </Card>
       </div>

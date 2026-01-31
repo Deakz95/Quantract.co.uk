@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/server/prisma";
 import type { CrmInputJson } from "./types";
 import { computeBreakEven, type OverheadRow, type RateCardRow } from "@/lib/finance/breakEven";
+import { startOfLondonMonth, endOfLondonMonth, londonToday } from "@/lib/time/london";
 
 const TRADE_INDUSTRIES = ["electrical", "plumbing", "construction", "building", "hvac", "mechanical", "trade"];
 
@@ -77,7 +78,7 @@ export async function buildCrmContext(companyId: string, userId: string): Promis
     prisma.invoicePayment.findMany({
       where: {
         companyId,
-        receivedAt: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) },
+        receivedAt: { gte: startOfLondonMonth(new Date()), lt: endOfLondonMonth(new Date()) },
         status: "succeeded",
       },
       select: { amount: true },
@@ -143,7 +144,7 @@ export async function buildCrmContext(companyId: string, userId: string): Promis
   const thisMonthPence = Math.round(
     thisMonthPayments.reduce((s: number, p: { amount: number }) => s + (p.amount || 0), 0) * 100,
   );
-  const be = computeBreakEven(overheads, rateCardsTyped, { thisMonthPence, lastMonthPence: 0 });
+  const be = computeBreakEven(overheads, rateCardsTyped, { thisMonthPence, lastMonthPence: 0 }, londonToday());
 
   return {
     user: { role, experience_level },

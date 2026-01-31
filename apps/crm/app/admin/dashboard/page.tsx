@@ -128,6 +128,7 @@ type BreakEvenData = {
   configured: boolean;
   earnedLabel?: string;
   earnedDefinition?: string;
+  workingDaysPerMonth?: number;
 };
 
 const DEFAULT_WIDGETS: Widget[] = [
@@ -1098,12 +1099,15 @@ function BreakEvenWidget({
                     <div className="font-semibold text-amber-600">£{(data.remainingPence / 100).toLocaleString("en-GB", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
                   </div>
                   <div>
-                    <div className="text-xs text-[var(--muted-foreground)]">Need/day ({data.daysLeft} work days left)</div>
+                    <div className="text-xs text-[var(--muted-foreground)]">Need/day ({data.daysLeft} work {data.daysLeft === 1 ? "day" : "days"} left)</div>
                     <div className="font-semibold text-[var(--foreground)]">£{(data.requiredDailyPence / 100).toLocaleString("en-GB", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
                   </div>
                 </>
               )}
             </div>
+            {data.workingDaysPerMonth && (
+              <div className="text-[10px] text-[var(--muted-foreground)] mt-1">Based on {data.workingDaysPerMonth} working days/month</div>
+            )}
           </div>
         </CardContent>
       </Card>

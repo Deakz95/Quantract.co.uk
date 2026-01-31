@@ -3,7 +3,16 @@
  *
  * All monetary values are in pence (integer) to avoid floating-point drift.
  * The dashboard and AI context consume the output of `computeBreakEven`.
+ *
+ * Date logic uses London date parts (year/month/day) so callers should pass
+ * values derived from `toLondonDateParts()` — this avoids UTC midnight drift.
  */
+
+import {
+  toLondonDateParts,
+  londonLastDayOfMonth,
+  londonDayOfWeek,
+} from "@/lib/time/london";
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -38,7 +47,7 @@ export type BreakEvenResult = {
   progressPercent: number;
   /** Pence remaining to break even (negative = surplus) */
   remainingPence: number;
-  /** Working days (Mon–Fri) left in current month */
+  /** Working days (Mon–Fri) left in current month, including today if today is a working day. Always >= 1. */
   daysLeft: number;
   /** Required daily revenue to hit break-even from today (pence), based on working days */
   requiredDailyPence: number;
@@ -87,13 +96,22 @@ export function avgMarginFromRateCards(cards: RateCardRow[]): number {
   return Math.max(0.01, (totalCharge - totalCost) / totalCharge);
 }
 
-/** Working days (Mon–Fri) remaining in the current month, including today. */
+/**
+ * Working days (Mon–Fri) remaining in the current month.
+ *
+ * - If today is a weekday it IS included in the count.
+ * - If today is Sat/Sun it is NOT included (next weekday starts the count).
+ * - Always returns at least 1 to prevent division-by-zero.
+ *
+ * @param now - A Date used to derive the London-local date.
+ */
 export function workingDaysLeftInMonth(now = new Date()): number {
-  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const { year, month, day } = toLondonDateParts(now);
+  const lastDay = londonLastDayOfMonth(year, month);
   let count = 0;
-  for (let d = now.getDate(); d <= lastDay; d++) {
-    const day = new Date(now.getFullYear(), now.getMonth(), d).getDay();
-    if (day !== 0 && day !== 6) count++;
+  for (let d = day; d <= lastDay; d++) {
+    const dow = londonDayOfWeek(year, month, d);
+    if (dow !== 0 && dow !== 6) count++;
   }
   return Math.max(1, count);
 }

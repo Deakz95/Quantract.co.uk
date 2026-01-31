@@ -10,6 +10,11 @@ import {
   type OverheadRow,
   type RateCardRow,
 } from "@/lib/finance/breakEven";
+import {
+  startOfLondonMonth,
+  endOfLondonMonth,
+  londonToday,
+} from "@/lib/time/london";
 
 export const runtime = "nodejs";
 
@@ -28,12 +33,20 @@ export const GET = withRequestLogging(async function GET() {
     }
 
     const now = new Date();
-    const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const thisMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-    const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const thisMonthStart = startOfLondonMonth(now);
+    const thisMonthEnd = endOfLondonMonth(now);
+    const lastMonthStart = startOfLondonMonth(
+      new Date(thisMonthStart.getTime() - 1), // 1ms before this month → previous month
+    );
 
-    const [overheadRows, rateCardRows, thisMonthPayments, lastMonthPayments] =
+    const [company, overheadRows, rateCardRows, thisMonthPayments, lastMonthPayments] =
       await Promise.all([
+        prisma.company
+          .findUnique({
+            where: { id: authCtx.companyId },
+            select: { workingDaysPerMonth: true },
+          })
+          .catch(() => null),
         prisma.companyOverhead
           .findMany({ where: { companyId: authCtx.companyId } })
           .catch(() => []),
@@ -62,6 +75,8 @@ export const GET = withRequestLogging(async function GET() {
           .catch(() => []),
       ]);
 
+    const workingDaysPerMonth = company?.workingDaysPerMonth ?? 22;
+
     const overheads: OverheadRow[] = overheadRows.map((r: { label: string; amountPence: number; frequency: string }) => ({
       label: r.label,
       amountPence: r.amountPence,
@@ -83,11 +98,12 @@ export const GET = withRequestLogging(async function GET() {
       lastMonthPayments.reduce((s: number, p: { amount: number }) => s + (p.amount || 0), 0) * 100,
     );
 
+    // Use londonToday() so the break-even calculation sees the correct London date
     const result = computeBreakEven(
       overheads,
       rateCards,
       { thisMonthPence, lastMonthPence },
-      now,
+      londonToday(),
     );
 
     return NextResponse.json({
@@ -95,8 +111,10 @@ export const GET = withRequestLogging(async function GET() {
       data: {
         ...result,
         configured: overheadRows.length > 0,
+        workingDaysPerMonth,
         earnedLabel: "Paid this month",
-        earnedDefinition: "Total value of invoice payments received this month.",
+        earnedDefinition:
+          "Sum of invoice payments received (status: succeeded) within the current London-time month.",
       },
     });
   } catch (error: unknown) {
