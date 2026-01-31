@@ -3,6 +3,7 @@ import { requireRole } from "@/lib/serverAuth";
 import * as repo from "@/lib/server/repo";
 import { withRequestLogging } from "@/lib/server/observability";
 import { getRouteParams } from "@/lib/server/routeParams";
+import { getPrisma } from "@/lib/server/prisma";
 function jsonOk(data: Record<string, unknown>, status = 200) {
   return NextResponse.json({
     ok: true,
@@ -95,30 +96,46 @@ export const DELETE = withRequestLogging(
   try {
     const authCtx = await requireRole("admin");
     const { clientId } = await getRouteParams(ctx);
+    const prisma = getPrisma();
+    if (!prisma) return jsonErr("service_unavailable", 503);
 
-    // Get client details before deletion for audit
     const client = await repo.getClientById(clientId);
+    if (!client) return jsonErr("Not found", 404);
 
-    const deleted = await repo.deleteClient(clientId);
+    // Check linked records
+    const [quotes, jobs, invoices] = await Promise.all([
+      prisma.quote.count({ where: { clientId } }),
+      prisma.job.count({ where: { clientId } }),
+      prisma.invoice.count({ where: { clientId } }),
+    ]);
 
-    // Audit event for client deletion
-    if (deleted && client) {
-      await repo.recordAuditEvent({
-        entityType: "client",
-        entityId: clientId,
-        action: "client.deleted",
-        actorRole: "admin",
-        actor: authCtx.email,
-        meta: {
-          name: client.name,
-          email: client.email,
-        },
-      });
+    if (quotes > 0 || jobs > 0 || invoices > 0) {
+      return NextResponse.json({
+        ok: false,
+        error: "cannot_delete_client",
+        message: "Cannot delete a client with existing quotes, jobs, or invoices. Delete related records first.",
+        linked: { quotes, jobs, invoices },
+      }, { status: 409 });
     }
 
-    return jsonOk({
-      deleted
+    // No linked records — safe to hard delete (contacts + sites first, then client)
+    await prisma.$transaction(async (tx: any) => {
+      await tx.contact.deleteMany({ where: { clientId } });
+      await tx.site.deleteMany({ where: { clientId } });
+      await tx.auditEvent.deleteMany({ where: { entityType: "client", entityId: clientId } });
+      await tx.client.delete({ where: { id: clientId } });
     });
+
+    await repo.recordAuditEvent({
+      entityType: "client",
+      entityId: clientId,
+      action: "client.deleted",
+      actorRole: "admin",
+      actor: authCtx.email,
+      meta: { name: client.name, email: client.email },
+    }).catch(() => {});
+
+    return jsonOk({ deleted: true });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "";
     const status = msg.toLowerCase().includes("unauthorized") ? 401 : 400;

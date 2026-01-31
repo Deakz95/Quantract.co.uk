@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
-import { requireRoles } from "@/lib/serverAuth";
+import { requireRoles, requireCompanyContext } from "@/lib/serverAuth";
 import {
   quoteTotals,
 } from "@/lib/server/db";
 import * as repo from "@/lib/server/repo";
 import { getRouteParams } from "@/lib/server/routeParams";
 import { getPrisma } from "@/lib/server/prisma";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 
 export async function GET(_: Request, ctx: { params: Promise<{ quoteId: string }> }) {
   const session = await requireRoles("admin");
@@ -101,4 +102,47 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ quoteId: stri
       },
     },
   });
+}
+
+export async function DELETE(_req: Request, ctx: { params: Promise<{ quoteId: string }> }) {
+  try {
+    const authCtx = await requireCompanyContext();
+    const { quoteId } = await getRouteParams(ctx);
+    const prisma = getPrisma();
+    if (!prisma) return NextResponse.json({ ok: false, error: "service_unavailable" }, { status: 503 });
+
+    const quote = await prisma.quote.findUnique({ where: { id: quoteId }, select: { id: true, companyId: true } });
+    if (!quote || quote.companyId !== authCtx.companyId) {
+      return NextResponse.json({ ok: false, error: "not_found" }, { status: 404 });
+    }
+
+    await prisma.$transaction(async (tx: any) => {
+      await tx.auditEvent.deleteMany({ where: { entityType: "quote", entityId: quoteId } });
+      await tx.quoteRevision.deleteMany({ where: { quoteId } });
+      const agreements = await tx.agreement.findMany({ where: { quoteId }, select: { id: true } });
+      for (const a of agreements) {
+        await tx.auditEvent.deleteMany({ where: { entityType: "agreement", entityId: a.id } });
+      }
+      await tx.agreement.deleteMany({ where: { quoteId } });
+      await tx.quote.delete({ where: { id: quoteId } });
+    });
+
+    await repo.recordAuditEvent({
+      entityType: "quote" as any,
+      entityId: quoteId,
+      action: "quote.deleted" as any,
+      actorRole: "admin",
+      actor: authCtx.userId,
+      meta: { companyId: authCtx.companyId },
+    }).catch(() => {});
+
+    return NextResponse.json({ ok: true, deleted: true });
+  } catch (e: any) {
+    if (e instanceof PrismaClientKnownRequestError && e.code === "P2003") {
+      return NextResponse.json({ ok: false, error: "cannot_delete", message: "Cannot delete this quote because it is linked to other records. Remove linked jobs or invoices first." }, { status: 409 });
+    }
+    if (e?.status === 401) return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
+    console.error("DELETE /api/admin/quotes/[quoteId] error:", e);
+    return NextResponse.json({ ok: false, error: "delete_failed" }, { status: 500 });
+  }
 }

@@ -236,7 +236,9 @@ export default function QuotesPage() {
         loadQuotes();
         setSelectedIds(ids => ids.filter(id => id !== (quote.id || quote.quoteId)));
       } else {
-        throw new Error('Failed to delete');
+        const body = await response.json().catch(() => null);
+        const msg = body?.message || body?.error || "Failed to delete quote";
+        toast({ title: "Error", description: msg, variant: "destructive" });
       }
     } catch {
       toast({ title: "Error", description: "Failed to delete quote", variant: "destructive" });
