@@ -33,7 +33,7 @@ export const GET = withRequestLogging(async function GET() {
 
     const stopDb = timeStart("clients_list_db");
     const clients = await client.client.findMany({
-      where: { companyId: ctx.companyId },
+      where: { companyId: ctx.companyId, deletedAt: null },
       orderBy: { createdAt: "desc" },
       select: {
         id: true,

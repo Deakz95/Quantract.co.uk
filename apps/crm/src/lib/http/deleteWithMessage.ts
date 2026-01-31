@@ -1,18 +1,30 @@
+/** Undo data returned from soft-delete endpoints */
+export interface UndoData {
+  token: string;
+  payload: { entityType: string; entityId: string; undoUntil: string; companyId: string; userId: string };
+}
+
+/** Result from a single delete request */
+export interface DeleteResult {
+  undo?: UndoData;
+}
+
 /**
  * Shared helper for DELETE requests that surfaces server error messages.
  * Throws an Error whose `.message` is the server-provided message on failure.
+ * Returns undo data if server provides it (soft-delete).
  */
-export async function deleteWithMessage(url: string): Promise<void> {
+export async function deleteWithMessage(url: string): Promise<DeleteResult> {
   const res = await fetch(url, { method: "DELETE" });
   const body = await res.json().catch(() => null);
   if (!res.ok) {
     const msg = body?.message || body?.error || "Delete failed";
     throw new Error(msg);
   }
-  // Sanity: server should always confirm deleted:true on 2xx
   if (body && body.deleted === false) {
     throw new Error("Server did not confirm deletion");
   }
+  return { undo: body?.undo ?? undefined };
 }
 
 /** Result type for bulk delete aggregation */

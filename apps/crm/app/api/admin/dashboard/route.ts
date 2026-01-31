@@ -24,10 +24,10 @@ export const GET = withRequestLogging(async function GET() {
     }
 
     const [jobs, quotes, quotesList, invoices, timesheets, openEnquiries] = await Promise.all([
-      prisma.job.groupBy({ by: ["status"], where: { companyId: authCtx.companyId }, _count: true }),
-      prisma.quote.groupBy({ by: ["status"], where: { companyId: authCtx.companyId }, _count: true }),
-      prisma.quote.findMany({ where: { companyId: authCtx.companyId, status: { in: ["draft", "sent"] } } }),
-      prisma.invoice.findMany({ where: { companyId: authCtx.companyId, status: { in: ["draft", "sent"] } } }),
+      prisma.job.groupBy({ by: ["status"], where: { companyId: authCtx.companyId, deletedAt: null }, _count: true }),
+      prisma.quote.groupBy({ by: ["status"], where: { companyId: authCtx.companyId, deletedAt: null }, _count: true }),
+      prisma.quote.findMany({ where: { companyId: authCtx.companyId, deletedAt: null, status: { in: ["draft", "sent"] } } }),
+      prisma.invoice.findMany({ where: { companyId: authCtx.companyId, deletedAt: null, status: { in: ["draft", "sent"] } } }),
       prisma.timesheet.count({ where: { companyId: authCtx.companyId, status: "submitted" } }),
       prisma.enquiry.count({ where: { companyId: authCtx.companyId, pipelineStage: { isWon: false, isLost: false } } }).catch(() => 0),
     ]);

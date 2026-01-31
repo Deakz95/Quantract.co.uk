@@ -9,6 +9,7 @@ import { FilterDropdown, type Filters, type FilterConfig } from "@/components/ui
 import { DataTable, BulkActionBar, formatRelativeTime, type Column, type Action, type SortDirection } from "@/components/ui/DataTable";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { deleteWithMessage, bulkDeleteWithSummary } from "@/lib/http/deleteWithMessage";
+import { undoDelete } from "@/lib/http/undoDelete";
 import { useToast } from "@/components/ui/useToast";
 import { Receipt, Plus, SquarePen, Copy, Trash2 } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -249,8 +250,11 @@ export default function InvoicesPage() {
 
   const handleDelete = async (invoice: Invoice) => {
     try {
-      await deleteWithMessage(`/api/admin/invoices/${invoice.id}`);
-      toast({ title: "Deleted", description: "Invoice deleted", variant: "success" });
+      const result = await deleteWithMessage(`/api/admin/invoices/${invoice.id}`);
+      toast({
+        title: "Deleted", description: "Invoice deleted", variant: "success",
+        action: result.undo ? { label: "Undo", onClick: () => { undoDelete(result.undo!).then(() => { toast({ title: "Restored", variant: "success" }); loadInvoices(); }).catch(() => toast({ title: "Undo expired", variant: "destructive" })); } } : undefined,
+      });
       loadInvoices();
       setSelectedIds(ids => ids.filter(id => id !== invoice.id));
     } catch (e: any) {

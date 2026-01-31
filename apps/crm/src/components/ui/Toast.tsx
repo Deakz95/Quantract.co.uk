@@ -105,8 +105,16 @@ export function Toast({
             </p>
           )}
 
-          {/* Action Link */}
-          {action && (
+          {/* Action Link or Button */}
+          {action && action.onClick ? (
+            <button
+              type="button"
+              className="mt-1.5 inline-flex text-xs font-medium text-[var(--primary)] hover:text-[var(--primary-dark)] underline underline-offset-2 transition-colors rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2"
+              onClick={() => { action.onClick?.(); onDismiss(id); }}
+            >
+              {action.label}
+            </button>
+          ) : action?.href ? (
             <Link
               href={action.href}
               className="mt-1.5 inline-flex text-xs font-medium text-[var(--primary)] hover:text-[var(--primary-dark)] underline underline-offset-2 transition-colors rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2"
@@ -114,7 +122,7 @@ export function Toast({
             >
               {action.label}
             </Link>
-          )}
+          ) : null}
         </div>
 
         {/* Dismiss Button */}

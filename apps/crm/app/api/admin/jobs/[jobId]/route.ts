@@ -3,7 +3,7 @@ import { requireRoles, requireCompanyContext } from "@/lib/serverAuth";
 import * as repo from "@/lib/server/repo";
 import { getRouteParams } from "@/lib/server/routeParams";
 import { getPrisma } from "@/lib/server/prisma";
-import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
+import { createUndoToken } from "@/lib/server/undoToken";
 
 export async function GET(_req: Request, ctx: { params: Promise<{ jobId: string }> }) {
   const session = await requireRoles("admin");
@@ -41,40 +41,24 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ jobId: stri
     const prisma = getPrisma();
     if (!prisma) return NextResponse.json({ ok: false, error: "service_unavailable" }, { status: 503 });
 
-    const job = await prisma.job.findUnique({ where: { id: jobId }, select: { id: true, companyId: true } });
-    if (!job || job.companyId !== authCtx.companyId) {
-      return NextResponse.json({ ok: false, error: "not_found" }, { status: 404 });
-    }
+    const job = await prisma.job.findFirst({ where: { id: jobId, companyId: authCtx.companyId, deletedAt: null } });
+    if (!job) return NextResponse.json({ ok: false, error: "not_found" }, { status: 404 });
 
-    await prisma.$transaction(async (tx: any) => {
-      await tx.auditEvent.deleteMany({ where: { entityType: "job", entityId: jobId } });
-      await tx.scheduleEntry.deleteMany({ where: { jobId } });
-      await tx.jobBudgetLine.deleteMany({ where: { jobId } });
-      await tx.jobStage.deleteMany({ where: { jobId } });
-      await tx.timeEntry.deleteMany({ where: { jobId } });
-      await tx.snagItem.deleteMany({ where: { jobId } });
-      await tx.costItem.deleteMany({ where: { jobId } });
-      await tx.comment.deleteMany({ where: { jobId } });
-      await tx.task.deleteMany({ where: { jobId } });
-      await tx.jobChecklist.deleteMany({ where: { jobId } });
-      await tx.variation.deleteMany({ where: { jobId } });
-      await tx.job.delete({ where: { id: jobId } });
-    });
+    await prisma.job.update({ where: { id: jobId }, data: { deletedAt: new Date() } });
+
+    const undo = createUndoToken(authCtx.companyId, authCtx.userId, "job", jobId);
 
     await repo.recordAuditEvent({
       entityType: "job" as any,
       entityId: jobId,
-      action: "job.deleted" as any,
+      action: "job.soft_deleted" as any,
       actorRole: "admin",
       actor: authCtx.userId,
       meta: { companyId: authCtx.companyId },
     }).catch(() => {});
 
-    return NextResponse.json({ ok: true, deleted: true });
+    return NextResponse.json({ ok: true, deleted: true, undo });
   } catch (e: any) {
-    if (e instanceof PrismaClientKnownRequestError && e.code === "P2003") {
-      return NextResponse.json({ ok: false, error: "cannot_delete", message: "Cannot delete this job because it is linked to invoices or certificates. Remove linked records first." }, { status: 409 });
-    }
     if (e?.status === 401) return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
     console.error("DELETE /api/admin/jobs/[jobId] error:", e);
     return NextResponse.json({ ok: false, error: "delete_failed" }, { status: 500 });

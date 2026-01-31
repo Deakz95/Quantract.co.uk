@@ -22,7 +22,7 @@ export const GET = withRequestLogging(async function GET() {
     }
 
     const quotes = await client.quote.findMany({
-      where: { companyId: authCtx.companyId },
+      where: { companyId: authCtx.companyId, deletedAt: null },
       orderBy: { createdAt: "desc" },
       include: {
         client: { select: { id: true, name: true, email: true } },

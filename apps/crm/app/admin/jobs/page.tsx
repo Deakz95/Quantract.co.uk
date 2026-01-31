@@ -9,6 +9,7 @@ import { FilterDropdown, type Filters, type FilterConfig } from "@/components/ui
 import { DataTable, BulkActionBar, formatRelativeTime, type Column, type Action, type SortDirection } from "@/components/ui/DataTable";
 import { TableSkeletonInline } from "@/components/ui/TableSkeleton";
 import { deleteWithMessage, bulkDeleteWithSummary } from "@/lib/http/deleteWithMessage";
+import { undoDelete } from "@/lib/http/undoDelete";
 import { CardGridSkeleton } from "@/components/ui/CardSkeleton";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/useToast";
@@ -255,8 +256,11 @@ export default function JobsPage() {
 
   const handleDelete = async (job: Job) => {
     try {
-      await deleteWithMessage(`/api/admin/jobs/${job.id}`);
-      toast({ title: "Deleted", description: "Job deleted", variant: "success" });
+      const result = await deleteWithMessage(`/api/admin/jobs/${job.id}`);
+      toast({
+        title: "Deleted", description: "Job deleted", variant: "success",
+        action: result.undo ? { label: "Undo", onClick: () => { undoDelete(result.undo!).then(() => { toast({ title: "Restored", variant: "success" }); loadJobs(); }).catch(() => toast({ title: "Undo expired", variant: "destructive" })); } } : undefined,
+      });
       loadJobs();
       setSelectedIds(ids => ids.filter(id => id !== job.id));
     } catch (e: any) {

@@ -3,7 +3,7 @@ import { requireRoles, requireCompanyContext } from "@/lib/serverAuth";
 import * as repo from "@/lib/server/repo";
 import { getRouteParams } from "@/lib/server/routeParams";
 import { getPrisma } from "@/lib/server/prisma";
-import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
+import { createUndoToken } from "@/lib/server/undoToken";
 
 export async function GET(_req: Request, ctx: { params: Promise<{ invoiceId: string }> }) {
   const session = await requireRoles("admin");
@@ -60,34 +60,24 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ invoiceId: 
     const prisma = getPrisma();
     if (!prisma) return NextResponse.json({ ok: false, error: "service_unavailable" }, { status: 503 });
 
-    const invoice = await prisma.invoice.findUnique({ where: { id: invoiceId }, select: { id: true, companyId: true } });
-    if (!invoice || invoice.companyId !== authCtx.companyId) {
-      return NextResponse.json({ ok: false, error: "not_found" }, { status: 404 });
-    }
+    const invoice = await prisma.invoice.findFirst({ where: { id: invoiceId, companyId: authCtx.companyId, deletedAt: null } });
+    if (!invoice) return NextResponse.json({ ok: false, error: "not_found" }, { status: 404 });
 
-    await prisma.$transaction(async (tx: any) => {
-      await tx.auditEvent.deleteMany({ where: { entityType: "invoice", entityId: invoiceId } });
-      await tx.invoicePayment.deleteMany({ where: { invoiceId } });
-      await tx.invoiceChase.deleteMany({ where: { invoiceId } });
-      await tx.invoiceAttachment.deleteMany({ where: { invoiceId } });
-      await tx.invoiceVariation.deleteMany({ where: { invoiceId } });
-      await tx.invoice.delete({ where: { id: invoiceId } });
-    });
+    await prisma.invoice.update({ where: { id: invoiceId }, data: { deletedAt: new Date() } });
+
+    const undo = createUndoToken(authCtx.companyId, authCtx.userId, "invoice", invoiceId);
 
     await repo.recordAuditEvent({
       entityType: "invoice" as any,
       entityId: invoiceId,
-      action: "invoice.deleted" as any,
+      action: "invoice.soft_deleted" as any,
       actorRole: "admin",
       actor: authCtx.userId,
       meta: { companyId: authCtx.companyId },
     }).catch(() => {});
 
-    return NextResponse.json({ ok: true, deleted: true });
+    return NextResponse.json({ ok: true, deleted: true, undo });
   } catch (e: any) {
-    if (e instanceof PrismaClientKnownRequestError && e.code === "P2003") {
-      return NextResponse.json({ ok: false, error: "cannot_delete", message: "Cannot delete this invoice because it has linked records. Remove them first." }, { status: 409 });
-    }
     if (e?.status === 401) return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
     console.error("DELETE /api/admin/invoices/[invoiceId] error:", e);
     return NextResponse.json({ ok: false, error: "delete_failed" }, { status: 500 });

@@ -29,7 +29,8 @@ import {
   Target
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { getCached, setCached } from "@/lib/client/swrCache";
 
 type WidgetType = 'stats' | 'quickActions' | 'recentActivity' | 'teamOverview' | 'performance' | 'calendar' | 'invoiceChart' | 'jobsMap' | 'revenue' | 'breakEven';
 
@@ -1360,12 +1361,76 @@ export default function DashboardPage() {
     },
   });
 
-  // Fetch dashboard data in two phases: critical first, then secondary
+  // Apply cached data on mount for instant paint (SWR pattern)
+  const hydratedFromCache = useRef(false);
+  useEffect(() => {
+    if (hydratedFromCache.current) return;
+    hydratedFromCache.current = true;
+    const cached = getCached<{
+      data: DashboardData;
+      activities: ActivityItem[];
+      revenue: RevenueData;
+      engineers: Engineer[];
+    }>("dashboard-summary");
+    if (cached) {
+      setDashboardState((prev) => ({
+        ...prev,
+        data: cached.data ?? prev.data,
+        activities: cached.activities ?? prev.activities,
+        revenue: cached.revenue ?? prev.revenue,
+        engineers: cached.engineers ?? prev.engineers,
+        loading: false,
+        // Keep secondaryLoading true — revalidation will update
+      }));
+    }
+  }, []);
+
+  // Fetch dashboard data: try consolidated summary first, fall back to individual endpoints
   const fetchDashboardData = useCallback(async () => {
-    setDashboardState((prev) => ({ ...prev, loading: true }));
+    setDashboardState((prev) => ({ ...prev, loading: prev.data === null }));
 
     try {
-      // Phase 1: Critical — stats KPI cards (fastest paint)
+      // Try consolidated summary endpoint (single round-trip)
+      const summaryRes = await fetch('/api/admin/dashboard/summary').then((r) => r.json()).catch(() => null);
+
+      if (summaryRes?.ok) {
+        // Cache for SWR
+        setCached("dashboard-summary", {
+          data: summaryRes.data,
+          activities: summaryRes.activities,
+          revenue: summaryRes.revenue,
+          engineers: summaryRes.engineers,
+        });
+
+        setDashboardState((prev) => ({
+          ...prev,
+          data: summaryRes.data,
+          activities: summaryRes.activities || [],
+          revenue: summaryRes.revenue || null,
+          engineers: summaryRes.engineers || [],
+          loading: false,
+          secondaryLoading: true,
+        }));
+
+        // Only schedule/jobs/breakEven still need separate calls
+        const [jobsRes, scheduleRes, breakEvenRes] = await Promise.all([
+          fetch('/api/admin/jobs').then((r) => r.json()).catch(() => []),
+          fetch('/api/admin/schedule').then((r) => r.json()).catch(() => null),
+          fetch('/api/admin/dashboard/break-even').then((r) => r.json()).catch(() => null),
+        ]);
+
+        setDashboardState((prev) => ({
+          ...prev,
+          jobs: Array.isArray(jobsRes) ? jobsRes : (jobsRes?.data || []),
+          schedule: scheduleRes?.ok ? (scheduleRes.entries || []) : [],
+          breakEven: breakEvenRes?.ok ? breakEvenRes.data : null,
+          secondaryLoading: false,
+          refreshing: { stats: false, activity: false, revenue: false, breakEven: false, team: false, schedule: false },
+        }));
+        return;
+      }
+
+      // Fallback: individual endpoints
       const dashboardRes = await fetch('/api/admin/dashboard').then((r) => r.json()).catch(() => null);
 
       setDashboardState((prev) => ({
@@ -1375,7 +1440,6 @@ export default function DashboardPage() {
         secondaryLoading: true,
       }));
 
-      // Phase 2: Secondary — all other widgets load in background
       const [engineersRes, jobsRes, scheduleRes, activityRes, revenueRes, breakEvenRes] = await Promise.all([
         fetch('/api/admin/engineers').then((r) => r.json()).catch(() => null),
         fetch('/api/admin/jobs').then((r) => r.json()).catch(() => []),
@@ -1394,14 +1458,7 @@ export default function DashboardPage() {
         revenue: revenueRes?.ok ? revenueRes.data : null,
         breakEven: breakEvenRes?.ok ? breakEvenRes.data : null,
         secondaryLoading: false,
-        refreshing: {
-          stats: false,
-          activity: false,
-          revenue: false,
-          breakEven: false,
-          team: false,
-          schedule: false,
-        },
+        refreshing: { stats: false, activity: false, revenue: false, breakEven: false, team: false, schedule: false },
       }));
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);

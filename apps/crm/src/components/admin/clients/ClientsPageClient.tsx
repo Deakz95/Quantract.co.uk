@@ -9,6 +9,7 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Dialog, DialogBody, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/Dialog";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { bulkDeleteWithSummary } from "@/lib/http/deleteWithMessage";
+import { undoDelete } from "@/lib/http/undoDelete";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { DataTable, BulkActionBar, formatRelativeTime, type Column, type Action, type SortDirection } from "@/components/ui/DataTable";
 import { TableSkeletonInline } from "@/components/ui/TableSkeleton";
@@ -324,10 +325,14 @@ export default function ClientsPageClient() {
     if (!confirming) return;
     setBusy(true);
     try {
-      const data = await apiRequest<{ ok: boolean; error?: string }>(`/api/admin/clients/${confirming.id}`, { method: "DELETE" });
+      const data = await apiRequest<{ ok: boolean; error?: string; undo?: { token: string; payload: any } }>(`/api/admin/clients/${confirming.id}`, { method: "DELETE" });
       requireOk(data, "Delete failed");
 
-      toast({ title: "Deleted", description: `${confirming.name} removed`, variant: "success" });
+      const clientName = confirming.name;
+      toast({
+        title: "Deleted", description: `${clientName} removed`, variant: "success",
+        action: data.undo ? { label: "Undo", onClick: () => { undoDelete(data.undo!).then(() => { toast({ title: "Restored", variant: "success" }); load(); }).catch(() => toast({ title: "Undo expired", variant: "destructive" })); } } : undefined,
+      });
 
       await load();
       if (editing?.id === confirming.id) startNew();

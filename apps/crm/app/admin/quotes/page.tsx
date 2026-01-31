@@ -9,6 +9,7 @@ import { FilterDropdown, type Filters, type FilterConfig } from "@/components/ui
 import { DataTable, BulkActionBar, formatRelativeTime, type Column, type Action, type SortDirection } from "@/components/ui/DataTable";
 import { TableSkeletonInline } from "@/components/ui/TableSkeleton";
 import { deleteWithMessage, bulkDeleteWithSummary } from "@/lib/http/deleteWithMessage";
+import { undoDelete } from "@/lib/http/undoDelete";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/useToast";
 import { FileText, Plus, SquarePen, Copy, Trash2 } from "lucide-react";
@@ -230,8 +231,11 @@ export default function QuotesPage() {
   const handleDelete = async (quote: Quote) => {
     const qid = quote.id || quote.quoteId;
     try {
-      await deleteWithMessage(`/api/admin/quotes/${qid}`);
-      toast({ title: "Deleted", description: "Quote deleted", variant: "success" });
+      const result = await deleteWithMessage(`/api/admin/quotes/${qid}`);
+      toast({
+        title: "Deleted", description: "Quote deleted", variant: "success",
+        action: result.undo ? { label: "Undo", onClick: () => { undoDelete(result.undo!).then(() => { toast({ title: "Restored", variant: "success" }); loadQuotes(); }).catch(() => toast({ title: "Undo expired", variant: "destructive" })); } } : undefined,
+      });
       loadQuotes();
       setSelectedIds(ids => ids.filter(id => id !== qid));
     } catch (e: any) {

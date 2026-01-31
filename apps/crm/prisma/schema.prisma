@@ -159,6 +159,7 @@ model Client {
   smsOptInAt           DateTime?
   createdAt            DateTime      @default(now())
   updatedAt            DateTime
+  deletedAt            DateTime?
   certificates         Certificate[]
   company              Company       @relation(fields: [companyId], references: [id])
   invoices             Invoice[]
@@ -171,9 +172,11 @@ model Client {
   contacts             Contact[]
   deals                Deal[]
   activities           Activity[]
+  ramsDocuments        RamsDocument[]
 
   @@unique([companyId, email])
   @@index([companyId])
+  @@index([companyId, deletedAt])
 }
 
 model Company {
@@ -298,6 +301,8 @@ model Company {
   activities              Activity[]
   savedViews              SavedView[]
   importJobs              ImportJob[]
+  toolPresets             ToolPreset[]
+  ramsDocuments           RamsDocument[]
 }
 
 model CompanyUser {
@@ -568,6 +573,7 @@ model Invoice {
   paymentProvider    String?
   paymentUrl         String?
   paymentRef         String?
+  deletedAt          DateTime?
   auditEvents        AuditEvent[]
   client             Client?             @relation(fields: [clientId], references: [id])
   company            Company             @relation(fields: [companyId], references: [id])
@@ -582,6 +588,7 @@ model Invoice {
 
   @@unique([legalEntityId, invoiceNumber])
   @@index([companyId])
+  @@index([companyId, deletedAt])
   @@index([legalEntityId])
   @@index([jobId])
   @@index([variationId])
@@ -668,6 +675,7 @@ model Job {
   budgetSubtotal          Float           @default(0)
   budgetVat               Float           @default(0)
   budgetTotal             Float           @default(0)
+  deletedAt               DateTime?
   auditEvents             AuditEvent[]
   certificates            Certificate[]
   costItems               CostItem[]
@@ -692,9 +700,11 @@ model Job {
   comments                Comment[]
   // CRM modules
   activities              Activity[]
+  ramsDocuments           RamsDocument[]
 
   @@unique([companyId, jobNumber])
   @@index([companyId])
+  @@index([companyId, deletedAt])
   @@index([serviceLineId])
   @@index([performingLegalEntityId])
   @@index([scheduledAt])
@@ -983,6 +993,7 @@ model Quote {
   createdAt      DateTime        @default(now())
   updatedAt      DateTime
   acceptedAt     DateTime?
+  deletedAt      DateTime?
   agreement      Agreement?
   auditEvents    AuditEvent[]
   invoices       Invoice[]
@@ -995,6 +1006,7 @@ model Quote {
 
   @@index([clientId])
   @@index([companyId])
+  @@index([companyId, deletedAt])
 }
 
 model QuoteRevision {
@@ -1308,6 +1320,8 @@ model User {
   importJobs                ImportJob[]              @relation("UserImports")
   // Company memberships (authoritative for company-scoped permissions)
   memberships               CompanyUser[]            @relation("UserMemberships")
+  toolPresets               ToolPreset[]             @relation("UserToolPresets")
+  ramsDocuments             RamsDocument[]            @relation("UserRamsDocs")
 
   @@unique([role, email])
   @@index([companyId])
@@ -1766,4 +1780,55 @@ model ImportJob {
 
   @@index([companyId])
   @@index([status])
+}
+
+model ToolPreset {
+  id        String   @id @default(cuid())
+  companyId String
+  userId    String
+  toolSlug  String
+  name      String
+  inputsJson Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+  user    User    @relation("UserToolPresets", fields: [userId], references: [id])
+
+  @@index([companyId, toolSlug])
+  @@index([userId])
+}
+
+model RamsDocument {
+  id          String   @id @default(cuid())
+  companyId   String
+  createdById String
+  type        String   // "rams" | "safety-assessment"
+  title       String
+  status      String   @default("draft") // "draft" | "issued" | "superseded"
+  version     Int      @default(1)
+  parentId    String?  // Links to previous version when superseded
+  contentJson Json     // Full document content
+  jobId       String?  // Optional link to job
+  clientId    String?  // Optional link to client
+  preparedBy  String?
+  reviewedBy  String?
+  clientSignedBy   String?
+  clientSignedAt   DateTime?
+  pdfKey      String?  // S3/storage key for generated PDF
+  issuedAt    DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company   Company  @relation(fields: [companyId], references: [id])
+  createdBy User     @relation("UserRamsDocs", fields: [createdById], references: [id])
+  job       Job?     @relation(fields: [jobId], references: [id])
+  client    Client?  @relation(fields: [clientId], references: [id])
+  parent    RamsDocument?  @relation("RamsVersions", fields: [parentId], references: [id])
+  children  RamsDocument[] @relation("RamsVersions")
+
+  @@index([companyId, type])
+  @@index([companyId, status])
+  @@index([jobId])
+  @@index([clientId])
 }

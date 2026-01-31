@@ -59,7 +59,7 @@ export const GET = withRequestLogging(async function GET() {
     // Also fetch recent jobs, quotes, invoices if audit events are sparse
     const [recentQuotes, recentInvoices, recentJobs] = await Promise.all([
       prisma.quote.findMany({
-        where: { companyId: authCtx.companyId },
+        where: { companyId: authCtx.companyId, deletedAt: null },
         orderBy: { updatedAt: "desc" },
         take: 5,
         select: {
@@ -71,7 +71,7 @@ export const GET = withRequestLogging(async function GET() {
         },
       }),
       prisma.invoice.findMany({
-        where: { companyId: authCtx.companyId },
+        where: { companyId: authCtx.companyId, deletedAt: null },
         orderBy: { updatedAt: "desc" },
         take: 5,
         select: {
@@ -85,7 +85,7 @@ export const GET = withRequestLogging(async function GET() {
         },
       }),
       prisma.job.findMany({
-        where: { companyId: authCtx.companyId },
+        where: { companyId: authCtx.companyId, deletedAt: null },
         orderBy: { updatedAt: "desc" },
         take: 5,
         select: {

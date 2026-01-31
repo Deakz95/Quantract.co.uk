@@ -31,7 +31,7 @@ export const GET = withRequestLogging(async function GET() {
 
     // companyId is guaranteed non-null by requireCompanyContext
     const invoices = await client.invoice.findMany({
-      where: { companyId: ctx.companyId },
+      where: { companyId: ctx.companyId, deletedAt: null },
       orderBy: { createdAt: "desc" },
       include: {
         client: { select: { id: true, name: true, email: true } },

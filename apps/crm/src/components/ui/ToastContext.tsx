@@ -9,7 +9,8 @@ export type ToastVariant = "default" | "destructive" | "success";
 
 export type ToastAction = {
   label: string;
-  href: string;
+  href?: string;
+  onClick?: () => void;
 };
 
 export type ToastData = {

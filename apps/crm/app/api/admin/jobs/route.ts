@@ -26,7 +26,7 @@ export const GET = withRequestLogging(async function GET() {
     // IMPORTANT: return the array directly (UI + Playwright expect an array)
     // companyId is guaranteed non-null by requireCompanyContext
     const jobs = await client.job.findMany({
-      where: { companyId: ctx.companyId },
+      where: { companyId: ctx.companyId, deletedAt: null },
       orderBy: { createdAt: "desc" },
       include: {
         client: { select: { id: true, name: true, email: true } },

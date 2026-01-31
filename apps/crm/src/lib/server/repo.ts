@@ -192,7 +192,7 @@ export async function listClients(): Promise<Client[]> {
 export async function getClientById(id: string): Promise<Client | null> {
   const client = p();
   if (!client) return fileDb.getClientById(id);
-  const row = await client.client.findFirst({ where: { id, companyId: await requireCompanyIdForPrisma() } });
+  const row = await client.client.findFirst({ where: { id, companyId: await requireCompanyIdForPrisma(), deletedAt: null } });
   return row ? toClient(row) : null;
 }
 
