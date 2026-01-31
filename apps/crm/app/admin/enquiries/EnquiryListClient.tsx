@@ -28,8 +28,17 @@ type Enquiry = {
   notes?: string;
   valueEstimate?: number;
   quoteId?: string;
+  leadScore?: number;
+  leadPriority?: string | null;
   createdAt: string;
   updatedAt: string;
+};
+
+const PRIORITY_STYLES: Record<string, { bg: string; text: string; label: string }> = {
+  urgent: { bg: "#dc2626", text: "#fff", label: "Urgent" },
+  high: { bg: "#f59e0b", text: "#000", label: "High" },
+  normal: { bg: "#6b7280", text: "#fff", label: "Normal" },
+  low: { bg: "#d1d5db", text: "#374151", label: "Low" },
 };
 
 type Stage = {
@@ -212,14 +221,33 @@ export function EnquiryListClient() {
     );
   }
 
+  const [sortBy, setSortBy] = useState<"recent" | "priority">("recent");
+
+  const sortedEnquiries = sortBy === "priority"
+    ? [...enquiries].sort((a, b) => {
+        const order: Record<string, number> = { urgent: 0, high: 1, normal: 2, low: 3 };
+        const pa = order[a.leadPriority || "normal"] ?? 2;
+        const pb = order[b.leadPriority || "normal"] ?? 2;
+        if (pa !== pb) return pa - pb;
+        return (b.leadScore ?? 0) - (a.leadScore ?? 0);
+      })
+    : enquiries;
+
   return (
     <>
       <div className="mb-4 flex justify-between items-center">
-        <div />
+        <div className="flex gap-2">
+          <Button variant={sortBy === "recent" ? "default" : "outline"} size="sm" onClick={() => setSortBy("recent")}>
+            Recent
+          </Button>
+          <Button variant={sortBy === "priority" ? "default" : "outline"} size="sm" onClick={() => setSortBy("priority")}>
+            Highest Priority
+          </Button>
+        </div>
         <Button onClick={openCreateDialog}>+ New Enquiry</Button>
       </div>
 
-      {enquiries.length === 0 ? (
+      {sortedEnquiries.length === 0 ? (
         <EmptyState
           title="No enquiries yet"
           description="Create your first enquiry to start tracking leads"
@@ -228,7 +256,7 @@ export function EnquiryListClient() {
         />
       ) : (
         <div className="grid gap-4">
-          {enquiries.map((enq) => (
+          {sortedEnquiries.map((enq) => (
             <Card key={enq.id}>
               <CardHeader>
                 <div className="flex justify-between items-start">
@@ -242,6 +270,14 @@ export function EnquiryListClient() {
                       <Badge style={{ backgroundColor: enq.stageColor || "#6b7280", color: "#fff" }}>
                         {enq.stageName || "Unknown"}
                       </Badge>
+                      {enq.leadPriority && enq.leadPriority !== "normal" && (() => {
+                        const ps = PRIORITY_STYLES[enq.leadPriority] ?? PRIORITY_STYLES.normal;
+                        return (
+                          <Badge style={{ backgroundColor: ps.bg, color: ps.text }}>
+                            {ps.label}{enq.leadScore ? ` (${enq.leadScore})` : ""}
+                          </Badge>
+                        );
+                      })()}
                       {enq.ownerName && (
                         <Badge variant="outline">Owner: {enq.ownerName}</Badge>
                       )}

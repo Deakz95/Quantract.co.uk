@@ -86,6 +86,12 @@ function isPublicPath(pathname: string) {
   // Public certificate verification
   if (pathname.startsWith("/verify/")) return true;
 
+  // Remote assist join page (public, token-authenticated)
+  if (pathname.startsWith("/assist/")) return true;
+
+  // Cron endpoints (protected by CRON_SECRET header)
+  if (pathname.startsWith("/api/cron/")) return true;
+
   // Webhooks / health (if any)
   if (pathname === "/api/health") return true;
   if (pathname.startsWith("/api/webhooks/")) return true;
@@ -193,6 +199,14 @@ export async function middleware(req: NextRequest) {
   // Create response with request ID
   const res = NextResponse.next();
   res.headers.set("x-request-id", requestId);
+
+  // Security headers: Permissions-Policy
+  // Allow camera/mic only on /assist/* pages (remote assist video calls)
+  if (pathname.startsWith("/assist/")) {
+    res.headers.set("Permissions-Policy", "camera=(self), microphone=(self), geolocation=()");
+  } else {
+    res.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  }
 
   // Noindex for /verify/ pages
   if (pathname.startsWith("/verify/")) {

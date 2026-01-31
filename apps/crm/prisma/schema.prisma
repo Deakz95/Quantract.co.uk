@@ -288,6 +288,7 @@ model Client {
   deals                Deal[]
   activities           Activity[]
   ramsDocuments        RamsDocument[]
+  installedAssets      InstalledAsset[]
 
   @@unique([companyId, email])
   @@index([companyId])
@@ -426,6 +427,15 @@ model Company {
   certificateSignatureRecords CertificateSignatureRecord[]
   certificateAttachments      CertificateAttachment[]
   invoiceCertificates         InvoiceCertificate[]
+  // Lead scoring
+  enquiryKeywordHits          EnquiryKeywordHit[]
+  leadScoringConfig           LeadScoringConfig?
+  // Maintenance
+  installedAssets              InstalledAsset[]
+  maintenanceRules             MaintenanceRule[]
+  maintenanceAlerts            MaintenanceAlert[]
+  truckStocks                  TruckStock[]
+  remoteAssistSessions         RemoteAssistSession[]
 }
 
 model CompanyUser {
@@ -605,14 +615,20 @@ model Enquiry {
   utmTerm       String?
   utmContent    String?
   metaJson      Json? // Any additional metadata
+  // Lead scoring
+  leadScore        Int?      @default(0)
+  leadPriority     String?   // low|normal|high|urgent
+  leadScoreReason  Json?     // { keywords: [...], rules: [...] }
   createdAt     DateTime           @default(now())
   updatedAt     DateTime
   owner         User?              @relation("EnquiryOwner", fields: [ownerId], references: [id])
   pipelineStage PipelineStage      @relation(fields: [stageId], references: [id])
   formConfig    InboundFormConfig? @relation(fields: [formConfigId], references: [id])
   enquiryEvents EnquiryEvent[]
+  keywordHits   EnquiryKeywordHit[]
 
   @@index([companyId, stageId])
+  @@index([companyId, leadPriority])
   @@index([ownerId])
   @@index([source])
   @@index([formConfigId])
@@ -825,6 +841,7 @@ model Job {
   // CRM modules
   activities              Activity[]
   ramsDocuments           RamsDocument[]
+  installedAssets         InstalledAsset[]
 
   @@unique([companyId, jobNumber])
   @@index([companyId])
@@ -1253,6 +1270,7 @@ model StockItem {
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime
+  truckStocks  TruckStock[]
 
   @@index([companyId, isActive])
 }
@@ -1268,6 +1286,56 @@ model StockMovement {
   createdAt   DateTime          @default(now())
 
   @@index([companyId, stockItemId])
+}
+
+model TruckStock {
+  id          String   @id @default(cuid())
+  companyId   String
+  userId      String
+  stockItemId String
+  qty         Int      @default(0)
+  minQty      Int      @default(0)
+  updatedAt   DateTime @updatedAt
+
+  company   Company   @relation(fields: [companyId], references: [id])
+  user      User      @relation(fields: [userId], references: [id])
+  stockItem StockItem @relation(fields: [stockItemId], references: [id])
+
+  @@unique([companyId, userId, stockItemId])
+  @@index([companyId, userId])
+}
+
+model TruckStockLog {
+  id          String   @id @default(cuid())
+  companyId   String
+  userId      String
+  stockItemId String
+  qtyDelta    Int
+  reason      String?
+  jobId       String?
+  createdAt   DateTime @default(now())
+
+  @@index([companyId, userId])
+  @@index([companyId, stockItemId])
+}
+
+model RemoteAssistSession {
+  id         String   @id @default(cuid())
+  companyId  String
+  createdBy  String
+  token      String   @unique
+  clientName String?
+  jobId      String?
+  status     String   @default("waiting")
+  expiresAt  DateTime
+  signals    Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+  @@index([token])
 }
 
 model Subcontractor {
@@ -1446,6 +1514,7 @@ model User {
   memberships               CompanyUser[]            @relation("UserMemberships")
   toolPresets               ToolPreset[]             @relation("UserToolPresets")
   ramsDocuments             RamsDocument[]            @relation("UserRamsDocs")
+  truckStocks               TruckStock[]
 
   @@unique([role, email])
   @@index([companyId])
@@ -1971,4 +2040,95 @@ model RamsDocument {
   @@index([companyId, status])
   @@index([jobId])
   @@index([clientId])
+}
+
+/// ===============================
+/// Lead Scoring
+/// ===============================
+model EnquiryKeywordHit {
+  id        String   @id @default(cuid())
+  companyId String
+  enquiryId String
+  keyword   String
+  points    Int
+  createdAt DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id])
+  enquiry Enquiry @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, enquiryId])
+}
+
+model LeadScoringConfig {
+  id        String   @id @default(cuid())
+  companyId String   @unique
+  config    Json     // { keywords: [{ keyword, points }], priorityThresholds: { high, urgent }, boostRules: [...] }
+  updatedAt DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+}
+
+/// ===============================
+/// Maintenance
+/// ===============================
+model InstalledAsset {
+  id            String    @id @default(cuid())
+  companyId     String
+  clientId      String?
+  jobId         String?
+  name          String
+  type          String?
+  manufacturer  String?
+  model         String?
+  serial        String?
+  installedAt   DateTime?
+  nextServiceAt DateTime?
+  meta          Json?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  company  Company @relation(fields: [companyId], references: [id])
+  client   Client? @relation(fields: [clientId], references: [id])
+  job      Job?    @relation(fields: [jobId], references: [id])
+  alerts   MaintenanceAlert[]
+
+  @@index([companyId, clientId])
+  @@index([companyId, jobId])
+  @@index([companyId, nextServiceAt])
+}
+
+model MaintenanceRule {
+  id           String   @id @default(cuid())
+  companyId    String
+  name         String
+  isActive     Boolean  @default(true)
+  assetType    String?
+  intervalDays Int?
+  condition    Json?
+  action       Json?    // { createAlert:true, notifyEmail:true, notifySms:false }
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@index([companyId, isActive])
+}
+
+model MaintenanceAlert {
+  id        String   @id @default(cuid())
+  companyId String
+  assetId   String
+  ruleId    String?
+  status    String   @default("open") // open|ack|dismissed|sent
+  dueAt     DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  message   String?
+  meta      Json?
+
+  company Company        @relation(fields: [companyId], references: [id])
+  asset   InstalledAsset @relation(fields: [assetId], references: [id])
+
+  @@index([companyId, status, dueAt])
+  @@index([companyId, assetId])
 }

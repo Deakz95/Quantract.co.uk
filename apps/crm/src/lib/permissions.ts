@@ -11,7 +11,10 @@ export type Capability =
   | "expenses.manage"
   | "suppliers.manage"
   | "settings.manage"
-  | "users.manage";
+  | "users.manage"
+  | "leads.scoring"
+  | "maintenance.manage"
+  | "maintenance.view";
 
 /**
  * Default capabilities by role.
@@ -35,8 +38,11 @@ export const ROLE_DEFAULTS: Record<string, Capability[]> = {
     "suppliers.manage",
     "settings.manage",
     "users.manage",
+    "leads.scoring",
+    "maintenance.manage",
+    "maintenance.view",
   ],
-  OFFICE: ["invoices.view", "planner.manage", "expenses.manage", "suppliers.manage"],
+  OFFICE: ["invoices.view", "planner.manage", "expenses.manage", "suppliers.manage", "maintenance.view"],
   FINANCE: ["invoices.view", "invoices.manage", "expenses.manage", "billing.view"],
   ENGINEER: [],
   CLIENT: [],

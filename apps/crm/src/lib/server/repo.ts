@@ -4197,6 +4197,9 @@ export async function getEnquiryById(id: string): Promise<any | null> {
     notes: e.notes,
     valueEstimate: e.valueEstimate,
     quoteId: e.quoteId,
+    leadScore: (e as any).leadScore ?? 0,
+    leadPriority: (e as any).leadPriority ?? null,
+    leadScoreReason: (e as any).leadScoreReason ?? null,
     events: (e.enquiryEvents || []).map((ev: any) => ({ id: ev.id, type: ev.type, note: ev.note, createdAt: ev.createdAt.toISOString() })),
     createdAt: e.createdAt.toISOString(),
     updatedAt: e.updatedAt.toISOString(),
@@ -4458,4 +4461,51 @@ export async function ensureDefaultDealStages(): Promise<void> {
       { companyId, name: "Lost", sortOrder: 4, color: "#ef4444", probability: 0, isWon: false, isLost: true, updatedAt: new Date() },
     ],
   }).catch(() => null);
+}
+
+// ── Lead Scoring ──
+
+export async function getLeadScoringConfig(): Promise<any | null> {
+  const companyId = await getCompanyId();
+  const client = p();
+  if (!client || !companyId) return null;
+  return client.leadScoringConfig.findUnique({ where: { companyId } }).catch(() => null);
+}
+
+export async function upsertLeadScoringConfig(config: Record<string, unknown>): Promise<any | null> {
+  const companyId = await getCompanyId();
+  const client = p();
+  if (!client || !companyId) return null;
+  return client.leadScoringConfig.upsert({
+    where: { companyId },
+    create: { companyId, config },
+    update: { config },
+  }).catch(() => null);
+}
+
+export async function updateEnquiryScore(enquiryId: string, score: number, priority: string, reason: Record<string, unknown>, keywordHits: { keyword: string; points: number }[]): Promise<void> {
+  const companyId = await getCompanyId();
+  const client = p();
+  if (!client || !companyId) return;
+
+  await client.enquiry.update({
+    where: { id: enquiryId, companyId },
+    data: { leadScore: score, leadPriority: priority, leadScoreReason: reason },
+  }).catch(() => null);
+
+  // Delete old keyword hits and insert new ones
+  await client.enquiryKeywordHit.deleteMany({
+    where: { companyId, enquiryId },
+  }).catch(() => null);
+
+  if (keywordHits.length > 0) {
+    await client.enquiryKeywordHit.createMany({
+      data: keywordHits.map((h) => ({
+        companyId,
+        enquiryId,
+        keyword: h.keyword,
+        points: h.points,
+      })),
+    }).catch(() => null);
+  }
 }

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/server/prisma";
 import { withRequestLogging } from "@/lib/server/observability";
 import { getRouteParams } from "@/lib/server/routeParams";
 import { rateLimit, getClientIp } from "@/lib/server/rateLimit";
+import { scoreEnquiry, DEFAULT_CONFIG, type LeadScoringConfigData } from "@/lib/server/leadScoring";
 
 export const runtime = "nodejs";
 
@@ -429,6 +430,33 @@ export const POST = withRequestLogging(async function POST(
         createdAt: now,
       },
     });
+
+    // Lead scoring (fire-and-forget)
+    try {
+      const cfgRow = await prisma.leadScoringConfig.findUnique({ where: { companyId } }).catch(() => null);
+      const scoringConfig: LeadScoringConfigData = (cfgRow?.config as LeadScoringConfigData) ?? DEFAULT_CONFIG;
+      const result = scoreEnquiry(
+        { name: body.name, email: body.email, phone: body.phone, message: body.message, postcode: body.postcode },
+        scoringConfig,
+      );
+      await prisma.enquiry.update({
+        where: { id: enquiry.id },
+        data: { leadScore: result.score, leadPriority: result.priority, leadScoreReason: result.reason as any },
+      }).catch(() => null);
+      // Write keyword hits
+      if (result.reason.keywords.length > 0) {
+        await prisma.enquiryKeywordHit.createMany({
+          data: result.reason.keywords.map((h) => ({
+            companyId,
+            enquiryId: enquiry.id,
+            keyword: h.keyword,
+            points: h.points,
+          })),
+        }).catch(() => null);
+      }
+    } catch {
+      // Scoring failure should not block enquiry creation
+    }
 
     // Return success with enquiry ID
     return jsonOk(

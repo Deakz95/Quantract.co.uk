@@ -4,6 +4,7 @@ import { getPrisma } from "@/lib/server/prisma";
 import * as repo from "@/lib/server/repo";
 import { withRequestLogging, logError } from "@/lib/server/observability";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
+import { scoreEnquiry, DEFAULT_CONFIG, type LeadScoringConfigData } from "@/lib/server/leadScoring";
 
 export const runtime = "nodejs";
 
@@ -40,6 +41,8 @@ export const GET = withRequestLogging(async function GET() {
         stageColor: pipelineStage?.color ?? "#6b7280",
         ownerName: owner?.name ?? undefined,
         ownerEmail: owner?.email ?? undefined,
+        leadScore: rest.leadScore ?? 0,
+        leadPriority: rest.leadPriority ?? null,
       };
     });
 
@@ -135,6 +138,22 @@ export const POST = withRequestLogging(async function POST(req: Request) {
         valueEstimate: body.valueEstimate,
       },
     });
+
+    // Lead scoring (fire-and-forget)
+    try {
+      const cfgRow = await repo.getLeadScoringConfig();
+      const scoringConfig: LeadScoringConfigData = (cfgRow?.config as LeadScoringConfigData) ?? DEFAULT_CONFIG;
+      const result = scoreEnquiry(
+        { name: body.name, email: body.email, phone: body.phone, notes: body.notes, valueEstimate: body.valueEstimate },
+        scoringConfig,
+      );
+      await repo.updateEnquiryScore(enquiry.id, result.score, result.priority, result.reason as unknown as Record<string, unknown>, result.reason.keywords);
+      mappedEnquiry.leadScore = result.score;
+      mappedEnquiry.leadPriority = result.priority;
+      mappedEnquiry.leadScoreReason = result.reason;
+    } catch {
+      // Scoring failure should not block enquiry creation
+    }
 
     return NextResponse.json({ ok: true, enquiry: mappedEnquiry });
   } catch (error: any) {

@@ -26,9 +26,19 @@ type Enquiry = {
   phone?: string;
   notes?: string;
   valueEstimate?: number;
+  leadScore?: number;
+  leadPriority?: string | null;
+  leadScoreReason?: { keywords?: { keyword: string; points: number }[]; boosts?: { rule: string; points: number }[] } | null;
   events: EnquiryEvent[];
   createdAt: string;
   updatedAt: string;
+};
+
+const PRIORITY_STYLES: Record<string, { bg: string; text: string; label: string }> = {
+  urgent: { bg: "#dc2626", text: "#fff", label: "Urgent" },
+  high: { bg: "#f59e0b", text: "#000", label: "High" },
+  normal: { bg: "#6b7280", text: "#fff", label: "Normal" },
+  low: { bg: "#d1d5db", text: "#374151", label: "Low" },
 };
 
 export default function EnquiryDetailPage() {
@@ -277,6 +287,47 @@ export default function EnquiryDetailPage() {
                         </div>
                       </div>
                     ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader><CardTitle>Lead Score</CardTitle></CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl font-bold">{enquiry.leadScore ?? 0}</span>
+                  {enquiry.leadPriority && (() => {
+                    const ps = PRIORITY_STYLES[enquiry.leadPriority] ?? PRIORITY_STYLES.normal;
+                    return (
+                      <Badge style={{ backgroundColor: ps.bg, color: ps.text }}>
+                        {ps.label}
+                      </Badge>
+                    );
+                  })()}
+                </div>
+                {enquiry.leadScoreReason?.keywords && enquiry.leadScoreReason.keywords.length > 0 && (
+                  <div>
+                    <p className="text-xs font-medium text-[var(--muted-foreground)] mb-1">Matched Keywords</p>
+                    <div className="flex flex-wrap gap-1">
+                      {enquiry.leadScoreReason.keywords.map((k, i) => (
+                        <Badge key={i} variant="outline" className="text-xs">
+                          {k.keyword} (+{k.points})
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {enquiry.leadScoreReason?.boosts && enquiry.leadScoreReason.boosts.length > 0 && (
+                  <div>
+                    <p className="text-xs font-medium text-[var(--muted-foreground)] mb-1">Boosts</p>
+                    <div className="flex flex-wrap gap-1">
+                      {enquiry.leadScoreReason.boosts.map((b, i) => (
+                        <Badge key={i} variant="outline" className="text-xs">
+                          {b.rule} (+{b.points})
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
                 )}
               </CardContent>

@@ -3,6 +3,7 @@ import { requireRoles, requireCompanyId } from "@/lib/serverAuth";
 import * as repo from "@/lib/server/repo";
 import { withRequestLogging } from "@/lib/server/observability";
 import { getRouteParams } from "@/lib/server/routeParams";
+import { scoreEnquiry, DEFAULT_CONFIG, type LeadScoringConfigData } from "@/lib/server/leadScoring";
 
 function jsonOk(data: Record<string, unknown>, status = 200) {
   return NextResponse.json({ ok: true, ...data }, { status });
@@ -67,6 +68,19 @@ export const PATCH = withRequestLogging(
         actor: authCtx.email,
         meta: { changes: patch },
       });
+
+      // Re-score after update (fire-and-forget)
+      try {
+        const cfgRow = await repo.getLeadScoringConfig();
+        const scoringConfig: LeadScoringConfigData = (cfgRow?.config as LeadScoringConfigData) ?? DEFAULT_CONFIG;
+        const result = scoreEnquiry(
+          { name: updated.name, email: updated.email, phone: updated.phone, notes: updated.notes, valueEstimate: updated.valueEstimate, message: updated.notes },
+          scoringConfig,
+        );
+        await repo.updateEnquiryScore(id, result.score, result.priority, result.reason as unknown as Record<string, unknown>, result.reason.keywords);
+      } catch {
+        // Scoring failure should not block enquiry update
+      }
 
       return jsonOk({ enquiry: updated });
     } catch (e: any) {

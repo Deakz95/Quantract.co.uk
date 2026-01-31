@@ -41,6 +41,12 @@ export default function ClientHome() {
             <Link className="text-sm font-semibold text-[var(--foreground)] hover:underline" href="/client/certificates">
               Certificates
             </Link>
+            <Link className="text-sm font-semibold text-[var(--foreground)] hover:underline" href="/client/hub/timeline">
+              Timeline
+            </Link>
+            <Link className="text-sm font-semibold text-[var(--foreground)] hover:underline" href="/client/troubleshoot">
+              Troubleshooter
+            </Link>
           </div>
           <div className="rounded-2xl border border-[var(--border)] bg-[var(--muted)] p-4 text-xs text-[var(--muted-foreground)]">
             What happens next: review your quote, accept it, sign the agreement, then use invoices here to pay or download receipts.
