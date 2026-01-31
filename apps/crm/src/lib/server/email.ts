@@ -326,6 +326,29 @@ export async function sendInviteEmail(args: {
   return { ok: true };
 }
 
+/** ✅ PASSWORD RESET EMAIL */
+export async function sendPasswordResetEmail(args: {
+  to: string;
+  resetLink: string;
+}) {
+  const brand = process.env.NEXT_PUBLIC_QT_BRAND_NAME || "Quantract";
+  const subject = `Reset your password`;
+  const html = wrapTemplate(
+    `Reset your ${brand} password`,
+    `
+      <p style="margin:0 0 14px; color:#334155;">Click the button below to reset your password. This link expires in 1 hour.</p>
+      <p style="margin:0 0 20px;">
+        <a href="${args.resetLink}" style="display:inline-block; padding:12px 18px; background:#0f172a; color:#fff; border-radius:10px; text-decoration:none; font-weight:700;">
+          Reset password
+        </a>
+      </p>
+      <p style="margin:0; font-size:12px; color:#64748b;">If you didn't request this, you can ignore this email.</p>
+    `
+  );
+  await sendEmail({ to: args.to, subject, html });
+  return { ok: true };
+}
+
 /** ✅ MAGIC LINK EMAIL */
 export async function sendMagicLinkEmail(args: {
   to: string;

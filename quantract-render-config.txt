@@ -1,0 +1,378 @@
+================================================================================
+QUANTRACT — RENDER PRODUCTION CONFIGURATION
+Minimal, safe config for new features (cron, rate limiting, scaling)
+================================================================================
+
+
+================================================================================
+1) SERVICE MAP
+================================================================================
+
+Service                  | Hosts         | Notes
+-------------------------|---------------|--------------------------------------
+quantract-crm            | apps/crm      | Main app: API, admin, client, engineer
+                         |               | portals, cron endpoints, all business logic
+quantract-marketing      | apps/marketing| Static marketing site
+quantract-certificates   | apps/certificates | Standalone cert builders
+quantract-tools          | apps/tools    | Standalone calculators
+
+Cron calls: quantract-crm only (all cron routes live under apps/crm)
+
+Worker service: NOT REQUIRED RIGHT NOW
+  - BullMQ queues exist (email, pdf, reminder) and reference REDIS_URL
+  - However, REDIS_URL is not set and no worker process is running
+  - The queue code is imported lazily — it won't crash without Redis
+  - Email sending currently happens inline (not via queue)
+  - If you want background job processing later, add a Render Worker
+    service with start command: npm run worker (runs tsx src/lib/server/queue/worker.ts)
+  - That worker REQUIRES REDIS_URL to function
+
+
+================================================================================
+2) REQUIRED ENV VARS — quantract-crm ONLY
+================================================================================
+
+--- MISSING (must add now) ---
+
+Key              | Value Format              | Why
+-----------------|---------------------------|--------------------------------------------
+CRON_SECRET      | Random 32+ char string    | New cron endpoints (/api/cron/*) check
+                 | e.g. openssl rand -hex 32 | Authorization: Bearer <CRON_SECRET>
+QT_CRON_SECRET   | Same value as CRON_SECRET | Internal cron endpoints (/api/internal/cron/*)
+                 | OR separate secret        | check req.headers.get("AUTH")
+                 |                           | Two different auth patterns exist in code:
+                 |                           |   /api/cron/*          → CRON_SECRET (Bearer)
+                 |                           |   /api/internal/cron/* → QT_CRON_SECRET (AUTH header)
+                 |                           | Safest: set both to same value
+
+IMPORTANT: The code has TWO different cron auth patterns:
+  1. /api/cron/maintenance-alerts and /api/cron/cleanup-assist-sessions
+     → Check: Authorization: Bearer <CRON_SECRET>  (process.env.CRON_SECRET)
+  2. /api/internal/cron/* (auto-chase, email retry, xero, ai digest)
+     → Check: AUTH: <QT_CRON_SECRET>  (process.env.QT_CRON_SECRET via cronAuth.ts)
+
+Set BOTH env vars. Use the same secret value for simplicity.
+
+--- MISSING (defer until scaling) ---
+
+Key              | Value Format              | Why
+-----------------|---------------------------|--------------------------------------------
+REDIS_URL        | redis://user:pass@host:port| Required ONLY when:
+                 |                           |   a) You scale to >1 instance (rate limiting)
+                 |                           |   b) You enable BullMQ background jobs
+                 |                           | Without it, rate limiting uses in-memory
+                 |                           | (fine for 1 instance, halved limits in prod)
+REDIS_TLS        | "1"                       | Set alongside REDIS_URL if using Render Redis
+                 |                           | (Render Redis requires TLS)
+
+--- MISSING (may be needed for Stripe) ---
+
+Key                    | Status
+-----------------------|--------------------------------------------------
+STRIPE_SECRET_KEY      | NOT in your env var list. Stripe checkout will
+                       | fail without it. Check if billing is live — if
+                       | yes, add it. If billing is deferred, ignore.
+STRIPE_WEBHOOK_SECRET  | Same — needed if /api/webhooks/stripe receives events
+STRIPE_PRICE_SOLO      | Price IDs for checkout — needed only if billing is live
+STRIPE_PRICE_TEAM      |
+STRIPE_PRICE_PRO       |
+
+--- ALREADY SET (confirmed OK) ---
+
+Key                          | Purpose
+-----------------------------|------------------------------------------
+APP_BASE_URL                 | Base URL for links/emails
+APP_ORIGIN                   | CORS/origin validation
+DATABASE_URL                 | Neon Postgres connection
+DIRECT_URL                   | Neon direct connection (migrations)
+RESEND_API_KEY               | Email sending
+RESEND_FROM / EMAIL_FROM     | Email sender address
+OPENAI_API_KEY               | AI features
+NODE_ENV                     | Should be "production"
+QT_USE_PRISMA                | Database toggle
+NEON_*                       | Neon Auth integration
+BETTER_AUTH_*                | Better Auth cookies/origins
+NEXT_PUBLIC_APP_ORIGIN       | Client-side origin
+FEATURE_INTELLIGENCE_V2      | Feature flag
+FEATURE_ONBOARDING_V2        | Feature flag
+PERF_LOGS                    | Performance logging
+
+
+================================================================================
+3) CRON CONFIG (exact)
+================================================================================
+
+You need to configure these as Render Cron Jobs OR use an external cron
+service (EasyCron, cron-job.org, etc.) to hit these URLs.
+
+--- NEW CRON ENDPOINTS ---
+
+A) Maintenance Alerts
+   Schedule:    0 6 * * * (daily at 06:00 UTC)
+   Method:      GET
+   URL:         https://crm.quantract.co.uk/api/cron/maintenance-alerts
+   Header:      Authorization: Bearer <CRON_SECRET value>
+   Success:     {"ok":true,"alertsCreated":N,"skippedCompanies":N}
+   Logs:        [cron/maintenance-alerts] in server logs
+
+   curl example:
+   curl -s -H "Authorization: Bearer YOUR_CRON_SECRET" \
+     https://crm.quantract.co.uk/api/cron/maintenance-alerts
+
+B) Cleanup Assist Sessions
+   Schedule:    0 3 * * * (daily at 03:00 UTC)
+   Method:      GET
+   URL:         https://crm.quantract.co.uk/api/cron/cleanup-assist-sessions
+   Header:      Authorization: Bearer <CRON_SECRET value>
+   Success:     {"ok":true,"deleted":N}
+   Logs:        [cron/cleanup-assist-sessions] in server logs
+
+   curl example:
+   curl -s -H "Authorization: Bearer YOUR_CRON_SECRET" \
+     https://crm.quantract.co.uk/api/cron/cleanup-assist-sessions
+
+--- EXISTING INTERNAL CRON ENDPOINTS (if not already scheduled) ---
+
+These use a DIFFERENT auth pattern: AUTH header with QT_CRON_SECRET.
+
+C) Auto-Chase Overdue Invoices
+   Schedule:    0 9 * * 1-5 (weekdays at 09:00 UTC)
+   Method:      POST
+   URL:         https://crm.quantract.co.uk/api/internal/cron/auto-chase-overdue-invoices
+   Headers:     AUTH: <QT_CRON_SECRET value>
+                X-Company-Id: <companyId>  (required — your company ID)
+   Success:     {"ok":true,"chased":N,...}
+
+D) Retry Failed Emails
+   Schedule:    */30 * * * * (every 30 minutes)
+   Method:      POST
+   URL:         https://crm.quantract.co.uk/api/internal/cron/retry-failed-emails
+   Headers:     AUTH: <QT_CRON_SECRET value>
+                X-Company-Id: <companyId>
+   Success:     {"ok":true,"attempted":N,"sent":N,...}
+
+E) Retry Failed Xero Sync
+   Schedule:    0 */4 * * * (every 4 hours)
+   Method:      POST
+   URL:         https://crm.quantract.co.uk/api/internal/cron/retry-failed-xero-sync
+   Headers:     AUTH: <QT_CRON_SECRET value>
+                X-Company-Id: <companyId>
+   Success:     {"ok":true,...}
+
+F) Weekly AI Digest
+   Schedule:    0 8 * * 1 (Monday at 08:00 UTC)
+   Method:      POST
+   URL:         https://crm.quantract.co.uk/api/internal/cron/weekly-ai-digest
+   Headers:     AUTH: <QT_CRON_SECRET value>
+   Success:     {"ok":true,...}
+
+NOTE ON RENDER CRON JOBS:
+  Render Cron Jobs are a separate service type. Each one:
+  - Runs a command (not an HTTP request)
+  - To call HTTP endpoints, use: curl -s -H "..." https://...
+  - Or use an external cron service that makes HTTP requests
+
+  If using Render Cron Jobs, the command would be:
+    curl -sf -H "Authorization: Bearer $CRON_SECRET" https://crm.quantract.co.uk/api/cron/maintenance-alerts
+
+  If using external cron (EasyCron, cron-job.org):
+  - Set URL, method, headers directly in their UI
+  - Cheaper and simpler than Render Cron Jobs for HTTP calls
+
+
+================================================================================
+4) SCALING + REDIS RECOMMENDATION
+================================================================================
+
+--- CURRENT STATE: 1 instance, Starter plan, no Redis ---
+
+This is FINE for now. Here's what to know:
+
+AUTOSCALING: Do NOT turn it on yet.
+Reason: With 1 instance on Starter plan, autoscaling adds cost and
+complexity with no benefit. Your current traffic (based on a single
+user/team) doesn't warrant it.
+
+WHEN TO REVISIT:
+  - Monitor in Render Dashboard → quantract-crm → Metrics tab
+  - Key metrics to watch:
+    • CPU: sustained >70% for 10+ minutes = consider scaling
+    • Memory: sustained >80% or OOM restarts = upgrade instance type first
+    • Response time: p95 >2s consistently = investigate (could be DB, not CPU)
+  - Render does NOT show request count in metrics — you'd need to add
+    lightweight logging or use the PERF_LOGS env var you already have
+
+RATE LIMITING WITHOUT REDIS (current):
+  - Works fine with 1 instance
+  - In production without REDIS_URL, limits are halved (50% of configured)
+    as a safety measure (see rateLimit.ts FALLBACK_LIMIT_MULTIPLIER)
+  - This is acceptable for single-instance
+
+BULLMQ WITHOUT REDIS (current):
+  - Queue code exists but won't initialize without Redis
+  - Email/PDF/reminders happen inline (synchronous)
+  - This is fine until you have volume that requires background processing
+
+--- SCALING DECISION RULES ---
+
+IF CPU > 70% sustained for 10+ min:
+  → Scale to 2 instances
+  → FIRST: Add Render Redis (Starter tier, ~$7/mo)
+  → Set REDIS_URL and REDIS_TLS=1 on quantract-crm
+  → Then increase instances to 2
+
+IF Memory > 80% or OOM restarts:
+  → Upgrade instance type (Starter → Standard) BEFORE adding instances
+  → More RAM per instance is better than more instances
+
+IF 429 errors spike in logs:
+  → Check if legitimate traffic or abuse
+  → If legitimate: increase rate limits in rateLimitMiddleware.ts
+  → If abuse: limits are working correctly
+
+--- IF YOU SCALE TO >1 INSTANCE, DO THIS FIRST ---
+
+1. Add Render Redis (Dashboard → New → Redis)
+   - Starter tier is fine initially
+   - Region: Frankfurt (same as your services)
+
+2. Set env vars on quantract-crm:
+   REDIS_URL=<Render Redis internal URL>
+   REDIS_TLS=1
+
+3. Session/auth implications: NONE
+   - Your cookies are stateless (role + email + companyId in cookies)
+   - No server-side session store that would break with multiple instances
+   - Better Auth session resolution is via DB lookup, not memory
+   - Auth context cache (60s TTL) is per-instance but that's fine
+     (worst case: slightly more DB lookups during the cache window)
+
+4. Cron implications: LOW RISK
+   - /api/cron/* endpoints are idempotent or have idempotency checks
+   - cronAuth.ts has in-memory idempotency (5-min TTL) — this is
+     per-instance, but cron calls only hit one instance per request
+   - If you see duplicate cron execution, add Idempotency-Key header
+
+5. Deploy and validate:
+   - Hit /api/health — should return 200 from both instances
+   - Check logs for "[rateLimit] Redis connected"
+   - Run a test cron call and verify response
+
+
+================================================================================
+5) SECURITY / ROUTING CHECKS
+================================================================================
+
+A) /api/cron/* PROTECTION: ✅ CONFIRMED SAFE (with env var set)
+
+   - /api/cron/maintenance-alerts: Checks process.env.CRON_SECRET
+     against Authorization: Bearer header. Returns 401 if missing/wrong.
+   - /api/cron/cleanup-assist-sessions: Same pattern.
+   - /api/internal/cron/*: Uses QT_CRON_SECRET via cronAuth.ts with
+     timing-safe comparison. Returns 401/500 if missing/wrong.
+
+   ⚠ CRITICAL: middleware.ts line 92 marks /api/cron/ as PUBLIC
+   (bypasses session auth). This is correct — auth is handled by
+   the CRON_SECRET header check in each route handler. But if
+   CRON_SECRET env var is NOT set, the maintenance-alerts and
+   cleanup-assist-sessions endpoints will return 401 (safe fail).
+   The internal cron routes return 500 "missing_cron_secret" if
+   QT_CRON_SECRET is not set (also safe fail).
+
+B) /assist/* PERMISSIONS-POLICY: ✅ CONFIRMED CORRECT
+
+   middleware.ts dynamically sets headers per path:
+   - /assist/* paths → camera=(self), microphone=(self), geolocation=()
+   - All other paths → camera=(), microphone=(), geolocation=()
+
+   This is set in middleware (edge), not in next.config headers, so:
+   - It's per-request, not cached by CDN
+   - Render does not add a CDN cache layer on Web Services by default
+   - No caching concern here
+
+   /assist/* is marked as public in middleware (line 90) — correct,
+   because clients join via token link without logging in.
+
+C) DOMAIN ROUTING:
+
+   Domain                    | Should host    | Status
+   --------------------------|----------------|------------------
+   crm.quantract.co.uk       | /admin, /client, /engineer, /assist, /api | ✅ Correct
+   quantract.co.uk            | Redirect to www | ✅ Correct
+   www.quantract.co.uk        | Marketing site  | ⚠ Currently on CRM service
+                             |                | Should point to quantract-marketing?
+
+   Check: Is www.quantract.co.uk serving the CRM app or the marketing app?
+   If it's on the CRM service but should show marketing content, you may
+   want to move it to quantract-marketing service, or keep the CRM landing
+   page (/) which already shows a marketing-style page with pricing/features.
+
+
+================================================================================
+6) FINAL GO-LIVE CHECKLIST
+================================================================================
+
+STEP 1: Add env vars (Render Dashboard → quantract-crm → Environment)
+  [ ] Generate secret: openssl rand -hex 32
+  [ ] Add CRON_SECRET = <generated secret>
+  [ ] Add QT_CRON_SECRET = <same secret>
+  [ ] Verify STRIPE_SECRET_KEY is set (if billing is live)
+  [ ] Save changes (triggers redeploy)
+
+STEP 2: Wait for deploy to complete
+  [ ] Watch build logs — confirm "Compiled successfully"
+  [ ] Watch startup logs — confirm "Ready in X.Xs"
+  [ ] Confirm "Your service is live" message
+
+STEP 3: Verify cron endpoints work
+  [ ] Test maintenance-alerts:
+      curl -s -H "Authorization: Bearer <SECRET>" \
+        https://crm.quantract.co.uk/api/cron/maintenance-alerts
+      → Expect: {"ok":true,...}
+
+  [ ] Test cleanup-assist-sessions:
+      curl -s -H "Authorization: Bearer <SECRET>" \
+        https://crm.quantract.co.uk/api/cron/cleanup-assist-sessions
+      → Expect: {"ok":true,...}
+
+  [ ] Test without auth (should fail):
+      curl -s https://crm.quantract.co.uk/api/cron/maintenance-alerts
+      → Expect: {"ok":false,"error":"unauthorized"} with 401
+
+STEP 4: Set up cron schedules
+  [ ] Use external cron service (EasyCron / cron-job.org) OR Render Cron Jobs
+  [ ] Add maintenance-alerts: daily 06:00 UTC
+  [ ] Add cleanup-assist-sessions: daily 03:00 UTC
+  [ ] (If not already done) Add internal cron jobs for auto-chase, email retry, etc.
+
+STEP 5: Verify feature flags
+  [ ] Check plan-gated features work correctly:
+      - maintenance_alerts: only for plans that include it
+      - remote_assist: check isFeatureEnabled() gating
+  [ ] Test on trial/free plan → features should be blocked or limited
+  [ ] Test on pro plan → features should work
+
+STEP 6: Monitor (first 24-48 hours)
+  [ ] Check Render logs for any errors from cron runs
+  [ ] Check Render Metrics tab for CPU/memory baseline
+  [ ] Confirm no 500s on /api/cron/* endpoints
+  [ ] Confirm /assist/[token] pages load and camera prompt appears
+
+
+================================================================================
+SUMMARY OF CHANGES NEEDED
+================================================================================
+
+Immediate (before next deploy):
+  1. Add CRON_SECRET env var to quantract-crm
+  2. Add QT_CRON_SECRET env var to quantract-crm (same value)
+  3. Set up external cron to call the two new endpoints
+
+Deferred (when scaling):
+  4. Add Render Redis when going to >1 instance
+  5. Set REDIS_URL + REDIS_TLS=1 on quantract-crm
+  6. Consider worker service if background job volume increases
+
+Investigate:
+  7. Confirm whether Stripe env vars are needed (is billing live?)
+  8. Confirm www.quantract.co.uk domain routing is intentional on CRM service

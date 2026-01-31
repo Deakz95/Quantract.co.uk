@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
-import { createAuthClient } from "@neondatabase/auth/next";
+import { findUserByEmail, createPasswordResetToken } from "@/lib/server/authDb";
+import { sendPasswordResetEmail } from "@/lib/server/email";
+import { absoluteUrl } from "@/lib/server/email";
 
 export const runtime = "nodejs";
 
@@ -15,7 +17,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Basic email validation
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return NextResponse.json(
         { ok: false, error: "Invalid email address" },
@@ -23,19 +24,16 @@ export async function POST(request: Request) {
       );
     }
 
-    // Use Neon Auth to send password reset email
-    const authClient = createAuthClient();
-    const { error } = await authClient.forgetPassword.emailOtp({
-      email,
-    });
+    const user = await findUserByEmail(email);
 
-    if (error) {
-      console.error("[forgot-password] Error:", error);
-      // Don't reveal if the email exists or not for security
-      // Always return success to prevent email enumeration
+    if (user) {
+      const ip = request.headers.get("x-forwarded-for") ?? null;
+      const { raw } = await createPasswordResetToken(user.id, ip);
+      const resetLink = absoluteUrl(`/auth/reset-password?token=${raw}`);
+      await sendPasswordResetEmail({ to: email, resetLink });
     }
 
-    // Always return success to prevent email enumeration attacks
+    // Always return success to prevent email enumeration
     return NextResponse.json({
       ok: true,
       message: "If an account with that email exists, a password reset link has been sent.",

@@ -2,6 +2,7 @@ import crypto from "crypto";
 import { getPrisma } from "@/lib/server/prisma";
 
 const MAGIC_TTL_MINUTES = 15;
+const PASSWORD_RESET_TTL_MINUTES = 60;
 const SESSION_TTL_DAYS = 30;
 const SESSION_TTL_DAYS_REMEMBER = 90; // Extended TTL for "Keep me logged in"
 
@@ -100,6 +101,24 @@ export async function consumeMagicLink(tokenRaw: string) {
   const result = await validateMagicLink(tokenRaw);
   if (!result.ok) return result;
   return { ok: true as const, user: result.user };
+}
+
+export async function findUserByEmail(email: string) {
+  const db = getPrisma();
+  return db.user.findFirst({
+    where: { email: email.trim().toLowerCase() },
+  });
+}
+
+export async function createPasswordResetToken(userId: string, ip?: string | null) {
+  const db = getPrisma();
+  const raw = randomToken(32);
+  const tokenHash = sha256(raw);
+  const expiresAt = new Date(Date.now() + PASSWORD_RESET_TTL_MINUTES * 60 * 1000);
+  await db.magicLinkToken.create({
+    data: { id: crypto.randomUUID(), userId, tokenHash, expiresAt, ip: ip ?? null },
+  });
+  return { raw, expiresAt };
 }
 
 export async function createSession(userId: string, rememberMe: boolean = false) {

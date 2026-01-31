@@ -31,7 +31,7 @@ export default function SecuritySettingsPage() {
 
     setChangingPassword(true);
     try {
-      const res = await fetch('/api/admin/change-password', {
+      const res = await fetch('/api/auth/password/change', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ currentPassword, newPassword }),

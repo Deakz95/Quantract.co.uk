@@ -52,7 +52,10 @@
       "Bash(find:*)",
       "Bash(DATABASE_URL='postgresql://neondb_owner:npg_bopvBOL5mts8@ep-damp-lake-ab5zv5f0.eu-west-2.aws.neon.tech/neondb?sslmode=require' DIRECT_URL='postgresql://neondb_owner:npg_bopvBOL5mts8@ep-damp-lake-ab5zv5f0.eu-west-2.aws.neon.tech/neondb?sslmode=require' npx prisma db execute --stdin <<'SQL'\nSELECT column_name, data_type, is_nullable \nFROM information_schema.columns \nWHERE table_name = 'User' \nORDER BY ordinal_position;\nSQL)",
       "Bash(PGPASSWORD='npg_bopvBOL5mts8' psql:*)",
-      "Bash(npx prisma:*)"
+      "Bash(npx prisma:*)",
+      "Bash(git status:*)",
+      "Bash(test:*)",
+      "Bash(findstr:*)"
     ]
   }
 }
