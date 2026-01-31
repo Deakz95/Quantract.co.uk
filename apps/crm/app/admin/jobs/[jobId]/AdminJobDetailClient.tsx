@@ -12,7 +12,8 @@ import { Breadcrumbs, type BreadcrumbItem } from "@/components/ui/Breadcrumbs";
 type JobStatus = "new" | "scheduled" | "in_progress" | "completed";
 type Job = {
   id: string;
-  quoteId: string;
+  quoteId?: string;
+  quoteNumber?: string;
   title?: string;
   clientName: string;
   clientEmail: string;
@@ -586,7 +587,7 @@ export default function AdminJobDetail({ jobId }: Props) {
           <div className="text-sm font-semibold text-[var(--foreground)]">{job?.title || job?.clientName || "Job"}</div>
           {job ? (
             <div className="mt-1 text-xs text-[var(--muted-foreground)]">
-              {job.clientName} • {job.clientEmail}{job.siteAddress ? ` • ${job.siteAddress}` : ""} • Quote: #{job.quoteId.slice(0, 8)}
+              {job.clientName} • {job.clientEmail}{job.siteAddress ? ` • ${job.siteAddress}` : ""}{job.quoteId ? ` • Quote: ${job.quoteNumber || "Linked"}` : ""}
             </div>
           ) : null}
         </div>
@@ -762,7 +763,7 @@ export default function AdminJobDetail({ jobId }: Props) {
                   {timeEntries.map((t) => (
                     <div key={t.id} className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3 text-sm">
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div className="font-semibold text-[var(--foreground)]">{t.engineerEmail || `Engineer #${t.engineerId.slice(0, 8)}`}</div>
+                        <div className="font-semibold text-[var(--foreground)]">{t.engineerEmail || "Engineer"}</div>
                         <div className="text-xs text-[var(--muted-foreground)]">
                           {new Date(t.startedAtISO).toLocaleString("en-GB")} → {t.endedAtISO ? new Date(t.endedAtISO).toLocaleString("en-GB") : "(running)"}
                         </div>
@@ -1224,7 +1225,7 @@ export default function AdminJobDetail({ jobId }: Props) {
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
                           <Link href={`/admin/certificates/${c.id}`} className="text-sm font-semibold text-[var(--foreground)] hover:underline">
-                            {c.type}{c.certificateNumber ? ` • ${c.certificateNumber}` : ` • #${c.id.slice(0, 8)}`}
+                            {c.type}{c.certificateNumber ? ` • ${c.certificateNumber}` : ""}
                           </Link>
                           <Badge>{c.status}</Badge>
                           {c.certificateNumber ? <Badge>{c.certificateNumber}</Badge> : null}

@@ -37,7 +37,7 @@ export async function GET(req: Request) {
         const total = Math.round((subtotal + subtotal * (q.vatRate || 0)) * 100) / 100;
         return {
           quoteId: q.id,
-          quoteNumber: q.token?.slice(0, 8)?.toUpperCase() || q.id.slice(0, 8),
+          quoteNumber: q.quoteNumber || `Q-${q.id.slice(0, 8)}`,
           clientName: q.client?.name || q.clientName,
           siteName: q.site?.name,
           total,

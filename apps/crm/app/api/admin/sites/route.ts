@@ -5,6 +5,7 @@ import * as repo from "@/lib/server/repo";
 import { withRequestLogging, logError } from "@/lib/server/observability";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { randomUUID } from "crypto";
+import { geocodePostcode } from "@/lib/server/geocode";
 
 export const runtime = "nodejs";
 
@@ -62,6 +63,15 @@ export const POST = withRequestLogging(async function POST(req: Request) {
     const clientId = String(body?.clientId ?? "").trim();
     if (!clientId) return NextResponse.json({ ok: false, error: "missing_client_id" }, { status: 400 });
 
+    // Geocode postcode if provided
+    const postcode = typeof body?.postcode === "string" ? body.postcode.trim() : null;
+    let latitude: number | null = typeof body?.latitude === "number" ? body.latitude : null;
+    let longitude: number | null = typeof body?.longitude === "number" ? body.longitude : null;
+    if (postcode && latitude == null) {
+      const geo = await geocodePostcode(postcode);
+      if (geo) { latitude = geo.latitude; longitude = geo.longitude; }
+    }
+
     const site = await client.site.create({
       data: {
         id: randomUUID(),
@@ -72,8 +82,10 @@ export const POST = withRequestLogging(async function POST(req: Request) {
         address2: typeof body?.address2 === "string" ? body.address2.trim() : null,
         city: typeof body?.city === "string" ? body.city.trim() : null,
         county: typeof body?.county === "string" ? body.county.trim() : null,
-        postcode: typeof body?.postcode === "string" ? body.postcode.trim() : null,
+        postcode,
         country: typeof body?.country === "string" ? body.country.trim() : null,
+        latitude,
+        longitude,
         notes: typeof body?.notes === "string" ? body.notes.trim() : null,
         updatedAt: new Date(),
       },

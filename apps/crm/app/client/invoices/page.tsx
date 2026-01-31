@@ -55,9 +55,9 @@ export default function ClientInvoices() {
             {invoices.map((inv) => (
               <div key={inv.id} className="flex flex-col justify-between gap-3 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4 sm:flex-row sm:items-center">
                 <div>
-                  <div className="text-sm font-semibold text-[var(--foreground)]">{(inv as any).invoiceNumber || `Invoice #${inv.id.slice(0, 8)}`}</div>
+                  <div className="text-sm font-semibold text-[var(--foreground)]">{(inv as any).invoiceNumber || "Invoice"}</div>
                   <div className="mt-0.5 text-xs text-[var(--muted-foreground)]">
-                    {inv.quoteId ? `Quote #${inv.quoteId.slice(0, 8)}` : "Manual"} • {new Date(inv.createdAtISO).toLocaleString("en-GB")}
+                    {(inv as any).quoteNumber ? (inv as any).quoteNumber : inv.quoteId ? "From Quote" : "Manual"} • {new Date(inv.createdAtISO).toLocaleString("en-GB")}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">

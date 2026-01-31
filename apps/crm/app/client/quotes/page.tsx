@@ -62,7 +62,7 @@ export default function ClientQuotes() {
             {quotes.map((q) => (
               <div key={q.id} className="flex flex-col justify-between gap-3 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4 sm:flex-row sm:items-center">
                 <div>
-                  <div className="text-sm font-semibold text-[var(--foreground)]">Quote #{q.id.slice(0, 8)}</div>
+                  <div className="text-sm font-semibold text-[var(--foreground)]">{(q as any).quoteNumber || "Quote"}</div>
                   <div className="mt-0.5 text-xs text-[var(--muted-foreground)]">
                     {new Date(q.createdAtISO).toLocaleString("en-GB")} • Total: £{q.totals.total.toFixed(2)}
                   </div>

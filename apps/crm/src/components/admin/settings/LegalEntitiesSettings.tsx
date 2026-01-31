@@ -23,7 +23,11 @@ interface LegalEntity {
   pdfFooterLine1?: string;
   pdfFooterLine2?: string;
   invoiceNumberPrefix: string;
+  nextInvoiceNumber: number;
+  quoteNumberPrefix: string;
+  nextQuoteNumber: number;
   certificateNumberPrefix: string;
+  nextCertificateNumber: number;
   isDefault: boolean;
   status: "active" | "inactive";
 }
@@ -260,8 +264,9 @@ function LegalEntityCard({
               </p>
             )}
             <div className="flex gap-4 mt-2 text-xs text-[var(--muted-foreground)]">
-              <span>Invoice prefix: <code className="bg-[var(--muted)] px-1 rounded">{entity.invoiceNumberPrefix}</code></span>
-              <span>Certificate prefix: <code className="bg-[var(--muted)] px-1 rounded">{entity.certificateNumberPrefix}</code></span>
+              <span>Invoice: <code className="bg-[var(--muted)] px-1 rounded">{entity.invoiceNumberPrefix}</code> next #{entity.nextInvoiceNumber}</span>
+              <span>Quote: <code className="bg-[var(--muted)] px-1 rounded">{entity.quoteNumberPrefix || "QUO-"}</code> next #{entity.nextQuoteNumber || 1}</span>
+              <span>Cert: <code className="bg-[var(--muted)] px-1 rounded">{entity.certificateNumberPrefix}</code></span>
             </div>
           </div>
         </div>
@@ -303,7 +308,11 @@ function LegalEntityForm({
       registeredPostcode: "",
       registeredCountry: "United Kingdom",
       invoiceNumberPrefix: "INV-",
+      nextInvoiceNumber: 1,
+      quoteNumberPrefix: "QUO-",
+      nextQuoteNumber: 1,
       certificateNumberPrefix: "CERT-",
+      nextCertificateNumber: 1,
       pdfFooterLine1: "",
       pdfFooterLine2: "",
       isDefault: false,
@@ -385,22 +394,70 @@ function LegalEntityForm({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="rounded-xl border border-[var(--border)] bg-[var(--muted)]/30 p-4 space-y-4">
         <div>
-          <label className="block text-sm font-medium text-[var(--foreground)] mb-1">Invoice Number Prefix</label>
-          <Input
-            value={form.invoiceNumberPrefix || ""}
-            onChange={(e) => setForm({ ...form, invoiceNumberPrefix: e.target.value })}
-            placeholder="INV-"
-          />
+          <h5 className="text-sm font-semibold text-[var(--foreground)]">Document Numbering</h5>
+          <p className="text-xs text-[var(--muted-foreground)] mt-1">Changes affect future documents only. Existing documents keep their numbers. Prefix max 6 chars (letters, numbers, dash).</p>
         </div>
-        <div>
-          <label className="block text-sm font-medium text-[var(--foreground)] mb-1">Certificate Number Prefix</label>
-          <Input
-            value={form.certificateNumberPrefix || ""}
-            onChange={(e) => setForm({ ...form, certificateNumberPrefix: e.target.value })}
-            placeholder="CERT-"
-          />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-[var(--foreground)] mb-1">Invoice Prefix</label>
+            <Input
+              value={form.invoiceNumberPrefix || ""}
+              onChange={(e) => setForm({ ...form, invoiceNumberPrefix: e.target.value })}
+              placeholder="INV-"
+              maxLength={7}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-[var(--foreground)] mb-1">Next Invoice Number</label>
+            <Input
+              type="number"
+              min={1}
+              value={form.nextInvoiceNumber ?? 1}
+              onChange={(e) => setForm({ ...form, nextInvoiceNumber: parseInt(e.target.value, 10) || 1 })}
+            />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-[var(--foreground)] mb-1">Quote Prefix</label>
+            <Input
+              value={form.quoteNumberPrefix || ""}
+              onChange={(e) => setForm({ ...form, quoteNumberPrefix: e.target.value })}
+              placeholder="QUO-"
+              maxLength={7}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-[var(--foreground)] mb-1">Next Quote Number</label>
+            <Input
+              type="number"
+              min={1}
+              value={form.nextQuoteNumber ?? 1}
+              onChange={(e) => setForm({ ...form, nextQuoteNumber: parseInt(e.target.value, 10) || 1 })}
+            />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-[var(--foreground)] mb-1">Certificate Prefix</label>
+            <Input
+              value={form.certificateNumberPrefix || ""}
+              onChange={(e) => setForm({ ...form, certificateNumberPrefix: e.target.value })}
+              placeholder="CERT-"
+              maxLength={7}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-[var(--foreground)] mb-1">Next Certificate Number</label>
+            <Input
+              type="number"
+              min={1}
+              value={form.nextCertificateNumber ?? 1}
+              onChange={(e) => setForm({ ...form, nextCertificateNumber: parseInt(e.target.value, 10) || 1 })}
+            />
+          </div>
         </div>
       </div>
 

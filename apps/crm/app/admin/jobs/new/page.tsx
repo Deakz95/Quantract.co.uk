@@ -12,6 +12,7 @@ import { apiRequest, getApiErrorMessage, requireOk } from "@/lib/apiClient";
 
 type Job = { id: string };
 type Client = { id: string; name: string; email: string };
+type QuoteOption = { id: string; quoteNumber?: string; clientName: string; clientEmail: string; status: string; total: number };
 
 // Validation schema for manual job creation
 const manualJobValidationSchema: ValidationSchema = {
@@ -25,6 +26,11 @@ export default function AdminJobNewPage() {
 
   // From quote
   const [quoteId, setQuoteId] = useState("");
+  const [quoteSearch, setQuoteSearch] = useState("");
+  const [quoteOptions, setQuoteOptions] = useState<QuoteOption[]>([]);
+  const [quotesLoading, setQuotesLoading] = useState(false);
+  const [showQuoteDropdown, setShowQuoteDropdown] = useState(false);
+  const selectedQuote = quoteOptions.find((q) => q.id === quoteId);
 
   // Manual creation
   const [clients, setClients] = useState<Client[]>([]);
@@ -53,6 +59,20 @@ export default function AdminJobNewPage() {
   useEffect(() => {
     void loadClients();
   }, [loadClients]);
+
+  // Load quotes for searchable selector
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      setQuotesLoading(true);
+      try {
+        const r = await fetch(`/api/admin/quotes/lookup?query=${encodeURIComponent(quoteSearch)}`);
+        const d = await r.json();
+        if (d.ok) setQuoteOptions(d.quotes);
+      } catch { /* ignore */ }
+      setQuotesLoading(false);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [quoteSearch]);
 
   // Reset validation when switching modes
   useEffect(() => {
@@ -162,19 +182,51 @@ export default function AdminJobNewPage() {
             </CardHeader>
             <CardContent>
               <div className="grid gap-3">
-                <FormField label="Quote ID" htmlFor="job-quoteId">
-                  <FormInput
-                    id="job-quoteId"
-                    className="h-11"
-                    placeholder="e.g. 8f3c..."
-                    value={quoteId}
-                    onChange={(e) => setQuoteId(e.target.value)}
-                  />
+                <FormField label="Select Quote" htmlFor="job-quoteSearch">
+                  <div className="relative">
+                    <FormInput
+                      id="job-quoteSearch"
+                      className="h-11"
+                      placeholder="Search by client name, email, or quote number…"
+                      value={selectedQuote ? `${selectedQuote.quoteNumber || "Quote"} — ${selectedQuote.clientName}` : quoteSearch}
+                      onChange={(e) => { setQuoteSearch(e.target.value); setQuoteId(""); setShowQuoteDropdown(true); }}
+                      onFocus={() => setShowQuoteDropdown(true)}
+                    />
+                    {showQuoteDropdown && !quoteId && (
+                      <div className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[var(--border)] bg-[var(--background)] shadow-lg">
+                        {quotesLoading ? (
+                          <div className="px-4 py-3 text-sm text-[var(--muted-foreground)]">Searching…</div>
+                        ) : quoteOptions.length === 0 ? (
+                          <div className="px-4 py-3 text-sm text-[var(--muted-foreground)]">No quotes found</div>
+                        ) : (
+                          quoteOptions.map((q) => (
+                            <button
+                              key={q.id}
+                              type="button"
+                              className="flex w-full items-center justify-between px-4 py-3 text-left text-sm hover:bg-[var(--muted)] border-b border-[var(--border)] last:border-0"
+                              onClick={() => { setQuoteId(q.id); setShowQuoteDropdown(false); }}
+                            >
+                              <div>
+                                <div className="font-medium text-[var(--foreground)]">{q.quoteNumber || "Draft"} — {q.clientName}</div>
+                                <div className="text-xs text-[var(--muted-foreground)]">{q.clientEmail}</div>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-xs font-medium text-[var(--foreground)]">£{q.total.toFixed(2)}</div>
+                                <div className="text-xs text-[var(--muted-foreground)]">{q.status}</div>
+                              </div>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </FormField>
 
-                <div className="rounded-2xl border border-[var(--border)] bg-[var(--muted)] p-3 text-xs text-[var(--muted-foreground)]">
-                  Tip: copy the quote ID from Quotes - Open - header.
-                </div>
+                {selectedQuote && (
+                  <div className="rounded-2xl border border-[var(--border)] bg-[var(--muted)] p-3 text-xs text-[var(--muted-foreground)]">
+                    Selected: {selectedQuote.quoteNumber || "Quote"} • {selectedQuote.clientName} • £{selectedQuote.total.toFixed(2)} • {selectedQuote.status}
+                  </div>
+                )}
 
                 <div className="flex flex-wrap justify-end gap-2">
                   <Button type="button" variant="secondary" onClick={() => router.push("/admin/jobs")}>Back</Button>

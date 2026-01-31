@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { OnboardingChecklist } from "@/components/admin/OnboardingChecklist";
+import JobsMap from "@/components/admin/JobsMap";
 import {
   FileText,
   Receipt,
@@ -945,52 +946,31 @@ function JobsMapWidget({ data, jobs, loading, onRefresh, isRefreshing }: {
   }
 
   return (
-    <Link href="/admin/jobs">
-      <Card className="h-full group cursor-pointer hover:border-[var(--primary)]/30 transition-colors">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              Job Locations
-              <ArrowUpRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
-            </CardTitle>
-            <RefreshButton onClick={() => onRefresh()} isRefreshing={isRefreshing} />
+    <Card className="h-full">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle>Job Locations</CardTitle>
+          <RefreshButton onClick={() => onRefresh()} isRefreshing={isRefreshing} />
+        </div>
+      </CardHeader>
+      <CardContent>
+        <JobsMap />
+        <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+          <div className="p-2 bg-[var(--muted)] rounded-lg">
+            <div className="text-lg font-bold">{activeCount}</div>
+            <div className="text-xs text-[var(--muted-foreground)]">Active</div>
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="aspect-video bg-[var(--muted)] rounded-xl flex items-center justify-center">
-            {jobs.length === 0 ? (
-              <div className="text-center text-[var(--muted-foreground)]">
-                <Briefcase className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">No jobs to display</p>
-                <span className="text-xs text-[var(--primary)] hover:underline mt-1 block">
-                  Create your first job
-                </span>
-              </div>
-            ) : (
-              <div className="text-center text-[var(--muted-foreground)]">
-                <div className="text-4xl mb-2">&#128506;</div>
-                <p className="text-sm">Map integration coming soon</p>
-                <p className="text-xs mt-1">{jobs.length} job{jobs.length !== 1 ? 's' : ''} to display</p>
-              </div>
-            )}
+          <div className="p-2 bg-[var(--muted)] rounded-lg">
+            <div className="text-lg font-bold">{scheduledCount}</div>
+            <div className="text-xs text-[var(--muted-foreground)]">Scheduled</div>
           </div>
-          <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-            <div className="p-2 bg-[var(--muted)] rounded-lg">
-              <div className="text-lg font-bold">{activeCount}</div>
-              <div className="text-xs text-[var(--muted-foreground)]">Active</div>
-            </div>
-            <div className="p-2 bg-[var(--muted)] rounded-lg">
-              <div className="text-lg font-bold">{scheduledCount}</div>
-              <div className="text-xs text-[var(--muted-foreground)]">Scheduled</div>
-            </div>
-            <div className="p-2 bg-[var(--muted)] rounded-lg">
-              <div className="text-lg font-bold">{completedCount}</div>
-              <div className="text-xs text-[var(--muted-foreground)]">Completed</div>
-            </div>
+          <div className="p-2 bg-[var(--muted)] rounded-lg">
+            <div className="text-lg font-bold">{completedCount}</div>
+            <div className="text-xs text-[var(--muted-foreground)]">Completed</div>
           </div>
-        </CardContent>
-      </Card>
-    </Link>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 

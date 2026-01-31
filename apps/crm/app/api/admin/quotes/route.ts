@@ -5,6 +5,7 @@ import { quoteTotals } from "@/lib/server/db";
 import { withRequestLogging, logError } from "@/lib/server/observability";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { randomBytes, randomUUID } from "crypto";
+import { resolveLegalEntity, allocateQuoteNumberForEntity } from "@/lib/server/multiEntity";
 
 export const runtime = "nodejs";
 
@@ -76,12 +77,8 @@ export const POST = withRequestLogging(async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "invalid_client_email" }, { status: 400 });
     }
 
-    // Generate token and quote number
+    // Generate token
     const token = randomBytes(16).toString("hex");
-    const company = await client.company.findUnique({
-      where: { id: authCtx.companyId },
-      select: { invoiceNumberPrefix: true, nextInvoiceNumber: true },
-    });
 
     // Calculate totals from items — normalise each item to ensure id + numeric fields
     const rawItems = Array.isArray(body?.items) ? body.items : [];
@@ -93,11 +90,37 @@ export const POST = withRequestLogging(async function POST(req: Request) {
     }));
     const vatRate = typeof body?.vatRate === "number" ? body.vatRate : 0.2;
 
+    // Resolve legal entity for numbering scope
+    const resolved = await resolveLegalEntity({});
+    const legalEntityId = resolved?.legalEntityId || null;
+
+    // Allocate quote number from legal entity counter (atomic)
+    let quoteNumber: string | null = null;
+    if (legalEntityId) {
+      quoteNumber = await allocateQuoteNumberForEntity(legalEntityId);
+    }
+    // Fallback to company counter if no entity
+    if (!quoteNumber) {
+      const co = await client.company.findUnique({
+        where: { id: authCtx.companyId },
+        select: { quoteNumberPrefix: true, nextQuoteNumber: true },
+      });
+      const prefix = co?.quoteNumberPrefix || "QUO-";
+      const num = co?.nextQuoteNumber || 1;
+      quoteNumber = `${prefix}${String(num).padStart(6, "0")}`;
+      await client.company.update({
+        where: { id: authCtx.companyId },
+        data: { nextQuoteNumber: num + 1 },
+      });
+    }
+
     const quote = await client.quote.create({
       data: {
         id: randomUUID(),
         companyId: authCtx.companyId,
+        legalEntityId,
         token,
+        quoteNumber,
         clientId: typeof body?.clientId === "string" ? body.clientId : null,
         clientName,
         clientEmail,

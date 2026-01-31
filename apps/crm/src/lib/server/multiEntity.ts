@@ -172,7 +172,7 @@ export async function allocateInvoiceNumberForEntity(
       });
 
       const prefix = String(entity.invoiceNumberPrefix || "INV-");
-      const padded = String(n).padStart(5, "0");
+      const padded = String(n).padStart(6, "0");
       return `${prefix}${padded}`;
     });
     return result;
@@ -207,6 +207,40 @@ export async function allocateCertificateNumberForEntity(
 
       const prefix = String(entity.certificateNumberPrefix || "CERT-");
       const padded = String(n).padStart(5, "0");
+      return `${prefix}${padded}`;
+    });
+    return result;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Allocate the next quote number for a legal entity.
+ * Quote numbers are scoped per legal entity, not per company.
+ */
+export async function allocateQuoteNumberForEntity(
+  legalEntityId: string
+): Promise<string | null> {
+  const client = getPrisma();
+  if (!client) return null;
+
+  try {
+    const result = await client.$transaction(async (tx: typeof client) => {
+      const entity = await tx.legalEntity.findUnique({
+        where: { id: legalEntityId },
+        select: { quoteNumberPrefix: true, nextQuoteNumber: true },
+      });
+      if (!entity) return null;
+
+      const n = Number(entity.nextQuoteNumber || 1);
+      await tx.legalEntity.update({
+        where: { id: legalEntityId },
+        data: { nextQuoteNumber: n + 1, updatedAt: new Date() },
+      });
+
+      const prefix = String(entity.quoteNumberPrefix || "QUO-");
+      const padded = String(n).padStart(6, "0");
       return `${prefix}${padded}`;
     });
     return result;

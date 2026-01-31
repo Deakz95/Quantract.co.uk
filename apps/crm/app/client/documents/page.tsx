@@ -31,7 +31,7 @@ export default function ClientDocuments() {
                 <div>
                   <div className="text-sm font-semibold text-[var(--foreground)]">Signed Quote</div>
                   <div className="mt-0.5 text-xs text-[var(--muted-foreground)]">
-                    #{r.quoteId.slice(0, 8)} • {new Date(r.signedAtISO).toLocaleString()}
+                    Signed • {new Date(r.signedAtISO).toLocaleString()}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">

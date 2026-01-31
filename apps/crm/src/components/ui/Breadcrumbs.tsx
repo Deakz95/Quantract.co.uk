@@ -81,10 +81,16 @@ export function Breadcrumbs({ items }: BreadcrumbsProps = {}) {
       else if (label === "entitlements") label = "Entitlements";
       else if (label === "notifications") label = "Notifications";
       else if (label === "lead-capture") label = "Lead Capture";
-      else if (label.startsWith("Q-")) label = label; // Quote ID
+      else if (label.startsWith("Q-") || label.startsWith("QUO-")) label = label;
       else if (label.length > 20) {
-        // Likely a UUID - show abbreviated
-        label = `${label.substring(0, 8)}...`;
+        // Likely a UUID - show parent context label instead
+        const parentSeg = paths[i - 1]?.toLowerCase();
+        if (parentSeg === "quotes") label = "Quote";
+        else if (parentSeg === "invoices") label = "Invoice";
+        else if (parentSeg === "jobs") label = "Job";
+        else if (parentSeg === "clients") label = "Client";
+        else if (parentSeg === "certificates") label = "Certificate";
+        else label = "Detail";
       } else {
         // Capitalize first letter
         label = label.charAt(0).toUpperCase() + label.slice(1);

@@ -65,8 +65,8 @@ export default async function Page({ params }: Props) {
             This certificate is tied to a private signing link. Keep it secure if you share it with third parties.
           </div>
           <div className="space-y-2 text-sm">
-            <div><span className="font-semibold">Agreement Ref:</span> #{a.id.slice(0, 8)}</div>
-            <div><span className="font-semibold">Quote Ref:</span> #{a.quoteId.slice(0, 8)}</div>
+            <div><span className="font-semibold">Agreement Ref:</span> {(a as any).agreementNumber || "Agreement"}</div>
+            <div><span className="font-semibold">Quote Ref:</span> {(a as any).quoteNumber || "Quote"}</div>
             <div><span className="font-semibold">Signed at:</span> {a.signedAtISO ? new Date(a.signedAtISO).toLocaleString("en-GB") : ""}</div>
             <div><span className="font-semibold">Signer:</span> {a.signerName}</div>
             {a.signerEmail ? <div><span className="font-semibold">Email:</span> {a.signerEmail}</div> : null}

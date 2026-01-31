@@ -10,6 +10,7 @@ import { Breadcrumbs, type BreadcrumbItem } from "@/components/ui/Breadcrumbs";
 type Quote = {
   id: string;
   token: string;
+  quoteNumber?: string;
   clientName: string;
   clientEmail: string;
   clientId?: string;
@@ -338,8 +339,8 @@ export default function QuoteDetailClient({ quoteId }: { quoteId: string }) {
   const breadcrumbItems: BreadcrumbItem[] = useMemo(() => [
     { label: "Dashboard", href: "/admin" },
     { label: "Quotes", href: "/admin/quotes" },
-    { label: `Quote #${quoteId.slice(0, 8)}` },
-  ], [quoteId]);
+    { label: quote?.quoteNumber ? `Quote ${quote.quoteNumber}` : "Quote" },
+  ], [quoteId, quote?.quoteNumber]);
 
   if (!quote) {
     return (

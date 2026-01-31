@@ -140,7 +140,7 @@ export default async function Page({ params }: Props) {
                       return (
                         <tr key={q.id} className="border-t border-[var(--border)]">
                           <td className="py-3">
-                            <div className="font-semibold text-[var(--foreground)]">{q.id.slice(0, 8)}</div>
+                            <div className="font-semibold text-[var(--foreground)]">{(q as any).quoteNumber || "Quote"}</div>
                             <div className="mt-0.5 text-xs text-[var(--muted-foreground)]">{formatDate(q.createdAtISO)}</div>
                           </td>
 
@@ -193,9 +193,9 @@ export default async function Page({ params }: Props) {
                     {invoices.map((inv) => (
                       <tr key={inv.id} className="border-t border-[var(--border)]">
                         <td className="py-3">
-                          <div className="font-semibold text-[var(--foreground)]">{inv.id.slice(0, 8)}</div>
+                          <div className="font-semibold text-[var(--foreground)]">{(inv as any).invoiceNumber || "Invoice"}</div>
                           {inv.quoteId ? (
-                            <div className="mt-0.5 text-xs text-[var(--muted-foreground)]">Quote: {inv.quoteId.slice(0, 8)}</div>
+                            <div className="mt-0.5 text-xs text-[var(--muted-foreground)]">Quote: {(inv as any).quoteNumber || "Linked"}</div>
                           ) : null}
                         </td>
 
@@ -245,7 +245,7 @@ export default async function Page({ params }: Props) {
                     {jobs.map((j) => (
                       <tr key={j.id} className="border-t border-[var(--border)]">
                         <td className="py-3">
-                          <div className="font-semibold text-[var(--foreground)]">{j.title || j.id.slice(0, 8)}</div>
+                          <div className="font-semibold text-[var(--foreground)]">{j.title || "Job"}</div>
                         </td>
                         <td className="py-3"><Badge>{j.status}</Badge></td>
                         <td className="py-3 text-[var(--muted-foreground)]">{formatDate(j.createdAt ? new Date(j.createdAt).toISOString() : "")}</td>
@@ -325,11 +325,11 @@ export default async function Page({ params }: Props) {
                   {agreements.map((a) => (
                     <tr key={a.id} className="border-t border-[var(--border)]">
                       <td className="py-3">
-                        <div className="font-semibold text-[var(--foreground)]">{a.id.slice(0, 8)}</div>
+                        <div className="font-semibold text-[var(--foreground)]">Agreement</div>
                       </td>
 
                       <td className="py-3">
-                        <Badge>{a.quoteId.slice(0, 8)}</Badge>
+                        <Badge>{(a as any).quoteNumber || "Quote"}</Badge>
                       </td>
 
                       <td className="py-3">

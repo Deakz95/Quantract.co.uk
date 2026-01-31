@@ -18,7 +18,7 @@ export const GET = withRequestLogging(
   return new NextResponse(bytes, {
     headers: {
       "content-type": "application/pdf",
-      "content-disposition": `inline; filename="invoice-${invoice.id}.pdf"`,
+      "content-disposition": `inline; filename="invoice-${(invoice as any).invoiceNumber || invoice.id}.pdf"`,
       "cache-control": "no-store"
     }
   });

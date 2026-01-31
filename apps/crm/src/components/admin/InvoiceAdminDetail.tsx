@@ -52,7 +52,7 @@ export default function InvoiceAdminDetail({ invoiceId }: { invoiceId: string })
   const breadcrumbItems: BreadcrumbItem[] = useMemo(() => [
     { label: "Dashboard", href: "/admin" },
     { label: "Invoices", href: "/admin/invoices" },
-    { label: inv?.invoiceNumber ? `Invoice ${inv.invoiceNumber}` : `Invoice #${invoiceId.slice(0, 8)}` },
+    { label: inv?.invoiceNumber ? `Invoice ${inv.invoiceNumber}` : "Invoice" },
   ], [invoiceId, inv?.invoiceNumber]);
 
   useEffect(() => {
@@ -129,7 +129,7 @@ export default function InvoiceAdminDetail({ invoiceId }: { invoiceId: string })
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <CardTitle>{inv.invoiceNumber ? `Invoice ${inv.invoiceNumber}` : "Invoice"}</CardTitle>
-              <div className="mt-1 text-xs text-[var(--muted-foreground)]">Ref: #{inv.id.slice(0, 8)}</div>
+              {inv.invoiceNumber ? null : <div className="mt-1 text-xs text-[var(--muted-foreground)]">Draft</div>}
             </div>
             <div className="flex items-center gap-2">
               <Badge>{STATUS_LABEL[inv.status]}</Badge>
@@ -148,7 +148,7 @@ export default function InvoiceAdminDetail({ invoiceId }: { invoiceId: string })
                 <div className="mt-2 text-xs text-[var(--muted-foreground)]">
                   Quote:{" "}
                   <Link href={`/admin/quotes/${inv.quoteId}`} className="text-[var(--primary)] hover:underline">
-                    #{inv.quoteId.slice(0, 8)}
+                    {(inv as any).quoteNumber || "View Quote"}
                   </Link>
                 </div>
               ) : null}
@@ -180,7 +180,11 @@ export default function InvoiceAdminDetail({ invoiceId }: { invoiceId: string })
                   <Button variant="secondary" type="button">Client view</Button>
                 </Link>
               </div>
-              <div className="mt-2 text-xs text-[var(--muted-foreground)]">Client URL: {clientLink}</div>
+              <div className="mt-2">
+                <Button type="button" variant="secondary" className="text-xs" onClick={() => { navigator.clipboard.writeText(window.location.origin + clientLink); toast({ title: "Copied", description: "Client link copied to clipboard.", variant: "success" }); }}>
+                  Copy client link
+                </Button>
+              </div>
               {inv.paymentUrl ? (
                 <div className="mt-2 text-xs text-[var(--muted-foreground)] break-all">Payment URL: {inv.paymentUrl}</div>
               ) : null}

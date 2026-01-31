@@ -96,8 +96,81 @@ export const PATCH = withRequestLogging(async function PATCH(
   if (typeof body.registeredCountry === "string") data.registeredCountry = body.registeredCountry.trim() || null;
   if (typeof body.pdfFooterLine1 === "string") data.pdfFooterLine1 = body.pdfFooterLine1.trim() || null;
   if (typeof body.pdfFooterLine2 === "string") data.pdfFooterLine2 = body.pdfFooterLine2.trim() || null;
-  if (typeof body.invoiceNumberPrefix === "string") data.invoiceNumberPrefix = body.invoiceNumberPrefix.trim() || "INV-";
-  if (typeof body.certificateNumberPrefix === "string") data.certificateNumberPrefix = body.certificateNumberPrefix.trim() || "CERT-";
+  // Prefix validation: alphanumeric + dash/underscore, max 6 chars + separator
+  const prefixRe = /^[A-Za-z0-9_-]{1,6}[-]?$/;
+
+  if (typeof body.invoiceNumberPrefix === "string") {
+    const v = body.invoiceNumberPrefix.trim() || "INV-";
+    if (!prefixRe.test(v)) return NextResponse.json({ ok: false, error: "Invalid invoice prefix. Use up to 6 alphanumeric characters." }, { status: 400 });
+    data.invoiceNumberPrefix = v;
+  }
+  if (typeof body.quoteNumberPrefix === "string") {
+    const v = body.quoteNumberPrefix.trim() || "QUO-";
+    if (!prefixRe.test(v)) return NextResponse.json({ ok: false, error: "Invalid quote prefix. Use up to 6 alphanumeric characters." }, { status: 400 });
+    data.quoteNumberPrefix = v;
+  }
+  if (typeof body.certificateNumberPrefix === "string") {
+    const v = body.certificateNumberPrefix.trim() || "CERT-";
+    if (!prefixRe.test(v)) return NextResponse.json({ ok: false, error: "Invalid certificate prefix. Use up to 6 alphanumeric characters." }, { status: 400 });
+    data.certificateNumberPrefix = v;
+  }
+
+  // Next-number validation: must be >= 1 and >= highest existing + 1
+  if (typeof body.nextInvoiceNumber === "number") {
+    const n = Math.floor(body.nextInvoiceNumber);
+    if (n < 1) return NextResponse.json({ ok: false, error: "Next invoice number must be at least 1." }, { status: 400 });
+    // Find highest existing invoice number for this entity to prevent collision
+    const highestInv = await client.invoice.findFirst({
+      where: { legalEntityId: entityId },
+      orderBy: { invoiceNumber: "desc" },
+      select: { invoiceNumber: true },
+    });
+    if (highestInv?.invoiceNumber) {
+      const match = highestInv.invoiceNumber.match(/(\d+)$/);
+      const highest = match ? parseInt(match[1], 10) : 0;
+      if (n <= highest) {
+        return NextResponse.json({ ok: false, error: `Next invoice number must be greater than ${highest} (highest existing).` }, { status: 400 });
+      }
+    }
+    data.nextInvoiceNumber = n;
+  }
+
+  if (typeof body.nextQuoteNumber === "number") {
+    const n = Math.floor(body.nextQuoteNumber);
+    if (n < 1) return NextResponse.json({ ok: false, error: "Next quote number must be at least 1." }, { status: 400 });
+    const highestQ = await client.quote.findFirst({
+      where: { legalEntityId: entityId },
+      orderBy: { quoteNumber: "desc" },
+      select: { quoteNumber: true },
+    });
+    if (highestQ?.quoteNumber) {
+      const match = highestQ.quoteNumber.match(/(\d+)$/);
+      const highest = match ? parseInt(match[1], 10) : 0;
+      if (n <= highest) {
+        return NextResponse.json({ ok: false, error: `Next quote number must be greater than ${highest} (highest existing).` }, { status: 400 });
+      }
+    }
+    data.nextQuoteNumber = n;
+  }
+
+  if (typeof body.nextCertificateNumber === "number") {
+    const n = Math.floor(body.nextCertificateNumber);
+    if (n < 1) return NextResponse.json({ ok: false, error: "Next certificate number must be at least 1." }, { status: 400 });
+    const highestC = await client.certificate.findFirst({
+      where: { legalEntityId: entityId },
+      orderBy: { certificateNumber: "desc" },
+      select: { certificateNumber: true },
+    });
+    if (highestC?.certificateNumber) {
+      const match = highestC.certificateNumber.match(/(\d+)$/);
+      const highest = match ? parseInt(match[1], 10) : 0;
+      if (n <= highest) {
+        return NextResponse.json({ ok: false, error: `Next certificate number must be greater than ${highest} (highest existing).` }, { status: 400 });
+      }
+    }
+    data.nextCertificateNumber = n;
+  }
+
   if (typeof body.status === "string" && ["active", "inactive"].includes(body.status)) {
     data.status = body.status;
   }

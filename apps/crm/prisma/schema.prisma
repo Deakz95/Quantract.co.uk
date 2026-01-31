@@ -317,6 +317,8 @@ model Company {
   nextInvoiceNumber       Int                     @default(1)
   certificateNumberPrefix String                  @default("CERT-")
   nextCertificateNumber   Int                     @default(1)
+  quoteNumberPrefix       String                  @default("QUO-")
+  nextQuoteNumber         Int                     @default(1)
   onboardedAt             DateTime?
   defaultPaymentTermsDays Int                     @default(14)
   autoChaseEnabled        Boolean                 @default(false)
@@ -477,12 +479,15 @@ model LegalEntity {
   nextInvoiceNumber       Int           @default(1)
   certificateNumberPrefix String        @default("CERT-")
   nextCertificateNumber   Int           @default(1)
+  quoteNumberPrefix       String        @default("QUO-")
+  nextQuoteNumber         Int           @default(1)
   isDefault               Boolean       @default(false)
   status                  String        @default("active") // active, inactive
   createdAt               DateTime      @default(now())
   updatedAt               DateTime
   company                 Company       @relation(fields: [companyId], references: [id])
   invoices                Invoice[]
+  quotes                  Quote[]
   certificates            Certificate[]
   serviceLines            ServiceLine[] @relation("ServiceLineDefaultEntity")
   jobsPerforming          Job[]         @relation("JobPerformingEntity")
@@ -1120,10 +1125,12 @@ model PurchaseOrderLine {
 model Quote {
   id             String          @id
   companyId      String
+  legalEntityId  String?
   token          String          @unique
   clientId       String?
   siteId         String?
   version        Int             @default(1)
+  quoteNumber    String?
   clientName     String
   clientEmail    String
   siteAddress    String?
@@ -1141,13 +1148,16 @@ model Quote {
   jobs           Job[]
   client         Client?         @relation(fields: [clientId], references: [id])
   company        Company         @relation(fields: [companyId], references: [id])
+  legalEntity    LegalEntity?    @relation(fields: [legalEntityId], references: [id])
   site           Site?           @relation(fields: [siteId], references: [id])
   quoteRevisions QuoteRevision[]
   variations     Variation[]
 
+  @@unique([legalEntityId, quoteNumber])
   @@index([clientId])
   @@index([companyId])
   @@index([companyId, deletedAt])
+  @@index([legalEntityId])
 }
 
 model QuoteRevision {
@@ -1225,6 +1235,8 @@ model Site {
   county           String?
   postcode         String?
   country          String?
+  latitude         Float?
+  longitude        Float?
   notes            String?
   paymentTermsDays Int?
   disableAutoChase Boolean       @default(false)

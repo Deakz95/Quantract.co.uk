@@ -5,6 +5,7 @@ import { clampMoney } from "@/lib/invoiceMath";
 import { withRequestLogging, logError } from "@/lib/server/observability";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { randomBytes, randomUUID } from "crypto";
+import { resolveLegalEntity, allocateInvoiceNumberForEntity } from "@/lib/server/multiEntity";
 
 export const runtime = "nodejs";
 
@@ -101,21 +102,27 @@ export const POST = withRequestLogging(async function POST(req: Request) {
       const vat = clampMoney(subtotal * (quote.vatRate || 0));
       const total = clampMoney(subtotal + vat);
 
-      // Generate invoice number
-      const company = await client.company.findUnique({
-        where: { id: ctx.companyId },
-        select: { invoiceNumberPrefix: true, nextInvoiceNumber: true },
-      });
+      // Resolve legal entity for numbering
+      const resolved = await resolveLegalEntity({ jobId: null });
+      const legalEntityId = resolved?.legalEntityId || null;
 
-      const prefix = company?.invoiceNumberPrefix || "INV-";
-      const num = company?.nextInvoiceNumber || 1;
-      const invoiceNumber = `${prefix}${String(num).padStart(5, "0")}`;
-
-      // Increment next invoice number
-      await client.company.update({
-        where: { id: ctx.companyId },
-        data: { nextInvoiceNumber: num + 1 },
-      });
+      let invoiceNumber: string | null = null;
+      if (legalEntityId) {
+        invoiceNumber = await allocateInvoiceNumberForEntity(legalEntityId);
+      }
+      if (!invoiceNumber) {
+        const company = await client.company.findUnique({
+          where: { id: ctx.companyId },
+          select: { invoiceNumberPrefix: true, nextInvoiceNumber: true },
+        });
+        const pfx = company?.invoiceNumberPrefix || "INV-";
+        const n = company?.nextInvoiceNumber || 1;
+        invoiceNumber = `${pfx}${String(n).padStart(6, "0")}`;
+        await client.company.update({
+          where: { id: ctx.companyId },
+          data: { nextInvoiceNumber: n + 1 },
+        });
+      }
 
       const token = randomBytes(16).toString("hex");
 
@@ -135,6 +142,7 @@ export const POST = withRequestLogging(async function POST(req: Request) {
         data: {
           id: randomUUID(),
           companyId: ctx.companyId,
+          legalEntityId,
           quoteId,
           clientId: quote.clientId,
           token,
@@ -164,20 +172,27 @@ export const POST = withRequestLogging(async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "missing_client" }, { status: 400 });
     }
 
-    // Generate invoice number
-    const company = await client.company.findUnique({
-      where: { id: ctx.companyId },
-      select: { invoiceNumberPrefix: true, nextInvoiceNumber: true },
-    });
+    // Resolve legal entity for numbering
+    const manualResolved = await resolveLegalEntity({ jobId: null });
+    const manualEntityId = manualResolved?.legalEntityId || null;
 
-    const prefix = company?.invoiceNumberPrefix || "INV-";
-    const num = company?.nextInvoiceNumber || 1;
-    const invoiceNumber = `${prefix}${String(num).padStart(5, "0")}`;
-
-    await client.company.update({
-      where: { id: ctx.companyId },
-      data: { nextInvoiceNumber: num + 1 },
-    });
+    let invoiceNumber: string | null = null;
+    if (manualEntityId) {
+      invoiceNumber = await allocateInvoiceNumberForEntity(manualEntityId);
+    }
+    if (!invoiceNumber) {
+      const company = await client.company.findUnique({
+        where: { id: ctx.companyId },
+        select: { invoiceNumberPrefix: true, nextInvoiceNumber: true },
+      });
+      const pfx = company?.invoiceNumberPrefix || "INV-";
+      const n = company?.nextInvoiceNumber || 1;
+      invoiceNumber = `${pfx}${String(n).padStart(6, "0")}`;
+      await client.company.update({
+        where: { id: ctx.companyId },
+        data: { nextInvoiceNumber: n + 1 },
+      });
+    }
 
     const token = randomBytes(16).toString("hex");
 
@@ -189,6 +204,7 @@ export const POST = withRequestLogging(async function POST(req: Request) {
       data: {
         id: randomUUID(),
         companyId: ctx.companyId,
+        legalEntityId: manualEntityId,
         token,
         invoiceNumber,
         clientName,

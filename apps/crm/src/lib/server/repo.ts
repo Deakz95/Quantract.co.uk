@@ -163,21 +163,29 @@ async function requireCompanyIdForPrisma(): Promise<string> {
   return companyId;
 }
 
-async function allocateInvoiceNumber(client: any): Promise<string | null> {
+async function allocateInvoiceNumber(client: any): Promise<{ invoiceNumber: string | null; legalEntityId: string | null }> {
   try {
     const companyId = await requireCompanyIdForPrisma();
+    // Try entity-scoped numbering first
+    const { resolveLegalEntity, allocateInvoiceNumberForEntity } = await import("@/lib/server/multiEntity");
+    const resolved = await resolveLegalEntity({});
+    if (resolved?.legalEntityId) {
+      const num = await allocateInvoiceNumberForEntity(resolved.legalEntityId);
+      if (num) return { invoiceNumber: num, legalEntityId: resolved.legalEntityId };
+    }
+    // Fallback to company counter
     const res = await client.$transaction(async (tx: any) => {
       const c = await tx.company.findUnique({ where: { id: companyId }, select: { invoiceNumberPrefix: true, nextInvoiceNumber: true } });
       if (!c) return null;
       const n = Number(c.nextInvoiceNumber || 1);
       await tx.company.update({ where: { id: companyId }, data: { nextInvoiceNumber: n + 1 } });
       const prefix = String(c.invoiceNumberPrefix || "INV-");
-      const padded = String(n).padStart(5, "0");
+      const padded = String(n).padStart(6, "0");
       return `${prefix}${padded}`;
     });
-    return res;
+    return { invoiceNumber: res, legalEntityId: null };
   } catch {
-    return null;
+    return { invoiceNumber: null, legalEntityId: null };
   }
 }
 
@@ -1496,14 +1504,15 @@ if (existing) {
   dueAt.setDate(dueAt.getDate() + paymentDays);
 
   const token = crypto.randomBytes(24).toString("hex");
-  const invoiceNumber = await allocateInvoiceNumber(client);
+  const allocated = await allocateInvoiceNumber(client);
 
   const row = await client.invoice.create({
     data: {
       id: crypto.randomUUID(),
       companyId,
+      legalEntityId: allocated.legalEntityId,
       token,
-      invoiceNumber,
+      invoiceNumber: allocated.invoiceNumber,
       clientId: quote.clientId ?? null,
       quoteId,
       jobId: null,
@@ -1566,7 +1575,7 @@ export async function createInvoiceForJob(input: {
 
   // Resolve legal entity for this invoice
   const legalEntityResolution = await resolveLegalEntity({ jobId: input.jobId });
-  const legalEntityId = legalEntityResolution?.legalEntityId ?? null;
+  let legalEntityId = legalEntityResolution?.legalEntityId ?? null;
 
   let vatRate = typeof input.vatRate === "number"
     ? input.vatRate
@@ -1696,9 +1705,15 @@ export async function createInvoiceForJob(input: {
 
       const token = crypto.randomBytes(24).toString("hex");
       // Use per-entity invoice numbering when legal entity is available
-      const invoiceNumber = legalEntityId
-        ? await allocateInvoiceNumberForEntity(legalEntityId)
-        : await allocateInvoiceNumber(client);
+      let invoiceNumber: string | null = null;
+      if (legalEntityId) {
+        invoiceNumber = await allocateInvoiceNumberForEntity(legalEntityId);
+      }
+      if (!invoiceNumber) {
+        const fallback = await allocateInvoiceNumber(client);
+        invoiceNumber = fallback.invoiceNumber;
+        if (!legalEntityId && fallback.legalEntityId) legalEntityId = fallback.legalEntityId;
+      }
 
       const created = await client.$transaction(async (tx: any) => {
         const inv = await tx.invoice.create({
@@ -1796,9 +1811,15 @@ export async function createInvoiceForJob(input: {
 
   const token = crypto.randomBytes(24).toString("hex");
   // Use per-entity invoice numbering when legal entity is available
-  const invoiceNumber = legalEntityId
-    ? await allocateInvoiceNumberForEntity(legalEntityId)
-    : await allocateInvoiceNumber(client);
+  let invoiceNumber2: string | null = null;
+  if (legalEntityId) {
+    invoiceNumber2 = await allocateInvoiceNumberForEntity(legalEntityId);
+  }
+  if (!invoiceNumber2) {
+    const fallback2 = await allocateInvoiceNumber(client);
+    invoiceNumber2 = fallback2.invoiceNumber;
+    if (!legalEntityId && fallback2.legalEntityId) legalEntityId = fallback2.legalEntityId;
+  }
 
   const created = await client.$transaction(async (tx: any) => {
     const inv = await tx.invoice.create({
@@ -1806,7 +1827,7 @@ export async function createInvoiceForJob(input: {
         id: crypto.randomUUID(),
         companyId,
         token,
-        invoiceNumber,
+        invoiceNumber: invoiceNumber2,
         legalEntityId,
         clientId: job.clientId ?? null,
         quoteId: job.quoteId ?? null,

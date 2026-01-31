@@ -287,7 +287,7 @@ export default function QuotesPage() {
       sortable: true,
       render: (quote) => (
         <Link href={`/admin/quotes/${quote.id || quote.quoteId}`} className="text-[var(--primary)] font-medium hover:underline">
-          {quote.quoteNumber || `Q-${(quote.id || quote.quoteId)?.slice(0, 8)}`}
+          {quote.quoteNumber || "Draft"}
         </Link>
       ),
     },
