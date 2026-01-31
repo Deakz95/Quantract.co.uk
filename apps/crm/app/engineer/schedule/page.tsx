@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Shell } from "@/components/shell/Shell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -114,8 +113,7 @@ export default function EngineerSchedulePage() {
   }, [clashes]);
 
   return (
-    <Shell role="engineer" title="My Schedule" subtitle="Week view of your assigned work.">
-      <div className="space-y-4">
+    <div className="space-y-4">
         <Card>
           <CardContent>
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -190,7 +188,6 @@ export default function EngineerSchedulePage() {
             })}
           </div>
         )}
-      </div>
-    </Shell>
+    </div>
   );
 }

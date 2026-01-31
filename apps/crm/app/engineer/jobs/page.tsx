@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Shell } from "@/components/shell/Shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
@@ -58,8 +57,8 @@ export default function EngineerJobsPage() {
   }, []);
 
   return (
-    <Shell role="engineer" title="My Jobs" subtitle={offline ? "Offline mode - showing cached data" : ""}>
-      <div className="space-y-3">
+    <div className="space-y-3">
+      {offline ? <p className="text-xs text-[var(--muted-foreground)]">Offline mode — showing cached data</p> : null}
         {jobs.length === 0 ? (
           <Card>
             <CardHeader>
@@ -90,7 +89,6 @@ export default function EngineerJobsPage() {
             </Card>
           </Link>
         ))}
-      </div>
-    </Shell>
+    </div>
   );
 }
