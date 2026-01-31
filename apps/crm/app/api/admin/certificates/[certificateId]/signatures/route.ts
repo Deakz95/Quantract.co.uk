@@ -76,6 +76,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ certificateId:
     return NextResponse.json({ ok: true, signature }, { status: 201 });
   } catch (err: any) {
     if (err?.status === 401 || err?.status === 403) return NextResponse.json({ ok: false, error: "forbidden" }, { status: err.status });
-    return NextResponse.json({ ok: false, error: "create_failed" }, { status: 500 });
+    console.error("[POST /certificates/signatures] Error:", err?.message, err?.code, err?.meta);
+    return NextResponse.json({ ok: false, error: "create_failed", detail: err?.message }, { status: 500 });
   }
 }
