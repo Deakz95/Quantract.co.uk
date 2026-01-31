@@ -11,7 +11,6 @@ export async function runQuantractAi(args: { system: string; user: string; dataB
       { role: "user", content: JSON.stringify({ question: args.user, data: args.dataBundle }) },
     ],
     response_format: { type: "json_object" },
-    temperature: 0.3,
     max_completion_tokens: 2048,
   });
 

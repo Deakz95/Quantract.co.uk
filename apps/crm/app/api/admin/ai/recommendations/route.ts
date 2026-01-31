@@ -141,7 +141,6 @@ export async function GET() {
         { role: "user", content: userContent },
       ],
       response_format: { type: "json_object" },
-      temperature: 0.2,
       max_completion_tokens: 3000,
     });
     msAi = stopAi();

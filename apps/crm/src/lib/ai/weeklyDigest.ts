@@ -126,7 +126,6 @@ export async function runWeeklyCrmDigest(): Promise<{
           { role: "user", content: userContent },
         ],
         response_format: { type: "json_object" },
-        temperature: 0.2,
         max_completion_tokens: 3000,
       });
       const raw = completion.choices?.[0]?.message?.content ?? "";
