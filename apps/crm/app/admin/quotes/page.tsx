@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { FilterDropdown, type Filters, type FilterConfig } from "@/components/ui/FilterDropdown";
 import { DataTable, BulkActionBar, formatRelativeTime, type Column, type Action, type SortDirection } from "@/components/ui/DataTable";
 import { TableSkeletonInline } from "@/components/ui/TableSkeleton";
+import { deleteWithMessage, bulkDeleteWithSummary } from "@/lib/http/deleteWithMessage";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/useToast";
 import { FileText, Plus, SquarePen, Copy, Trash2 } from "lucide-react";
@@ -227,37 +228,27 @@ export default function QuotesPage() {
   };
 
   const handleDelete = async (quote: Quote) => {
+    const qid = quote.id || quote.quoteId;
     try {
-      const response = await fetch(`/api/admin/quotes/${quote.id || quote.quoteId}`, {
-        method: 'DELETE',
-      });
-      if (response.ok) {
-        toast({ title: "Deleted", description: "Quote deleted", variant: "success" });
-        loadQuotes();
-        setSelectedIds(ids => ids.filter(id => id !== (quote.id || quote.quoteId)));
-      } else {
-        const body = await response.json().catch(() => null);
-        const msg = body?.message || body?.error || "Failed to delete quote";
-        toast({ title: "Error", description: msg, variant: "destructive" });
-      }
-    } catch {
-      toast({ title: "Error", description: "Failed to delete quote", variant: "destructive" });
+      await deleteWithMessage(`/api/admin/quotes/${qid}`);
+      toast({ title: "Deleted", description: "Quote deleted", variant: "success" });
+      loadQuotes();
+      setSelectedIds(ids => ids.filter(id => id !== qid));
+    } catch (e: any) {
+      toast({ title: "Error", description: e?.message || "Failed to delete quote", variant: "destructive" });
     }
   };
 
   const handleBulkDelete = async () => {
     setBulkDeleting(true);
     try {
-      await Promise.all(
-        selectedIds.map(id =>
-          fetch(`/api/admin/quotes/${id}`, { method: 'DELETE' })
-        )
-      );
-      toast({ title: "Deleted", description: `${selectedIds.length} quotes deleted`, variant: "success" });
+      const r = await bulkDeleteWithSummary(selectedIds, (id) => `/api/admin/quotes/${id}`);
+      if (r.deleted > 0) toast({ title: "Deleted", description: `${r.deleted} quote${r.deleted === 1 ? "" : "s"} deleted`, variant: "success" });
+      if (r.blocked > 0) toast({ title: "Error", description: `${r.blocked} could not be deleted (linked records).`, variant: "destructive" });
       loadQuotes();
       setSelectedIds([]);
     } catch {
-      toast({ title: "Error", description: "Failed to delete some quotes", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to delete quotes", variant: "destructive" });
     } finally {
       setBulkDeleting(false);
       setBulkDeleteOpen(false);

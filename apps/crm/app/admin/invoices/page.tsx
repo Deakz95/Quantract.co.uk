@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { FilterDropdown, type Filters, type FilterConfig } from "@/components/ui/FilterDropdown";
 import { DataTable, BulkActionBar, formatRelativeTime, type Column, type Action, type SortDirection } from "@/components/ui/DataTable";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { deleteWithMessage, bulkDeleteWithSummary } from "@/lib/http/deleteWithMessage";
 import { useToast } from "@/components/ui/useToast";
 import { Receipt, Plus, SquarePen, Copy, Trash2 } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -248,36 +249,25 @@ export default function InvoicesPage() {
 
   const handleDelete = async (invoice: Invoice) => {
     try {
-      const response = await fetch(`/api/admin/invoices/${invoice.id}`, {
-        method: 'DELETE',
-      });
-      if (response.ok) {
-        toast({ title: "Deleted", description: "Invoice deleted", variant: "success" });
-        loadInvoices();
-        setSelectedIds(ids => ids.filter(id => id !== invoice.id));
-      } else {
-        const body = await response.json().catch(() => null);
-        const msg = body?.message || body?.error || "Failed to delete invoice";
-        toast({ title: "Error", description: msg, variant: "destructive" });
-      }
-    } catch {
-      toast({ title: "Error", description: "Failed to delete invoice", variant: "destructive" });
+      await deleteWithMessage(`/api/admin/invoices/${invoice.id}`);
+      toast({ title: "Deleted", description: "Invoice deleted", variant: "success" });
+      loadInvoices();
+      setSelectedIds(ids => ids.filter(id => id !== invoice.id));
+    } catch (e: any) {
+      toast({ title: "Error", description: e?.message || "Failed to delete invoice", variant: "destructive" });
     }
   };
 
   const handleBulkDelete = async () => {
     setBulkDeleting(true);
     try {
-      await Promise.all(
-        selectedIds.map(id =>
-          fetch(`/api/admin/invoices/${id}`, { method: 'DELETE' })
-        )
-      );
-      toast({ title: "Deleted", description: `${selectedIds.length} invoices deleted`, variant: "success" });
+      const r = await bulkDeleteWithSummary(selectedIds, (id) => `/api/admin/invoices/${id}`);
+      if (r.deleted > 0) toast({ title: "Deleted", description: `${r.deleted} invoice${r.deleted === 1 ? "" : "s"} deleted`, variant: "success" });
+      if (r.blocked > 0) toast({ title: "Error", description: `${r.blocked} could not be deleted (linked records).`, variant: "destructive" });
       loadInvoices();
       setSelectedIds([]);
     } catch {
-      toast({ title: "Error", description: "Failed to delete some invoices", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to delete invoices", variant: "destructive" });
     } finally {
       setBulkDeleting(false);
       setBulkDeleteOpen(false);

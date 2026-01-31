@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { FilterDropdown, type Filters, type FilterConfig } from "@/components/ui/FilterDropdown";
 import { DataTable, BulkActionBar, formatRelativeTime, type Column, type Action, type SortDirection } from "@/components/ui/DataTable";
 import { TableSkeletonInline } from "@/components/ui/TableSkeleton";
+import { deleteWithMessage, bulkDeleteWithSummary } from "@/lib/http/deleteWithMessage";
 import { CardGridSkeleton } from "@/components/ui/CardSkeleton";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/useToast";
@@ -254,36 +255,25 @@ export default function JobsPage() {
 
   const handleDelete = async (job: Job) => {
     try {
-      const response = await fetch(`/api/admin/jobs/${job.id}`, {
-        method: 'DELETE',
-      });
-      if (response.ok) {
-        toast({ title: "Deleted", description: "Job deleted", variant: "success" });
-        loadJobs();
-        setSelectedIds(ids => ids.filter(id => id !== job.id));
-      } else {
-        const body = await response.json().catch(() => null);
-        const msg = body?.message || body?.error || "Failed to delete job";
-        toast({ title: "Error", description: msg, variant: "destructive" });
-      }
-    } catch {
-      toast({ title: "Error", description: "Failed to delete job", variant: "destructive" });
+      await deleteWithMessage(`/api/admin/jobs/${job.id}`);
+      toast({ title: "Deleted", description: "Job deleted", variant: "success" });
+      loadJobs();
+      setSelectedIds(ids => ids.filter(id => id !== job.id));
+    } catch (e: any) {
+      toast({ title: "Error", description: e?.message || "Failed to delete job", variant: "destructive" });
     }
   };
 
   const handleBulkDelete = async () => {
     setBulkDeleting(true);
     try {
-      await Promise.all(
-        selectedIds.map(id =>
-          fetch(`/api/admin/jobs/${id}`, { method: 'DELETE' })
-        )
-      );
-      toast({ title: "Deleted", description: `${selectedIds.length} jobs deleted`, variant: "success" });
+      const r = await bulkDeleteWithSummary(selectedIds, (id) => `/api/admin/jobs/${id}`);
+      if (r.deleted > 0) toast({ title: "Deleted", description: `${r.deleted} job${r.deleted === 1 ? "" : "s"} deleted`, variant: "success" });
+      if (r.blocked > 0) toast({ title: "Error", description: `${r.blocked} could not be deleted (linked records).`, variant: "destructive" });
       loadJobs();
       setSelectedIds([]);
     } catch {
-      toast({ title: "Error", description: "Failed to delete some jobs", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to delete jobs", variant: "destructive" });
     } finally {
       setBulkDeleting(false);
       setBulkDeleteOpen(false);

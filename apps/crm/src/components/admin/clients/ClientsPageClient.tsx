@@ -8,6 +8,7 @@ import { useToast } from "@/components/ui/useToast";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Dialog, DialogBody, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/Dialog";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { bulkDeleteWithSummary } from "@/lib/http/deleteWithMessage";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { DataTable, BulkActionBar, formatRelativeTime, type Column, type Action, type SortDirection } from "@/components/ui/DataTable";
 import { TableSkeletonInline } from "@/components/ui/TableSkeleton";
@@ -342,15 +343,14 @@ export default function ClientsPageClient() {
   const handleBulkDelete = async () => {
     setBulkDeleting(true);
     try {
-      await Promise.all(
-        selectedIds.map((id) => apiRequest(`/api/admin/clients/${id}`, { method: "DELETE" }))
-      );
-      toast({ title: "Deleted", description: `${selectedIds.length} clients deleted`, variant: "success" });
+      const r = await bulkDeleteWithSummary(selectedIds, (id) => `/api/admin/clients/${id}`);
+      if (r.deleted > 0) toast({ title: "Deleted", description: `${r.deleted} client${r.deleted === 1 ? "" : "s"} deleted`, variant: "success" });
+      if (r.blocked > 0) toast({ title: "Error", description: `${r.blocked} could not be deleted (linked records).`, variant: "destructive" });
       await load();
       setSelectedIds([]);
       if (editing && selectedIds.includes(editing.id)) startNew();
     } catch {
-      toast({ title: "Error", description: "Failed to delete some clients", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to delete clients", variant: "destructive" });
     } finally {
       setBulkDeleting(false);
       setBulkDeleteOpen(false);
