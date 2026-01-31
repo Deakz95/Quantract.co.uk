@@ -78,7 +78,7 @@ export default function AdminSchedulePage() {
           .catch(() => null),
       ]);
 
-      setJobs(Array.isArray(j?.jobs) ? j.jobs : []);
+      setJobs(Array.isArray(j) ? j : Array.isArray(j?.jobs) ? j.jobs : []);
       setEngineers(Array.isArray(e?.engineers) ? e.engineers : []);
       setEntries(Array.isArray(s?.entries) ? s.entries : []);
       setClashes(Array.isArray(s?.clashes) ? s.clashes : []);
@@ -341,7 +341,7 @@ export default function AdminSchedulePage() {
                                   <div className="min-w-0">
                                     <div className="flex flex-wrap items-center gap-2">
                                       <Link href={`/admin/jobs/${s.jobId}`} className="font-semibold text-[var(--primary)] hover:underline">
-                                        Job #{s.jobId.slice(0, 8)}
+                                        {(() => { const j = jobs.find((jb) => jb.id === s.jobId); return j?.title || `Job ${s.jobId.slice(0, 6)}`; })()}
                                       </Link>
                                       {clash && <Badge variant="warning">OVERBOOKED</Badge>}
                                     </div>

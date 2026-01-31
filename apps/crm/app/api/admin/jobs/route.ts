@@ -36,7 +36,14 @@ export const GET = withRequestLogging(async function GET() {
       },
     });
 
-    return NextResponse.json(jobs || []);
+    // Add formatted jobNumber for UI display
+    const mapped = (jobs || []).map((j: any) => ({
+      ...j,
+      jobNumber: j.jobNumber ? `J-${String(j.jobNumber).padStart(4, "0")}` : null,
+      description: j.notes || j.title || null,
+    }));
+
+    return NextResponse.json(mapped);
   } catch (error: any) {
     // Handle auth errors with appropriate status codes
     if (error?.status === 401) {
@@ -79,10 +86,6 @@ export const POST = withRequestLogging(async function POST(req: Request) {
       title?: string;
       description?: string;
     };
-
-    // Generate job number
-    const jobCount = await client.job.count({ where: { companyId: ctx.companyId } });
-    const jobNumber = `JOB-${String(jobCount + 1).padStart(5, "0")}`;
 
     // Manual job creation
     if (body?.manual) {
@@ -139,25 +142,33 @@ export const POST = withRequestLogging(async function POST(req: Request) {
         }
       }
 
-      const job = await client.job.create({
-        data: {
-          id: randomUUID(),
-          companyId: ctx.companyId,
-          // jobNumber not yet in schema
-          clientId,
-          siteId,
-          title,
-          notes: body?.description || null,
-          status: "pending",
-          updatedAt: new Date(),
-        },
-        include: {
-          client: { select: { id: true, name: true } },
-          site: { select: { id: true, name: true, address1: true } },
-        },
+      const job = await client.$transaction(async (tx: any) => {
+        const co = await tx.company.update({
+          where: { id: ctx.companyId },
+          data: { nextJobNumber: { increment: 1 } },
+          select: { nextJobNumber: true },
+        });
+        const num = co.nextJobNumber - 1; // value before increment
+        return tx.job.create({
+          data: {
+            id: randomUUID(),
+            companyId: ctx.companyId,
+            jobNumber: num,
+            clientId,
+            siteId,
+            title,
+            notes: body?.description || null,
+            status: "pending",
+            updatedAt: new Date(),
+          },
+          include: {
+            client: { select: { id: true, name: true } },
+            site: { select: { id: true, name: true, address1: true } },
+          },
+        });
       });
 
-      return NextResponse.json({ ok: true, job });
+      return NextResponse.json({ ok: true, job: { ...job, jobNumber: `J-${String(job.jobNumber).padStart(4, "0")}` } });
     }
 
     // From quote
@@ -215,28 +226,37 @@ export const POST = withRequestLogging(async function POST(req: Request) {
       }
     }
 
-    const job = await client.job.create({
-      data: {
-        id: randomUUID(),
-        companyId: ctx.companyId,
-        quoteId,
-        clientId: quote.clientId,
-        siteId: quoteSiteId,
-        title: `Job from Quote ${quoteId.slice(0, 8)}`,
-        status: "pending",
-        budgetSubtotal: 0,
-        budgetVat: 0,
-        budgetTotal: 0,
-        updatedAt: new Date(),
-      },
-      include: {
-        client: { select: { id: true, name: true } },
-        site: { select: { id: true, name: true, address1: true } },
-        quote: { select: { id: true, token: true } },
-      },
+    const job = await client.$transaction(async (tx: any) => {
+      const co = await tx.company.update({
+        where: { id: ctx.companyId },
+        data: { nextJobNumber: { increment: 1 } },
+        select: { nextJobNumber: true },
+      });
+      const num = co.nextJobNumber - 1;
+      return tx.job.create({
+        data: {
+          id: randomUUID(),
+          companyId: ctx.companyId,
+          jobNumber: num,
+          quoteId,
+          clientId: quote.clientId,
+          siteId: quoteSiteId,
+          title: `Job from Quote ${quoteId.slice(0, 8)}`,
+          status: "pending",
+          budgetSubtotal: 0,
+          budgetVat: 0,
+          budgetTotal: 0,
+          updatedAt: new Date(),
+        },
+        include: {
+          client: { select: { id: true, name: true } },
+          site: { select: { id: true, name: true, address1: true } },
+          quote: { select: { id: true, token: true } },
+        },
+      });
     });
 
-    return NextResponse.json({ ok: true, job });
+    return NextResponse.json({ ok: true, job: { ...job, jobNumber: `J-${String(job.jobNumber).padStart(4, "0")}` } });
   } catch (error) {
     if (error instanceof PrismaClientKnownRequestError) {
       logError(error, { route: "/api/admin/jobs", action: "create" });

@@ -239,6 +239,7 @@ model Company {
   // Break-even settings
   workingDaysPerMonth     Int                     @default(22)
   workingDaysMask         Int                     @default(31) // bitmask: Mon=1 Tue=2 Wed=4 Thu=8 Fri=16 Sat=32 Sun=64
+  nextJobNumber           Int                     @default(1)
   createdAt               DateTime                @default(now())
   updatedAt               DateTime
   agreements              Agreement[]
@@ -651,6 +652,7 @@ model InvoiceVariation {
 model Job {
   id                      String          @id
   companyId               String
+  jobNumber               Int?
   serviceLineId           String?
   performingLegalEntityId String? // Override: which legal entity performs this job
   quoteId                 String?
@@ -691,6 +693,7 @@ model Job {
   // CRM modules
   activities              Activity[]
 
+  @@unique([companyId, jobNumber])
   @@index([companyId])
   @@index([serviceLineId])
   @@index([performingLegalEntityId])

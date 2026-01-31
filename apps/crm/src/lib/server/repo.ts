@@ -2509,30 +2509,39 @@ export async function ensureJobForQuote(quoteId: string): Promise<Job | null> {
     throw new Error("Site does not belong to company");
   }
 
-  const row = await client.job.create({
-    data: {
-      id: crypto.randomUUID(),
-      companyId,
-      quoteId,
-      clientId: (q as any).clientId ?? null,
-      siteId,
-      title: (() => {
-        const clientName = (q as any).clientName || "";
-        const firstDesc = quote.items?.[0]?.description || "";
-        if (clientName && firstDesc) {
-          const desc = firstDesc.length > 60 ? firstDesc.slice(0, 57) + "..." : firstDesc;
-          return `${clientName} — ${desc}`;
-        }
-        if (clientName) return clientName;
-        return `Job from Quote ${quoteId.slice(0, 8)}`;
-      })(),
-      status: "new",
-      budgetSubtotal: totals.subtotal,
-      budgetVat: totals.vat,
-      budgetTotal: totals.total,
-      updatedAt: new Date(),
-    },
-    include: { client: true, site: true, engineer: true },
+  const row = await client.$transaction(async (tx: any) => {
+    const co = await tx.company.update({
+      where: { id: companyId },
+      data: { nextJobNumber: { increment: 1 } },
+      select: { nextJobNumber: true },
+    });
+    const num = co.nextJobNumber - 1;
+    return tx.job.create({
+      data: {
+        id: crypto.randomUUID(),
+        companyId,
+        jobNumber: num,
+        quoteId,
+        clientId: (q as any).clientId ?? null,
+        siteId,
+        title: (() => {
+          const clientName = (q as any).clientName || "";
+          const firstDesc = quote.items?.[0]?.description || "";
+          if (clientName && firstDesc) {
+            const desc = firstDesc.length > 60 ? firstDesc.slice(0, 57) + "..." : firstDesc;
+            return `${clientName} — ${desc}`;
+          }
+          if (clientName) return clientName;
+          return `Job from Quote ${quoteId.slice(0, 8)}`;
+        })(),
+        status: "new",
+        budgetSubtotal: totals.subtotal,
+        budgetVat: totals.vat,
+        budgetTotal: totals.total,
+        updatedAt: new Date(),
+      },
+      include: { client: true, site: true, engineer: true },
+    });
   });
 
   // If an invoice exists for the quote, associate it with the job.
@@ -2578,22 +2587,31 @@ export async function createManualJob(data: {
     return null;
   }
 
-  const row = await client.job.create({
-    data: {
-      companyId,
-      clientId: data.clientId,
-      siteId: data.siteId,
-      clientName: clientRecord.name,
-      clientEmail: clientRecord.email,
-      siteAddress: siteRecord.address || null,
-      title: data.title,
-      description: data.description || null,
-      status: "new",
-      budgetSubtotal: 0,
-      budgetVat: 0,
-      budgetTotal: 0,
-    } as any,
-    include: { client: true, site: true, engineer: true },
+  const row = await client.$transaction(async (tx: any) => {
+    const co = await tx.company.update({
+      where: { id: companyId },
+      data: { nextJobNumber: { increment: 1 } },
+      select: { nextJobNumber: true },
+    });
+    const num = co.nextJobNumber - 1;
+    return tx.job.create({
+      data: {
+        companyId,
+        jobNumber: num,
+        clientId: data.clientId,
+        siteId: data.siteId,
+        clientName: clientRecord.name,
+        clientEmail: clientRecord.email,
+        siteAddress: siteRecord.address || null,
+        title: data.title,
+        description: data.description || null,
+        status: "new",
+        budgetSubtotal: 0,
+        budgetVat: 0,
+        budgetTotal: 0,
+      } as any,
+      include: { client: true, site: true, engineer: true },
+    });
   });
 
   await addAudit({ entityType: "job", entityId: row.id, action: "job.created" as any, actorRole: "admin", meta: { manual: true } });
