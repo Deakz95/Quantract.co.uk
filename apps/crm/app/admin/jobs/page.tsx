@@ -269,9 +269,9 @@ export default function JobsPage() {
     try {
       const r = await bulkDeleteWithSummary(selectedIds, (id) => `/api/admin/jobs/${id}`);
       if (r.deleted > 0) toast({ title: "Deleted", description: `${r.deleted} job${r.deleted === 1 ? "" : "s"} deleted`, variant: "success" });
-      if (r.blocked > 0) toast({ title: "Error", description: `${r.blocked} could not be deleted (linked records).`, variant: "destructive" });
+      if (r.blocked > 0) toast({ title: "Error", description: r.messages[0] || `${r.blocked} could not be deleted (linked records).`, variant: "destructive" });
       loadJobs();
-      setSelectedIds([]);
+      if (r.blocked === 0) setSelectedIds([]);
     } catch {
       toast({ title: "Error", description: "Failed to delete jobs", variant: "destructive" });
     } finally {

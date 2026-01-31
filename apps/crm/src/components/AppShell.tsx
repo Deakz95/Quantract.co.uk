@@ -78,6 +78,8 @@ const adminNav: NavItem[] = [
   { label: "Clients", href: "/admin/clients", icon: Users, section: "People" },
   { label: "Contacts", href: "/admin/contacts", icon: Users, section: "People" },
   { label: "Engineers", href: "/admin/engineers", icon: Users, section: "People" },
+  // Tools
+  { label: "Tools", href: "/admin/tools", icon: Settings, section: "Tools" },
   // Admin
   { label: "Reports", href: "/admin/reports", icon: FileBarChart, section: "Admin" },
   { label: "Import", href: "/admin/import", icon: Upload, section: "Admin" },
@@ -389,8 +391,30 @@ export function AppShell({
                     <div className="absolute right-0 mt-2 w-64 bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-xl z-50 animate-fade-in overflow-hidden">
                       <div className="p-2">
                         <div className="px-3 py-2 text-xs font-semibold text-[var(--muted-foreground)] uppercase tracking-wider">
-                          Contractor Tools
+                          Quick Access
                         </div>
+                        <Link
+                          href="/admin/tools/voltage-drop"
+                          className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[var(--muted)] transition-colors group"
+                          onClick={() => setToolsOpen(false)}
+                        >
+                          <ChevronRight className="w-4 h-4 text-[var(--primary)]" />
+                          <div className="flex-1">
+                            <div className="text-sm font-medium text-[var(--foreground)]">Voltage Drop</div>
+                            <div className="text-xs text-[var(--muted-foreground)]">BS 7671 circuit design</div>
+                          </div>
+                        </Link>
+                        <Link
+                          href="/admin/tools/cable-sizing"
+                          className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[var(--muted)] transition-colors group"
+                          onClick={() => setToolsOpen(false)}
+                        >
+                          <ChevronRight className="w-4 h-4 text-[var(--accent)]" />
+                          <div className="flex-1">
+                            <div className="text-sm font-medium text-[var(--foreground)]">Cable Sizing</div>
+                            <div className="text-xs text-[var(--muted-foreground)]">Ampacity &amp; correction factors</div>
+                          </div>
+                        </Link>
                         <a
                           href="https://apps.quantract.co.uk/point-counter"
                           target="_blank"
@@ -405,38 +429,15 @@ export function AppShell({
                           </div>
                           <ChevronRight className="w-3 h-3 opacity-0 group-hover:opacity-50" />
                         </a>
-                        <a
-                          href="https://apps.quantract.co.uk/cable-calculator"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[var(--muted)] transition-colors group"
-                          onClick={() => setToolsOpen(false)}
-                        >
-                          <Settings className="w-4 h-4 text-[var(--accent)]" />
-                          <div className="flex-1">
-                            <div className="text-sm font-medium text-[var(--foreground)]">Cable Calculator</div>
-                            <div className="text-xs text-[var(--muted-foreground)]">BS 7671 voltage drop</div>
-                          </div>
-                          <ChevronRight className="w-3 h-3 opacity-0 group-hover:opacity-50" />
-                        </a>
                         <div className="my-2 border-t border-[var(--border)]" />
-                        <div className="px-3 py-2 text-xs font-semibold text-[var(--muted-foreground)] uppercase tracking-wider">
-                          Certificates
-                        </div>
-                        <a
-                          href="https://certificates.quantract.co.uk"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[var(--muted)] transition-colors group"
+                        <Link
+                          href="/admin/tools"
+                          className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg hover:bg-[var(--muted)] transition-colors text-sm font-semibold text-[var(--primary)]"
                           onClick={() => setToolsOpen(false)}
                         >
-                          <BadgeCheck className="w-4 h-4 text-[var(--success)]" />
-                          <div className="flex-1">
-                            <div className="text-sm font-medium text-[var(--foreground)]">BS 7671 Certificates</div>
-                            <div className="text-xs text-[var(--muted-foreground)]">EIC, EICR, MWC generator</div>
-                          </div>
-                          <ChevronRight className="w-3 h-3 opacity-0 group-hover:opacity-50" />
-                        </a>
+                          View All Tools
+                          <ChevronRight className="w-3 h-3" />
+                        </Link>
                       </div>
                     </div>
                   </>

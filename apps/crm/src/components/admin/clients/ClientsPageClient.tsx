@@ -345,10 +345,10 @@ export default function ClientsPageClient() {
     try {
       const r = await bulkDeleteWithSummary(selectedIds, (id) => `/api/admin/clients/${id}`);
       if (r.deleted > 0) toast({ title: "Deleted", description: `${r.deleted} client${r.deleted === 1 ? "" : "s"} deleted`, variant: "success" });
-      if (r.blocked > 0) toast({ title: "Error", description: `${r.blocked} could not be deleted (linked records).`, variant: "destructive" });
+      if (r.blocked > 0) toast({ title: "Error", description: r.messages[0] || `${r.blocked} could not be deleted (linked records).`, variant: "destructive" });
       await load();
-      setSelectedIds([]);
-      if (editing && selectedIds.includes(editing.id)) startNew();
+      if (r.blocked === 0) setSelectedIds([]);
+      if (r.blocked === 0 && editing && selectedIds.includes(editing.id)) startNew();
     } catch {
       toast({ title: "Error", description: "Failed to delete clients", variant: "destructive" });
     } finally {

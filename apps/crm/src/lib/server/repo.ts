@@ -2168,12 +2168,24 @@ async function ensureEngineerByEmail(email: string): Promise<Engineer | null> {
   const e = String(email || "").trim().toLowerCase();
   if (!e) return null;
   const existing = await client.engineer.findFirst({ where: { email: e }, include: { rateCard: true } }).catch(() => null);
-  if (existing) return toEngineer(existing);
+  if (existing) {
+    // Backfill name from linked User if missing
+    if (!existing.name) {
+      const user = await client.user.findFirst({ where: { email: e }, select: { name: true } }).catch(() => null);
+      if (user?.name) {
+        await client.engineer.update({ where: { id: existing.id }, data: { name: user.name } }).catch(() => null);
+        existing.name = user.name;
+      }
+    }
+    return toEngineer(existing);
+  }
+  // Look up user name for new engineer
+  const user = await client.user.findFirst({ where: { email: e }, select: { name: true } }).catch(() => null);
   const defaultCost = process.env.QT_DEFAULT_COST_RATE_PER_HOUR ? Number(process.env.QT_DEFAULT_COST_RATE_PER_HOUR) : undefined;
   const companyId = await requireCompanyIdForPrisma();
   const defaultRateCard = await client.rateCard.findFirst({ where: { companyId, isDefault: true } }).catch(() => null);
   const row = await client.engineer
-    .create({ data: { companyId, email: e, costRatePerHour: defaultCost ?? null, rateCardId: defaultRateCard?.id ?? null, isActive: true }, include: { rateCard: true } })
+    .create({ data: { companyId, email: e, name: user?.name ?? null, costRatePerHour: defaultCost ?? null, rateCardId: defaultRateCard?.id ?? null, isActive: true }, include: { rateCard: true } })
     .catch(() => null);
   return row ? toEngineer(row) : null;
 }
