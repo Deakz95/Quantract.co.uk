@@ -207,7 +207,7 @@ export default function InvoiceAdminDetail({ invoiceId }: { invoiceId: string })
                       <td className="px-4 py-2 text-[var(--foreground)]">{item.description || "—"}</td>
                       <td className="px-4 py-2 text-right text-[var(--muted-foreground)]">{item.quantity}</td>
                       <td className="px-4 py-2 text-right text-[var(--muted-foreground)]">£{item.unitPrice.toFixed(2)}</td>
-                      <td className="px-4 py-2 text-right font-semibold text-[var(--foreground)]">£{item.total.toFixed(2)}</td>
+                      <td className="px-4 py-2 text-right font-semibold text-[var(--foreground)]">£{(item.total > 0 ? item.total : item.quantity * item.unitPrice).toFixed(2)}</td>
                     </tr>
                   ))}
                 </tbody>

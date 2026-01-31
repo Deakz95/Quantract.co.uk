@@ -30,10 +30,17 @@ export const GET = withRequestLogging(async function GET() {
       },
     });
 
-    // Map pipelineStage → stage for frontend compatibility
+    // Map pipelineStage → flat stageName/stageColor for frontend, keep stage for detail page
     const mapped = enquiries.map((e: any) => {
-      const { pipelineStage, ...rest } = e;
-      return { ...rest, stage: pipelineStage };
+      const { pipelineStage, owner, ...rest } = e;
+      return {
+        ...rest,
+        stage: pipelineStage,
+        stageName: pipelineStage?.name ?? "Unknown",
+        stageColor: pipelineStage?.color ?? "#6b7280",
+        ownerName: owner?.name ?? undefined,
+        ownerEmail: owner?.email ?? undefined,
+      };
     });
 
     return NextResponse.json({ ok: true, enquiries: mapped });
@@ -104,9 +111,16 @@ export const POST = withRequestLogging(async function POST(req: Request) {
       },
     });
 
-    // Map pipelineStage → stage for frontend compatibility
-    const { pipelineStage, ...enquiryRest } = enquiry as any;
-    const mappedEnquiry = { ...enquiryRest, stage: pipelineStage };
+    // Map pipelineStage → flat stageName/stageColor for frontend
+    const { pipelineStage, owner, ...enquiryRest } = enquiry as any;
+    const mappedEnquiry = {
+      ...enquiryRest,
+      stage: pipelineStage,
+      stageName: pipelineStage?.name ?? "Unknown",
+      stageColor: pipelineStage?.color ?? "#6b7280",
+      ownerName: owner?.name ?? undefined,
+      ownerEmail: owner?.email ?? undefined,
+    };
 
     // Audit event for enquiry creation
     await repo.recordAuditEvent({

@@ -21,12 +21,17 @@ export async function GET(_req: Request, ctx: { params: Promise<{ invoiceId: str
         select: { items: true },
       }).catch(() => null);
       if (quote?.items && Array.isArray(quote.items)) {
-        lineItems = (quote.items as any[]).map((item: any) => ({
-          description: item.description || item.name || "",
-          quantity: Number(item.quantity ?? item.qty ?? 1),
-          unitPrice: Number(item.unitPrice ?? item.price ?? item.rate ?? 0),
-          total: Number(item.total ?? item.amount ?? 0),
-        }));
+        lineItems = (quote.items as any[]).map((item: any) => {
+          const qty = Number(item.quantity ?? item.qty ?? 1);
+          const unit = Number(item.unitPrice ?? item.price ?? item.rate ?? 0);
+          const raw = Number(item.total ?? item.amount ?? 0);
+          return {
+            description: item.description || item.name || "",
+            quantity: qty,
+            unitPrice: unit,
+            total: raw > 0 ? raw : qty * unit,
+          };
+        });
       }
     }
   }

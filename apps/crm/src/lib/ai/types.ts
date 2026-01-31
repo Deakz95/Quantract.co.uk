@@ -15,6 +15,15 @@ export interface CrmInputJson {
     pain_points_stated: string[];
     usage_metrics: Record<string, number>;
   };
+  financials: {
+    monthly_overhead_pounds: number;
+    avg_margin_percent: number;
+    break_even_revenue_pounds: number;
+    earned_this_month_pounds: number;
+    break_even_progress_percent: number;
+    days_left_in_month: number;
+    configured: boolean;
+  };
   constraints: { gdpr_relevant: boolean; budget_sensitivity: string; plan: string };
   available_features: {
     automations: boolean;

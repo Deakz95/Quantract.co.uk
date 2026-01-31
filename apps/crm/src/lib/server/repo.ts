@@ -502,7 +502,18 @@ function toJob(row: any): Job {
     clientEmail: row.client?.email ?? row.clientEmail ?? "",
     client: row.client ? toClient(row.client) : undefined,
     siteName: row.site?.name ?? undefined,
-    siteAddress: row.site? [row.site.address1, row.site.address2, row.site.city, row.site.county, row.site.postcode, row.site.country].filter(Boolean).join(", ") : row.siteAddress ?? undefined,
+    siteAddress: (() => {
+      if (row.site) {
+        const a = [row.site.address1, row.site.address2, row.site.city, row.site.county, row.site.postcode, row.site.country].filter(Boolean).join(", ");
+        if (a) return a;
+      }
+      if (row.siteAddress) return row.siteAddress;
+      if (row.client) {
+        const a = [row.client.address1, row.client.address2, row.client.city, row.client.county, row.client.postcode, row.client.country].filter(Boolean).join(", ");
+        if (a) return a;
+      }
+      return undefined;
+    })(),
     createdAtISO: new Date(row.createdAt).toISOString(),
     updatedAtISO: new Date(row.updatedAt).toISOString(),
   };
@@ -514,6 +525,7 @@ function toScheduleEntry(row: any): ScheduleEntry {
     jobId: row.jobId,
     engineerId: row.engineerId,
     engineerEmail: row.engineer?.email ?? undefined,
+    engineerName: row.engineer?.name ?? undefined,
     startAtISO: new Date(row.startAt).toISOString(),
     endAtISO: new Date(row.endAt).toISOString(),
     notes: row.notes ?? undefined,

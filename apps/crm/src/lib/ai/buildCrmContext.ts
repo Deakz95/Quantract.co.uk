@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/server/prisma";
 import type { CrmInputJson } from "./types";
+import { computeBreakEven, type OverheadRow, type RateCardRow } from "@/lib/finance/breakEven";
 
 const TRADE_INDUSTRIES = ["electrical", "plumbing", "construction", "building", "hvac", "mechanical", "trade"];
 
@@ -25,6 +26,9 @@ export async function buildCrmContext(companyId: string, userId: string): Promis
     unpaidInvoices,
     openEnquiries,
     draftInvoices,
+    overheadRows,
+    rateCardRows,
+    thisMonthPayments,
   ] = await Promise.all([
     prisma.company.findUnique({
       where: { id: companyId },
@@ -68,6 +72,16 @@ export async function buildCrmContext(companyId: string, userId: string): Promis
     prisma.invoice.count({ where: { companyId, status: { in: ["sent", "unpaid"] } } }),
     prisma.enquiry.count({ where: { companyId, status: { notIn: ["won", "lost", "closed"] } } }),
     prisma.invoice.count({ where: { companyId, status: "draft" } }),
+    prisma.companyOverhead.findMany({ where: { companyId } }).catch(() => []),
+    prisma.rateCard.findMany({ where: { companyId } }).catch(() => []),
+    prisma.invoicePayment.findMany({
+      where: {
+        companyId,
+        receivedAt: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) },
+        status: "succeeded",
+      },
+      select: { amount: true },
+    }).catch(() => []),
   ]);
 
   // Experience level
@@ -114,6 +128,23 @@ export async function buildCrmContext(companyId: string, userId: string): Promis
   // Company size inference
   const size = engineerCount >= 20 ? "large" : engineerCount >= 5 ? "medium" : "small";
 
+  // Break-even
+  const overheads: OverheadRow[] = overheadRows.map((r: { label: string; amountPence: number; frequency: string }) => ({
+    label: r.label,
+    amountPence: r.amountPence,
+    frequency: r.frequency as OverheadRow["frequency"],
+  }));
+  const rateCardsTyped: RateCardRow[] = rateCardRows.map((r: { name: string; costRatePerHour: number; chargeRatePerHour: number; isDefault: boolean }) => ({
+    name: r.name,
+    costRatePerHour: r.costRatePerHour,
+    chargeRatePerHour: r.chargeRatePerHour,
+    isDefault: r.isDefault,
+  }));
+  const thisMonthPence = Math.round(
+    thisMonthPayments.reduce((s: number, p: { amount: number }) => s + (p.amount || 0), 0) * 100,
+  );
+  const be = computeBreakEven(overheads, rateCardsTyped, { thisMonthPence, lastMonthPence: 0 });
+
   return {
     user: { role, experience_level },
     company: { industry, size, sales_cycle, primary_goal },
@@ -139,6 +170,15 @@ export async function buildCrmContext(companyId: string, userId: string): Promis
         contacts: contactCount,
         engineers: engineerCount,
       },
+    },
+    financials: {
+      monthly_overhead_pounds: Math.round(be.monthlyOverheadPence / 100),
+      avg_margin_percent: Math.round(be.avgMarginRatio * 100),
+      break_even_revenue_pounds: Math.round(be.breakEvenRevenuePence / 100),
+      earned_this_month_pounds: Math.round(be.earnedPence / 100),
+      break_even_progress_percent: be.progressPercent,
+      days_left_in_month: be.daysLeft,
+      configured: overheadRows.length > 0,
     },
     constraints: {
       gdpr_relevant: true,

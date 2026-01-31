@@ -262,6 +262,7 @@ model Company {
   quotes                  Quote[]
   quoteRevisions          QuoteRevision[]
   rateCards               RateCard[]
+  companyOverheads        CompanyOverhead[]
   scheduleEntries         ScheduleEntry[]
   sites                   Site[]
   snagItems               SnagItem[]
@@ -1019,6 +1020,19 @@ model RateCard {
   company           Company    @relation(fields: [companyId], references: [id])
 
   @@unique([companyId, name])
+  @@index([companyId])
+}
+
+model CompanyOverhead {
+  id          String   @id
+  companyId   String
+  label       String
+  amountPence Int      @default(0)
+  frequency   String   @default("monthly") // monthly | weekly | annual
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime
+  company     Company  @relation(fields: [companyId], references: [id])
+
   @@index([companyId])
 }
 

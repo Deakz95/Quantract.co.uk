@@ -25,12 +25,13 @@ import {
   DollarSign,
   Calendar,
   Award,
-  Inbox
+  Inbox,
+  Target
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useCallback } from "react";
 
-type WidgetType = 'stats' | 'quickActions' | 'recentActivity' | 'teamOverview' | 'performance' | 'calendar' | 'invoiceChart' | 'jobsMap' | 'revenue';
+type WidgetType = 'stats' | 'quickActions' | 'recentActivity' | 'teamOverview' | 'performance' | 'calendar' | 'invoiceChart' | 'jobsMap' | 'revenue' | 'breakEven';
 
 type Widget = {
   id: string;
@@ -115,10 +116,25 @@ type RevenueData = {
   maxDailyRevenue: number;
 };
 
+type BreakEvenData = {
+  monthlyOverheadPence: number;
+  avgMarginRatio: number;
+  breakEvenRevenuePence: number;
+  earnedPence: number;
+  progressPercent: number;
+  remainingPence: number;
+  daysLeft: number;
+  requiredDailyPence: number;
+  configured: boolean;
+  earnedLabel?: string;
+  earnedDefinition?: string;
+};
+
 const DEFAULT_WIDGETS: Widget[] = [
   { id: 'stats', type: 'stats', title: 'Stats Overview', description: 'Key business metrics', size: 'full' },
   { id: 'quickActions', type: 'quickActions', title: 'Quick Actions', description: 'Frequently used actions', size: 'full' },
   { id: 'revenue', type: 'revenue', title: 'Revenue This Month', description: 'Monthly revenue with comparison', size: 'medium' },
+  { id: 'breakEven', type: 'breakEven', title: 'Break-even Tracker', description: 'Monthly break-even progress', size: 'medium' },
   { id: 'recentActivity', type: 'recentActivity', title: 'Recent Activity', description: 'Latest business activity', size: 'medium' },
   { id: 'teamOverview', type: 'teamOverview', title: 'Team Overview', description: 'Team member status', size: 'medium' },
   { id: 'performance', type: 'performance', title: 'Performance Banner', description: 'Business performance summary', size: 'full' },
@@ -126,6 +142,7 @@ const DEFAULT_WIDGETS: Widget[] = [
 
 const AVAILABLE_WIDGETS: Widget[] = [
   ...DEFAULT_WIDGETS,
+  { id: 'breakEven', type: 'breakEven', title: 'Break-even Tracker', description: 'Monthly break-even progress', size: 'medium' },
   { id: 'calendar', type: 'calendar', title: 'Calendar', description: 'Upcoming appointments', size: 'medium' },
   { id: 'invoiceChart', type: 'invoiceChart', title: 'Invoice Chart', description: 'Monthly invoice breakdown', size: 'medium' },
   { id: 'jobsMap', type: 'jobsMap', title: 'Jobs Map', description: 'Geographic job distribution', size: 'large' },
@@ -975,6 +992,125 @@ function JobsMapWidget({ data, jobs, loading, onRefresh, isRefreshing }: {
   );
 }
 
+function BreakEvenWidget({
+  data,
+  loading,
+  onRefresh,
+  isRefreshing
+}: {
+  data: BreakEvenData | null;
+  loading: boolean;
+  onRefresh: () => void;
+  isRefreshing: boolean;
+}) {
+  if (loading) {
+    return (
+      <Card className="h-full">
+        <CardHeader>
+          <CardTitle>Break-even Tracker</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="h-10 w-32 bg-[var(--muted)] rounded animate-pulse" />
+            <div className="h-4 w-full bg-[var(--muted)] rounded-full animate-pulse" />
+            <div className="h-4 w-40 bg-[var(--muted)] rounded animate-pulse" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!data || !data.configured) {
+    return (
+      <Link href="/admin/settings/financials">
+        <Card className="h-full group cursor-pointer hover:border-[var(--primary)]/30 transition-colors">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              Break-even Tracker
+              <ArrowUpRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-6 text-[var(--muted-foreground)]">
+              <Target className="w-8 h-8 mx-auto mb-2 opacity-50" />
+              <p className="text-sm font-medium">Set up your overheads</p>
+              <p className="text-xs mt-1">Add your fixed costs in Settings → Financials to track break-even.</p>
+            </div>
+          </CardContent>
+        </Card>
+      </Link>
+    );
+  }
+
+  const progress = Math.min(data.progressPercent, 100);
+  const surpassed = data.progressPercent >= 100;
+  const barColor = surpassed ? "bg-green-500" : progress >= 60 ? "bg-amber-500" : "bg-red-400";
+
+  return (
+    <Link href="/admin/settings/financials">
+      <Card className="h-full group cursor-pointer hover:border-[var(--primary)]/30 transition-colors">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              Break-even Tracker
+              <ArrowUpRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              <RefreshButton onClick={() => onRefresh()} isRefreshing={isRefreshing} />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {/* Progress headline */}
+            <div>
+              <div className="text-3xl font-bold text-[var(--foreground)]">
+                {data.progressPercent}%
+              </div>
+              <div className="text-sm text-[var(--muted-foreground)] mt-1">
+                {surpassed ? "Break-even reached!" : "of break-even target"}
+              </div>
+            </div>
+
+            {/* Progress bar */}
+            <div className="h-3 bg-[var(--muted)] rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-500 ${barColor}`}
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+
+            {/* Details */}
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <div className="text-xs text-[var(--muted-foreground)]">{data.earnedLabel || "Earned"}</div>
+                <div className="font-semibold text-[var(--foreground)]">£{(data.earnedPence / 100).toLocaleString("en-GB", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
+                {data.earnedDefinition && <div className="text-[10px] text-[var(--muted-foreground)] mt-0.5">{data.earnedDefinition}</div>}
+              </div>
+              <div>
+                <div className="text-xs text-[var(--muted-foreground)]">Target</div>
+                <div className="font-semibold text-[var(--foreground)]">£{(data.breakEvenRevenuePence / 100).toLocaleString("en-GB", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
+              </div>
+              {!surpassed && (
+                <>
+                  <div>
+                    <div className="text-xs text-[var(--muted-foreground)]">Remaining</div>
+                    <div className="font-semibold text-amber-600">£{(data.remainingPence / 100).toLocaleString("en-GB", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-[var(--muted-foreground)]">Need/day ({data.daysLeft} work days left)</div>
+                    <div className="font-semibold text-[var(--foreground)]">£{(data.requiredDailyPence / 100).toLocaleString("en-GB", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
+  );
+}
+
 function QuickQuoteModal({ onClose }: { onClose: () => void }) {
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
@@ -1179,11 +1315,13 @@ type DashboardState = {
   schedule: ScheduleEntry[];
   activities: ActivityItem[];
   revenue: RevenueData | null;
+  breakEven: BreakEvenData | null;
   loading: boolean;
   refreshing: {
     stats: boolean;
     activity: boolean;
     revenue: boolean;
+    breakEven: boolean;
     team: boolean;
     schedule: boolean;
   };
@@ -1204,11 +1342,13 @@ export default function DashboardPage() {
     schedule: [],
     activities: [],
     revenue: null,
+    breakEven: null,
     loading: true,
     refreshing: {
       stats: false,
       activity: false,
       revenue: false,
+      breakEven: false,
       team: false,
       schedule: false,
     },
@@ -1219,13 +1359,14 @@ export default function DashboardPage() {
     setDashboardState((prev) => ({ ...prev, loading: true }));
 
     try {
-      const [dashboardRes, engineersRes, jobsRes, scheduleRes, activityRes, revenueRes] = await Promise.all([
+      const [dashboardRes, engineersRes, jobsRes, scheduleRes, activityRes, revenueRes, breakEvenRes] = await Promise.all([
         fetch('/api/admin/dashboard').then((r) => r.json()).catch(() => null),
         fetch('/api/admin/engineers').then((r) => r.json()).catch(() => null),
         fetch('/api/admin/jobs').then((r) => r.json()).catch(() => []),
         fetch('/api/admin/schedule').then((r) => r.json()).catch(() => null),
         fetch('/api/admin/dashboard/activity').then((r) => r.json()).catch(() => null),
         fetch('/api/admin/dashboard/revenue').then((r) => r.json()).catch(() => null),
+        fetch('/api/admin/dashboard/break-even').then((r) => r.json()).catch(() => null),
       ]);
 
       setDashboardState({
@@ -1235,11 +1376,13 @@ export default function DashboardPage() {
         schedule: scheduleRes?.ok ? (scheduleRes.entries || []) : [],
         activities: activityRes?.ok ? (activityRes.activities || []) : [],
         revenue: revenueRes?.ok ? revenueRes.data : null,
+        breakEven: breakEvenRes?.ok ? breakEvenRes.data : null,
         loading: false,
         refreshing: {
           stats: false,
           activity: false,
           revenue: false,
+          breakEven: false,
           team: false,
           schedule: false,
         },
@@ -1293,6 +1436,21 @@ export default function DashboardPage() {
       }));
     } catch {
       setDashboardState((prev) => ({ ...prev, refreshing: { ...prev.refreshing, revenue: false } }));
+    }
+  }, []);
+
+  const refreshBreakEven = useCallback(async () => {
+    setDashboardState((prev) => ({ ...prev, refreshing: { ...prev.refreshing, breakEven: true } }));
+    try {
+      const res = await fetch('/api/admin/dashboard/break-even');
+      const data = await res.json();
+      setDashboardState((prev) => ({
+        ...prev,
+        breakEven: data?.ok ? data.data : prev.breakEven,
+        refreshing: { ...prev.refreshing, breakEven: false }
+      }));
+    } catch {
+      setDashboardState((prev) => ({ ...prev, refreshing: { ...prev.refreshing, breakEven: false } }));
     }
   }, []);
 
@@ -1473,6 +1631,15 @@ export default function DashboardPage() {
             loading={dashboardState.loading}
             onRefresh={refreshStats}
             isRefreshing={dashboardState.refreshing.stats}
+          />
+        );
+      case 'breakEven':
+        return (
+          <BreakEvenWidget
+            data={dashboardState.breakEven}
+            loading={dashboardState.loading}
+            onRefresh={refreshBreakEven}
+            isRefreshing={dashboardState.refreshing.breakEven}
           />
         );
       case 'jobsMap':

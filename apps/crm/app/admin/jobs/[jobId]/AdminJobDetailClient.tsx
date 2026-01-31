@@ -13,6 +13,7 @@ type JobStatus = "new" | "scheduled" | "in_progress" | "completed";
 type Job = {
   id: string;
   quoteId: string;
+  title?: string;
   clientName: string;
   clientEmail: string;
   siteAddress?: string;
@@ -215,7 +216,7 @@ export default function AdminJobDetail({ jobId }: Props) {
   const billedVariationIds = useMemo(() => new Set(invoices.filter((inv) => inv.variationId).map((inv) => inv.variationId as string)), [invoices]);
 
   const breadcrumbItems: BreadcrumbItem[] = useMemo(() => {
-    const jobLabel = job?.clientName ? `Job: ${job.clientName}` : `Job #${jobId.slice(0, 8)}`;
+    const jobLabel = job?.title || job?.clientName ? `Job: ${job?.title || job?.clientName}` : "Job";
     return [
       { label: "Dashboard", href: "/admin" },
       { label: "Jobs", href: "/admin/jobs" },
@@ -580,10 +581,10 @@ export default function AdminJobDetail({ jobId }: Props) {
       <Breadcrumbs items={breadcrumbItems} />
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
-          <div className="text-sm font-semibold text-[var(--foreground)]">{job?.clientName || `Job #${jobId.slice(0, 8)}`}</div>
+          <div className="text-sm font-semibold text-[var(--foreground)]">{job?.title || job?.clientName || "Job"}</div>
           {job ? (
             <div className="mt-1 text-xs text-[var(--muted-foreground)]">
-              {job.clientName} • {job.clientEmail} • {job.siteAddress || "Site TBD"} • Quote: #{job.quoteId.slice(0, 8)}
+              {job.clientName} • {job.clientEmail}{job.siteAddress ? ` • ${job.siteAddress}` : ""} • Quote: #{job.quoteId.slice(0, 8)}
             </div>
           ) : null}
         </div>

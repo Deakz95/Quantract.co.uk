@@ -17,6 +17,7 @@ type ScheduleEntry = {
   id: string;
   jobId: string;
   engineerEmail?: string;
+  engineerName?: string;
   engineerId: string;
   startAtISO: string;
   endAtISO: string;
@@ -287,12 +288,13 @@ export default function AdminSchedulePage() {
                               const end = new Date(e.endAtISO);
                               const time = `${start.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}–${end.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`;
                               const eng = engineers.find((en) => en.email.toLowerCase() === (e.engineerEmail || "").toLowerCase());
+                              const engDisplay = eng?.name || e.engineerName || (e.engineerEmail ? e.engineerEmail.split("@")[0] : undefined);
                               return (
                                 <Link key={e.id} href={`/admin/jobs/${e.jobId}`}>
                                   <div className="rounded-lg bg-[var(--primary)]/10 border border-[var(--primary)]/20 p-1.5 text-xs hover:bg-[var(--primary)]/20 transition-colors cursor-pointer">
                                     <div className="font-semibold text-[var(--foreground)] truncate">{e.notes || `Job ${e.jobId.slice(0, 6)}`}</div>
                                     <div className="text-[var(--muted-foreground)]">{time}</div>
-                                    {eng && <div className="text-[var(--muted-foreground)] truncate">{eng.name || eng.email.split("@")[0]}</div>}
+                                    {engDisplay && <div className="text-[var(--muted-foreground)] truncate">{engDisplay}</div>}
                                   </div>
                                 </Link>
                               );
