@@ -10,7 +10,8 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 import { useToast } from "@/components/ui/useToast";
 import { apiRequest, getApiErrorMessage, requireOk } from "@/lib/apiClient";
-import { BadgeCheck, Plus, ExternalLink, FileText, Briefcase } from "lucide-react";
+import { BadgeCheck, Plus, ExternalLink, FileText, Briefcase, Download } from "lucide-react";
+import { CERTIFICATE_TYPES } from "@/lib/certificates";
 
 type Job = {
   id: string;
@@ -44,6 +45,60 @@ export default function CertificatesPageClient() {
   const [certLoading, setCertLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  // Export state
+  const [exportFrom, setExportFrom] = useState(() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 1);
+    return d.toISOString().slice(0, 10);
+  });
+  const [exportTo, setExportTo] = useState(() => new Date().toISOString().slice(0, 10));
+  const [exportAllRevisions, setExportAllRevisions] = useState(false);
+  const [exportTypes, setExportTypes] = useState<string[]>([]);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+
+  const exportDatesValid = Boolean(exportFrom && exportTo && exportFrom <= exportTo);
+
+  async function downloadExport() {
+    if (!exportDatesValid) return;
+    setExporting(true);
+    setExportError(null);
+    try {
+      const res = await fetch("/api/admin/certificates/export", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          issuedFrom: exportFrom,
+          issuedTo: exportTo,
+          includeAllRevisions: exportAllRevisions,
+          types: exportTypes.length > 0 ? exportTypes : undefined,
+        }),
+      });
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        throw new Error(json.error || `Export failed (${res.status})`);
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const disposition = res.headers.get("content-disposition") || "";
+      const match = disposition.match(/filename="?([^"]+)"?/);
+      a.download = match?.[1] || "certificates_export.zip";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast({ title: "Export downloaded", variant: "success" });
+    } catch (error) {
+      const msg = getApiErrorMessage(error);
+      setExportError(msg);
+      toast({ title: "Export failed", description: msg, variant: "destructive" });
+    } finally {
+      setExporting(false);
+    }
+  }
 
   // Load jobs - no toast dependency to avoid infinite loop
   const loadJobs = useCallback(async () => {
@@ -438,6 +493,71 @@ export default function CertificatesPageClient() {
                 <ExternalLink className="w-4 h-4 opacity-50 group-hover:opacity-100 transition-opacity" />
               </Button>
             </a>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Download className="w-4 h-4" />
+              Export Bundle
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-[var(--muted-foreground)] mb-3">
+              Download a regulator-ready ZIP with PDFs, JSON snapshots, and CSV summary.
+            </p>
+            <div className="grid gap-3">
+              <label className="grid gap-1">
+                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Issued from</span>
+                <input
+                  type="date"
+                  value={exportFrom}
+                  onChange={(e) => setExportFrom(e.target.value)}
+                  className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
+                />
+              </label>
+              <label className="grid gap-1">
+                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Issued to</span>
+                <input
+                  type="date"
+                  value={exportTo}
+                  onChange={(e) => setExportTo(e.target.value)}
+                  className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
+                />
+              </label>
+              <label className="grid gap-1">
+                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Certificate types (optional)</span>
+                <select
+                  multiple
+                  value={exportTypes}
+                  onChange={(e) => setExportTypes(Array.from(e.target.selectedOptions, (o) => o.value))}
+                  className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm h-24"
+                >
+                  {CERTIFICATE_TYPES.map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={exportAllRevisions}
+                  onChange={(e) => setExportAllRevisions(e.target.checked)}
+                  className="w-4 h-4 accent-[var(--primary)]"
+                />
+                <span className="text-sm text-[var(--foreground)]">Include all revisions</span>
+              </label>
+              {exportFrom && exportTo && exportFrom > exportTo && (
+                <p className="text-xs text-[var(--error)]">&quot;From&quot; date must be before &quot;to&quot; date.</p>
+              )}
+              {exportError && (
+                <p className="text-xs text-[var(--error)]">{exportError}</p>
+              )}
+              <Button type="button" onClick={downloadExport} disabled={exporting || !exportDatesValid}>
+                {exporting ? "Generating..." : "Download Export"}
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>

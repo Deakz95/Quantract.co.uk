@@ -9,7 +9,7 @@ import { FilterDropdown, type Filters, type FilterConfig } from "@/components/ui
 import { DataTable, BulkActionBar, formatRelativeTime, type Column, type Action, type SortDirection } from "@/components/ui/DataTable";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { deleteWithMessage, bulkDeleteWithSummary } from "@/lib/http/deleteWithMessage";
-import { undoDelete } from "@/lib/http/undoDelete";
+import { undoDelete, bulkUndoAll } from "@/lib/http/undoDelete";
 import { useToast } from "@/components/ui/useToast";
 import { Receipt, Plus, SquarePen, Copy, Trash2 } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -252,8 +252,9 @@ export default function InvoicesPage() {
     try {
       const result = await deleteWithMessage(`/api/admin/invoices/${invoice.id}`);
       toast({
-        title: "Deleted", description: "Invoice deleted", variant: "success",
-        action: result.undo ? { label: "Undo", onClick: () => { undoDelete(result.undo!).then(() => { toast({ title: "Restored", variant: "success" }); loadInvoices(); }).catch(() => toast({ title: "Undo expired", variant: "destructive" })); } } : undefined,
+        title: "Invoice deleted", description: "Invoice removed", variant: "success",
+        duration: result.undo ? 30_000 : undefined,
+        action: result.undo ? { label: "Undo", onClick: () => { undoDelete(result.undo!).then(() => { toast({ title: "Restored", description: "Invoice has been restored", variant: "success" }); loadInvoices(); }).catch(() => toast({ title: "Undo expired", description: "The undo window has closed", variant: "destructive" })); } } : undefined,
       });
       loadInvoices();
       setSelectedIds(ids => ids.filter(id => id !== invoice.id));
@@ -266,7 +267,27 @@ export default function InvoicesPage() {
     setBulkDeleting(true);
     try {
       const r = await bulkDeleteWithSummary(selectedIds, (id) => `/api/admin/invoices/${id}`);
-      if (r.deleted > 0) toast({ title: "Deleted", description: `${r.deleted} invoice${r.deleted === 1 ? "" : "s"} deleted`, variant: "success" });
+      if (r.deleted > 0) {
+        const label = `${r.deleted} invoice${r.deleted === 1 ? "" : "s"} deleted`;
+        toast({
+          title: "Invoices deleted", description: label, variant: "success",
+          duration: r.undos.length > 0 ? 30_000 : undefined,
+          action: r.undos.length > 0 ? {
+            label: "Undo",
+            onClick: async () => {
+              const result = await bulkUndoAll(r.undos);
+              if (result.restored === result.total) {
+                toast({ title: "Restored", description: `Restored ${result.restored} invoice${result.restored === 1 ? "" : "s"}.`, variant: "success" });
+              } else if (result.restored > 0) {
+                toast({ title: "Partially restored", description: `Restored ${result.restored}/${result.total}. ${result.failed} could not be restored (expired).`, type: "warning" });
+              } else {
+                toast({ title: "Undo expired", description: "The undo window has closed", variant: "destructive" });
+              }
+              if (result.restored > 0) loadInvoices();
+            },
+          } : undefined,
+        });
+      }
       if (r.blocked > 0) toast({ title: "Error", description: r.messages[0] || `${r.blocked} could not be deleted (linked records).`, variant: "destructive" });
       loadInvoices();
       if (r.blocked === 0) setSelectedIds([]);
@@ -471,7 +492,7 @@ export default function InvoicesPage() {
       <ConfirmDialog
         open={bulkDeleteOpen}
         title={`Delete ${selectedIds.length} invoice${selectedIds.length === 1 ? '' : 's'}?`}
-        description="This action cannot be undone. All selected invoices will be permanently deleted."
+        description="Invoices will be removed from view. You can undo this action for a short time."
         confirmLabel="Delete"
         onCancel={() => setBulkDeleteOpen(false)}
         onConfirm={handleBulkDelete}

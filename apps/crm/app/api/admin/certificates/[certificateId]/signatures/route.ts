@@ -44,7 +44,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ certificateId:
     const cert = await prisma.certificate.findFirst({ where: { id: certificateId, companyId: authCtx.companyId } });
     if (!cert) return NextResponse.json({ ok: false, error: "not_found" }, { status: 404 });
     if (cert.status === "issued" || cert.status === "void") {
-      return NextResponse.json({ ok: false, error: "Certificate is immutable" }, { status: 400 });
+      return NextResponse.json({ ok: false, error: "Issued certificates are immutable. Create an amendment." }, { status: 409 });
     }
 
     const body = await req.json().catch(() => null);

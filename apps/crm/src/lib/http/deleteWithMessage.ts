@@ -32,6 +32,7 @@ export interface BulkDeleteResult {
   deleted: number;
   blocked: number;
   messages: string[];
+  undos: UndoData[];
 }
 
 /**
@@ -46,15 +47,17 @@ export async function bulkDeleteWithSummary(
     ids.map((id) => deleteWithMessage(urlFn(id))),
   );
   const messages: string[] = [];
+  const undos: UndoData[] = [];
   let deleted = 0;
   let blocked = 0;
   for (const r of results) {
     if (r.status === "fulfilled") {
       deleted++;
+      if (r.value.undo) undos.push(r.value.undo);
     } else {
       blocked++;
       if (r.reason?.message) messages.push(r.reason.message);
     }
   }
-  return { deleted, blocked, messages };
+  return { deleted, blocked, messages, undos };
 }

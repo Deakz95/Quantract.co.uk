@@ -24,6 +24,9 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ certificateId
   const body = (await req.json().catch(() => null)) as any;
   const existing = await repo.getCertificateById(certificateId);
   if (!existing) return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });
+  if (existing.certificate.status === "issued" || existing.certificate.status === "void") {
+    return NextResponse.json({ ok: false, error: "Issued certificates are immutable. Create an amendment." }, { status: 409 });
+  }
   const nextType = typeof body?.type === "string" ? body.type : existing.certificate.type;
   const normalizedData = body?.data ? normalizeCertificateData(nextType, body.data) : existing.certificate.data;
   const cert = await repo.updateCertificate(certificateId, {

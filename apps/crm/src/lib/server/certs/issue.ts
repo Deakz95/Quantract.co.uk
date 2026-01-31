@@ -96,21 +96,26 @@ export async function issueCertificate(input: IssueCertificateInput): Promise<Is
   const snapshot = buildCanonicalCertSnapshot(agg);
   const signingHash = computeSigningHash(snapshot);
 
-  // ─── 5. Generate PDF from snapshot ───
-  const pdfBytes = await renderCertificatePdfFromSnapshot(snapshot);
-
-  // ─── 6. Compute PDF checksum ───
-  const pdfChecksum = computeChecksum(pdfBytes);
-
-  // ─── 7. Determine next revision ───
+  // ─── 5. Determine next revision ───
   const certAny = cert as any;
   const nextRevision = (certAny.currentRevision ?? 0) + 1;
 
-  // ─── 8. Per-revision PDF key ───
+  // ─── 6. Per-revision PDF key ───
   const pdfKey = `certificates/${certificateId}/revisions/${nextRevision}.pdf`;
 
-  // ─── 9. Generate verification token if not set ───
+  // ─── 7. Generate verification token if not set ───
   const verificationToken = certAny.verificationToken ?? randomBytes(24).toString("hex");
+
+  // ─── 8. Generate PDF from snapshot (with QR code) ───
+  const publicBase = process.env.PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_APP_URL || "";
+  const verifyUrl = publicBase && verificationToken ? `${publicBase.replace(/\/$/, "")}/verify/${verificationToken}` : undefined;
+  const pdfBytes = await renderCertificatePdfFromSnapshot(snapshot, {
+    verifyUrl,
+    signingHashShort: signingHash.slice(0, 12),
+  });
+
+  // ─── 9. Compute PDF checksum ───
+  const pdfChecksum = computeChecksum(pdfBytes);
 
   const issuedAt = new Date();
 
@@ -126,6 +131,7 @@ export async function issueCertificate(input: IssueCertificateInput): Promise<Is
         content: snapshot as any,
         pdfKey,
         pdfChecksum,
+        pdfGeneratedAt: new Date(),
         issuedAt,
         issuedBy: issuedByUserId ?? null,
       },
@@ -157,6 +163,37 @@ export async function issueCertificate(input: IssueCertificateInput): Promise<Is
         meta: { revision: nextRevision, signingHash, pdfKey },
       },
     });
+
+    // Auto-complete job if tenant setting enabled
+    if (cert.jobId) {
+      const company = await tx.company.findUnique({
+        where: { id: companyId },
+        select: { markJobCompletedOnCertIssue: true },
+      });
+      if (company?.markJobCompletedOnCertIssue) {
+        const job = await tx.job.findUnique({
+          where: { id: cert.jobId },
+          select: { status: true },
+        });
+        if (job && job.status !== "completed") {
+          await tx.job.update({
+            where: { id: cert.jobId },
+            data: { status: "completed" },
+          });
+          await tx.auditEvent.create({
+            data: {
+              id: randomBytes(16).toString("hex"),
+              companyId,
+              entityType: "job",
+              entityId: cert.jobId,
+              action: "job.auto_completed",
+              actorRole: "system",
+              meta: { reason: "certificate_issued", certificateId },
+            },
+          });
+        }
+      }
+    }
   });
 
   // ─── 11. Write PDF to storage (outside tx — see docstring) ───

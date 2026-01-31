@@ -5,3 +5,5 @@ export { getCertTypeMetadata, getTypeCategory, isValidCertType, getAllCertTypes,
 export { getDefaultChecklist, type ChecklistItem } from "./checklists";
 export { buildCanonicalCertSnapshot, computeSigningHash, computeChecksum, canonicalJsonString, type CanonicalCertSnapshot, type FullCertificateAggregate } from "./canonical";
 export { issueCertificate, type IssueCertificateInput, type IssueCertificateResult } from "./issue";
+export { exportCertificatesZip, type ExportFilters, type ExportResult } from "./export";
+export { createCertificateAmendment, type CreateAmendmentInput, type CreateAmendmentResult } from "./amend";

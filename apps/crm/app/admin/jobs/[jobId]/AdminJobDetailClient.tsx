@@ -202,6 +202,7 @@ export default function AdminJobDetail({ jobId }: Props) {
   const [invoiceType, setInvoiceType] = useState<Invoice["type"]>("stage");
   const [invoiceStageName, setInvoiceStageName] = useState("");
   const [invoiceAmount, setInvoiceAmount] = useState("");
+  const [selectedCertIds, setSelectedCertIds] = useState<string[]>([]);
 
   const profitability = useMemo(() => {
     if (!costing) return null;
@@ -423,12 +424,13 @@ export default function AdminJobDetail({ jobId }: Props) {
       const r = await fetch(`/api/admin/jobs/${jobId}/invoices`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ type: invoiceType, stageName: invoiceStageName || undefined, subtotal }),
+        body: JSON.stringify({ type: invoiceType, stageName: invoiceStageName || undefined, subtotal, certificateIds: selectedCertIds.length > 0 ? selectedCertIds : undefined }),
       });
       const d = await r.json().catch(() => ({}));
       if (!d.ok) throw new Error(d.error || "Failed");
       setInvoiceAmount("");
       setInvoiceStageName("");
+      setSelectedCertIds([]);
       await refresh();
       toast({ title: "Invoice created", variant: "success" });
     } catch (error: unknown) {
@@ -1148,6 +1150,29 @@ export default function AdminJobDetail({ jobId }: Props) {
                     <input value={invoiceAmount} onChange={(e) => setInvoiceAmount(e.target.value)} type="number" step="0.01" className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm" />
                   </label>
                 </div>
+                {certs.filter((c) => c.status === "issued").length > 0 && (
+                  <div className="mt-3">
+                    <div className="text-xs font-semibold text-[var(--muted-foreground)] mb-1">Link certificates</div>
+                    <div className="flex flex-wrap gap-2">
+                      {certs.filter((c) => c.status === "issued").map((c) => (
+                        <label key={c.id} className="flex items-center gap-1.5 rounded-xl border border-[var(--border)] px-2.5 py-1.5 text-xs cursor-pointer hover:bg-[var(--muted)] transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={selectedCertIds.includes(c.id)}
+                            onChange={(e) => {
+                              setSelectedCertIds((prev) =>
+                                e.target.checked ? [...prev, c.id] : prev.filter((id) => id !== c.id),
+                              );
+                            }}
+                            className="w-3.5 h-3.5 accent-[var(--primary)]"
+                          />
+                          <span className="font-medium text-[var(--foreground)]">{c.type}{c.certificateNumber ? ` ${c.certificateNumber}` : ""}</span>
+                          {c.issuedAtISO && <span className="text-[var(--muted-foreground)]">{new Date(c.issuedAtISO).toLocaleDateString("en-GB")}</span>}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <div className="mt-3">
                   <Button type="button" onClick={createInvoice} disabled={busy}>Create invoice</Button>
                 </div>

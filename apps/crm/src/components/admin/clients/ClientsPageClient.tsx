@@ -9,7 +9,7 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Dialog, DialogBody, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/Dialog";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { bulkDeleteWithSummary } from "@/lib/http/deleteWithMessage";
-import { undoDelete } from "@/lib/http/undoDelete";
+import { undoDelete, bulkUndoAll } from "@/lib/http/undoDelete";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { DataTable, BulkActionBar, formatRelativeTime, type Column, type Action, type SortDirection } from "@/components/ui/DataTable";
 import { TableSkeletonInline } from "@/components/ui/TableSkeleton";
@@ -330,8 +330,9 @@ export default function ClientsPageClient() {
 
       const clientName = confirming.name;
       toast({
-        title: "Deleted", description: `${clientName} removed`, variant: "success",
-        action: data.undo ? { label: "Undo", onClick: () => { undoDelete(data.undo!).then(() => { toast({ title: "Restored", variant: "success" }); load(); }).catch(() => toast({ title: "Undo expired", variant: "destructive" })); } } : undefined,
+        title: "Client deleted", description: `${clientName} removed`, variant: "success",
+        duration: data.undo ? 30_000 : undefined,
+        action: data.undo ? { label: "Undo", onClick: () => { undoDelete(data.undo!).then(() => { toast({ title: "Restored", description: `${clientName} has been restored`, variant: "success" }); load(); }).catch(() => toast({ title: "Undo expired", description: "The undo window has closed", variant: "destructive" })); } } : undefined,
       });
 
       await load();
@@ -349,7 +350,27 @@ export default function ClientsPageClient() {
     setBulkDeleting(true);
     try {
       const r = await bulkDeleteWithSummary(selectedIds, (id) => `/api/admin/clients/${id}`);
-      if (r.deleted > 0) toast({ title: "Deleted", description: `${r.deleted} client${r.deleted === 1 ? "" : "s"} deleted`, variant: "success" });
+      if (r.deleted > 0) {
+        const label = `${r.deleted} client${r.deleted === 1 ? "" : "s"} deleted`;
+        toast({
+          title: "Clients deleted", description: label, variant: "success",
+          duration: r.undos.length > 0 ? 30_000 : undefined,
+          action: r.undos.length > 0 ? {
+            label: "Undo",
+            onClick: async () => {
+              const result = await bulkUndoAll(r.undos);
+              if (result.restored === result.total) {
+                toast({ title: "Restored", description: `Restored ${result.restored} client${result.restored === 1 ? "" : "s"}.`, variant: "success" });
+              } else if (result.restored > 0) {
+                toast({ title: "Partially restored", description: `Restored ${result.restored}/${result.total}. ${result.failed} could not be restored (expired).`, type: "warning" });
+              } else {
+                toast({ title: "Undo expired", description: "The undo window has closed", variant: "destructive" });
+              }
+              if (result.restored > 0) load();
+            },
+          } : undefined,
+        });
+      }
       if (r.blocked > 0) toast({ title: "Error", description: r.messages[0] || `${r.blocked} could not be deleted (linked records).`, variant: "destructive" });
       await load();
       if (r.blocked === 0) setSelectedIds([]);
@@ -715,7 +736,7 @@ export default function ClientsPageClient() {
       <ConfirmDialog
         open={Boolean(confirming)}
         title={confirming ? `Delete ${confirming.name}?` : "Delete client?"}
-        description="This action cannot be undone."
+        description="The client will be removed from view. You can undo this action for a short time."
         confirmLabel="Delete client"
         onCancel={() => setConfirming(null)}
         onConfirm={confirmRemove}
@@ -726,7 +747,7 @@ export default function ClientsPageClient() {
       <ConfirmDialog
         open={bulkDeleteOpen}
         title={`Delete ${selectedIds.length} client${selectedIds.length === 1 ? "" : "s"}?`}
-        description="This action cannot be undone. All selected clients will be permanently deleted."
+        description="Clients will be removed from view. You can undo this action for a short time."
         confirmLabel="Delete"
         onCancel={() => setBulkDeleteOpen(false)}
         onConfirm={handleBulkDelete}

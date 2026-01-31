@@ -93,11 +93,14 @@ model Certificate {
   signedName              String?
   signedAt                DateTime?
   // v2 fields
-  verificationToken       String?                      @unique
-  verificationRevokedAt   DateTime?
-  currentRevision         Int                          @default(0)
+  verificationToken            String?                      @unique
+  verificationRevokedAt        DateTime?
+  verificationRevokedReason    String?
+  currentRevision              Int                          @default(0)
   outcome                 String?
   outcomeReason           String?
+  // Amendment lineage
+  amendsCertificateId     String?
   createdAt               DateTime                     @default(now())
   updatedAt               DateTime
   auditEvents             AuditEvent[]
@@ -106,12 +109,15 @@ model Certificate {
   legalEntity             LegalEntity?                 @relation(fields: [legalEntityId], references: [id])
   job                     Job?                         @relation(fields: [jobId], references: [id])
   site                    Site?                        @relation(fields: [siteId], references: [id])
+  amendsCertificate       Certificate?                 @relation("CertificateAmendments", fields: [amendsCertificateId], references: [id])
+  amendments              Certificate[]                @relation("CertificateAmendments")
   certificateTestResults  CertificateTestResult[]
   revisions               CertificateRevision[]
   observations            CertificateObservation[]
   checklists              CertificateChecklist[]
   signatureRecords        CertificateSignatureRecord[]
   attachments             CertificateAttachment[]
+  invoiceCertificates     InvoiceCertificate[]
 
   @@unique([legalEntityId, certificateNumber])
   @@index([clientId])
@@ -120,6 +126,7 @@ model Certificate {
   @@index([jobId])
   @@index([siteId])
   @@index([companyId, certificateNumber])
+  @@index([amendsCertificateId])
 }
 
 model CertificateRevision {
@@ -130,9 +137,10 @@ model CertificateRevision {
   signingHash   String
   content       Json
   pdfKey        String?
-  pdfChecksum   String?
-  issuedAt      DateTime
-  issuedBy      String?
+  pdfChecksum    String?
+  pdfGeneratedAt DateTime?
+  issuedAt       DateTime
+  issuedBy       String?
   createdAt     DateTime    @default(now())
   certificate   Certificate @relation(fields: [certificateId], references: [id])
   company       Company     @relation(fields: [companyId], references: [id])
@@ -410,12 +418,14 @@ model Company {
   importJobs              ImportJob[]
   toolPresets             ToolPreset[]
   ramsDocuments           RamsDocument[]
+  markJobCompletedOnCertIssue Boolean                 @default(false)
   // Certificates v2
   certificateRevisions        CertificateRevision[]
   certificateObservations     CertificateObservation[]
   certificateChecklists       CertificateChecklist[]
   certificateSignatureRecords CertificateSignatureRecord[]
   certificateAttachments      CertificateAttachment[]
+  invoiceCertificates         InvoiceCertificate[]
 }
 
 model CompanyUser {
@@ -694,10 +704,11 @@ model Invoice {
   job                Job?                @relation(fields: [jobId], references: [id])
   quote              Quote?              @relation(fields: [quoteId], references: [id])
   variation          Variation?          @relation(fields: [variationId], references: [id])
-  invoiceAttachments InvoiceAttachment[]
-  invoiceChases      InvoiceChase[]
-  invoicePayments    InvoicePayment[]
-  invoiceVariations  InvoiceVariation[]
+  invoiceAttachments  InvoiceAttachment[]
+  invoiceChases       InvoiceChase[]
+  invoicePayments     InvoicePayment[]
+  invoiceVariations   InvoiceVariation[]
+  invoiceCertificates InvoiceCertificate[]
 
   @@unique([legalEntityId, invoiceNumber])
   @@index([companyId])
@@ -1524,6 +1535,22 @@ model impersonation_logs {
   @@index([companyId])
   @@index([endedAt])
   @@index([targetUserId])
+}
+
+model InvoiceCertificate {
+  id            String      @id @default(cuid())
+  companyId     String
+  invoiceId     String
+  certificateId String
+  createdAt     DateTime    @default(now())
+  company       Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  invoice       Invoice     @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  certificate   Certificate @relation(fields: [certificateId], references: [id], onDelete: Cascade)
+
+  @@unique([invoiceId, certificateId])
+  @@index([companyId])
+  @@index([invoiceId])
+  @@index([certificateId])
 }
 
 enum ExpenseStatus {

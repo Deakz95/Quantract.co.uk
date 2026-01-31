@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { requireRole } from "@/lib/serverAuth";
+import { requireRole, requireCompanyId } from "@/lib/serverAuth";
 import * as repo from "@/lib/server/repo";
+import { getPrisma } from "@/lib/server/prisma";
 import { withRequestLogging } from "@/lib/server/observability";
 import { getRouteParams } from "@/lib/server/routeParams";
 
@@ -44,6 +45,27 @@ export const POST = withRequestLogging(async function POST(req: Request, ctx: { 
     }, {
       status: 404
     });
+
+    // Link certificates if provided
+    const certificateIds = Array.isArray(body.certificateIds) ? body.certificateIds : [];
+    if (certificateIds.length > 0) {
+      const prisma = getPrisma();
+      if (prisma) {
+        const companyId = await requireCompanyId();
+        await Promise.all(
+          certificateIds
+            .filter((id: unknown) => typeof id === "string" && id.trim())
+            .map((certificateId: string) =>
+              prisma.invoiceCertificate.upsert({
+                where: { invoiceId_certificateId: { invoiceId: invoice.id, certificateId } },
+                create: { companyId, invoiceId: invoice.id, certificateId },
+                update: {},
+              }),
+            ),
+        );
+      }
+    }
+
     return NextResponse.json({
       ok: true,
       invoice

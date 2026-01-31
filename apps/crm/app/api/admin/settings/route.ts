@@ -68,6 +68,7 @@ export const GET = withRequestLogging(async function GET() {
         onboardedAt: true,
         defaultPaymentTermsDays: true,
         autoChaseEnabled: true,
+        markJobCompletedOnCertIssue: true,
       },
     });
     msDb = stopDb();
@@ -168,6 +169,11 @@ export const PATCH = withRequestLogging(async function PATCH(req: Request) {
     autoChaseEnabled:
       typeof body.autoChaseEnabled === "boolean"
         ? body.autoChaseEnabled
+        : undefined,
+
+    markJobCompletedOnCertIssue:
+      typeof body.markJobCompletedOnCertIssue === "boolean"
+        ? body.markJobCompletedOnCertIssue
         : undefined,
   };
 

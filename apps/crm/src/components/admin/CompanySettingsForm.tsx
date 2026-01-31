@@ -29,6 +29,7 @@ type CompanySettings = {
   certificateNumberPrefix: string;
   nextCertificateNumber: number;
   onboardedAt?: string | null;
+  markJobCompletedOnCertIssue?: boolean;
 };
 
 function pickSettings(json: any): CompanySettings | null {
@@ -159,6 +160,7 @@ export function CompanySettingsForm(props: { mode: "settings" | "onboarding" }) 
           pdfFooterLine2: form.pdfFooterLine2,
           defaultPaymentTermsDays: form.defaultPaymentTermsDays ?? 14,
           autoChaseEnabled: Boolean(form.autoChaseEnabled),
+          markJobCompletedOnCertIssue: Boolean(form.markJobCompletedOnCertIssue),
           markOnboarded,
         }),
       });
@@ -494,6 +496,28 @@ export function CompanySettingsForm(props: { mode: "settings" | "onboarding" }) 
               Run Auto-Chase
             </Button>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Job & Certificate */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Job & Certificate</CardTitle>
+          <CardDescription>Automation between jobs and certificates</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <label className="flex items-start gap-3 p-3 rounded-xl border border-[var(--border)] cursor-pointer hover:bg-[var(--muted)] transition-colors">
+            <input
+              type="checkbox"
+              checked={Boolean(form.markJobCompletedOnCertIssue)}
+              onChange={(e) => setForm({ ...form, markJobCompletedOnCertIssue: e.target.checked })}
+              className="w-4 h-4 mt-0.5 accent-[var(--primary)]"
+            />
+            <div>
+              <span className="text-sm font-medium text-[var(--foreground)]">Auto-complete jobs when certificate issued</span>
+              <p className="text-xs text-[var(--muted-foreground)] mt-0.5">When a certificate is issued for a job, automatically mark the job as completed</p>
+            </div>
+          </label>
         </CardContent>
       </Card>
 

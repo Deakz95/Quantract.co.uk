@@ -80,6 +80,8 @@ export type CanonicalCertSnapshot = {
   signatures: CanonicalSignature[];
   attachments: CanonicalAttachment[];
   testResults: CanonicalTestResult[];
+  // Verification
+  verificationToken: string | null;
   // Timing
   completedAt: string | null; // ISO
 };
@@ -238,6 +240,7 @@ export function buildCanonicalCertSnapshot(agg: FullCertificateAggregate): Canon
     signatures,
     attachments,
     testResults,
+    verificationToken: (c as any).verificationToken ?? null,
     completedAt: c.completedAt ? c.completedAt.toISOString() : null,
   };
 }

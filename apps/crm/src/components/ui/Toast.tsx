@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/cn";
 import type { ToastType, ToastAction } from "@/components/ui/ToastContext";
@@ -59,6 +59,7 @@ export function Toast({
 }: ToastProps) {
   const styles = typeStyles[type];
   const Icon = styles.icon;
+  const [actionBusy, setActionBusy] = useState(false);
 
   // Support both new API (message only) and legacy API (title + description)
   const hasLegacyFormat = title || description;
@@ -109,10 +110,17 @@ export function Toast({
           {action && action.onClick ? (
             <button
               type="button"
-              className="mt-1.5 inline-flex text-xs font-medium text-[var(--primary)] hover:text-[var(--primary-dark)] underline underline-offset-2 transition-colors rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2"
-              onClick={() => { action.onClick?.(); onDismiss(id); }}
+              className={cn(
+                "mt-1.5 inline-flex text-xs font-medium underline underline-offset-2 transition-colors rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2",
+                actionBusy ? "text-[var(--muted-foreground)] cursor-not-allowed" : "text-[var(--primary)] hover:text-[var(--primary-dark)]",
+              )}
+              disabled={actionBusy}
+              onClick={async () => {
+                setActionBusy(true);
+                try { await action.onClick?.(); } finally { onDismiss(id); }
+              }}
             >
-              {action.label}
+              {actionBusy ? "Restoring\u2026" : action.label}
             </button>
           ) : action?.href ? (
             <Link

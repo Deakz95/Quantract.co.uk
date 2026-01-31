@@ -83,6 +83,9 @@ function isPublicPath(pathname: string) {
   // Tokenized client UI pages (public access via token)
   if (pathname.match(/^\/client\/quotes\/[^\/]+/)) return true; // View quote by token (including /sign, /certificate, etc.)
 
+  // Public certificate verification
+  if (pathname.startsWith("/verify/")) return true;
+
   // Webhooks / health (if any)
   if (pathname === "/api/health") return true;
   if (pathname.startsWith("/api/webhooks/")) return true;
@@ -119,6 +122,33 @@ function loginUrlForRole(role: "admin" | "client" | "engineer") {
   return "/engineer/login";
 }
 
+// ── Simple in-memory rate limiter for Edge runtime ──
+const rlBuckets = new Map<string, { count: number; resetAt: number }>();
+function edgeRateLimit(ip: string, key: string, limit: number, windowMs: number) {
+  const now = Date.now();
+  const k = `${key}:${ip}`;
+  const b = rlBuckets.get(k);
+  if (!b || now > b.resetAt) {
+    rlBuckets.set(k, { count: 1, resetAt: now + windowMs });
+    return { ok: true, retryAfter: 0 };
+  }
+  b.count++;
+  if (b.count > limit) {
+    return { ok: false, retryAfter: Math.ceil((b.resetAt - now) / 1000) };
+  }
+  return { ok: true, retryAfter: 0 };
+}
+// Lazy cleanup every 60s
+let rlLastClean = 0;
+function rlCleanup() {
+  const now = Date.now();
+  if (now - rlLastClean < 60_000) return;
+  rlLastClean = now;
+  for (const [k, b] of rlBuckets) {
+    if (now > b.resetAt) rlBuckets.delete(k);
+  }
+}
+
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const hostname = req.headers.get("host") || "";
@@ -139,13 +169,36 @@ export async function middleware(req: NextRequest) {
 
   const requestId = req.headers.get("x-request-id") ?? makeId();
 
+  // ── Rate limit + noindex for public /verify/ paths ──
+  if (pathname.startsWith("/verify/")) {
+    rlCleanup();
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    const rlKey = pathname.endsWith("/pdf") ? "verify-pdf" : "verify-page";
+    const limit = pathname.endsWith("/pdf") ? 20 : 30; // per IP per window
+    const rl = edgeRateLimit(ip, rlKey, limit, 60_000); // 1-minute window
+    if (!rl.ok) {
+      return new NextResponse(JSON.stringify({ ok: false, error: "Too many requests" }), {
+        status: 429,
+        headers: {
+          "content-type": "application/json",
+          "retry-after": String(rl.retryAfter),
+        },
+      });
+    }
+  }
+
   // Extract subdomain for multi-tenant routing
   const subdomain = extractSubdomain(hostname);
 
   // Create response with request ID
   const res = NextResponse.next();
   res.headers.set("x-request-id", requestId);
-  
+
+  // Noindex for /verify/ pages
+  if (pathname.startsWith("/verify/")) {
+    res.headers.set("x-robots-tag", "noindex, nofollow");
+  }
+
   // Set subdomain header for downstream use
   if (subdomain) {
     res.headers.set("x-tenant-subdomain", subdomain);

@@ -3613,6 +3613,13 @@ export async function completeCertificate(id: string, actorRole: Role | "system"
 export async function replaceCertificateTestResults(certificateId: string, rows: Array<{ circuitRef?: string; data: Record<string, unknown> }>): Promise<CertificateTestResult[]> {
   const client = p();
   if (!client) return [];
+
+  // IMMUTABILITY GUARD: block test result replacement on issued/void certificates
+  const existing = await client.certificate.findUnique({ where: { id: certificateId }, select: { status: true } }).catch(() => null);
+  if (existing && (existing.status === "issued" || existing.status === "void")) {
+    throw new Error("Cannot modify test results on an issued or voided certificate — create an amendment");
+  }
+
   await client.certificateTestResult.deleteMany({ where: { certificateId } });
   const created = await client.certificateTestResult.createMany({
     data: rows.map((r) => ({ certificateId, circuitRef: r.circuitRef ?? null, data: r.data as any })),

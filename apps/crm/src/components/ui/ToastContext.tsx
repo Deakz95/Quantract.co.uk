@@ -10,7 +10,7 @@ export type ToastVariant = "default" | "destructive" | "success";
 export type ToastAction = {
   label: string;
   href?: string;
-  onClick?: () => void;
+  onClick?: () => void | Promise<void>;
 };
 
 export type ToastData = {
@@ -29,6 +29,8 @@ export type ToastInput = {
   type?: ToastType;
   message?: string;
   action?: ToastAction;
+  /** Override auto-dismiss duration in ms (default 5000) */
+  duration?: number;
   // Legacy properties for backward compatibility
   title?: string;
   description?: string;
@@ -141,10 +143,10 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         return updated;
       });
 
-      // Set auto-dismiss timer
+      // Set auto-dismiss timer (use custom duration if provided)
       const timer = setTimeout(() => {
         dismiss(id);
-      }, TOAST_DURATION);
+      }, input.duration ?? TOAST_DURATION);
 
       timersRef.current.set(id, timer);
 

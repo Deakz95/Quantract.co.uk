@@ -77,6 +77,7 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const [confirmVoid, setConfirmVoid] = useState(false);
   const [confirmRemoveIndex, setConfirmRemoveIndex] = useState<number | null>(null);
+  const [amendmentLineage, setAmendmentLineage] = useState<{ amends: any | null; amendments: any[] }>({ amends: null, amendments: [] });
   const skipAutoSave = useRef(true);
 
   const apiBase = mode === "admin" ? "/api/admin/certificates" : "/api/engineer/certificates";
@@ -120,6 +121,17 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  // Fetch amendment lineage
+  useEffect(() => {
+    if (mode !== "admin") return;
+    fetch(`${apiBase}/${certificateId}/amendments`, { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.ok) setAmendmentLineage({ amends: d.amends ?? null, amendments: d.amendments ?? [] });
+      })
+      .catch(() => {});
+  }, [apiBase, certificateId, mode]);
 
   const save = useCallback(
     async (mode: SaveMode) => {
@@ -260,6 +272,24 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
     }
   }
 
+  async function createAmendment() {
+    if (!cert || mode !== "admin" || cert.status !== "issued") return;
+    setBusy(true);
+    try {
+      const r = await fetch(`${apiBase}/${certificateId}/amend`, { method: "POST" });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok || !d.ok) throw new Error(d?.error || "Amendment failed");
+      toast({ title: "Amendment created", description: "A new amendment draft has been created.", variant: "success" });
+      if (d.amendmentId) {
+        window.location.href = `/admin/certificates/${d.amendmentId}`;
+      }
+    } catch (error: unknown) {
+      toast({ title: "Error", description: getErrorMessage(error, "Could not create amendment."), variant: "destructive" });
+    } finally {
+      setBusy(false);
+    }
+  }
+
   function addRow() {
     setRows((prev) => [...prev, { circuitRef: "", data: {} }]);
   }
@@ -317,6 +347,11 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
                   {mode === "admin" && cert.status !== "void" ? (
                     <Button type="button" variant="secondary" onClick={() => setConfirmVoid(true)} disabled={busy}>
                       Void
+                    </Button>
+                  ) : null}
+                  {mode === "admin" && cert.status === "issued" ? (
+                    <Button type="button" variant="secondary" onClick={createAmendment} disabled={busy}>
+                      Create amendment
                     </Button>
                   ) : null}
                   {mode === "admin" ? (
@@ -409,6 +444,43 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
               ) : null}
             </CardContent>
           </Card>
+
+          {mode === "admin" && (amendmentLineage.amends || amendmentLineage.amendments.length > 0) ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Amendment Lineage</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                {amendmentLineage.amends ? (
+                  <div>
+                    <span className="text-[var(--muted-foreground)]">Amends: </span>
+                    <Link className="font-semibold hover:underline" href={`/admin/certificates/${amendmentLineage.amends.id}`}>
+                      {amendmentLineage.amends.certificateNumber || amendmentLineage.amends.id.slice(0, 8)}
+                    </Link>
+                    <Badge className="ml-2">{amendmentLineage.amends.status}</Badge>
+                  </div>
+                ) : null}
+                {amendmentLineage.amendments.length > 0 ? (
+                  <div>
+                    <span className="text-[var(--muted-foreground)]">Amendments:</span>
+                    <ul className="mt-1 space-y-1">
+                      {amendmentLineage.amendments.map((a: any) => (
+                        <li key={a.id} className="flex items-center gap-2">
+                          <Link className="font-semibold hover:underline" href={`/admin/certificates/${a.id}`}>
+                            {a.certificateNumber || a.id.slice(0, 8)}
+                          </Link>
+                          <Badge>{a.status}</Badge>
+                          <span className="text-xs text-[var(--muted-foreground)]">
+                            {new Date(a.createdAt).toLocaleDateString("en-GB")}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+              </CardContent>
+            </Card>
+          ) : null}
 
           <Card>
             <CardHeader>

@@ -3,6 +3,7 @@ import { PDFDocument as PDFDocumentFactory, StandardFonts } from "pdf-lib";
 import type { Agreement, Quote, Invoice, Certificate, CertificateTestResult, Client, Site, Variation } from "@/lib/server/db";
 import { quoteTotals } from "@/lib/server/db";
 import { normalizeCertificateData, signatureIsPresent } from "@/lib/certificates";
+import QRCode from "qrcode";
 
 export type BrandContext = {
   name: string;
@@ -522,6 +523,10 @@ export async function renderCertificatePdfFromSnapshot(snapshot: {
   checklists: Array<{ section: string; question: string; answer: string | null }>;
   signatures: Array<{ role: string; signerName: string | null; signatureText: string | null; signedAt: string | null; qualification: string | null }>;
   testResults: Array<{ circuitRef: string | null; data: Record<string, unknown> }>;
+  verificationToken?: string | null;
+}, opts?: {
+  verifyUrl?: string;
+  signingHashShort?: string;
 }): Promise<Buffer> {
   const { doc, font, bold } = await newDoc();
   const page = doc.addPage([595.28, 841.89]); // A4
@@ -645,11 +650,38 @@ export async function renderCertificatePdfFromSnapshot(snapshot: {
     }
   }
 
+  // ── QR Code + Verification ──
+  const verifyUrl = opts?.verifyUrl || buildVerifyUrl(snapshot.verificationToken);
+  if (verifyUrl) {
+    try {
+      const qrPngBuffer = await QRCode.toBuffer(verifyUrl, { width: 80, margin: 1 });
+      const qrImage = await doc.embedPng(qrPngBuffer);
+      const qrSize = 60;
+      const qrX = 595.28 - 50 - qrSize; // top-right area
+      const qrY = 30; // footer area
+      page.drawImage(qrImage, { x: qrX, y: qrY, width: qrSize, height: qrSize });
+      page.drawText("Verify:", { x: qrX, y: qrY + qrSize + 4, size: 7, font: bold });
+      if (opts?.signingHashShort) {
+        page.drawText(`Hash: ${opts.signingHashShort}`, { x: qrX - 10, y: qrY - 10, size: 6, font });
+      }
+    } catch {
+      // QR generation failed — continue without it
+    }
+  }
+
   // ── Footer ──
   page.drawText("Page 1 of 1", { x: 270, y: 30, size: 8, font });
 
   const bytes = await doc.save();
   return Buffer.from(bytes);
+}
+
+/** Build public verification URL from token. Returns null if no token or no base URL. */
+function buildVerifyUrl(token?: string | null): string | null {
+  if (!token) return null;
+  const base = process.env.PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_APP_URL || "";
+  if (!base) return null;
+  return `${base.replace(/\/$/, "")}/verify/${token}`;
 }
 
 export async function renderVariationPdf(input: {
