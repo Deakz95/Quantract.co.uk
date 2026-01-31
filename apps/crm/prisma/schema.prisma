@@ -238,6 +238,7 @@ model Company {
   smsCredits              Int                     @default(0)
   // Break-even settings
   workingDaysPerMonth     Int                     @default(22)
+  workingDaysMask         Int                     @default(31) // bitmask: Mon=1 Tue=2 Wed=4 Thu=8 Fri=16 Sat=32 Sun=64
   createdAt               DateTime                @default(now())
   updatedAt               DateTime
   agreements              Agreement[]

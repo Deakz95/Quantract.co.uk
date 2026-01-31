@@ -24,7 +24,27 @@ type RateCard = {
   isDefault: boolean;
 };
 
-// ─── Helpers ─────────────────────────────────────────────────────────
+// ─── Mask helpers ────────────────────────────────────────────────────
+
+const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
+const DAY_BITS = [1, 2, 4, 8, 16, 32, 64] as const;
+
+const PRESETS: { label: string; mask: number }[] = [
+  { label: "Mon\u2013Fri", mask: 31 },
+  { label: "Mon\u2013Sat", mask: 63 },
+  { label: "7 days", mask: 127 },
+];
+
+function maskToDayNames(mask: number): string {
+  return DAY_NAMES.filter((_, i) => mask & DAY_BITS[i]).join(", ");
+}
+
+function presetForMask(mask: number): string {
+  const p = PRESETS.find((pr) => pr.mask === mask);
+  return p ? p.label : "Custom";
+}
+
+// ─── Other helpers ───────────────────────────────────────────────────
 
 function penceToPounds(p: number) {
   return (p / 100).toFixed(2);
@@ -59,9 +79,11 @@ export default function FinancialsSettingsPage() {
   const [newAmount, setNewAmount] = useState("");
   const [newFreq, setNewFreq] = useState("monthly");
 
-  // Working days setting
+  // Working days settings
   const [workingDays, setWorkingDays] = useState(22);
   const [workingDaysSaved, setWorkingDaysSaved] = useState(22);
+  const [mask, setMask] = useState(31);
+  const [maskSaved, setMaskSaved] = useState(31);
 
   // New rate card form
   const [newRcName, setNewRcName] = useState("");
@@ -78,8 +100,11 @@ export default function FinancialsSettingsPage() {
     setOverheads(Array.isArray(oh.overheads) ? oh.overheads : []);
     setRateCards(Array.isArray(rc.rateCards) ? rc.rateCards : []);
     const wd = fs.settings?.workingDaysPerMonth ?? 22;
+    const m = fs.settings?.workingDaysMask ?? 31;
     setWorkingDays(wd);
     setWorkingDaysSaved(wd);
+    setMask(m);
+    setMaskSaved(m);
     setLoading(false);
   }, []);
 
@@ -146,16 +171,25 @@ export default function FinancialsSettingsPage() {
     const res = await fetch("/api/admin/settings/financials", {
       method: "PATCH",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ workingDaysPerMonth: workingDays }),
+      body: JSON.stringify({ workingDaysPerMonth: workingDays, workingDaysMask: mask }),
     }).then((r) => r.json()).catch(() => ({ ok: false }));
     if (res.ok) {
       toast({ title: "Working days saved", variant: "success" });
       setWorkingDaysSaved(workingDays);
+      setMaskSaved(mask);
     } else {
       toast({ title: "Failed to save", variant: "destructive" });
     }
     setBusy(false);
   }
+
+  function toggleDay(bit: number) {
+    const next = mask ^ bit;
+    if (next === 0) return; // at least one day must be selected
+    setMask(next);
+  }
+
+  const workingDaysChanged = workingDays !== workingDaysSaved || mask !== maskSaved;
 
   // ─── Summary ────────────────────────────────────────────────
 
@@ -348,32 +382,90 @@ export default function FinancialsSettingsPage() {
             )}
           </CardContent>
         </Card>
+
         {/* Working Days */}
         <Card>
           <CardHeader>
-            <CardTitle>Working Days per Month</CardTitle>
+            <CardTitle>Working Days</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-wrap items-end gap-3">
-              <label className="grid gap-1 w-32">
-                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Days</span>
-                <input
-                  type="number"
-                  min={20}
-                  max={26}
-                  step={1}
-                  className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
-                  value={workingDays}
-                  onChange={(e) => setWorkingDays(Math.min(26, Math.max(20, Math.round(Number(e.target.value) || 22))))}
-                />
-              </label>
-              <Button onClick={saveWorkingDays} disabled={busy || workingDays === workingDaysSaved}>
+            <div className="space-y-4">
+              {/* Days per month */}
+              <div className="flex flex-wrap items-end gap-3">
+                <label className="grid gap-1 w-32">
+                  <span className="text-xs font-semibold text-[var(--muted-foreground)]">Days per month</span>
+                  <input
+                    type="number"
+                    min={20}
+                    max={26}
+                    step={1}
+                    className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
+                    value={workingDays}
+                    onChange={(e) => setWorkingDays(Math.min(26, Math.max(20, Math.round(Number(e.target.value) || 22))))}
+                  />
+                </label>
+                <p className="text-xs text-[var(--muted-foreground)] pb-2">
+                  Used to calculate your required daily revenue. Typical range: 20–26.
+                </p>
+              </div>
+
+              {/* Preset dropdown */}
+              <div>
+                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Working day pattern</span>
+                <div className="flex flex-wrap items-center gap-2 mt-1">
+                  <select
+                    className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
+                    value={PRESETS.find((p) => p.mask === mask) ? String(mask) : ""}
+                    onChange={(e) => {
+                      const v = Number(e.target.value);
+                      if (v) setMask(v);
+                    }}
+                  >
+                    {!PRESETS.find((p) => p.mask === mask) && (
+                      <option value="" disabled>Custom</option>
+                    )}
+                    {PRESETS.map((p) => (
+                      <option key={p.mask} value={p.mask}>{p.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Checkboxes */}
+              <div>
+                <div className="flex flex-wrap gap-2">
+                  {DAY_NAMES.map((name, i) => {
+                    const bit = DAY_BITS[i];
+                    const checked = !!(mask & bit);
+                    return (
+                      <label
+                        key={name}
+                        className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm cursor-pointer transition-colors ${
+                          checked
+                            ? "border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--foreground)]"
+                            : "border-[var(--border)] bg-[var(--background)] text-[var(--muted-foreground)]"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleDay(bit)}
+                          className="sr-only"
+                        />
+                        {name}
+                      </label>
+                    );
+                  })}
+                </div>
+                <p className="text-xs text-[var(--muted-foreground)] mt-2">
+                  {presetForMask(mask)}: {maskToDayNames(mask)}
+                </p>
+              </div>
+
+              <Button onClick={saveWorkingDays} disabled={busy || !workingDaysChanged}>
                 Save
               </Button>
             </div>
-            <p className="text-xs text-[var(--muted-foreground)] mt-2">
-              Used to calculate your required daily revenue. Typical range: 20–26.
-            </p>
           </CardContent>
         </Card>
       </div>
