@@ -1,3 +1,5 @@
+export {};
+
 /**
  * API Smoke Test Suite
  *

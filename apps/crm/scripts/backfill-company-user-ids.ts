@@ -1,3 +1,5 @@
+export {};
+
 /**
  * Backfill script: Populate CompanyUser.userId from matching User records
  *
