@@ -37,6 +37,13 @@ export const POST = withRequestLogging(async function POST(req: Request, ctx: { 
       update: { name: name || undefined, phone: phone || undefined, isActive: true },
       create: { companyId: invite.companyId, email, name: name || email, phone, isActive: true },
     });
+  } else if (invite.role === "admin" || invite.role === "office") {
+    // Create CompanyUser membership for admin/office roles
+    await prisma.companyUser.upsert({
+      where: { companyId_email: { companyId: invite.companyId, email } },
+      update: { role: invite.role, isActive: true },
+      create: { companyId: invite.companyId, email, role: invite.role, isActive: true },
+    });
   } else {
     return NextResponse.json({ ok: false, error: "Invalid role" }, { status: 400 });
   }
@@ -71,6 +78,27 @@ export const POST = withRequestLogging(async function POST(req: Request, ctx: { 
       await prisma.user.update({
         where: { role_email: { role: "engineer", email } } as any,
         data: { passwordHash },
+      });
+    }
+  } else if (invite.role === "admin" || invite.role === "office") {
+    await upsertUserByRoleEmail({
+      role: "admin",
+      email,
+      name: name || invite.name || null,
+      companyId: invite.companyId,
+    });
+    if (passwordHash) {
+      await prisma.user.update({
+        where: { role_email: { role: "admin", email } } as any,
+        data: { passwordHash },
+      });
+    }
+    // Link CompanyUser to the User record
+    const user = await prisma.user.findUnique({ where: { role_email: { role: "admin", email } } as any });
+    if (user) {
+      await prisma.companyUser.updateMany({
+        where: { companyId: invite.companyId, email },
+        data: { userId: user.id },
       });
     }
   }

@@ -106,6 +106,28 @@ export const mwcCompletionSchema = baseCompletionSchema.extend({
   type: z.literal("MWC"),
 });
 
+// v2 cert types — same base requirements, type-specific data in child tables
+export const fireDesignCompletionSchema = baseCompletionSchema.extend({ type: z.literal("FIRE_DESIGN") });
+export const fireInstallationCompletionSchema = baseCompletionSchema.extend({ type: z.literal("FIRE_INSTALLATION") });
+export const fireCommissioningCompletionSchema = baseCompletionSchema.extend({ type: z.literal("FIRE_COMMISSIONING") });
+export const fireInspectionServicingCompletionSchema = baseCompletionSchema.extend({ type: z.literal("FIRE_INSPECTION_SERVICING") });
+export const elCompletionCompletionSchema = baseCompletionSchema.extend({ type: z.literal("EL_COMPLETION") });
+export const elPeriodicCompletionSchema = baseCompletionSchema.extend({ type: z.literal("EL_PERIODIC") });
+export const solarInstallationCompletionSchema = baseCompletionSchema.extend({ type: z.literal("SOLAR_INSTALLATION") });
+export const solarTestReportCompletionSchema = baseCompletionSchema.extend({
+  type: z.literal("SOLAR_TEST_REPORT"),
+  // Solar test report only requires engineer signature (no customer)
+  signatures: z.object({
+    engineer: completionSignatureSchema,
+    customer: z.object({
+      name: z.string().optional(),
+      signatureText: z.string().optional(),
+      signedAtISO: z.string().optional(),
+    }).optional(),
+  }),
+});
+export const solarHandoverCompletionSchema = baseCompletionSchema.extend({ type: z.literal("SOLAR_HANDOVER") });
+
 /**
  * Union of all completion schemas
  */
@@ -113,6 +135,15 @@ export const certificateCompletionSchema = z.discriminatedUnion("type", [
   eicCompletionSchema,
   eicrCompletionSchema,
   mwcCompletionSchema,
+  fireDesignCompletionSchema,
+  fireInstallationCompletionSchema,
+  fireCommissioningCompletionSchema,
+  fireInspectionServicingCompletionSchema,
+  elCompletionCompletionSchema,
+  elPeriodicCompletionSchema,
+  solarInstallationCompletionSchema,
+  solarTestReportCompletionSchema,
+  solarHandoverCompletionSchema,
 ]);
 
 export type CertificateCompletionData = z.infer<typeof certificateCompletionSchema>;
@@ -132,15 +163,18 @@ export function validateCertificateForCompletion(
     // Select schema based on type
     let schema: z.ZodType;
     switch (type) {
-      case "EIC":
-        schema = eicCompletionSchema;
-        break;
-      case "EICR":
-        schema = eicrCompletionSchema;
-        break;
-      case "MWC":
-        schema = mwcCompletionSchema;
-        break;
+      case "EIC": schema = eicCompletionSchema; break;
+      case "EICR": schema = eicrCompletionSchema; break;
+      case "MWC": schema = mwcCompletionSchema; break;
+      case "FIRE_DESIGN": schema = fireDesignCompletionSchema; break;
+      case "FIRE_INSTALLATION": schema = fireInstallationCompletionSchema; break;
+      case "FIRE_COMMISSIONING": schema = fireCommissioningCompletionSchema; break;
+      case "FIRE_INSPECTION_SERVICING": schema = fireInspectionServicingCompletionSchema; break;
+      case "EL_COMPLETION": schema = elCompletionCompletionSchema; break;
+      case "EL_PERIODIC": schema = elPeriodicCompletionSchema; break;
+      case "SOLAR_INSTALLATION": schema = solarInstallationCompletionSchema; break;
+      case "SOLAR_TEST_REPORT": schema = solarTestReportCompletionSchema; break;
+      case "SOLAR_HANDOVER": schema = solarHandoverCompletionSchema; break;
       default:
         return { ok: false, errors: [`Unknown certificate type: ${type}`] };
     }

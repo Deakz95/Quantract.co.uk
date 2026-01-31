@@ -138,11 +138,16 @@ export async function PUT(
       }
     }
 
-    const document = await prisma.ramsDocument.update({
-      where: { id },
+    const result = await prisma.ramsDocument.updateMany({
+      where: { id, companyId: authCtx.companyId },
       data: update,
     });
 
+    if (result.count !== 1) {
+      return NextResponse.json({ ok: false, error: "Document not found" }, { status: 404 });
+    }
+
+    const document = await prisma.ramsDocument.findUnique({ where: { id } });
     return NextResponse.json({ ok: true, data: document });
   } catch (error) {
     const err = error as any;

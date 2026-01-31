@@ -158,6 +158,49 @@ export default function SafetyAssessmentPage() {
   const failCount = allChecks.filter(c => c.status === "fail").length;
   const naCount = allChecks.filter(c => c.status === "na").length;
 
+  const downloadPdf = async () => {
+    if (!currentDoc) return;
+    try {
+      const res = await fetch(`/api/admin/rams/${currentDoc.id}/pdf`);
+      if (!res.ok) return;
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Safety-Assessment-v${currentDoc.version}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch { /* ignore */ }
+  };
+
+  const printPdf = async () => {
+    if (!currentDoc) return;
+    try {
+      const res = await fetch(`/api/admin/rams/${currentDoc.id}/pdf`);
+      if (!res.ok) return;
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const w = window.open(url);
+      if (w) w.onload = () => { w.focus(); w.print(); };
+    } catch { /* ignore */ }
+  };
+
+  const copySummary = async () => {
+    if (!currentDoc || !content) return;
+    const lines = [
+      `Safety Assessment: ${title}`,
+      `Status: ${currentDoc.status} v${currentDoc.version}`,
+      `Site: ${content.siteName}`,
+      `Address: ${content.siteAddress}`,
+      `Assessor: ${content.assessorName}`,
+      `Date: ${content.date}`,
+      `Rating: ${content.overallRating}`,
+      `Pass: ${passCount} | Fail: ${failCount} | N/A: ${naCount}`,
+      ...(content.recommendations.length ? [`Recommendations: ${content.recommendations.join("; ")}`] : []),
+    ];
+    await navigator.clipboard.writeText(lines.join("\n"));
+  };
+
   if (view === "list") {
     return (
       <ToolPage slug="safety-assessment">
@@ -212,8 +255,19 @@ export default function SafetyAssessmentPage() {
               <Button size="sm" onClick={issueDoc} disabled={saving}>Issue</Button>
             </>
           )}
+          {currentDoc && (
+            <>
+              <Button variant="outline" size="sm" onClick={downloadPdf}>Download PDF</Button>
+              <Button variant="outline" size="sm" onClick={copySummary}>Copy Summary</Button>
+              <Button variant="outline" size="sm" onClick={printPdf}>Print</Button>
+            </>
+          )}
         </div>
       </div>
+
+      {currentDoc && (
+        <p className="mb-4 text-xs text-[var(--muted-foreground)]">PDFs aren&apos;t stored in Quantract yet. Download/print and save your copy.</p>
+      )}
 
       {error && <div className="mb-4 p-3 rounded-lg bg-[var(--error)]/10 text-[var(--error)] text-sm">{error}</div>}
 

@@ -26,7 +26,7 @@ export default function InvitesPage() {
   const [showForm, setShowForm] = useState(false);
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
-  const [role, setRole] = useState<"client" | "engineer">("client");
+  const [role, setRole] = useState<"client" | "engineer" | "admin" | "office">("client");
   const [creating, setCreating] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
@@ -84,10 +84,15 @@ export default function InvitesPage() {
   };
 
   const copyLink = async (invite: Invite) => {
-    const link = invite.role === "client"
-      ? `${window.location.origin}/client/register?token=${invite.token}`
-      : `${window.location.origin}/engineer/register?token=${invite.token}`;
-    
+    const paths: Record<string, string> = {
+      client: "/client/register",
+      engineer: "/engineer/register",
+      admin: "/admin/register",
+      office: "/admin/register",
+    };
+    const base = paths[invite.role] || "/admin/register";
+    const link = `${window.location.origin}${base}?token=${invite.token}`;
+
     await navigator.clipboard.writeText(link).catch(() => {});
     setMessage({ type: "success", text: "Link copied to clipboard!" });
   };
@@ -107,6 +112,7 @@ export default function InvitesPage() {
   const getRoleBadge = (role: string) => {
     const variants: Record<string, "success" | "warning" | "secondary"> = {
       admin: "success",
+      office: "success",
       engineer: "warning",
       client: "secondary",
     };
@@ -151,6 +157,8 @@ export default function InvitesPage() {
                   >
                     <option value="client">Client</option>
                     <option value="engineer">Engineer</option>
+                    <option value="admin">Admin</option>
+                    <option value="office">Office Staff</option>
                   </select>
                 </div>
                 

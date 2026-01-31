@@ -47,9 +47,9 @@ describe("storage", () => {
 
   describe("ensureDir", () => {
     it("should create directory recursively", () => {
-      ensureDir("/path/to/directory");
+      ensureDir(path.join("/path", "to", "directory"));
 
-      expect(fs.mkdirSync).toHaveBeenCalledWith("/path/to/directory", { recursive: true });
+      expect(fs.mkdirSync).toHaveBeenCalledWith(path.join("/path", "to", "directory"), { recursive: true });
     });
   });
 
@@ -60,9 +60,9 @@ describe("storage", () => {
 
       writeUploadBytes("test/file.txt", bytes);
 
-      expect(fs.mkdirSync).toHaveBeenCalledWith("/uploads/test", { recursive: true });
+      expect(fs.mkdirSync).toHaveBeenCalledWith(path.join("/uploads", "test"), { recursive: true });
       expect(fs.writeFileSync).toHaveBeenCalledWith(
-        "/uploads/test/file.txt",
+        path.join("/uploads", "test", "file.txt"),
         expect.any(Buffer)
       );
     });
@@ -73,7 +73,7 @@ describe("storage", () => {
 
       const result = writeUploadBytes(bytes, { ext: "pdf", prefix: "docs" });
 
-      expect(result).toMatch(/^docs\/\d+-[a-f0-9]+\.pdf$/);
+      expect(result).toMatch(/^docs[/\\\\]\d+-[a-f0-9]+\.pdf$/);
       expect(fs.writeFileSync).toHaveBeenCalled();
     });
 
@@ -83,7 +83,7 @@ describe("storage", () => {
 
       const result = writeUploadBytes(bytes);
 
-      expect(result).toMatch(/^uploads\/\d+-[a-f0-9]+\.bin$/);
+      expect(result).toMatch(/^uploads[/\\\\]\d+-[a-f0-9]+\.bin$/);
     });
 
     it("should sanitize extension", () => {
@@ -101,7 +101,7 @@ describe("storage", () => {
 
       const result = writeUploadBytes(bytes, { prefix: "user/uploads" });
 
-      expect(result).toMatch(/^user\/uploads\//);
+      expect(result).toMatch(/^user[/\\\\]uploads[/\\\\]/);
     });
 
     it("should return relative path", () => {
@@ -122,7 +122,7 @@ describe("storage", () => {
 
       const result = readUploadBytes("test/file.txt");
 
-      expect(fs.readFileSync).toHaveBeenCalledWith("/uploads/test/file.txt");
+      expect(fs.readFileSync).toHaveBeenCalledWith(path.join("/uploads", "test", "file.txt"));
       expect(result).toEqual(mockContent);
     });
 

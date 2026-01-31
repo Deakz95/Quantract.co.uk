@@ -61,7 +61,7 @@ export default function FaultLevelPage() {
     <ToolPage slug="fault-level">
       <HowItWorks>
         <p>Estimates prospective fault current from earth fault loop impedance (Zs).</p>
-        <p><strong>Ipf = Uo / Zs</strong> per BS 7671 Regulation 434. Estimator mode — not a substitute for formal IEC 60909 study.</p>
+        <p><strong>Ipf = Uo / Zs</strong> per BS 7671 Regulation 434. <strong>Estimator Mode</strong> — not a substitute for formal IEC 60909 study.</p>
       </HowItWorks>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">

@@ -300,12 +300,13 @@ export async function sendCertificateIssuedEmail(args: {
 export async function sendInviteEmail(args: {
   to: string;
   name?: string;
-  role: "client" | "engineer";
+  role: "client" | "engineer" | "admin" | "office";
   registerLink: string;
   companyName?: string;
 }) {
   const brand = args.companyName || process.env.NEXT_PUBLIC_QT_BRAND_NAME || "Quantract";
-  const roleLabel = args.role === "client" ? "client" : "engineer";
+  const roleLabels: Record<string, string> = { client: "client", engineer: "engineer", admin: "admin", office: "office staff" };
+  const roleLabel = roleLabels[args.role] || args.role;
   const subject = `You've been invited to ${brand}`;
   const html = wrapTemplate(
     `You're invited`,

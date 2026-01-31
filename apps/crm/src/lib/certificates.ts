@@ -1,6 +1,11 @@
 import { z } from "zod";
 
-export const CERTIFICATE_TYPES = ["EIC", "EICR", "MWC"] as const;
+export const CERTIFICATE_TYPES = [
+  "EIC", "EICR", "MWC",
+  "FIRE_DESIGN", "FIRE_INSTALLATION", "FIRE_COMMISSIONING", "FIRE_INSPECTION_SERVICING",
+  "EL_COMPLETION", "EL_PERIODIC",
+  "SOLAR_INSTALLATION", "SOLAR_TEST_REPORT", "SOLAR_HANDOVER",
+] as const;
 export type CertificateType = (typeof CERTIFICATE_TYPES)[number];
 
 export type CertificateSignature = {
@@ -68,7 +73,22 @@ const baseSchema = z.object({
 export const eicCertificateSchema = baseSchema.extend({ type: z.literal("EIC") });
 export const eicrCertificateSchema = baseSchema.extend({ type: z.literal("EICR") });
 export const mwcCertificateSchema = baseSchema.extend({ type: z.literal("MWC") });
-export const certificateDataSchema = z.union([eicCertificateSchema, eicrCertificateSchema, mwcCertificateSchema]);
+// v2 cert types — use same base data shape (type-specific structured data lives in child tables)
+export const fireDesignSchema = baseSchema.extend({ type: z.literal("FIRE_DESIGN") });
+export const fireInstallationSchema = baseSchema.extend({ type: z.literal("FIRE_INSTALLATION") });
+export const fireCommissioningSchema = baseSchema.extend({ type: z.literal("FIRE_COMMISSIONING") });
+export const fireInspectionServicingSchema = baseSchema.extend({ type: z.literal("FIRE_INSPECTION_SERVICING") });
+export const elCompletionSchema = baseSchema.extend({ type: z.literal("EL_COMPLETION") });
+export const elPeriodicSchema = baseSchema.extend({ type: z.literal("EL_PERIODIC") });
+export const solarInstallationSchema = baseSchema.extend({ type: z.literal("SOLAR_INSTALLATION") });
+export const solarTestReportSchema = baseSchema.extend({ type: z.literal("SOLAR_TEST_REPORT") });
+export const solarHandoverSchema = baseSchema.extend({ type: z.literal("SOLAR_HANDOVER") });
+export const certificateDataSchema = z.union([
+  eicCertificateSchema, eicrCertificateSchema, mwcCertificateSchema,
+  fireDesignSchema, fireInstallationSchema, fireCommissioningSchema, fireInspectionServicingSchema,
+  elCompletionSchema, elPeriodicSchema,
+  solarInstallationSchema, solarTestReportSchema, solarHandoverSchema,
+]);
 
 export type CertificateData = z.infer<typeof certificateDataSchema>;
 

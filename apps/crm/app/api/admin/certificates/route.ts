@@ -4,6 +4,8 @@ import { getPrisma } from "@/lib/server/prisma";
 import { withRequestLogging, logError } from "@/lib/server/observability";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { randomUUID } from "crypto";
+import { isValidCertType } from "@/lib/server/certs/types";
+import { getDefaultChecklist } from "@/lib/server/certs/checklists";
 
 export const runtime = "nodejs";
 
@@ -66,6 +68,7 @@ export const POST = withRequestLogging(async function POST(req: Request) {
 
     if (!jobId) return NextResponse.json({ ok: false, error: "missing_job_id" }, { status: 400 });
     if (!type) return NextResponse.json({ ok: false, error: "missing_type" }, { status: 400 });
+    if (!isValidCertType(type)) return NextResponse.json({ ok: false, error: "invalid_type" }, { status: 400 });
 
     // Verify the job belongs to this company
     const job = await client.job.findFirst({
@@ -92,9 +95,10 @@ export const POST = withRequestLogging(async function POST(req: Request) {
       data: { nextCertificateNumber: num + 1 },
     });
 
+    const certId = randomUUID();
     const certificate = await client.certificate.create({
       data: {
-        id: randomUUID(),
+        id: certId,
         companyId: authCtx.companyId,
         jobId,
         type,
@@ -103,6 +107,22 @@ export const POST = withRequestLogging(async function POST(req: Request) {
         updatedAt: new Date(),
       },
     });
+
+    // Populate default checklists for the cert type
+    const defaults = getDefaultChecklist(type);
+    if (defaults.length > 0) {
+      await client.certificateChecklist.createMany({
+        data: defaults.map((item, i) => ({
+          id: randomUUID(),
+          companyId: authCtx.companyId,
+          certificateId: certId,
+          section: item.section,
+          question: item.question,
+          sortOrder: item.sortOrder ?? i,
+          updatedAt: new Date(),
+        })),
+      });
+    }
 
     return NextResponse.json({ ok: true, certificate });
   } catch (error) {

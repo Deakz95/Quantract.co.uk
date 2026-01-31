@@ -15,7 +15,7 @@ type PdfPage = PDFPage;
 type PdfFont = unknown;
 type PdfDocument = Awaited<ReturnType<typeof PDFDocumentFactory.create>>;
 
-const DEFAULT_BRAND: BrandContext = {
+export const DEFAULT_BRAND: BrandContext = {
   name: process.env.QT_BRAND_NAME || "Quantract",
   tagline: process.env.QT_BRAND_TAGLINE || null,
   logoPngBytes: null,
@@ -25,14 +25,14 @@ function pounds(n: number) {
   return `£${n.toFixed(2)}`;
 }
 
-async function newDoc() {
+export async function newDoc() {
   const doc = await PDFDocumentFactory.create();
   const font = await doc.embedFont(StandardFonts.Helvetica);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
   return { doc, font, bold };
 }
 
-async function drawBrandHeader(args: {
+export async function drawBrandHeader(args: {
   doc: PdfDocument;
   page: PdfPage;
   font: PdfFont;
@@ -498,6 +498,155 @@ export async function renderCertificatePdf(input: {
   } else {
     line("Customer: not signed.", { size: 10 });
   }
+
+  const bytes = await doc.save();
+  return Buffer.from(bytes);
+}
+
+/**
+ * Generate a certificate PDF from a canonical revision snapshot.
+ * Used by the issuance service (Stage 3) to produce deterministic PDFs
+ * from the immutable snapshot rather than from live mutable DB rows.
+ */
+export async function renderCertificatePdfFromSnapshot(snapshot: {
+  certificateId: string;
+  certificateNumber: string | null;
+  type: string;
+  inspectorName: string | null;
+  inspectorEmail: string | null;
+  outcome: string | null;
+  outcomeReason: string | null;
+  data: Record<string, unknown>;
+  completedAt: string | null;
+  observations: Array<{ code: string; location: string | null; description: string | null; resolvedAt: string | null }>;
+  checklists: Array<{ section: string; question: string; answer: string | null }>;
+  signatures: Array<{ role: string; signerName: string | null; signatureText: string | null; signedAt: string | null; qualification: string | null }>;
+  testResults: Array<{ circuitRef: string | null; data: Record<string, unknown> }>;
+}): Promise<Buffer> {
+  const { doc, font, bold } = await newDoc();
+  const page = doc.addPage([595.28, 841.89]); // A4
+  let y = 800;
+  const left = 50;
+
+  const line = (text: string, opts?: { size?: number; bold?: boolean }) => {
+    const size = opts?.size ?? 11;
+    const used = opts?.bold ? bold : font;
+    // Truncate to fit page width
+    const truncated = String(text || "").slice(0, 100);
+    if (y < 60) {
+      // Would need pagination — skip for now
+      return;
+    }
+    page.drawText(truncated, { x: left, y, size, font: used });
+    y -= size + 6;
+  };
+
+  const labelValue = (label: string, value?: string | null, size = 10) => {
+    const trimmed = String(value || "").trim();
+    if (!trimmed) return;
+    line(`${label}: ${trimmed}`, { size });
+  };
+
+  // ── Header ──
+  y = await drawBrandHeader({ doc, page, font, bold, left, y });
+  line(`${snapshot.type} Certificate`, { size: 14, bold: true });
+  y -= 6;
+  if (snapshot.certificateNumber) line(`Certificate No: ${snapshot.certificateNumber}`, { size: 10 });
+  line(`Certificate ID: ${snapshot.certificateId}`, { size: 10 });
+  line(`Status: ISSUED`, { size: 10 });
+  if (snapshot.completedAt) line(`Completed: ${new Date(snapshot.completedAt).toLocaleString("en-GB")}`, { size: 10 });
+  y -= 10;
+
+  // ── Overview from legacy data blob ──
+  const data = snapshot.data as any;
+  if (data?.overview) {
+    line("Overview", { bold: true });
+    labelValue("Job ref", data.overview.jobReference);
+    labelValue("Site", data.overview.siteName);
+    labelValue("Address", data.overview.installationAddress);
+    labelValue("Client", data.overview.clientName);
+    y -= 6;
+  }
+
+  // ── Inspector ──
+  line("Inspector", { bold: true });
+  line(snapshot.inspectorName || "(not set)", { size: 10 });
+  if (snapshot.inspectorEmail) line(snapshot.inspectorEmail, { size: 10 });
+  y -= 6;
+
+  // ── Outcome ──
+  if (snapshot.outcome) {
+    line("Outcome", { bold: true });
+    line(snapshot.outcome.toUpperCase(), { size: 11, bold: true });
+    if (snapshot.outcomeReason) line(snapshot.outcomeReason, { size: 9 });
+    y -= 6;
+  }
+
+  // ── Observations ──
+  if (snapshot.observations.length > 0) {
+    line("Observations", { bold: true });
+    for (const obs of snapshot.observations.slice(0, 15)) {
+      const resolved = obs.resolvedAt ? " [RESOLVED]" : "";
+      line(`${obs.code} — ${obs.description || ""}${resolved}`, { size: 9 });
+      if (obs.location) line(`  Location: ${obs.location}`, { size: 8 });
+      y -= 2;
+    }
+    if (snapshot.observations.length > 15) line(`…and ${snapshot.observations.length - 15} more`, { size: 9 });
+    y -= 6;
+  }
+
+  // ── Checklist summary ──
+  if (snapshot.checklists.length > 0) {
+    line("Checklist Summary", { bold: true });
+    const sections = new Map<string, { pass: number; fail: number; na: number; total: number }>();
+    for (const cl of snapshot.checklists) {
+      const s = sections.get(cl.section) || { pass: 0, fail: 0, na: 0, total: 0 };
+      s.total++;
+      if (cl.answer === "pass") s.pass++;
+      else if (cl.answer === "fail") s.fail++;
+      else if (cl.answer === "na" || cl.answer === "lim") s.na++;
+      sections.set(cl.section, s);
+    }
+    for (const [section, counts] of sections) {
+      line(`${section}: ${counts.pass} pass, ${counts.fail} fail, ${counts.na} N/A (${counts.total} items)`, { size: 9 });
+    }
+    y -= 6;
+  }
+
+  // ── Test results ──
+  if (snapshot.testResults.length > 0) {
+    line("Test Results", { bold: true });
+    const max = 15;
+    for (const r of snapshot.testResults.slice(0, max)) {
+      const ref = r.circuitRef ? `Circuit: ${r.circuitRef}` : "Circuit";
+      const keys = Object.keys(r.data ?? {});
+      const kv = keys.slice(0, 6).map((k) => `${k}: ${String((r.data as any)[k])}`).join("  •  ");
+      line(ref, { size: 10, bold: true });
+      line(kv || "(no data)", { size: 9 });
+      y -= 2;
+    }
+    if (snapshot.testResults.length > max) line(`…and ${snapshot.testResults.length - max} more`, { size: 9 });
+    y -= 6;
+  }
+
+  // ── Signatures ──
+  line("Signatures", { bold: true });
+  if (snapshot.signatures.length === 0) {
+    // Fall back to legacy data signatures
+    const sigs = data?.signatures as any;
+    if (sigs?.engineer?.signatureText) line(`Engineer: ${sigs.engineer.signatureText}`, { size: 10 });
+    if (sigs?.customer?.signatureText) line(`Customer: ${sigs.customer.signatureText}`, { size: 10 });
+  } else {
+    for (const sig of snapshot.signatures) {
+      const name = sig.signerName || sig.signatureText || "(unsigned)";
+      const date = sig.signedAt ? ` — ${new Date(sig.signedAt).toLocaleString("en-GB")}` : "";
+      const qual = sig.qualification ? ` (${sig.qualification})` : "";
+      line(`${sig.role}: ${name}${qual}${date}`, { size: 10 });
+    }
+  }
+
+  // ── Footer ──
+  page.drawText("Page 1 of 1", { x: 270, y: 30, size: 8, font });
 
   const bytes = await doc.save();
   return Buffer.from(bytes);

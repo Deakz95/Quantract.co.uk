@@ -1,6 +1,8 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { rateLimitByIp, createRateLimitResponse } from "@/lib/server/rateLimitMiddleware";
 
 /**
  * Metal price tracker API — mock provider with configurable real API slot.
@@ -61,8 +63,17 @@ function getMockPrices(): MetalPrices {
 //   return null;
 // }
 
-export async function GET() {
+// Infra rate limiting (Vercel/Cloudflare) is primary; this is an app-layer backstop.
+export async function GET(req: Request) {
   try {
+    const rl = rateLimitByIp(req as NextRequest, { limit: 30, windowMs: 60_000 }, "metal:ip");
+    if (!rl.ok) {
+      return createRateLimitResponse({
+        error: "Too many requests. Please try again shortly.",
+        resetAt: rl.resetAt,
+      });
+    }
+
     // Check cache
     if (cachedPrices && Date.now() < cacheExpiry) {
       return NextResponse.json({ ok: true, ...cachedPrices, cached: true });

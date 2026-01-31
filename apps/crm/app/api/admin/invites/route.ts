@@ -67,7 +67,13 @@ export const POST = withRequestLogging(async function POST(req: Request) {
     const sendEmail = body?.sendEmail !== false; // Default to true
 
     if (!email || !email.includes("@")) return NextResponse.json({ ok: false, error: "Invalid email" }, { status: 400 });
-    if (role !== "client" && role !== "engineer") return NextResponse.json({ ok: false, error: "Invalid role" }, { status: 400 });
+    const validRoles = ["client", "engineer", "admin", "office"];
+    if (!validRoles.includes(role)) return NextResponse.json({ ok: false, error: "Invalid role" }, { status: 400 });
+
+    // Only admins can invite admin/office roles
+    if ((role === "admin" || role === "office") && effectiveRole !== "admin") {
+      return NextResponse.json({ ok: false, error: "Only admins can invite admin or office users" }, { status: 403 });
+    }
 
     const token = crypto.randomBytes(24).toString("hex");
     // ✅ MANDATORY: 7-day expiry for all invites (production requirement)
@@ -84,7 +90,13 @@ export const POST = withRequestLogging(async function POST(req: Request) {
     });
     const companyName = company?.brandName || company?.name || "Quantract";
 
-    const registerPath = role === "client" ? `/client/register?token=${token}` : `/engineer/register?token=${token}`;
+    const registerPaths: Record<string, string> = {
+      client: `/client/register?token=${token}`,
+      engineer: `/engineer/register?token=${token}`,
+      admin: `/admin/register?token=${token}`,
+      office: `/admin/register?token=${token}`,
+    };
+    const registerPath = registerPaths[role] || `/admin/register?token=${token}`;
     const registerLink = absoluteUrl(registerPath);
 
     // Send invite email
@@ -94,7 +106,7 @@ export const POST = withRequestLogging(async function POST(req: Request) {
         await sendInviteEmail({
           to: email,
           name: name || undefined,
-          role: role as "client" | "engineer",
+          role: role as "client" | "engineer" | "admin" | "office",
           registerLink,
           companyName,
         });

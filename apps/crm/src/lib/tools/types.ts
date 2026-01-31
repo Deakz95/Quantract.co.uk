@@ -95,5 +95,8 @@ export const TOOL_SLUGS = [
 export const toolPresetSchema = z.object({
   toolSlug: z.enum(TOOL_SLUGS),
   name: z.string().min(1).max(100),
-  inputsJson: z.record(z.unknown()),
+  inputsJson: z.record(z.unknown()).refine(
+    (v) => JSON.stringify(v).length <= 32_000,
+    { message: "Preset data too large (max 32 KB)" },
+  ),
 });

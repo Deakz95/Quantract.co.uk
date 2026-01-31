@@ -46,8 +46,8 @@ export async function POST(
         );
       }
 
-      const document = await prisma.ramsDocument.update({
-        where: { id },
+      const issued = await prisma.ramsDocument.updateMany({
+        where: { id, companyId: authCtx.companyId },
         data: {
           status: "issued",
           issuedAt: new Date(),
@@ -55,6 +55,11 @@ export async function POST(
         },
       });
 
+      if (issued.count !== 1) {
+        return NextResponse.json({ ok: false, error: "Document not found" }, { status: 404 });
+      }
+
+      const document = await prisma.ramsDocument.findUnique({ where: { id } });
       return NextResponse.json({ ok: true, data: document });
     }
 
@@ -63,10 +68,14 @@ export async function POST(
       const now = new Date();
 
       // Supersede the current version
-      await prisma.ramsDocument.update({
-        where: { id },
+      const superseded = await prisma.ramsDocument.updateMany({
+        where: { id, companyId: authCtx.companyId },
         data: { status: "superseded", updatedAt: now },
       });
+
+      if (superseded.count !== 1) {
+        return NextResponse.json({ ok: false, error: "Document not found" }, { status: 404 });
+      }
 
       // Create a new draft version linked to the parent
       const newDoc = await prisma.ramsDocument.create({

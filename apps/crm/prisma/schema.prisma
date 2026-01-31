@@ -74,33 +74,44 @@ model AuthSession {
 }
 
 model Certificate {
-  id                     String                  @id
-  companyId              String
-  legalEntityId          String?
-  jobId                  String?
-  siteId                 String?
-  clientId               String?
-  type                   String
-  status                 String
-  certificateNumber      String?
-  issuedAt               DateTime?
-  inspectorName          String?
-  inspectorEmail         String?
-  dataVersion            Int                     @default(1)
-  data                   Json                    @default("{}")
-  completedAt            DateTime?
-  pdfKey                 String?
-  signedName             String?
-  signedAt               DateTime?
-  createdAt              DateTime                @default(now())
-  updatedAt              DateTime
-  auditEvents            AuditEvent[]
-  client                 Client?                 @relation(fields: [clientId], references: [id])
-  company                Company                 @relation(fields: [companyId], references: [id])
-  legalEntity            LegalEntity?            @relation(fields: [legalEntityId], references: [id])
-  job                    Job?                    @relation(fields: [jobId], references: [id])
-  site                   Site?                   @relation(fields: [siteId], references: [id])
-  certificateTestResults CertificateTestResult[]
+  id                      String                       @id
+  companyId               String
+  legalEntityId           String?
+  jobId                   String?
+  siteId                  String?
+  clientId                String?
+  type                    String
+  status                  String
+  certificateNumber       String?
+  issuedAt                DateTime?
+  inspectorName           String?
+  inspectorEmail          String?
+  dataVersion             Int                          @default(1)
+  data                    Json                         @default("{}")
+  completedAt             DateTime?
+  pdfKey                  String?
+  signedName              String?
+  signedAt                DateTime?
+  // v2 fields
+  verificationToken       String?                      @unique
+  verificationRevokedAt   DateTime?
+  currentRevision         Int                          @default(0)
+  outcome                 String?
+  outcomeReason           String?
+  createdAt               DateTime                     @default(now())
+  updatedAt               DateTime
+  auditEvents             AuditEvent[]
+  client                  Client?                      @relation(fields: [clientId], references: [id])
+  company                 Company                      @relation(fields: [companyId], references: [id])
+  legalEntity             LegalEntity?                 @relation(fields: [legalEntityId], references: [id])
+  job                     Job?                         @relation(fields: [jobId], references: [id])
+  site                    Site?                        @relation(fields: [siteId], references: [id])
+  certificateTestResults  CertificateTestResult[]
+  revisions               CertificateRevision[]
+  observations            CertificateObservation[]
+  checklists              CertificateChecklist[]
+  signatureRecords        CertificateSignatureRecord[]
+  attachments             CertificateAttachment[]
 
   @@unique([legalEntityId, certificateNumber])
   @@index([clientId])
@@ -108,6 +119,102 @@ model Certificate {
   @@index([legalEntityId])
   @@index([jobId])
   @@index([siteId])
+  @@index([companyId, certificateNumber])
+}
+
+model CertificateRevision {
+  id            String      @id @default(cuid())
+  companyId     String
+  certificateId String
+  revision      Int
+  signingHash   String
+  content       Json
+  pdfKey        String?
+  pdfChecksum   String?
+  issuedAt      DateTime
+  issuedBy      String?
+  createdAt     DateTime    @default(now())
+  certificate   Certificate @relation(fields: [certificateId], references: [id])
+  company       Company     @relation(fields: [companyId], references: [id])
+
+  @@unique([certificateId, revision])
+  @@index([companyId])
+  @@index([certificateId])
+}
+
+model CertificateObservation {
+  id            String      @id @default(cuid())
+  companyId     String
+  certificateId String
+  code          String
+  location      String?
+  description   String
+  regulation    String?
+  fixGuidance   String?
+  resolvedAt    DateTime?
+  sortOrder     Int         @default(0)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  certificate   Certificate @relation(fields: [certificateId], references: [id])
+  company       Company     @relation(fields: [companyId], references: [id])
+
+  @@index([certificateId])
+  @@index([companyId])
+  @@index([code])
+}
+
+model CertificateChecklist {
+  id            String      @id @default(cuid())
+  companyId     String
+  certificateId String
+  section       String
+  question      String
+  answer        String?
+  notes         String?
+  sortOrder     Int         @default(0)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  certificate   Certificate @relation(fields: [certificateId], references: [id])
+  company       Company     @relation(fields: [companyId], references: [id])
+
+  @@index([certificateId, section])
+  @@index([companyId])
+}
+
+model CertificateSignatureRecord {
+  id            String      @id @default(cuid())
+  companyId     String
+  certificateId String
+  role          String
+  signerName    String
+  signerEmail   String?
+  signatureText String?
+  signedAt      DateTime
+  qualification String?
+  isPrimary     Boolean     @default(true)
+  sortOrder     Int         @default(0)
+  createdAt     DateTime    @default(now())
+  certificate   Certificate @relation(fields: [certificateId], references: [id])
+  company       Company     @relation(fields: [companyId], references: [id])
+
+  @@index([certificateId, role])
+  @@index([companyId])
+}
+
+model CertificateAttachment {
+  id            String      @id @default(cuid())
+  companyId     String
+  certificateId String
+  name          String
+  fileKey       String
+  mimeType      String
+  category      String?
+  createdAt     DateTime    @default(now())
+  certificate   Certificate @relation(fields: [certificateId], references: [id])
+  company       Company     @relation(fields: [companyId], references: [id])
+
+  @@index([certificateId])
+  @@index([companyId])
 }
 
 model CertificateTestResult {
@@ -303,6 +410,12 @@ model Company {
   importJobs              ImportJob[]
   toolPresets             ToolPreset[]
   ramsDocuments           RamsDocument[]
+  // Certificates v2
+  certificateRevisions        CertificateRevision[]
+  certificateObservations     CertificateObservation[]
+  certificateChecklists       CertificateChecklist[]
+  certificateSignatureRecords CertificateSignatureRecord[]
+  certificateAttachments      CertificateAttachment[]
 }
 
 model CompanyUser {
