@@ -564,6 +564,102 @@ textarea:focus-visible {
   margin-top: 3rem;
 }
 
+/* RAMS & Safety Callout */
+.rams-callout {
+  padding: 5rem 0;
+  background: var(--surface);
+}
+
+.rams-callout-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 3rem;
+  align-items: center;
+}
+
+@media (min-width: 768px) {
+  .rams-callout-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.rams-callout-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.85rem;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: #fff;
+  border-radius: 2rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-bottom: 1.25rem;
+}
+
+.rams-callout-content h2 {
+  font-size: 2rem;
+  line-height: 1.2;
+  margin-bottom: 0.75rem;
+}
+
+.rams-callout-value {
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+.rams-callout-bullets {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.rams-callout-bullets li {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+.rams-bullet-icon {
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.rams-callout-visual {
+  display: flex;
+  justify-content: center;
+}
+
+.rams-pdf-frame {
+  position: relative;
+  max-width: 420px;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.12),
+    0 4px 16px rgba(0, 0, 0, 0.06);
+  border: 1px solid var(--border);
+  background: #fff;
+  transform: perspective(800px) rotateY(-2deg);
+  transition: transform 0.3s;
+}
+
+.rams-pdf-frame:hover {
+  transform: perspective(800px) rotateY(0deg);
+}
+
+.rams-pdf-frame img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
 /* Testimonials */
 .testimonials {
   padding: 4rem 0;
