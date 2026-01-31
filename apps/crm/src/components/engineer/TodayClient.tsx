@@ -64,7 +64,8 @@ export default function TodayClient() {
       setJobs(((j.items || j.jobs || []) as Job[]) ?? []);
       setActive((t.active as TimeEntry) || null);
     } catch (e: any) {
-      setError(e?.message || "Failed to load");
+      console.error("[TodayClient] load failed:", e?.message || e);
+      setError("load_failed");
     } finally {
       setLoading(false);
     }
@@ -145,7 +146,21 @@ export default function TodayClient() {
 
   return (
     <div className="grid gap-6">
-      {error ? <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{error}</div> : null}
+      {error === "load_failed" ? (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-center">
+          <p className="text-sm font-medium text-rose-700">Couldn&apos;t load your jobs right now.</p>
+          <p className="mt-1 text-xs text-rose-600">Check signal and try again.</p>
+          <button
+            type="button"
+            onClick={load}
+            className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-rose-100 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-200 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      ) : error ? (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{error}</div>
+      ) : null}
 
       <Card>
         <CardHeader>
@@ -216,7 +231,7 @@ export default function TodayClient() {
         <CardContent>
           <div className="grid gap-3">
             {todaysJobs.length === 0 ? (
-              <div className="text-sm text-[var(--muted-foreground)]">No jobs assigned yet.</div>
+              <div className="text-sm text-[var(--muted-foreground)]">No jobs scheduled for today.</div>
             ) : null}
             {todaysJobs.map((j) => (
               <div key={j.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--border)] bg-[var(--background)] p-4">
