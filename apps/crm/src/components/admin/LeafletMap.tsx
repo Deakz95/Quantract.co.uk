@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+// @ts-expect-error -- leaflet has no bundled types; we use it as any
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
