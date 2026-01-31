@@ -5,27 +5,33 @@ import * as repo from "@/lib/server/repo";
 import { withRequestLogging, logError } from "@/lib/server/observability";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { randomUUID } from "crypto";
+import { timeStart, logPerf } from "@/lib/perf/timing";
 
 export const runtime = "nodejs";
 
 export const GET = withRequestLogging(async function GET() {
+  const stopTotal = timeStart("clients_list_total");
+  let msAuth = 0;
+  let msDb = 0;
+
   try {
-    // Use requireCompanyContext for company-scoped data access
+    const stopAuth = timeStart("clients_list_auth");
     const ctx = await requireCompanyContext();
     const effectiveRole = getEffectiveRole(ctx);
+    msAuth = stopAuth();
 
-    // Only admin and office roles can list clients
     if (effectiveRole !== "admin" && effectiveRole !== "office") {
+      logPerf("clients_list", { msTotal: stopTotal(), msAuth, ok: false, err: "forbidden" });
       return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
     }
 
     const client = getPrisma();
     if (!client) {
+      logPerf("clients_list", { msTotal: stopTotal(), msAuth, ok: false, err: "service_unavailable" });
       return NextResponse.json({ ok: false, error: "service_unavailable" }, { status: 503 });
     }
 
-    // Select only columns that exist in production to avoid schema mismatch errors
-    // companyId is guaranteed non-null by requireCompanyContext
+    const stopDb = timeStart("clients_list_db");
     const clients = await client.client.findMany({
       where: { companyId: ctx.companyId },
       orderBy: { createdAt: "desc" },
@@ -48,6 +54,7 @@ export const GET = withRequestLogging(async function GET() {
         updatedAt: true,
       },
     });
+    msDb = stopDb();
 
     // Map Date fields to ISO strings for frontend compatibility
     const mapped = (clients || []).map((c: any) => ({
@@ -56,6 +63,7 @@ export const GET = withRequestLogging(async function GET() {
       updatedAtISO: c.updatedAt ? new Date(c.updatedAt).toISOString() : null,
     }));
 
+    logPerf("clients_list", { msTotal: stopTotal(), msAuth, msDb, ok: true, rowCount: mapped.length });
     return NextResponse.json({ ok: true, clients: mapped });
   } catch (error: any) {
     // Handle auth errors with appropriate status codes
