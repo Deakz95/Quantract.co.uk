@@ -151,12 +151,11 @@ export async function POST(req: Request) {
         title,
         status: "draft",
         version: 1,
-        contentJson: contentJson ? (contentJson as any) : undefined,
+        contentJson: (contentJson as any) ?? {},
         jobId,
         clientId,
         preparedBy: body.preparedBy ? String(body.preparedBy) : null,
         reviewedBy: body.reviewedBy ? String(body.reviewedBy) : null,
-        updatedAt: new Date(),
       },
     });
 
