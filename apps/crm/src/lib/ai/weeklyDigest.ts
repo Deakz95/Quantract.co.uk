@@ -127,7 +127,7 @@ export async function runWeeklyCrmDigest(): Promise<{
         ],
         response_format: { type: "json_object" },
         temperature: 0.2,
-        max_tokens: 3000,
+        max_completion_tokens: 3000,
       });
       const raw = completion.choices?.[0]?.message?.content ?? "";
       const tokensIn = completion.usage?.prompt_tokens ?? 0;

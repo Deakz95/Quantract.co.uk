@@ -142,7 +142,7 @@ export async function GET() {
       ],
       response_format: { type: "json_object" },
       temperature: 0.2,
-      max_tokens: 3000,
+      max_completion_tokens: 3000,
     });
     msAi = stopAi();
     const raw = completion.choices?.[0]?.message?.content ?? "";

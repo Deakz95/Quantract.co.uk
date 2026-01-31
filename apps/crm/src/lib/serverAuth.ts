@@ -4,6 +4,7 @@ import { p } from "@/lib/server/prisma";
 import { neonAuth } from "@neondatabase/auth/next/server";
 import { cookies } from "next/headers";
 import { randomUUID } from "crypto";
+import { timeStart, logPerf } from "@/lib/perf/timing";
 
 /**
  * Supported roles in the system.
@@ -419,11 +420,37 @@ export async function requireMembership(
  * @throws 401 if no company context (user not associated with a company)
  * @throws 403 if membership exists but is inactive
  */
+// TTL cache for resolved company auth contexts (60s, keyed by session identifier)
+const _authCache = new Map<string, { value: CompanyAuthContext; expiresAt: number }>();
+const AUTH_CACHE_TTL_MS = 60_000;
+
 export async function requireCompanyContext(): Promise<CompanyAuthContext> {
-  // Get base auth context
+  const stopTotal = timeStart("auth_context");
+  let msSession = 0;
+  let msDb = 0;
+
+  // 1. Read session cookie to get a stable cache key BEFORE any DB work
+  const stopSession = timeStart("auth_context_session");
+  const jar = await cookies();
+  const sid = jar.get(SID_COOKIE)?.value || jar.get("qt_sid_v1")?.value || "";
+  msSession = stopSession();
+
+  // Check cache using sid (stable per-user session identifier)
+  if (sid) {
+    const cached = _authCache.get(sid);
+    if (cached && cached.expiresAt > Date.now()) {
+      logPerf("auth_context", { msTotal: stopTotal(), msSession, msDb: 0, cacheHit: true, ok: true });
+      return cached.value;
+    }
+  }
+
+  // 2. Full resolution path
+  const stopDb = timeStart("auth_context_db");
   const ctx = await requireAuth();
 
   if (!ctx.companyId) {
+    msDb = stopDb();
+    logPerf("auth_context", { msTotal: stopTotal(), msSession, msDb, cacheHit: false, ok: false, err: "no_company" });
     const err: any = new Error("No company context - user not associated with a company");
     err.status = 401;
     throw err;
@@ -445,6 +472,8 @@ export async function requireCompanyContext(): Promise<CompanyAuthContext> {
     if (membership) {
       // Check if membership is active
       if (!membership.isActive) {
+        msDb = stopDb();
+        logPerf("auth_context", { msTotal: stopTotal(), msSession, msDb, cacheHit: false, ok: false, err: "inactive" });
         const err: any = new Error("Membership is inactive");
         err.status = 403;
         throw err;
@@ -460,7 +489,13 @@ export async function requireCompanyContext(): Promise<CompanyAuthContext> {
     // Otherwise, DB might not be available - continue without membership info
     console.warn("[requireCompanyContext] Could not resolve membership:", e);
   }
+  msDb = stopDb();
 
+  // 3. Cache the resolved context
+  const cacheKey = sid || `${ctx.userId}:${ctx.companyId}`;
+  _authCache.set(cacheKey, { value: companyCtx, expiresAt: Date.now() + AUTH_CACHE_TTL_MS });
+
+  logPerf("auth_context", { msTotal: stopTotal(), msSession, msDb, cacheHit: false, ok: true });
   return companyCtx;
 }
 
