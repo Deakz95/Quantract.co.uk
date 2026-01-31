@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { AppShell } from "@/components/AppShell";
 
 interface LineItem {
   description: string;
@@ -85,6 +86,7 @@ export default function AiEstimatorPage() {
   };
 
   return (
+    <AppShell role="admin" title="AI Job Estimator">
     <div className="mx-auto max-w-4xl p-6">
       <h1 className="text-2xl font-bold mb-2">AI Job Estimator</h1>
       <p className="text-sm text-gray-500 mb-6">
@@ -207,5 +209,6 @@ export default function AiEstimatorPage() {
         </div>
       )}
     </div>
+    </AppShell>
   );
 }

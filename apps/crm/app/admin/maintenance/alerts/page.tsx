@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { AppShell } from "@/components/AppShell";
 
 interface Alert {
   id: string;
@@ -44,6 +45,7 @@ export default function MaintenanceAlertsPage() {
   }
 
   return (
+    <AppShell role="admin" title="Maintenance Alerts">
     <div className="mx-auto max-w-5xl p-6">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Maintenance Alerts</h1>
@@ -104,5 +106,6 @@ export default function MaintenanceAlertsPage() {
         </div>
       )}
     </div>
+    </AppShell>
   );
 }

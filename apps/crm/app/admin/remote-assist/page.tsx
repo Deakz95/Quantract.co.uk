@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { AppShell } from "@/components/AppShell";
 
 interface Session {
   id: string;
@@ -55,6 +56,7 @@ export default function RemoteAssistPage() {
   };
 
   return (
+    <AppShell role="admin" title="Remote Assist">
     <div className="mx-auto max-w-4xl p-6">
       <h1 className="text-2xl font-bold mb-6">Remote Assist</h1>
 
@@ -113,5 +115,6 @@ export default function RemoteAssistPage() {
         </div>
       )}
     </div>
+    </AppShell>
   );
 }

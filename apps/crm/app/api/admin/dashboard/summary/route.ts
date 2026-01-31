@@ -114,7 +114,7 @@ export const GET = withRequestLogging(async function GET() {
       // Team
       prisma.engineer.findMany({
         where: { companyId: authCtx.companyId },
-        select: { id: true, email: true, name: true, role: true },
+        select: { id: true, email: true, name: true },
         take: 10,
       }).catch(() => []),
     ]);

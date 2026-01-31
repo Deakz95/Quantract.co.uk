@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { AppShell } from "@/components/AppShell";
 
 interface TruckStockItem {
   id: string;
@@ -35,6 +36,7 @@ export default function TruckStockPage() {
   }
 
   return (
+    <AppShell role="admin" title="Truck / Van Stock">
     <div className="mx-auto max-w-5xl p-6">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Truck / Van Stock</h1>
@@ -80,5 +82,6 @@ export default function TruckStockPage() {
         </table>
       )}
     </div>
+    </AppShell>
   );
 }

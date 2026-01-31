@@ -29,6 +29,10 @@ import {
   Activity,
   Upload,
   FileBarChart,
+  Truck,
+  Wrench,
+  Video,
+  Camera,
   CircleUser,
   User,
   HelpCircle,
@@ -78,8 +82,12 @@ const adminNav: NavItem[] = [
   { label: "Clients", href: "/admin/clients", icon: Users, section: "People" },
   { label: "Contacts", href: "/admin/contacts", icon: Users, section: "People" },
   { label: "Engineers", href: "/admin/engineers", icon: Users, section: "People" },
-  // Tools
-  { label: "Tools", href: "/admin/tools", icon: Settings, section: "Tools" },
+  // Field Tools
+  { label: "Tools", href: "/admin/tools", icon: Settings, section: "Field Tools" },
+  { label: "Truck Stock", href: "/admin/truck-stock", icon: Truck, section: "Field Tools" },
+  { label: "AI Estimator", href: "/admin/tools/ai-estimator", icon: Camera, section: "Field Tools" },
+  { label: "Remote Assist", href: "/admin/remote-assist", icon: Video, section: "Field Tools" },
+  { label: "Maintenance", href: "/admin/maintenance/alerts", icon: Wrench, section: "Field Tools" },
   // Admin
   { label: "Reports", href: "/admin/reports", icon: FileBarChart, section: "Admin" },
   { label: "Import", href: "/admin/import", icon: Upload, section: "Admin" },

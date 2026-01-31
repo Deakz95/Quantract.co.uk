@@ -2109,7 +2109,8 @@ model MaintenanceRule {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  company Company @relation(fields: [companyId], references: [id])
+  company Company            @relation(fields: [companyId], references: [id])
+  alerts  MaintenanceAlert[]
 
   @@index([companyId, isActive])
 }
@@ -2126,8 +2127,9 @@ model MaintenanceAlert {
   message   String?
   meta      Json?
 
-  company Company        @relation(fields: [companyId], references: [id])
-  asset   InstalledAsset @relation(fields: [assetId], references: [id])
+  company Company          @relation(fields: [companyId], references: [id])
+  asset   InstalledAsset   @relation(fields: [assetId], references: [id])
+  rule    MaintenanceRule? @relation(fields: [ruleId], references: [id])
 
   @@index([companyId, status, dueAt])
   @@index([companyId, assetId])
