@@ -6,7 +6,17 @@
       "Bash(git commit:*)",
       "Bash(npx vitest:*)",
       "Bash(git push:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(grep:*)",
+      "Bash(git diff:*)",
+      "Bash(node -e:*)",
+      "Bash(git status:*)",
+      "Bash(npx prisma:*)",
+      "Bash(ls:*)",
+      "Bash(npx playwright test:*)",
+      "Bash(npx playwright:*)",
+      "Bash(rg:*)",
+      "Bash(npm install:*)"
     ]
   }
 }

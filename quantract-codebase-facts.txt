@@ -1,0 +1,1551 @@
+================================================================================
+QUANTRACT CODEBASE FACT EXTRACTION
+For: Remote Assist, AR Testing, AI Photo Estimator, Predictive Maintenance,
+     Lead Scoring, Truck Inventory, Client Timeline, Troubleshooting Bot
+================================================================================
+
+
+================================================================================
+1) TECH STACK SUMMARY
+================================================================================
+
+Framework:          Next.js 16.1.0 (App Router — NOT pages router)
+React:              19.2.0
+TypeScript:         5.9.3
+Styling:            Tailwind CSS 4.1.18 + class-variance-authority + tailwind-merge
+Database:           PostgreSQL (Neon) via Prisma 6.0.0
+Auth:               Custom hybrid (Neon Auth + Better Auth + custom session cookies)
+                    next-auth 4.24.13 present in deps but NOT primary — custom serverAuth.ts is authoritative
+Payments:           Stripe 16.12.0
+Email:              Resend 4.8.0
+Queue:              BullMQ 5.66.5 + Redis 4.7.0
+PDF Generation:     pdf-lib 1.17.1
+QR Codes:           qrcode 1.5.4
+AI:                 OpenAI 4.104.0
+Monorepo:           npm workspaces — 4 apps (crm, marketing, certificates, tools)
+Testing:            Vitest (unit), Playwright (E2E)
+Error Tracking:     Sentry (@sentry/nextjs)
+PWA:                next-pwa 5.6.0 (Workbox service worker)
+Hosting hints:      Render (proxy-aware HTTPS redirect in middleware), Neon Postgres
+API style:          App Router route handlers (app/api/**/route.ts)
+                    All use NextResponse, export named GET/POST/PATCH/DELETE functions
+
+
+================================================================================
+2) PRISMA SCHEMA EXTRACTION
+================================================================================
+
+--- Job ---
+
+model Job {
+  id                      String          @id
+  companyId               String
+  jobNumber               Int?
+  serviceLineId           String?
+  performingLegalEntityId String?
+  quoteId                 String?
+  clientId                String?
+  siteId                  String
+  engineerId              String?
+  title                   String?
+  status                  String          // "new" | "scheduled" | "in_progress" | "completed"
+  scheduledAt             DateTime?
+  notes                   String?
+  createdAt               DateTime        @default(now())
+  updatedAt               DateTime
+  budgetSubtotal          Float           @default(0)
+  budgetVat               Float           @default(0)
+  budgetTotal             Float           @default(0)
+  deletedAt               DateTime?
+
+  // Relations
+  auditEvents             AuditEvent[]
+  certificates            Certificate[]
+  costItems               CostItem[]
+  invoices                Invoice[]
+  client                  Client?         @relation(fields: [clientId], references: [id])
+  company                 Company         @relation(fields: [companyId], references: [id])
+  serviceLine             ServiceLine?    @relation(fields: [serviceLineId], references: [id])
+  performingLegalEntity   LegalEntity?    @relation("JobPerformingEntity", fields: [performingLegalEntityId], references: [id])
+  engineer                Engineer?       @relation(fields: [engineerId], references: [id])
+  quote                   Quote?          @relation(fields: [quoteId], references: [id])
+  site                    Site            @relation(fields: [siteId], references: [id])
+  jobBudgetLines          JobBudgetLine[]
+  jobStages               JobStage[]
+  scheduleEntries         ScheduleEntry[]
+  snagItems               SnagItem[]
+  supplierBills           SupplierBill[]
+  timeEntries             TimeEntry[]
+  variations              Variation[]
+  timesheets              Timesheet[]     @relation("JobTimesheets")
+  jobChecklists           JobChecklist[]
+  tasks                   Task[]
+  comments                Comment[]
+  activities              Activity[]
+  ramsDocuments           RamsDocument[]
+
+  @@unique([companyId, jobNumber])
+  @@index([companyId])
+  @@index([companyId, deletedAt])
+  @@index([serviceLineId])
+  @@index([performingLegalEntityId])
+  @@index([scheduledAt])
+  @@index([status])
+}
+
+--- Quote ---
+
+model Quote {
+  id             String          @id
+  companyId      String
+  token          String          @unique
+  clientId       String?
+  siteId         String?
+  version        Int             @default(1)
+  clientName     String
+  clientEmail    String
+  siteAddress    String?
+  notes          String?
+  vatRate        Float
+  items          Json            // [{description, qty, unitPrice}]
+  status         String          // "draft" | "sent" | "accepted" | "rejected"
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime
+  acceptedAt     DateTime?
+  deletedAt      DateTime?
+
+  agreement      Agreement?
+  auditEvents    AuditEvent[]
+  invoices       Invoice[]
+  jobs           Job[]
+  client         Client?         @relation(fields: [clientId], references: [id])
+  company        Company         @relation(fields: [companyId], references: [id])
+  site           Site?           @relation(fields: [siteId], references: [id])
+  quoteRevisions QuoteRevision[]
+  variations     Variation[]
+
+  @@index([clientId])
+  @@index([companyId])
+  @@index([companyId, deletedAt])
+}
+
+model QuoteRevision {
+  id        String   @id
+  companyId String
+  quoteId   String
+  version   Int
+  snapshot  Json
+  createdAt DateTime @default(now())
+  company   Company  @relation(fields: [companyId], references: [id])
+  quote     Quote    @relation(fields: [quoteId], references: [id])
+
+  @@unique([quoteId, version])
+  @@index([companyId])
+  @@index([createdAt])
+  @@index([quoteId])
+}
+
+--- Invoice ---
+
+model Invoice {
+  id                 String              @id
+  companyId          String
+  legalEntityId      String?
+  token              String              @unique
+  invoiceNumber      String?
+  clientId           String?
+  quoteId            String?
+  jobId              String?
+  variationId        String?
+  type               String              @default("stage")
+  stageName          String?
+  clientName         String
+  clientEmail        String
+  subtotal           Float
+  vat                Float
+  total              Float
+  currency           String              @default("gbp")
+  status             String              // "draft" | "sent" | "unpaid" | "paid"
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime
+  sentAt             DateTime?
+  dueAt              DateTime?
+  paidAt             DateTime?
+  xeroInvoiceId      String?
+  xeroSyncStatus     String              @default("not_synced")
+  xeroLastSyncAt     DateTime?
+  xeroLastError      String?
+  paymentProvider    String?
+  paymentUrl         String?
+  paymentRef         String?
+  deletedAt          DateTime?
+
+  client             Client?             @relation(fields: [clientId], references: [id])
+  company            Company             @relation(fields: [companyId], references: [id])
+  legalEntity        LegalEntity?        @relation(fields: [legalEntityId], references: [id])
+  job                Job?                @relation(fields: [jobId], references: [id])
+  quote              Quote?              @relation(fields: [quoteId], references: [id])
+  variation          Variation?          @relation(fields: [variationId], references: [id])
+  invoiceAttachments  InvoiceAttachment[]
+  invoiceChases       InvoiceChase[]
+  invoicePayments     InvoicePayment[]
+  invoiceVariations   InvoiceVariation[]
+  invoiceCertificates InvoiceCertificate[]
+
+  @@unique([legalEntityId, invoiceNumber])
+  @@index([companyId])
+  @@index([companyId, deletedAt])
+  @@index([legalEntityId])
+  @@index([jobId])
+  @@index([variationId])
+}
+
+model InvoicePayment {
+  id          String   @id
+  companyId   String
+  invoiceId   String
+  amount      Float
+  currency    String   @default("gbp")
+  provider    String   @default("stripe")
+  status      String   @default("succeeded")
+  providerRef String?
+  receivedAt  DateTime @default(now())
+  company     Company  @relation(fields: [companyId], references: [id])
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id])
+
+  @@index([companyId])
+  @@index([invoiceId])
+}
+
+--- Client ---
+
+model Client {
+  id                   String        @id
+  companyId            String
+  name                 String
+  email                String
+  phone                String?
+  address1             String?
+  address2             String?
+  city                 String?
+  county               String?
+  postcode             String?
+  country              String?
+  notes                String?
+  serviceAddress1      String?
+  serviceAddress2      String?
+  serviceCity          String?
+  serviceCounty        String?
+  servicePostcode      String?
+  serviceCountry       String?
+  billingAddress1      String?
+  billingAddress2      String?
+  billingCity          String?
+  billingCounty        String?
+  billingPostcode      String?
+  billingCountry       String?
+  billingSameAsService Boolean       @default(true)
+  paymentTermsDays     Int?
+  disableAutoChase     Boolean       @default(false)
+  xeroContactId        String?
+  smsOptIn             Boolean       @default(false)
+  smsOptInAt           DateTime?
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime
+  deletedAt            DateTime?
+
+  certificates         Certificate[]
+  company              Company       @relation(fields: [companyId], references: [id])
+  invoices             Invoice[]
+  jobs                 Job[]
+  quotes               Quote[]
+  sites                Site[]
+  users                User[]
+  tasks                Task[]
+  contacts             Contact[]
+  deals                Deal[]
+  activities           Activity[]
+  ramsDocuments        RamsDocument[]
+
+  @@unique([companyId, email])
+  @@index([companyId])
+  @@index([companyId, deletedAt])
+}
+
+--- Contact ---
+
+model Contact {
+  id               String   @id
+  companyId        String
+  clientId         String?
+  firstName        String
+  lastName         String
+  email            String?
+  phone            String?
+  mobile           String?
+  jobTitle         String?
+  isPrimary        Boolean  @default(false)
+  preferredChannel String   @default("email")
+  notes            String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime
+
+  company    Company    @relation(fields: [companyId], references: [id])
+  client     Client?    @relation(fields: [clientId], references: [id])
+  deals      Deal[]
+  activities Activity[]
+
+  @@unique([companyId, email])
+  @@index([companyId])
+  @@index([clientId])
+}
+
+--- Site ---
+
+model Site {
+  id               String        @id
+  companyId        String
+  clientId         String
+  name             String?
+  address1         String?
+  address2         String?
+  city             String?
+  county           String?
+  postcode         String?
+  country          String?
+  notes            String?
+  paymentTermsDays Int?
+  disableAutoChase Boolean       @default(false)
+  xeroContactId    String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime
+
+  certificates     Certificate[]
+  jobs             Job[]
+  quotes           Quote[]
+  client           Client        @relation(fields: [clientId], references: [id])
+  company          Company       @relation(fields: [companyId], references: [id])
+
+  @@index([clientId])
+  @@index([companyId])
+}
+
+NOTE: Site is a child of Client. No standalone "Property" or "Address" model exists.
+      Client has inline address fields (address1..postcode) plus separate billing/service addresses.
+      Site has its own address fields.
+
+--- User ---
+
+model User {
+  id                        String                   @id
+  neonAuthUserId            String?                  @unique
+  companyId                 String?
+  role                      String
+  email                     String
+  name                      String?
+  passwordHash              String?
+  engineerId                String?
+  clientId                  String?
+  createdAt                 DateTime                 @default(now())
+  updatedAt                 DateTime
+  profileComplete           Boolean                  @default(false)
+  address1                  String?
+  address2                  String?
+  city                      String?
+  county                    String?
+  postcode                  String?
+  country                   String?
+  emergencyName             String?
+  emergencyPhone            String?
+  emergencyRelationship     String?
+  mfaEnabled                Boolean                  @default(false)
+  mfaSecret                 String?
+  mfaBackupCodes            String?
+  mfaEnrolledAt             DateTime?
+  mfaVerifiedAt             DateTime?
+  mfaRequiredBy             DateTime?
+  currentImpersonationId    String?
+
+  authSessions              AuthSession[]
+  magicLinkTokens           MagicLinkToken[]
+  mfaSessions               MfaSession[]
+  notificationPreferences   NotificationPreference[]
+  client                    Client?                  @relation(fields: [clientId], references: [id])
+  company                   Company?                 @relation(fields: [companyId], references: [id])
+  engineer                  Engineer?                @relation(fields: [engineerId], references: [id])
+  memberships               CompanyUser[]            @relation("UserMemberships")
+  toolPresets               ToolPreset[]             @relation("UserToolPresets")
+  // ... many other relations omitted for brevity
+
+  @@unique([role, email])
+  @@index([companyId])
+}
+
+--- Company ---
+
+model Company {
+  id                      String    @id
+  name                    String
+  slug                    String    @unique
+  subdomain               String?   @unique
+  dataTier                String    @default("shared")   // "shared" | "dedicated"
+  dedicatedDatabaseUrl    String?
+  dataRegion              String    @default("eu-west-2")
+  brandName               String    @default("Quantract")
+  brandTagline            String?
+  logoKey                 String?
+  themePrimary            String    @default("#0f172a")
+  themeAccent             String    @default("#16a34a")
+  themeBg                 String    @default("#f8fafc")
+  themeText               String    @default("#0f172a")
+  pdfFooterLine1          String?
+  pdfFooterLine2          String?
+  defaultVatRate          Float     @default(0.2)
+  invoiceNumberPrefix     String    @default("INV-")
+  nextInvoiceNumber       Int       @default(1)
+  certificateNumberPrefix String    @default("CERT-")
+  nextCertificateNumber   Int       @default(1)
+  onboardedAt             DateTime?
+  defaultPaymentTermsDays Int       @default(14)
+  autoChaseEnabled        Boolean   @default(false)
+  autoChaseFirstDays      Int       @default(7)
+  autoChaseSecondDays     Int       @default(14)
+  autoChaseThirdDays      Int       @default(21)
+  quoteValidityDays       Int       @default(30)
+  termsAndConditions      String?
+  plan                    String    @default("trial")    // trial | core | pro | pro_plus | enterprise
+  subscriptionStatus      String    @default("inactive")
+  stripeCustomerId        String?
+  stripeSubscriptionId    String?
+  currentPeriodEnd        DateTime?
+  trialEnd                DateTime?
+  trialStartedAt          DateTime?
+  quotesThisMonth         Int       @default(0)
+  invoicesThisMonth       Int       @default(0)
+  usageResetAt            DateTime?
+  xeroConnected           Boolean   @default(false)
+  xeroTenantId            String?
+  xeroAccessToken         String?
+  xeroRefreshToken        String?
+  xeroTokenExpiresAt      DateTime?
+  defaultLegalEntityId    String?
+  defaultServiceLineId    String?
+  smsEnabled              Boolean   @default(false)
+  smsProvider             String?
+  smsSenderId             String?
+  smsApiKey               String?
+  smsApiSecret            String?
+  smsRequireConsent       Boolean   @default(true)
+  smsQuietHoursEnabled    Boolean   @default(false)
+  smsQuietFrom            String?
+  smsQuietTo              String?
+  smsMaxPerClientPerDay   Int       @default(3)
+  smsMaxPerJobPerDay      Int       @default(5)
+  smsCredits              Int       @default(0)
+  workingDaysPerMonth     Int       @default(22)
+  workingDaysMask         Int       @default(31)
+  nextJobNumber           Int       @default(1)
+  markJobCompletedOnCertIssue Boolean @default(false)
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime
+
+  // 40+ relation fields omitted — see schema.prisma for full list
+}
+
+--- CompanyUser ---
+
+model CompanyUser {
+  id        String   @id
+  companyId String
+  userId    String?
+  email     String
+  role      String   // Authoritative role for company-scoped permissions
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+
+  company   Company  @relation(fields: [companyId], references: [id])
+  user      User?    @relation("UserMemberships", fields: [userId], references: [id])
+
+  @@unique([companyId, email])
+  @@unique([companyId, userId])
+  @@index([email])
+  @@index([userId])
+}
+
+--- Engineer ---
+
+model Engineer {
+  id                    String          @id
+  companyId             String
+  email                 String
+  name                  String?
+  phone                 String?
+  costRatePerHour       Float?
+  chargeRatePerHour     Float?
+  rateCardId            String?
+  isActive              Boolean         @default(true)
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime
+  address1              String?
+  address2              String?
+  city                  String?
+  county                String?
+  postcode              String?
+  country               String?
+  emergencyName         String?
+  emergencyPhone        String?
+  emergencyRelationship String?
+
+  company               Company         @relation(fields: [companyId], references: [id])
+  rateCard              RateCard?       @relation(fields: [rateCardId], references: [id])
+  jobs                  Job[]
+  scheduleEntries       ScheduleEntry[]
+  timeEntries           TimeEntry[]
+  timesheets            Timesheet[]
+  users                 User[]
+
+  @@unique([companyId, email])
+  @@index([companyId])
+}
+
+--- ServiceLine ---
+
+model ServiceLine {
+  id                   String       @id
+  companyId            String
+  name                 String
+  slug                 String
+  description          String?
+  defaultLegalEntityId String?
+  isDefault            Boolean      @default(false)
+  status               String       @default("active")
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime
+
+  company              Company      @relation(fields: [companyId], references: [id])
+  defaultLegalEntity   LegalEntity? @relation("ServiceLineDefaultEntity", fields: [defaultLegalEntityId], references: [id])
+  jobs                 Job[]
+
+  @@unique([companyId, slug])
+  @@index([companyId])
+}
+
+--- StockItem + StockMovement (Inventory) ---
+
+model StockItem {
+  id           String   @id
+  companyId    String
+  sku          String?
+  name         String
+  unit         String
+  defaultCost  Int?
+  reorderLevel Int?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime
+
+  @@index([companyId, isActive])
+}
+
+NOTE: StockItem has NO relations to StockMovement in the schema.
+      No "truckId", "locationId", or "vehicleId" field exists.
+      No Vehicle/Truck/Van model exists.
+
+model StockMovement {
+  id          String            @id
+  companyId   String
+  stockItemId String
+  type        StockMovementType // RECEIVED | USED | ADJUSTMENT
+  qtyDelta    Int
+  refType     String?           // e.g. "job", "purchase_order"
+  refId       String?           // FK to referenced entity
+  createdAt   DateTime          @default(now())
+
+  @@index([companyId, stockItemId])
+}
+
+--- CostItem (Job Costs) ---
+
+model CostItem {
+  id                  String               @id
+  companyId           String
+  jobId               String
+  stageId             String?
+  type                String               // "material" | "subcontractor" | "plant" | "other" | "labour"
+  source              String               @default("manual")
+  lockStatus          String               @default("open")
+  supplier            String?
+  description         String
+  quantity            Float                @default(1)
+  unitCost            Float                @default(0)
+  markupPct           Float                @default(0)
+  incurredAt          DateTime?
+  totalCost           Float                @default(0)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime
+
+  company             Company              @relation(fields: [companyId], references: [id])
+  job                 Job                  @relation(fields: [jobId], references: [id])
+  jobStage            JobStage?            @relation(fields: [stageId], references: [id])
+  costItemAttachments CostItemAttachment[]
+  supplierBillLines   SupplierBillLine[]
+
+  @@index([companyId])
+  @@index([jobId])
+  @@index([stageId])
+  @@index([type])
+}
+
+--- RateCard ---
+
+model RateCard {
+  id                String     @id
+  companyId         String
+  name              String
+  costRatePerHour   Float      @default(0)
+  chargeRatePerHour Float      @default(0)
+  isDefault         Boolean    @default(false)
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime
+  engineers         Engineer[]
+  company           Company    @relation(fields: [companyId], references: [id])
+
+  @@unique([companyId, name])
+  @@index([companyId])
+}
+
+--- Certificate + CertificateRevision + CertificateTestResult ---
+
+model Certificate {
+  id                      String                       @id
+  companyId               String
+  legalEntityId           String?
+  jobId                   String?
+  siteId                  String?
+  clientId                String?
+  type                    String          // "EIC" | "EICR" | "MWC" | etc.
+  status                  String          // "draft" | "completed" | "issued" | "void"
+  certificateNumber       String?
+  issuedAt                DateTime?
+  inspectorName           String?
+  inspectorEmail          String?
+  dataVersion             Int             @default(1)
+  data                    Json            @default("{}")
+  completedAt             DateTime?
+  pdfKey                  String?
+  signedName              String?
+  signedAt                DateTime?
+  verificationToken       String?         @unique
+  verificationRevokedAt   DateTime?
+  verificationRevokedReason String?
+  currentRevision         Int             @default(0)
+  outcome                 String?
+  outcomeReason           String?
+  createdAt               DateTime        @default(now())
+  updatedAt               DateTime
+
+  auditEvents             AuditEvent[]
+  client                  Client?         @relation(fields: [clientId], references: [id])
+  company                 Company         @relation(fields: [companyId], references: [id])
+  legalEntity             LegalEntity?    @relation(fields: [legalEntityId], references: [id])
+  job                     Job?            @relation(fields: [jobId], references: [id])
+  site                    Site?           @relation(fields: [siteId], references: [id])
+  certificateTestResults  CertificateTestResult[]
+  revisions               CertificateRevision[]
+  observations            CertificateObservation[]
+  checklists              CertificateChecklist[]
+  signatureRecords        CertificateSignatureRecord[]
+  attachments             CertificateAttachment[]
+  invoiceCertificates     InvoiceCertificate[]
+
+  @@unique([legalEntityId, certificateNumber])
+  @@index([clientId])
+  @@index([companyId])
+  @@index([legalEntityId])
+  @@index([jobId])
+  @@index([siteId])
+  @@index([companyId, certificateNumber])
+}
+
+model CertificateRevision {
+  id             String      @id @default(cuid())
+  companyId      String
+  certificateId  String
+  revision       Int
+  signingHash    String
+  content        Json
+  pdfKey         String?
+  pdfChecksum    String?
+  pdfGeneratedAt DateTime?
+  issuedAt       DateTime
+  issuedBy       String?
+  createdAt      DateTime    @default(now())
+
+  certificate    Certificate @relation(fields: [certificateId], references: [id])
+  company        Company     @relation(fields: [companyId], references: [id])
+
+  @@unique([certificateId, revision])
+  @@index([companyId])
+  @@index([certificateId])
+}
+
+model CertificateTestResult {
+  id            String      @id
+  companyId     String
+  certificateId String
+  circuitRef    String?
+  data          Json
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime
+
+  certificate   Certificate @relation(fields: [certificateId], references: [id])
+  company       Company     @relation(fields: [companyId], references: [id])
+
+  @@index([certificateId])
+  @@index([companyId])
+}
+
+--- Enquiry + EnquiryEvent + PipelineStage ---
+
+model Enquiry {
+  id            String             @id
+  companyId     String
+  stageId       String
+  ownerId       String?
+  formConfigId  String?
+  name          String?
+  email         String?
+  phone         String?
+  postcode      String?
+  message       String?
+  notes         String?
+  valueEstimate Int?
+  quoteId       String?
+  source        String             @default("manual")  // manual | website | api
+  pageUrl       String?
+  referrer      String?
+  utmSource     String?
+  utmMedium     String?
+  utmCampaign   String?
+  utmTerm       String?
+  utmContent    String?
+  metaJson      Json?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime
+
+  owner         User?              @relation("EnquiryOwner", fields: [ownerId], references: [id])
+  pipelineStage PipelineStage      @relation(fields: [stageId], references: [id])
+  formConfig    InboundFormConfig?  @relation(fields: [formConfigId], references: [id])
+  enquiryEvents EnquiryEvent[]
+
+  @@index([companyId, stageId])
+  @@index([ownerId])
+  @@index([source])
+  @@index([formConfigId])
+}
+
+model EnquiryEvent {
+  id        String   @id
+  companyId String
+  enquiryId String
+  type      String
+  note      String?
+  createdAt DateTime @default(now())
+  enquiry   Enquiry  @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
+}
+
+model PipelineStage {
+  id        String    @id
+  companyId String
+  name      String
+  sortOrder Int       @default(0)
+  color     String?
+  isWon     Boolean   @default(false)
+  isLost    Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime
+  enquiries Enquiry[]
+
+  @@index([companyId, sortOrder])
+}
+
+--- Deal + DealStage ---
+
+model Deal {
+  id                String    @id
+  companyId         String
+  stageId           String
+  contactId         String?
+  clientId          String?
+  ownerId           String?
+  title             String
+  value             Float     @default(0)
+  probability       Int?
+  expectedCloseDate DateTime?
+  closedAt          DateTime?
+  lostReason        String?
+  notes             String?
+  source            String    @default("manual")
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime
+
+  company    Company    @relation(fields: [companyId], references: [id])
+  stage      DealStage  @relation(fields: [stageId], references: [id])
+  contact    Contact?   @relation(fields: [contactId], references: [id])
+  client     Client?    @relation(fields: [clientId], references: [id])
+  owner      User?      @relation("DealOwner", fields: [ownerId], references: [id])
+  activities Activity[]
+
+  @@index([companyId])
+  @@index([stageId])
+  @@index([ownerId])
+}
+
+model DealStage {
+  id          String   @id
+  companyId   String
+  name        String
+  color       String?
+  sortOrder   Int      @default(0)
+  probability Int?
+  isWon       Boolean  @default(false)
+  isLost      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime
+
+  company Company @relation(fields: [companyId], references: [id])
+  deals   Deal[]
+
+  @@unique([companyId, name])
+  @@index([companyId, sortOrder])
+}
+
+--- Activity ---
+
+model Activity {
+  id          String   @id
+  companyId   String
+  type        String   // NOTE | CALL | EMAIL | MEETING | TASK | STAGE_CHANGE
+  subject     String
+  description String?
+  contactId   String?
+  dealId      String?
+  clientId    String?
+  jobId       String?
+  createdBy   String
+  occurredAt  DateTime @default(now())
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime
+
+  company Company  @relation(fields: [companyId], references: [id])
+  contact Contact? @relation(fields: [contactId], references: [id])
+  deal    Deal?    @relation(fields: [dealId], references: [id])
+  client  Client?  @relation(fields: [clientId], references: [id])
+  job     Job?     @relation(fields: [jobId], references: [id])
+  creator User     @relation("ActivityCreator", fields: [createdBy], references: [id])
+
+  @@index([companyId])
+  @@index([contactId])
+  @@index([dealId])
+  @@index([clientId])
+  @@index([jobId])
+}
+
+--- Invite ---
+
+model Invite {
+  id        String    @id
+  companyId String
+  role      String
+  email     String
+  name      String?
+  token     String    @unique
+  expiresAt DateTime?
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  company   Company   @relation(fields: [companyId], references: [id])
+
+  @@index([companyId, email])
+  @@index([companyId, role])
+}
+
+--- Portal Models ---
+
+NOT FOUND: No PortalUser, PortalLink, or Portal-specific models exist.
+Client portal access is via:
+  1. User model with role="client" and clientId FK
+  2. Token-based access (Quote.token, Invoice.token, Agreement tokens)
+  3. CompanyUser membership with role="client"
+
+--- Truck/Vehicle/Van Models ---
+
+NOT FOUND: No Vehicle, Truck, Van, or location-aware inventory models exist.
+StockItem has no locationId or vehicleId.
+
+--- ToolPreset ---
+
+model ToolPreset {
+  id        String   @id @default(cuid())
+  companyId String
+  userId    String
+  toolSlug  String
+  name      String
+  inputsJson Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+  user    User    @relation("UserToolPresets", fields: [userId], references: [id])
+
+  @@index([companyId, toolSlug])
+  @@index([userId])
+}
+
+--- RamsDocument ---
+
+model RamsDocument {
+  id          String   @id @default(cuid())
+  companyId   String
+  createdById String
+  type        String   // "rams" | "safety-assessment"
+  title       String
+  status      String   @default("draft")
+  version     Int      @default(1)
+  parentId    String?
+  contentJson Json
+  jobId       String?
+  clientId    String?
+  preparedBy  String?
+  reviewedBy  String?
+  clientSignedBy   String?
+  clientSignedAt   DateTime?
+  pdfKey      String?
+  issuedAt    DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company   Company  @relation(fields: [companyId], references: [id])
+  createdBy User     @relation("UserRamsDocs", fields: [createdById], references: [id])
+  job       Job?     @relation(fields: [jobId], references: [id])
+  client    Client?  @relation(fields: [clientId], references: [id])
+  parent    RamsDocument?  @relation("RamsVersions", fields: [parentId], references: [id])
+  children  RamsDocument[] @relation("RamsVersions")
+
+  @@index([companyId, type])
+  @@index([companyId, status])
+  @@index([jobId])
+  @@index([clientId])
+}
+
+--- ALL ENUMS ---
+
+enum ExpenseStatus     { UPLOADED  PARSED  CONFIRMED  POSTED }
+enum PurchaseOrderStatus { DRAFT  SENT  CONFIRMED  RECEIVED  CANCELLED }
+enum StockMovementType { RECEIVED  USED  ADJUSTMENT }
+enum UserRole          { ADMIN  OFFICE  ENGINEER  FINANCE }
+enum NotificationChannel { SMS  EMAIL }
+
+enum NotificationEventKey {
+  appointmentBooked
+  appointmentReminder24h
+  appointmentReminder2h
+  engineerOnTheWay
+  jobCompleted
+  quoteSent
+  quoteReminder
+  quoteAccepted
+  invoiceIssued
+  invoiceOverdue
+  invoiceFinalReminder
+  paymentReceived
+  certificateIssued
+  portalInvite
+}
+
+enum NotificationLogStatus { sent  skipped  failed }
+enum NotificationSkipReason { noConsent  noCredits  quietHours  rateLimited  missingPhone  missingEmail  disabled  providerError }
+
+
+================================================================================
+3) TENANT RESOLUTION + AUTH
+================================================================================
+
+--- Where tenant is derived ---
+
+Multi-tenancy uses TWO mechanisms:
+
+A) Subdomain extraction (middleware.ts):
+   - Hostname parsed: "company.quantract.co.uk" → subdomain = "company"
+   - Set as header: x-tenant-subdomain
+   - Set as cookie: qt_tenant_subdomain (24h TTL)
+   - Reserved: www, api, app, admin, mail, email, ftp, ssl, cdn, static, assets
+
+B) Session cookie (companyId):
+   - Cookie: __Host-qt_company_id (production) or qt_company_id (dev)
+   - Set at login time by setSession() in serverAuth.ts
+   - Read by requireCompanyContext() in API routes
+
+File: apps/crm/middleware.ts (lines 27-55)
+
+  function extractSubdomain(hostname: string): string | null {
+    const host = hostname.split(":")[0];
+    if (host === "localhost" || host === "127.0.0.1") return null;
+    const parts = host.split(".");
+    if (host.endsWith(".co.uk") && parts.length >= 4) {
+      const subdomain = parts[0];
+      if (!RESERVED_SUBDOMAINS.includes(subdomain.toLowerCase())) return subdomain.toLowerCase();
+    } else if (parts.length >= 3 && !host.endsWith(".co.uk")) {
+      const subdomain = parts[0];
+      if (!RESERVED_SUBDOMAINS.includes(subdomain.toLowerCase())) return subdomain.toLowerCase();
+    }
+    return null;
+  }
+
+--- Middleware logic ---
+
+File: apps/crm/middleware.ts (lines 152-289)
+
+Flow:
+  1. HTTPS redirect if production + behind proxy
+  2. Rate limit /verify/ paths (20 PDF / 30 page per IP per minute)
+  3. Extract subdomain → set x-tenant-subdomain header + cookie
+  4. Check isPublicPath() → pass through if public
+  5. Determine requiredRoleForPath():
+       /admin/* or /api/admin/*  → "admin"
+       /client/* or /api/client/* → "client"
+       /engineer/* or /api/engineer/* → "engineer"
+       /ops/* or /api/ops/*       → "admin"
+  6. Read role from cookie (prefixed or non-prefixed for migration)
+  7. If no role → redirect to login
+  8. Role isolation: admin has universal access; others restricted to their portal
+  9. Company gating: client/engineer require companyId cookie
+  10. Profile completion gating: redirect to onboarding if not complete
+
+Public paths (no auth):
+  - /_next, /public, /favicon, /
+  - /auth/*, /admin/login, /client/login, /engineer/login, /ops/login
+  - /invite/*
+  - /api/auth/*, /api/better-auth/*, /api/public/*
+  - Tokenized: /api/client/quotes/[token], /client/quotes/[token]/*
+  - /verify/*
+  - /api/health, /api/webhooks/*
+
+--- Session creation/validation ---
+
+File: apps/crm/src/lib/serverAuth.ts
+
+Cookie names (production uses __Host- prefix):
+  - qt_session_v1       → "role:<role>"
+  - qt_sid_v1           → session ID (UUID)
+  - qt_user_email       → user email
+  - qt_company_id       → company ID
+  - qt_profile_complete → "1" or ""
+
+setSession(role, email, companyId, profileComplete, rememberMe):
+  - Sets all 5 cookies
+  - TTL: 30 days default, 90 days with rememberMe
+  - httpOnly, secure (prod), sameSite=lax
+
+getAuthContext():
+  - Reads cookies from next/headers
+  - Falls back to Neon Auth or Better Auth if custom cookies missing
+  - Returns: { role, email, sessionId, companyId }
+
+requireCompanyContext():
+  - Calls getAuthContext()
+  - Looks up CompanyUser membership (by userId or email)
+  - Returns CompanyAuthContext with membershipRole and membershipActive
+  - 60-second in-memory cache per sessionId
+
+requireCapability(capability):
+  - Calls requireCompanyContext()
+  - Admin role → always passes
+  - Others → checks UserPermission table, falls back to ROLE_DEFAULTS
+
+File: apps/crm/src/lib/permissions.ts
+
+  type Capability =
+    | "billing.view" | "billing.manage"
+    | "invoices.view" | "invoices.manage"
+    | "planner.manage" | "expenses.manage"
+    | "suppliers.manage" | "settings.manage"
+    | "users.manage"
+
+  ROLE_DEFAULTS:
+    ADMIN:    all capabilities
+    OFFICE:   invoices.view, planner.manage, expenses.manage, suppliers.manage
+    FINANCE:  invoices.view, invoices.manage, expenses.manage, billing.view
+    ENGINEER: none
+    CLIENT:   none
+
+--- Multi-tenant DB routing ---
+
+File: apps/crm/src/lib/server/multiTenant.ts
+
+  getPrismaClientForCompany(companyId):
+    - Looks up Company.dataTier
+    - "shared" → returns shared Prisma client (main DB)
+    - "dedicated" → returns dedicated Prisma client with cached connection
+
+  resolveTenantFromRequest(request):
+    - Extracts subdomain from hostname
+    - Looks up Company by subdomain
+    - Returns TenantContext { companyId, subdomain, dataTier, prisma }
+
+
+================================================================================
+4) API ROUTE MAP
+================================================================================
+
+Format: METHOD /path → purpose [auth] {prisma calls}
+
+--- /api/admin/billing/ ---
+POST /checkout         → Create Stripe checkout session [admin] {company.findUnique}
+GET  /portal           → Get Stripe billing portal link [admin] {company.findUnique}
+GET  /status           → Check subscription status [admin] {company.findUnique}
+
+--- /api/admin/certificates/ ---
+GET    /                          → List certificates [admin] {certificate.findMany}
+GET    /[id]                      → Get certificate [admin] {certificate.findUnique}
+PATCH  /[id]                      → Update certificate [admin] {certificate.update}
+GET    /[id]/pdf                  → Generate PDF [admin] {certificate.findUnique}
+POST   /[id]/complete             → Mark completed [admin] {certificate.update}
+POST   /[id]/issue                → Issue (create revision) [admin] {certificate.update, certificateRevision.create}
+POST   /[id]/reissue              → Reissue (amend) [admin] {certificate.update, certificateRevision.create}
+POST   /[id]/void                 → Void certificate [admin] {certificate.update}
+GET/POST /[id]/attachments        → Manage attachments [admin] {certificateAttachment.*}
+GET/POST /[id]/checklists         → Manage checklists [admin] {certificateChecklist.*}
+GET/POST /[id]/observations       → Add observations [admin] {certificateObservation.*}
+GET/POST /[id]/outcome            → Set outcome [admin] {certificate.update}
+GET    /[id]/revisions            → List revisions [admin] {certificateRevision.findMany}
+GET    /[id]/revisions/[rev]/pdf  → Get revision PDF [admin] {certificateRevision.findUnique}
+POST   /[id]/revisions/[rev]/regenerate-pdf → Regenerate PDF [admin] {certificateRevision.update}
+GET/POST /[id]/signatures         → Manage signatures [admin] {certificateSignatureRecord.*}
+
+--- /api/admin/clients/ ---
+GET    /                → List clients [admin] {client.findMany}
+POST   /                → Create client [admin] {client.create}
+GET    /[id]            → Get client [admin] {client.findUnique}
+PATCH  /[id]            → Update client [admin] {client.update}
+GET/POST /[id]/contacts → Client contacts [admin] {contact.*}
+
+--- /api/admin/contacts/ ---
+GET    /                → List contacts [admin] {contact.findMany}
+POST   /                → Create contact [admin] {contact.create}
+GET    /[id]            → Get contact [admin] {contact.findUnique}
+PATCH  /[id]            → Update contact [admin] {contact.update}
+
+--- /api/admin/deals/ ---
+GET    /                → List deals [admin] {deal.findMany}
+POST   /                → Create deal [admin] {deal.create}
+GET    /[id]            → Get deal [admin] {deal.findUnique}
+PATCH  /[id]            → Update deal [admin] {deal.update}
+DELETE /[id]            → Delete deal [admin] {deal.delete}
+POST   /[id]/move-stage → Move deal stage [admin] {deal.update}
+
+--- /api/admin/deal-stages/ ---
+GET    /                → List stages [admin] {dealStage.findMany}
+POST   /                → Create stage [admin] {dealStage.create}
+GET    /[id]            → Get stage [admin] {dealStage.findUnique}
+PATCH  /[id]            → Update stage [admin] {dealStage.update}
+POST   /reorder         → Reorder stages [admin] {dealStage.updateMany}
+
+--- /api/admin/enquiries/ ---
+GET    /                → List enquiries [admin] {enquiry.findMany}
+GET    /[id]            → Get enquiry [admin] {enquiry.findUnique}
+PATCH  /[id]            → Update enquiry [admin] {enquiry.update}
+POST   /[id]/move-stage → Move stage [admin] {enquiry.update, enquiryEvent.create}
+
+--- /api/admin/engineers/ ---
+GET    /                → List engineers [admin] {engineer.findMany}
+GET    /[id]            → Get engineer [admin] {engineer.findUnique}
+PATCH  /[id]            → Update engineer [admin] {engineer.update}
+
+--- /api/admin/expenses/ ---
+GET    /                → List expenses [admin] {expense.findMany}
+POST   /                → Create expense [admin] {expense.create}
+POST   /upload          → Upload document [admin] {expense.create}
+POST   /parse           → OCR parse [admin] {expense.update}
+GET    /[id]/parse       → Re-parse [admin] {expense.findUnique}
+POST   /[id]/confirm     → Confirm parsed [admin] {expense.update}
+
+--- /api/admin/invoices/ ---
+GET    /                    → List invoices [admin] {invoice.findMany}
+GET    /[id]                → Get invoice [admin] {invoice.findUnique}
+PATCH  /[id]                → Update invoice [admin] {invoice.update}
+POST   /[id]/send           → Send email [admin] {invoice.findUnique + email}
+POST   /[id]/pdf            → Generate PDF [admin] {invoice.findUnique}
+POST   /[id]/remind         → Payment reminder [admin] {invoice.findUnique + email}
+POST   /[id]/payment-link   → Create Stripe link [admin] {invoice.findUnique}
+POST   /auto-chase/run      → Run auto-chase [admin] {invoice.findMany}
+
+--- /api/admin/jobs/ ---
+GET    /                       → List jobs [admin] {job.findMany}
+POST   /                       → Create job [admin] {job.create}
+GET    /[id]                   → Get job [admin] {job.findUnique}
+PATCH  /[id]                   → Update job [admin] {job.update}
+DELETE /[id]                   → Soft-delete [admin] {job.update(deletedAt)}
+GET    /failed                 → Failed jobs [admin] {}
+GET/POST /[id]/budget-lines    → Budget lines [admin] {jobBudgetLine.*}
+GET/POST /[id]/cost-items      → Cost items [admin] {costItem.*}
+GET    /[id]/costing           → Costing overview [admin] {aggregation}
+GET    /[id]/finance-overview  → Finance summary [admin] {aggregation}
+GET/POST /[id]/snag-items      → Snag items [admin] {snagItem.*}
+GET    /[id]/stages            → Job stages [admin] {jobStage.findMany}
+GET    /[id]/supplier-bills    → Supplier bills [admin] {supplierBill.findMany}
+GET/POST /[id]/time-entries    → Time entries [admin] {timeEntry.*}
+GET/POST /[id]/variations      → Variations [admin] {variation.*}
+GET/POST /[id]/certificates    → Job certificates [admin] {certificate.*}
+GET    /[id]/invoices          → Job invoices [admin] {invoice.findMany}
+
+--- /api/admin/quotes/ ---
+GET    /                    → List quotes [admin] {quote.findMany}
+GET    /[id]                → Get quote [admin] {quote.findUnique}
+PATCH  /[id]                → Update quote [admin] {quote.update}
+POST   /[id]/send           → Send email [admin] {quote.findUnique + email}
+GET    /[id]/pdf             → Generate PDF [admin] {quote.findUnique}
+POST   /[id]/token           → Rotate token [admin] {quote.update}
+POST   /[id]/invoice         → Convert to invoice [admin] {invoice.create}
+POST   /[id]/accept          → Mark accepted [admin] {quote.update}
+POST   /[id]/reject          → Mark rejected [admin] {quote.update}
+POST   /[id]/duplicate       → Clone quote [admin] {quote.create}
+GET    /summary              → Stats [admin] {quote.aggregate}
+
+--- /api/admin/timesheets/ ---
+GET    /                → List timesheets [admin] {timesheet.findMany}
+GET    /[id]            → Get timesheet [admin] {timesheet.findUnique}
+PATCH  /[id]            → Update timesheet [admin] {timesheet.update}
+POST   /[id]/approve    → Approve [admin] {timesheet.update}
+POST   /[id]/reject     → Reject [admin] {timesheet.update}
+
+--- /api/admin/reports/ ---
+GET /dashboard          → Dashboard report [admin]
+GET /activity           → Activity report [admin]
+GET /ar-aging           → AR aging [admin]
+GET /engineer-utilisation → Utilisation [admin]
+GET /pipeline           → Pipeline [admin]
+GET /profitability      → Profitability [admin]
+GET /quote-win-rate     → Win rate [admin]
+GET /revenue            → Revenue [admin]
+GET /sales              → Sales [admin]
+GET /tax-summary        → Tax summary [admin]
+GET /time-vs-estimate   → Time vs estimate [admin]
+
+--- /api/admin/dashboard/ ---
+GET /                   → Dashboard data [admin]
+GET /summary            → KPIs [admin]
+GET /activity           → Recent activity [admin]
+GET /revenue            → Revenue metrics [admin]
+GET /break-even         → Break-even [admin]
+
+--- /api/admin/settings/ ---
+GET    /                → Company settings [admin]
+GET/POST /logo          → Logo upload [admin]
+GET/POST /financials    → Financial settings [admin]
+GET/POST /terms         → Terms & conditions [admin]
+
+--- /api/admin/notifications/ ---
+GET    /recent          → Recent notifications [admin]
+GET    /logs            → Notification history [admin]
+GET/POST /templates     → Notification templates [admin]
+GET/POST /rules         → Notification rules [admin]
+GET/POST /settings      → Notification settings [admin]
+POST   /test-sms        → Test SMS [admin]
+
+--- /api/admin/ (other) ---
+GET/POST /users                 → User management [admin]
+POST     /users/set-password    → Set password [admin]
+GET/PUT  /users/[id]/permissions → Permissions [admin]
+GET/POST /suppliers             → Suppliers [admin]
+GET      /suppliers/summary     → Supplier summary [admin]
+GET/POST /subcontractors        → Subcontractors [admin]
+GET/POST /rate-cards            → Rate cards [admin]
+GET/POST /service-lines         → Service lines [admin]
+GET/POST /legal-entities        → Legal entities [admin]
+GET      /sites                 → Sites [admin]
+GET/POST /materials/stock-items → Stock items [admin]
+POST     /materials/stock-movements → Stock movements [admin]
+GET/POST /purchase-orders       → Purchase orders [admin]
+POST     /invites               → Create invite [admin]
+GET/PATCH /invites/[id]         → Manage invite [admin]
+GET/POST /checklist-templates   → Checklist templates [admin]
+GET/POST /saved-views           → Saved views [admin]
+GET      /search                → Global search [admin]
+POST     /undo-delete           → Undo soft delete [admin]
+POST     /import/upload         → Upload CSV [admin]
+POST     /import/preview        → Preview import [admin]
+POST     /import/execute        → Execute import [admin]
+GET      /export/clients        → Export clients CSV [admin]
+GET      /export/contacts       → Export contacts CSV [admin]
+GET      /export/deals          → Export deals CSV [admin]
+GET/POST /activities            → Activities [admin]
+GET/PATCH /activities/[id]      → Activity detail [admin]
+GET/POST /rams                  → RAMS documents [admin]
+GET/PUT  /rams/[id]             → RAMS detail [admin]
+POST     /rams/[id]/issue       → Issue RAMS [admin]
+GET      /rams/[id]/pdf         → RAMS PDF [admin]
+GET/POST /lead-capture/domains  → Lead capture domains [admin]
+GET/POST /lead-capture/forms    → Lead capture forms [admin]
+GET/POST /lead-capture/keys     → Lead capture API keys [admin]
+GET      /agreements/[id]/pdf   → Agreement PDF [admin]
+POST     /reset-demo-data       → Reset demo [admin]
+GET      /impersonate/status    → Impersonation status [admin]
+GET/POST /planner               → Planner [admin]
+POST     /planner/move          → Move schedule item [admin]
+GET      /schedule              → Admin schedule [admin]
+
+--- /api/admin/xero/ ---
+GET /oauth/start        → Xero OAuth [admin]
+GET /oauth/callback     → Xero callback [admin]
+GET /export-pack        → Export for Xero [admin]
+GET /invoices.csv       → Invoice CSV [admin]
+
+--- /api/admin/ai/ ---
+POST /recommendations   → AI recommendations [admin]
+POST /apply             → Apply AI suggestion [admin]
+
+--- /api/client/ ---
+GET    /certificates                         → List certs [client]
+GET    /certificates/[id]/pdf               → Cert PDF [client]
+GET    /invoices/[token]                    → View invoice [token-based]
+POST   /invoices/[token]/pay               → Pay invoice [token-based]
+GET    /invoices/[token]/pdf               → Invoice PDF [token-based]
+GET    /invoices/[token]/attachments/[id]   → Attachment [token-based]
+GET    /invoices/[token]/receipts/[id]/pdf  → Receipt PDF [token-based]
+GET    /inbox/invoices                      → Client invoices [client]
+GET    /inbox/quotes                        → Client quotes [client]
+GET    /quotes/[token]                      → View quote [token-based]
+POST   /quotes/[token]/accept              → Accept quote [token-based]
+GET    /quotes/[token]/pdf                 → Quote PDF [token-based]
+GET    /agreements/[token]                 → View agreement [token-based]
+POST   /agreements/[token]/sign            → Sign agreement [token-based]
+GET    /agreements/[token]/pdf             → Agreement PDF [token-based]
+GET    /agreements/[token]/certificate     → Agreement cert [token-based]
+GET    /variations/[token]                 → View variation [token-based]
+POST   /variations/[token]/decision        → Accept/reject [token-based]
+GET    /variations/[token]/pdf             → Variation PDF [token-based]
+
+--- /api/engineer/ ---
+GET    /jobs                           → Engineer's jobs [engineer]
+GET    /jobs/[id]/snag-items          → Job snag items [engineer]
+POST   /jobs/[id]/snag-items          → Create snag [engineer]
+GET    /jobs/[id]/variations          → Job variations [engineer]
+GET/PATCH /certificates/[id]          → Certificate [engineer]
+POST   /certificates/[id]/complete    → Complete cert [engineer]
+GET    /snag-items/[id]               → Snag detail [engineer]
+GET    /timesheets                    → Timesheets [engineer]
+GET/POST /time-entries                → Time entries [engineer]
+GET    /timer/active                  → Active timer [engineer]
+POST   /timer/start                   → Start timer [engineer]
+POST   /timer/stop                    → Stop timer [engineer]
+GET    /schedule                      → Schedule [engineer]
+GET    /profile                       → Profile [engineer]
+
+--- /api/ai/ ---
+GET  /status            → AI health [any auth]
+GET  /session           → AI session context [any auth]
+POST /chat              → AI chat [any auth]
+GET  /prompts           → Prompt templates [any auth]
+
+--- /api/public/ ---
+POST /tenants/[slug]/enquiries       → Public enquiry submission [none]
+GET  /invites/[token]                → View invite [none]
+POST /invites/[token]/accept         → Accept invite [none]
+
+--- /api/ (other) ---
+GET/POST /auth/*                     → Auth endpoints [none/mixed]
+POST     /webhooks/stripe            → Stripe webhook [signature verification]
+GET      /geo/autocomplete           → Address autocomplete [any auth]
+GET      /geo/details                → Address details [any auth]
+POST     /support/chat               → Support chat [any auth]
+GET      /tools/metal-prices         → Metal prices [any auth]
+GET      /tools/presets              → Tool presets [any auth]
+POST     /tenant/provision           → Provision new tenant [any auth]
+POST     /profile/complete           → Complete profile [any auth]
+GET/POST /tasks                      → Tasks [any auth]
+GET/PATCH /tasks/[id]                → Task detail [any auth]
+GET/POST /tasks/[id]/comments        → Task comments [any auth]
+GET      /health                     → Health check [none]
+GET      /debug/auth                 → Debug (dev only) [none]
+
+--- /api/internal/cron/ ---
+POST /auto-chase-overdue-invoices    → Invoice chasing [cron secret]
+POST /invoice-reminders              → Payment reminders [cron secret]
+POST /retry-failed-emails            → Email retry [cron secret]
+POST /retry-failed-xero-sync         → Xero retry [cron secret]
+POST /weekly-ai-digest               → AI digest [cron secret]
+
+
+================================================================================
+5) UI STRUCTURE
+================================================================================
+
+--- Main admin layout + navigation ---
+
+File: apps/crm/app/admin/layout.tsx
+  → Minimal wrapper; delegates to AppShell inside each page
+
+File: apps/crm/src/components/AppShell.tsx
+  → Full application shell with responsive sidebar
+  → Sections: Sales, Work, Finance, People, Tools, Admin, Portals
+  → Header: CommandPalette (Cmd+K), notifications, tools dropdown, new item menu, profile
+
+Navigation items (admin):
+  Dashboard    → /admin
+  Enquiries    → /admin/enquiries        (Sales)
+  Quotes       → /admin/quotes           (Sales)
+  Deals        → /admin/deals            (Sales) — HIDDEN on free/trial
+  Jobs         → /admin/jobs             (Work)
+  Schedule     → /admin/schedule         (Work)
+  Timesheets   → /admin/timesheets       (Work)
+  Certificates → /admin/certificates     (Work)
+  Invoices     → /admin/invoices         (Finance)
+  Clients      → /admin/clients          (People)
+  Contacts     → /admin/contacts         (People)
+  Engineers    → /admin/engineers        (People)
+  Tools        → /admin/tools            (Tools)
+  Reports      → /admin/reports          (Admin)
+  Import       → /admin/import           (Admin)
+  Invites      → /admin/invites          (Admin)
+  Settings     → /admin/settings         (Admin)
+
+Where new tools pages would live:
+  → /admin/tools/[new-tool-slug]/page.tsx
+  → Register in: apps/crm/src/lib/tools/types.ts (TOOLS array + TOOL_CATEGORIES)
+  → Tools hub: apps/crm/app/admin/tools/page.tsx auto-renders ToolCard for each
+
+--- Job page structure ---
+
+File: apps/crm/app/admin/jobs/[jobId]/page.tsx
+  → Delegates to AdminJobDetailClient component
+
+File: apps/crm/app/admin/jobs/[jobId]/AdminJobDetailClient.tsx
+  → Loads: job, costing, timeEntries, costItems, budgetLines, certs, variations, stages, snagItems, invoices
+  → Has "nextActions" computed property for nudges
+  → Tabbed or sectioned layout with all job sub-entities
+  → WHERE REMOTE ASSIST BUTTON WOULD GO: In the job detail header/actions area alongside existing action buttons
+
+--- Quote creation flow ---
+
+File: apps/crm/app/admin/quotes/new/page.tsx → wraps QuoteCreateForm
+File: apps/crm/src/components/admin/QuoteCreateForm.tsx
+  → State: mode (new/edit), fromPointCounter flag, clients, sites, items (line items), templates
+  → Already has Point Counter integration (reads URL params for pre-populated items)
+  → Uses LineItemsEditor component for line items
+  → WHERE AI ESTIMATOR WOULD PLUG IN: Similar to fromPointCounter flow — detect AI source, pre-populate items array
+
+File: apps/crm/src/components/admin/QuoteDetailClient.tsx
+  → Shows quote with items, totals, audit trail
+  → Actions: send email, rotate token, copy link, attach client
+
+--- Portal pages ---
+
+File: apps/crm/app/client/page.tsx
+  → Simple navigation hub: Quotes, Invoices, Certificates
+  → WHERE TIMELINE WOULD GO: Replace or augment this page with visual timeline component
+
+File: apps/crm/app/client/quotes/page.tsx → quote list
+File: apps/crm/app/client/invoices/page.tsx → invoice list
+File: apps/crm/app/client/certificates/page.tsx → certificate list
+File: apps/crm/app/client/documents/page.tsx → all documents
+
+--- Activity/Timeline components (existing) ---
+
+File: apps/crm/src/components/admin/activities/ActivityItem.tsx
+  → Renders timeline node with vertical connector, icon, content, entity tags
+  → Types: NOTE, CALL, EMAIL, MEETING, TASK, STAGE_CHANGE
+
+File: apps/crm/src/components/admin/activities/ActivityFeed.tsx
+  → Full activity list with CRUD, compact/card modes
+  → Loads from /api/admin/activities?${entityType}Id=${entityId}
+
+File: apps/crm/src/components/admin/activities/ActivityForm.tsx
+  → Create/edit activities with type selector, subject, description, datetime
+
+File: apps/crm/src/components/admin/activities/ActivityTypeIcon.tsx
+  → 6 activity types with color-coded icons
+
+
+================================================================================
+6) MOBILE STATUS
+================================================================================
+
+Platform:       Web-only (Next.js PWA)
+Native apps:    NONE
+Capacitor:      NOT FOUND
+React Native:   NOT FOUND
+Expo:           NOT FOUND
+Ionic:          NOT FOUND
+
+PWA Configuration:
+  File: apps/crm/public/manifest-client.webmanifest
+    → name: "Quantract", display: standalone, icons: 192+512px
+  File: apps/crm/public/sw.js
+    → Workbox service worker with:
+      - NetworkFirst for API routes (10s timeout)
+      - CacheFirst for fonts/images
+      - StaleWhileRevalidate for static assets
+  File: apps/crm/src/components/InstallPwaButton.tsx
+    → Add-to-homescreen prompt
+
+Camera/File Upload Components:
+  File: apps/crm/src/components/ui/FileUpload.tsx
+    → Generic drag-and-drop file upload
+    → Default accept: ".csv,.xlsx,.xls"
+    → Default max size: 10MB
+    → NO camera integration, NO getUserMedia, NO MediaStream
+    → Standard <input type="file"> only
+
+  File: apps/crm/src/components/admin/import/UploadStep.tsx
+    → Uses FileUpload for CSV/Excel import
+
+WebRTC / Real-time:      NOT FOUND — no RTCPeerConnection, socket.io, Pusher, Ably, or WebSocket code
+Camera capture:          NOT FOUND — no getUserMedia, MediaStream, or camera-specific components
+Barcode/QR scanning:     NOT FOUND (qrcode lib is for GENERATION only, not scanning)
+GPS/Geolocation:         NOT FOUND in client code (geo API is server-side Google Places)
+Offline form queue:      NOT FOUND — NetworkFirst strategy only, no IndexedDB queue
+Push notifications:      NOT FOUND — no web push subscription or service worker push handler
+
+Security headers (next.config.mjs):
+  Permissions-Policy disables: geolocation, microphone, camera, payment, usb
+  → These headers would need updating to enable camera/microphone for WebRTC/AR features
+
+
+================================================================================
+END OF FACT EXTRACTION
+================================================================================
+
+Key gaps for planned features:
+
+1. REMOTE ASSIST: No WebRTC, no real-time infra, no camera access. Permissions-Policy
+   blocks camera+microphone. Need: signaling server, TURN/STUN, camera permissions,
+   annotation overlay canvas.
+
+2. AR TESTING: No camera capture, no AR libraries (no AR.js, no 8thWall, no WebXR).
+   Need: camera component, procedure engine, reading capture/storage model.
+
+3. AI PHOTO ESTIMATOR: No photo upload in quote flow (only CSV/Excel). No vision AI.
+   QuoteCreateForm has Point Counter integration pattern that can be replicated.
+   Need: photo upload component, vision API integration, BOM→items mapping.
+
+4. PREDICTIVE MAINTENANCE: No Asset/Equipment model. No maintenance schedule.
+   No sensor/reading data model. Certificate and CertificateTestResult are closest.
+   Need: Asset model, MaintenanceRule model, alert/notification integration.
+
+5. LEAD SCORING: Enquiry model has message, source, UTM fields but no score field.
+   No keyword extraction or scoring logic. Need: score field on Enquiry, scoring
+   rules engine, keyword config.
+
+6. TRUCK INVENTORY: StockItem exists but has no location/vehicle tracking. No
+   Vehicle/Truck model. StockMovement has refType/refId for basic tracking.
+   Need: Vehicle model, allocation model, reconciliation workflow, later GPS.
+
+7. CLIENT TIMELINE: Activity model exists with timeline UI components (ActivityItem,
+   ActivityFeed). Client portal page is minimal hub. Need: client-facing timeline
+   aggregating quotes, invoices, certificates, job status changes.
+
+8. TROUBLESHOOTING BOT: OpenAI integration exists (/api/ai/chat). No client-facing
+   AI. No troubleshooting flow/tree model. Need: client-accessible chat endpoint,
+   safe flow definitions, escalation to human.

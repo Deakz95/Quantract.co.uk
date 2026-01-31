@@ -1,0 +1,413 @@
+# Quantract.co.uk — Complete Feature & Capability Inventory
+
+---
+
+## Feature Inventory Table
+
+| Feature Name | Description | Product | User Roles | Surface | Maturity | Evidence (files/routes) | Notes |
+|---|---|---|---|---|---|---|---|
+| **AUTHENTICATION & ACCESS** | | | | | | | |
+| Password Login | Email/password auth with bcrypt, rate limiting, remember-me (30/90 day sessions) | Shared | Admin, Office, Engineer, Client | Web | ✅ Production | `/api/auth/password/login`, `serverAuth.ts` | Auto-bootstraps first admin from env vars |
+| Magic Link Login | Passwordless email login with 15-min token TTL | Shared | Admin, Office, Engineer, Client | Web | ✅ Production | `/api/auth/magic-link/request`, `/verify` | Via Resend email provider |
+| User Invitation System | Token-based invites with 7-day expiry, single-use, email-match enforcement | Shared | Admin | Web | ✅ Production | `/api/admin/invites`, `/invite/[token]`, `inviteValidation.ts` | Supports admin, office, engineer, client roles |
+| Forgot Password | Password reset flow | Shared | Admin, Office, Engineer, Client | Web | ✅ Production | `/api/auth/forgot-password`, `/auth/forgot-password` | |
+| Email Verification | Verify email on sign-up or change | Shared | Admin, Office, Engineer, Client | Web | ✅ Production | `/auth/verify-email`, `/api/auth/resend-verification` | |
+| Multi-Company Switching | Switch between company contexts in multi-tenant setup | Shared | Admin, Office | Web | ✅ Production | `/api/auth/switch-company` | CompanyUser membership model |
+| Role-Based Access Control | 5-role system (admin, office, finance, engineer, client) with capability-based permissions | Shared | Admin | Web | ✅ Production | `permissions.ts`, `middleware.ts` | Capabilities: billing.view/manage, invoices.view/manage, planner.manage, etc. |
+| Per-User Permission Overrides | Granular capability overrides per user beyond role defaults | Shared | Admin | Web | ✅ Production | `/api/admin/users/[userId]/permissions` | UserPermission table |
+| Admin Impersonation | Support staff can impersonate users with full audit trail | Shared | Admin | Web | ✅ Production | `/api/admin/impersonate/status`, `impersonation_logs` table | Logs IP, user agent, actions taken |
+| Session Sync | Keep session state consistent across tabs/windows | Shared | Admin, Office, Engineer, Client | Web | ✅ Production | `/api/auth/session-sync` | 60s TTL cache on auth context |
+| **MULTI-TENANCY & ONBOARDING** | | | | | | | |
+| Tenant Provisioning | Create new company/tenant with initial setup | Shared | Admin | Web | ✅ Production | `/api/tenant/provision` | Subdomain-based isolation |
+| Subdomain Routing | Custom subdomains per company (company.quantract.co.uk) | Shared | Admin | Web | ✅ Production | `middleware.ts`, `/admin/settings/subdomain` | Reserved subdomain list enforced |
+| User Onboarding Flow | Step-by-step onboarding for new admin users | CRM | Admin | Web | 🟡 Functional but rough | `/admin/onboarding`, `/admin/onboarding/automation` | |
+| Profile Completion | Complete user profile after initial signup | Shared | Admin, Office, Engineer, Client | Web | ✅ Production | `/api/profile/complete` | |
+| Client Onboarding | Guided onboarding for client portal users | CRM | Client | Web | 🟡 Functional but rough | `/client/onboarding` | |
+| Engineer Onboarding | Guided onboarding for engineer portal users | CRM | Engineer | Web | 🟡 Functional but rough | `/engineer/onboarding` | |
+| **DASHBOARD & ANALYTICS** | | | | | | | |
+| Admin Dashboard | KPI cards, recent activity, revenue metrics, break-even tracker, team overview | CRM | Admin, Office | Web | ✅ Production | `/admin/dashboard`, `/api/admin/dashboard/summary`, `/activity`, `/revenue`, `/break-even` | |
+| Revenue Report | Revenue metrics and trends | CRM | Admin | Web | ✅ Production | `/api/admin/reports/revenue`, `/admin/reports` | |
+| Sales Report | Sales conversion and pipeline metrics | CRM | Admin | Web | ✅ Production | `/api/admin/reports/sales` | |
+| Pipeline Report | Sales pipeline/forecast analysis | CRM | Admin | Web | ✅ Production | `/api/admin/reports/pipeline`, `/admin/reports/pipeline` | |
+| Profitability Report | Job and client profitability analysis | CRM | Admin | Web | ✅ Production | `/api/admin/reports/profitability`, `/admin/reports/profitability` | |
+| Activity Report | Audit log and activity timeline | CRM | Admin | Web | ✅ Production | `/api/admin/reports/activity`, `/admin/reports/activity` | |
+| AR Aging Report | Aged receivables breakdown | CRM | Admin | Web | ✅ Production | `/api/admin/reports/ar-aging` | |
+| Engineer Utilisation Report | Engineer time utilization metrics | CRM | Admin | Web | ✅ Production | `/api/admin/reports/engineer-utilisation` | |
+| Quote Win Rate Report | Quote-to-job conversion metrics | CRM | Admin | Web | ✅ Production | `/api/admin/reports/quote-win-rate` | |
+| Tax Summary Report | Tax summary for accounting periods | CRM | Admin | Web | ✅ Production | `/api/admin/reports/tax-summary` | |
+| Time vs Estimate Report | Comparison of tracked time against estimates | CRM | Admin | Web | ✅ Production | `/api/admin/reports/time-vs-estimate` | |
+| Intelligence Dashboard | Profit forecasts, cost-to-complete, expense reports | CRM | Admin | Web | 🔴 Incomplete / placeholder | `/admin/intelligence` | Marked "Phase 3", "Coming next" — wireframed only |
+| AI Analytics Dashboard | Advanced AI-powered analytics | CRM | Admin | Web | 🔴 Incomplete / placeholder | `/admin/ai/dashboard` | Wireframed only |
+| **SALES & CRM** | | | | | | | |
+| Enquiry Management | Inbound lead/enquiry tracking with pipeline stages | CRM | Admin, Office | Web | ✅ Production | `/admin/enquiries`, `/api/admin/enquiries`, `/api/admin/enquiries/[id]/move-stage` | EnquiryEvent audit trail |
+| Public Enquiry Submission | Public-facing enquiry form per tenant | CRM | Client | Web | ✅ Production | `/api/public/tenants/[tenantSlug]/enquiries` | |
+| Quote Management | Create, edit, duplicate, send, accept/reject quotes with line items | CRM | Admin, Office | Web | ✅ Production | `/admin/quotes`, `/admin/quotes/new`, `/api/admin/quotes`, QuoteCreateForm.tsx | QuoteRevision versioning |
+| Quote PDF Generation | Branded PDF export of quotes | CRM | Admin, Client | Web | ✅ Production | `/api/admin/quotes/[quoteId]/pdf`, `renderQuotePdf()` in `pdf.ts` | |
+| Quote Email Delivery | Send quotes to clients via email | CRM | Admin | Web | ✅ Production | `/api/admin/quotes/[quoteId]/send` | Via Resend |
+| Quote Token Sharing | Shareable token-based links for client review | CRM | Admin, Client | Web | ✅ Production | `/api/admin/quotes/[quoteId]/token`, `/client/quotes/[token]` | |
+| Quote-to-Invoice Conversion | Convert accepted quote to invoice | CRM | Admin | Web | ✅ Production | `/api/admin/quotes/[quoteId]/invoice` | |
+| Quote Templates | Reusable quote templates | CRM | Admin | Web | 🟡 Functional but rough | `/api/admin/quote-templates` | API exists, UI unclear |
+| Quote Summary Stats | Aggregated quote statistics | CRM | Admin | Web | ✅ Production | `/api/admin/quotes/summary` | |
+| Client Quote Portal | Client views, accepts, signs quotes | CRM | Client | Web | ✅ Production | `/client/quotes`, `/client/quotes/[quoteId]`, `/sign` | Token-based access |
+| Deal Pipeline (Kanban) | Kanban board for sales opportunities with custom stages | CRM | Admin | Web | ✅ Production | `/admin/deals`, KanbanBoard.tsx, DealCard.tsx | Hidden on free/trial plans |
+| Deal Stage Management | Configure custom pipeline stages with reordering | CRM | Admin | Web | ✅ Production | `/api/admin/deal-stages`, `/reorder`, StageSettingsDialog.tsx | |
+| Activity Logging | Log calls, emails, meetings, notes against contacts/deals | CRM | Admin, Office | Web | ✅ Production | `/api/admin/activities`, ActivityFeed.tsx, ActivityForm.tsx | Types: NOTE, CALL, EMAIL, MEETING, TASK, STAGE_CHANGE |
+| Lead Capture Configuration | Configure web forms, API keys, allowed domains for lead capture | CRM | Admin | Web | ✅ Production | `/admin/settings/lead-capture`, LeadCaptureSettings.tsx (34KB) | InboundFormConfig, AllowedDomain, InboundIntegrationKey models |
+| Contact Management | CRUD contacts with client association | CRM | Admin, Office | Web | ✅ Production | `/admin/contacts`, ContactForm.tsx, ContactCard.tsx | |
+| Client Management | CRUD client organizations with addresses, payment terms, SMS consent | CRM | Admin, Office | Web | ✅ Production | `/admin/clients`, `/admin/clients/new`, ClientsPageClient.tsx | Soft-delete with 30s undo |
+| Global Search | Search across all entities (quotes, invoices, jobs, clients) | CRM | Admin | Web | ✅ Production | `/api/admin/search`, CommandPalette.tsx | Cmd+K shortcut |
+| Saved Views | Save and load custom filter/sort configurations | CRM | Admin | Web | ✅ Production | `/api/admin/saved-views`, SaveViewDialog.tsx, SavedViewSelector.tsx | |
+| **JOB MANAGEMENT** | | | | | | | |
+| Job CRUD | Create, view, edit, soft-delete jobs with undo | CRM | Admin, Office | Web | ✅ Production | `/admin/jobs`, `/admin/jobs/new`, `/api/admin/jobs` | 30-second undo window |
+| Job Detail View | Full job detail with nested layout (budget, costs, time, snags, certs) | CRM | Admin, Office | Web | ✅ Production | `/admin/jobs/[jobId]` (with layout.tsx) | |
+| Job Stages | Multi-stage project breakdown and tracking | CRM | Admin | Web | ✅ Production | `/api/admin/jobs/[jobId]/stages` | |
+| Job Budget Lines | Budget vs actual tracking per line item | CRM | Admin | Web | ✅ Production | `/api/admin/jobs/[jobId]/budget-lines` | |
+| Job Finance Overview | Financial summary — costs, revenue, profit | CRM | Admin | Web | ✅ Production | `/api/admin/jobs/[jobId]/finance-overview` | |
+| Job Cost Items | Track expenses and materials against jobs | CRM | Admin | Web | ✅ Production | `/api/admin/jobs/[jobId]/cost-items` | With attachment support |
+| Job Costing Overview | Aggregated costing data per job | CRM | Admin | Web | ✅ Production | `/api/admin/jobs/[jobId]/costing` | |
+| Snag/Defect Management | Track issues and defects on jobs | CRM | Admin, Engineer | Web | ✅ Production | `/api/admin/snag-items`, `/api/engineer/snag-items`, EngineerSnagCard.tsx | |
+| Job Variations | Change orders with client approval workflow | CRM | Admin, Client, Engineer | Web | ✅ Production | `/api/admin/variations`, `/admin/variations/[variationId]` | PDF, email, client decision |
+| Variation Client Portal | Client views and accepts/rejects variations | CRM | Client | Web | ✅ Production | `/client/variations/[token]`, `/api/client/variations/[token]/decision` | Token-based |
+| Job Checklists | Attach checklist templates to jobs with item-level tracking | CRM | Admin, Engineer | Web | ✅ Production | `/api/jobs/[jobId]/checklists` | Gated feature |
+| Checklist Templates | Reusable checklist templates for jobs/certificates | CRM | Admin | Web | ✅ Production | `/admin/checklists`, `/api/admin/checklist-templates` | |
+| Engineer Job View | Engineers view their assigned jobs with snags and variations | CRM | Engineer | Web | ✅ Production | `/engineer/jobs`, `/engineer/jobs/[jobId]` | |
+| Failed Jobs View | System admin view of failed background jobs | CRM | Admin | Web | ✅ Production | `/admin/system/failed-jobs`, FailedJobsPageClient.tsx | |
+| **SCHEDULING & TIMESHEETS** | | | | | | | |
+| Resource Planner | Drag-and-drop resource scheduling view | CRM | Admin, Office | Web | ✅ Production | `/admin/planner`, `/api/admin/planner`, `/move` | |
+| Admin Schedule | Calendar view of scheduled work | CRM | Admin, Office | Web | ✅ Production | `/admin/schedule`, `/api/admin/schedule` | |
+| Engineer Schedule | Engineer's personal schedule/calendar | CRM | Engineer | Web | ✅ Production | `/engineer/schedule`, `/api/engineer/schedule` | |
+| Timesheet Management | Weekly timesheet submission and admin approval/rejection | CRM | Admin, Engineer | Web | ✅ Production | `/admin/timesheets`, `/api/admin/timesheets/[id]/approve`, `/reject` | |
+| Time Entry Tracking | Individual time entries with breaks | CRM | Admin, Engineer | Web | ✅ Production | `/api/admin/jobs/[jobId]/time-entries`, `/api/engineer/time-entries` | |
+| Live Work Timer | Start/stop timer for engineers on jobs | CRM | Engineer | Web | ✅ Production | `/api/engineer/timer/start`, `/stop`, `/active` | |
+| Engineer Today View | Daily work summary with active timer | CRM | Engineer | Web | ✅ Production | `/engineer/today`, TodayClient.tsx | |
+| **INVOICING & PAYMENTS** | | | | | | | |
+| Invoice Management | Create, edit, send, track invoices | CRM | Admin, Office, Finance | Web | ✅ Production | `/admin/invoices`, `/admin/invoices/new`, InvoiceAdminDetail.tsx | Soft-delete with undo |
+| Invoice PDF Generation | Branded PDF export of invoices | CRM | Admin, Client | Web | ✅ Production | `/api/admin/invoices/[invoiceId]/pdf`, `/api/client/invoices/[token]/pdf` | |
+| Invoice Email Delivery | Send invoices to clients via email | CRM | Admin | Web | ✅ Production | `/api/admin/invoices/[invoiceId]/send` | |
+| Invoice Payment Reminders | Manual and automatic payment reminder emails | CRM | Admin | Web | ✅ Production | `/api/admin/invoices/[invoiceId]/remind`, reminderProcessor.ts | First/second/third chase tracking |
+| Auto-Chase Overdue Invoices | Cron-based automatic invoice chasing | CRM | Admin | Web | ✅ Production | `/api/admin/invoices/auto-chase/run`, `/api/internal/cron/auto-chase-overdue-invoices` | Scheduled background job |
+| Stripe Payment Links | Generate Stripe checkout links for client payment | CRM | Admin, Client | Web | ✅ Production | `/api/admin/invoices/[invoiceId]/payment-link` | |
+| Client Invoice Payment | Client-facing payment flow via Stripe checkout | CRM | Client | Web | ✅ Production | `/client/invoices/[token]`, `/api/client/invoices/[token]/pay` | Token-based |
+| Payment Receipt Download | Client downloads payment receipts as PDF | CRM | Client | Web | ✅ Production | `/api/client/invoices/[token]/receipts/[paymentId]/pdf` | |
+| Client Invoice Portal | Client views invoices and payment history | CRM | Client | Web | ✅ Production | `/client/invoices`, `/api/client/inbox/invoices` | |
+| Invoice Attachments | Attach files to invoices | CRM | Admin, Client | Web | ✅ Production | `/api/client/invoices/[token]/attachments/[attachmentId]` | |
+| **AGREEMENTS** | | | | | | | |
+| Agreement Management | Create and manage client agreements with signing | CRM | Admin | Web | ✅ Production | `/api/admin/agreements/[agreementId]/pdf` | |
+| Client Agreement Signing | Client views, signs, and downloads agreements | CRM | Client | Web | ✅ Production | `/client/agreements/[token]`, `/sign`, `/pdf`, `/certificate` | Token-based, digital signature |
+| Digital Signature Capture | HTML5 signature pad for agreement/certificate signing | CRM | Client, Engineer | Web | ✅ Production | SignaturePad.tsx | |
+| **CERTIFICATES** | | | | | | | |
+| Certificate Management | Full certificate lifecycle: draft → complete → issue → void/reissue | Certs | Admin | Web | ✅ Production | `/admin/certificates`, CertificatesPageClient.tsx | v2 system with revisions |
+| Certificate Revision History | Immutable versioned copies with signing hash integrity | Certs | Admin | Web | ✅ Production | `/api/admin/certificates/[id]/revisions` | Cryptographic verification |
+| Certificate PDF Generation | Per-revision PDF generation with regeneration | Certs | Admin, Client | Web | ✅ Production | `/api/admin/certificates/[id]/revisions/[rev]/pdf`, `/regenerate-pdf` | Draft watermark on non-issued |
+| Certificate Issuance | Issue certificate creating immutable revision with PDF & signing hash | Certs | Admin | Web | ✅ Production | `/api/admin/certificates/[id]/issue`, `certs/issue.ts` | |
+| Certificate Reissuance | Amend and reissue previously issued certificates | Certs | Admin | Web | ✅ Production | `/api/admin/certificates/[id]/reissue` | |
+| Certificate Voiding | Void/cancel issued certificates | Certs | Admin | Web | ✅ Production | `/api/admin/certificates/[id]/void` | |
+| Certificate Observations | Add safety observations and findings | Certs | Admin, Engineer | Web | ✅ Production | `/api/admin/certificates/[id]/observations` | |
+| Certificate Outcomes | Record pass/fail/conditional compliance outcome | Certs | Admin, Engineer | Web | ✅ Production | `/api/admin/certificates/[id]/outcome` | |
+| Certificate Checklists | Attach compliance checklists to certificates | Certs | Admin | Web | ✅ Production | `/api/admin/certificates/[id]/checklists` | |
+| Certificate Signatures | Digital signature records by role | Certs | Admin, Engineer, Client | Web | ✅ Production | `/api/admin/certificates/[id]/signatures` | |
+| Certificate Attachments | Supporting file uploads on certificates | Certs | Admin | Web | ✅ Production | `/api/admin/certificates/[id]/attachments` | |
+| Certificate Test Results | Record circuit test data and results | Certs | Admin, Engineer | Web | ✅ Production | CertificateTestResult model | |
+| AI Certificate Suggestions | AI-powered suggestions for certificate completion | Certs | Admin | Web | 🧪 Experimental | `certs/suggestions.ts`, `certs/explain.ts` | |
+| Engineer Certificate Completion | Engineers complete and sign-off certificates in field | Certs | Engineer | Web | ✅ Production | `/engineer/certificates/[certificateId]`, `/api/engineer/certificates/[id]/complete` | |
+| Client Certificate Access | Clients view and download their certificates | Certs | Client | Web | ✅ Production | `/client/certificates`, `/api/client/certificates/[id]/pdf` | |
+| Batch Certificate Generation | Generate certificates in bulk | Certs | Admin | Web | 🟡 Functional but rough | `/admin/certificates/generate` | |
+| **STANDALONE CERTIFICATES APP** | | | | | | | |
+| EIC Builder | Electrical Installation Certificate builder | Certs | Admin, Engineer | Web | ✅ Production | `/apps/certificates/app/eic/` | Standalone app (port 3002) |
+| EICR Builder | Electrical Installation Condition Report builder | Certs | Admin, Engineer | Web | ✅ Production | `/apps/certificates/app/eicr/` | |
+| MWC Builder | Minor Works Certificate builder | Certs | Admin, Engineer | Web | ✅ Production | `/apps/certificates/app/mwc/` | |
+| Fire Safety Certificate Builder | Fire safety certificate generation | Certs | Admin, Engineer | Web | ✅ Production | `/apps/certificates/app/fire/` | |
+| EML Certificate Builder | Emergency Lighting certificate builder | Certs | Admin, Engineer | Web | ✅ Production | `/apps/certificates/app/eml/` | |
+| Certificates Dashboard | Saved certificates listing | Certs | Admin, Engineer | Web | ✅ Production | `/apps/certificates/app/dashboard/` | With CRM upsell banner |
+| **FINANCIAL MANAGEMENT** | | | | | | | |
+| Expense Tracking | Upload, OCR-parse, and confirm expenses | CRM | Admin, Office, Finance | Web | ✅ Production | `/admin/expenses`, `/api/admin/expenses/upload`, `/parse`, `/confirm` | AI/OCR parsing |
+| Supplier Management | CRUD suppliers with expense tracking | CRM | Admin, Office | Web | ✅ Production | `/admin/suppliers`, `/api/admin/suppliers/summary` | |
+| Supplier Bills | Manage incoming supplier invoices with line items | CRM | Admin, Finance | Web | ✅ Production | `/api/admin/supplier-bills`, `/pdf`, `/post` | |
+| Purchase Orders | Create and manage purchase orders | CRM | Admin | Web | ✅ Production | `/api/admin/purchase-orders` | |
+| Rate Cards | Configure labour billing rates | CRM | Admin | Web | ✅ Production | `/api/admin/rate-cards` | |
+| Company Overheads | Track fixed overhead costs for break-even analysis | CRM | Admin | Web | ✅ Production | CompanyOverhead model, `/api/admin/settings/financials` | |
+| Break-Even Tracker | Dashboard widget showing break-even progress | CRM | Admin | Web | ✅ Production | `/api/admin/dashboard/break-even` | |
+| Materials / Stock Management | Inventory items with stock movements (received, used, adjustment) | CRM | Admin | Web | 🟡 Functional but rough | `/admin/materials`, `/api/admin/materials/stock-items`, `/stock-movements` | |
+| Subcontractor Management | Manage external contractor records | CRM | Admin | Web | ✅ Production | `/api/admin/subcontractors` | |
+| **XERO INTEGRATION** | | | | | | | |
+| Xero OAuth Connection | OAuth2 with PKCE for Xero accounting sync | CRM | Admin | Web | ✅ Production | `/api/admin/xero/oauth/start`, `/callback` | |
+| Xero Data Export | Export data package for Xero import | CRM | Admin | Web | ✅ Production | `/api/admin/xero/export-pack` | |
+| Xero Invoice CSV Export | Export invoices as CSV for Xero | CRM | Admin | Web | ✅ Production | `/api/admin/xero/invoices.csv` | |
+| Xero Sync Retry | Background retry of failed Xero syncs | CRM | Admin | Web | ✅ Production | `/api/internal/cron/retry-failed-xero-sync` | Cron job |
+| **BILLING & SUBSCRIPTION** | | | | | | | |
+| Stripe Subscription Checkout | Create Stripe checkout session for plan upgrade | Shared | Admin | Web | ✅ Production | `/api/admin/billing/checkout` | Plans: Core £19, Pro £79, Pro+ £149, Enterprise custom |
+| Stripe Billing Portal | Self-service billing management via Stripe | Shared | Admin | Web | ✅ Production | `/api/admin/billing/portal` | |
+| Subscription Status Check | Check current plan, limits, usage | Shared | Admin | Web | ✅ Production | `/api/admin/billing/status`, `/admin/billing` | |
+| Stripe Webhook Handler | Process subscription lifecycle events | Shared | Admin | Web | ✅ Production | `/api/webhooks/stripe` | checkout.session.completed, subscription.updated/deleted |
+| Usage Tracking & Limits | Monthly quota tracking (quotes, invoices, certs) with enforcement | Shared | Admin | Web | ✅ Production | `usageTracking.ts`, `plans.ts` | Soft caps with upgrade prompts |
+| Feature Gating | UI components gated by subscription tier | Shared | Admin | Web | ✅ Production | FeatureGate.tsx, UpgradePrompt.tsx | |
+| Module Add-ons | CRM (£19), Certificates (£15), Portal (£7), Tools (£7) add-ons for Core plan | Shared | Admin | Web | ✅ Production | `plans.ts` | |
+| Admin Bypass | Bypass all limits for specified emails (testing/partners) | Shared | Admin | Web | ✅ Production | `ADMIN_BYPASS_EMAILS` env var | |
+| **NOTIFICATIONS & COMMUNICATIONS** | | | | | | | |
+| Email Delivery (Resend) | Transactional email sending via Resend | Shared | Admin | Web | ✅ Production | `email.ts`, emailProcessor.ts | 7 email template types |
+| SMS Notifications | SMS sending with quiet hours, rate limits, credit tracking | Shared | Admin | Web | 🟡 Functional but rough | `smsProvider.ts`, `/api/admin/notifications/test-sms` | Twilio stub — MockSMSProvider in dev |
+| Notification Rules | Per-company event-to-channel routing configuration | Shared | Admin | Web | ✅ Production | `/api/admin/notifications/rules`, NotificationsSettings.tsx (32KB) | |
+| Notification Templates | Customizable email/SMS templates | Shared | Admin | Web | ✅ Production | `/api/admin/notifications/templates` | |
+| Notification Preferences | User opt-in/opt-out per notification category | Shared | Admin, Office, Engineer | Web | ✅ Production | `/api/admin/notifications/settings` | |
+| Notification Logs | History of all sent notifications | Shared | Admin | Web | ✅ Production | `/api/admin/notifications/logs` | |
+| In-App Notifications | Recent notification inbox with unread count badge | CRM | Admin | Web | ✅ Production | `/api/admin/notifications/recent`, header badge | |
+| Failed Email Retry | Background retry of failed email sends | Shared | Admin | Web | ✅ Production | `/api/internal/cron/retry-failed-emails` | |
+| **DATA MANAGEMENT** | | | | | | | |
+| CSV Import Wizard | Multi-step import for clients, contacts, deals | CRM | Admin | Web | ✅ Production | `/admin/import`, ImportWizard.tsx (Upload → Mapping → Preview → Progress) | |
+| CSV/Data Export | Export clients, contacts, deals as CSV | CRM | Admin | Web | ✅ Production | `/admin/export`, ExportPageClient.tsx | |
+| Soft Delete with Undo | 30-second undo window on deletions | CRM | Admin | Web | ✅ Production | `/api/admin/undo-delete`, `undoToken.ts` | Jobs, clients, invoices, quotes |
+| Audit Trail | Complete event log with actor, action, metadata | Shared | Admin | Web | ✅ Production | AuditEvent model, `/api/admin/activities` | |
+| Demo Data Reset | Reset demo environment to clean state | Shared | Admin | Web | ✅ Production | `/api/admin/reset-demo-data` | |
+| **TASK & COLLABORATION** | | | | | | | |
+| Task Management | Create and track tasks with status, priority, due dates | CRM | Admin, Office | Web | ✅ Production | `/admin/tasks`, `/api/tasks` | |
+| Task Comments & Mentions | Comment on tasks with @mention notifications | CRM | Admin, Office | Web | ✅ Production | `/api/tasks/[taskId]/comments`, Mention model | |
+| **TOOLS & CALCULATORS (CRM-Integrated)** | | | | | | | |
+| Tools Hub | Catalog page listing all available tools | Tools | Admin | Web | ✅ Production | `/admin/tools`, ToolCard.tsx | 18+ tools |
+| Cable Sizing Calculator | Select cable size with BS 7671 correction factors and current ratings | Tools | Admin, Engineer | Web | ✅ Production | `/admin/tools/cable-sizing`, `cable-sizing/engine.ts` | With tests |
+| Voltage Drop Calculator | Calculate voltage drop to BS 7671 limits | Tools | Admin, Engineer | Web | ✅ Production | `/admin/tools/voltage-drop`, `voltage-drop/engine.ts` | With tests |
+| Power Factor Correction | Calculate kVAR required and current reduction | Tools | Admin, Engineer | Web | ✅ Production | `/admin/tools/power-factor`, `power-factor/engine.ts` | With tests |
+| Motor FLA Calculator | Full-load amps for 1-phase and 3-phase motors | Tools | Admin, Engineer | Web | ✅ Production | `/admin/tools/motor-fla`, `motor-fla/engine.ts` | With tests |
+| Max Demand Calculator | Estimate maximum demand with diversity profiles | Tools | Admin, Engineer | Web | ✅ Production | `/admin/tools/max-demand`, `max-demand/engine.ts` | With tests |
+| Fault Level Calculator | Prospective fault current using Zs method | Tools | Admin, Engineer | Web | ✅ Production | `/admin/tools/fault-level`, `fault-level/engine.ts` | Estimator badge; with tests |
+| Conduit Fill Calculator | Check conduit fill percentage (BS 7671 & NEC) | Tools | Admin, Engineer | Web | ✅ Production | `/admin/tools/conduit-fill`, `conduit-fill/engine.ts` | With tests |
+| Conduit Bending Helper | Calculate bend marks for offset, saddle, 90-degree bends | Tools | Admin, Engineer | Web | ✅ Production | `/admin/tools/conduit-bending`, `conduit-bending/engine.ts` | With tests |
+| Residential Load Calculator | Calculate total load and suggest service size | Tools | Admin, Engineer | Web | ✅ Production | `/admin/tools/residential-load`, `residential-load/engine.ts` | With tests |
+| High-Bay Lighting Planner | Mount height and spacing-to-height ratio guidance | Tools | Admin, Engineer | Web | ✅ Production | `/admin/tools/high-bay-planner`, `high-bay-planner/engine.ts` | With tests |
+| Lumen Method Calculator | Calculate luminaire count using lumen method | Tools | Admin, Engineer | Web | ✅ Production | `/admin/tools/lumen-method`, `lumen-method/engine.ts` | With tests |
+| UGR Calculator | Unified Glare Rating estimator | Tools | Admin, Engineer | Web | ✅ Production | `/admin/tools/ugr-calculator`, `ugr-calculator/engine.ts` | Estimator badge; with tests |
+| Adiabatic CPC Sizing | Minimum CPC cross-section calculation | Tools | Admin, Engineer | Web | ✅ Production | `/admin/tools/adiabatic`, `adiabatic/engine.ts` | With tests |
+| Box Fill Calculator | Junction box fill calculation | Tools | Admin, Engineer | Web | ✅ Production | `/admin/tools/box-fill`, `box-fill/engine.ts` | With tests |
+| Transformer Sizing | Calculate kVA rating, currents, protection sizing | Tools | Admin, Engineer | Web | ✅ Production | `/admin/tools/transformer-sizing`, `transformer-sizing/engine.ts` | With tests |
+| Energy ROI Calculator | LED upgrade cost/savings/payback analysis | Tools | Admin, Engineer | Web | ✅ Production | `/admin/tools/energy-roi`, `energy-roi/engine.ts` | With tests |
+| Live Metal Prices | Real-time copper and aluminium spot prices (GBP/kg) | Tools | Admin, Engineer | Web | ✅ Production | `/admin/tools/metal-prices`, `/api/tools/metal-prices` | External API, hourly updates |
+| Tool Presets | Save and load user calculator presets | Tools | Admin, Engineer | Web | ✅ Production | `/api/tools/presets`, ToolPreset model | |
+| RAMS Generator | Risk Assessment & Method Statement creation with versioning, PDF export | Tools | Admin | Web | ✅ Production | `/admin/tools/rams-generator`, `rams-generator/pdf.ts` | Templates, hazard definitions, DRAFT watermark |
+| Safety Assessment Tool | Structured safety checklist with sign-off and PDF export | Tools | Admin | Web | ✅ Production | `/admin/tools/safety-assessment`, `safety-assessment/pdf.ts` | Category-based checks, overall rating |
+| **TOOLS (STANDALONE APP)** | | | | | | | |
+| Point Counter | Upload drawings, click to count electrical points, export CSV | Tools | Admin, Engineer | Web | ✅ Production | `/apps/tools/app/point-counter/page.tsx` | PDF.js + Canvas, 20 point types, keyboard shortcuts, CRM quote integration |
+| Cable Calculator (Standalone) | Cable sizing and voltage drop for single/three-phase | Tools | Admin, Engineer | Web | ✅ Production | `/apps/tools/app/cable-calculator/page.tsx` | 4 cable types, BS 7671 |
+| **AI FEATURES** | | | | | | | |
+| AI Assistant Chat | Contextual AI chat within the CRM | CRM | Admin | Web | 🧪 Experimental | `/api/ai/chat`, `/api/ai/session`, QuantractAIWidget.tsx | OpenAI integration, CustomEvent trigger |
+| AI Recommendations | AI-powered job analysis and pricing suggestions | CRM | Admin | Web | 🧪 Experimental | `/api/admin/ai/recommendations`, `/api/admin/ai/apply` | |
+| AI Prompt Templates | Pre-configured prompt templates for AI assistant | CRM | Admin | Web | 🧪 Experimental | `/api/ai/prompts` | |
+| Weekly AI Digest | Cron-generated weekly AI insights email | CRM | Admin | Web | 🧪 Experimental | `/api/internal/cron/weekly-ai-digest` | |
+| **SETTINGS & CONFIGURATION** | | | | | | | |
+| Company Settings | Account profile, company info, branding | CRM | Admin | Web | ✅ Production | `/admin/settings/account`, CompanySettingsForm.tsx | |
+| Logo Upload | Upload company logo for branding | CRM | Admin | Web | ✅ Production | `/api/admin/settings/logo` | |
+| Appearance/Theme | Dark/light mode, theme customization | CRM | Admin | Web | ✅ Production | `/admin/settings/appearance`, ThemeToggle.tsx | |
+| PDF Settings | Configure PDF generation branding | CRM | Admin | Web | ✅ Production | `/admin/settings/pdf` | |
+| Financial Settings | Break-even targets, margins, overheads | CRM | Admin | Web | ✅ Production | `/admin/settings/financial`, `/api/admin/settings/financials` | |
+| Legal Entity Management | Multi-entity support (trading companies/divisions) | CRM | Admin | Web | ✅ Production | `/admin/settings/legal-entities`, `/api/admin/legal-entities` | 1-∞ entities by plan |
+| Service Line Configuration | Business division setup (Electrical, Compliance, Renewables) | CRM | Admin | Web | ✅ Production | `/admin/settings/service-lines`, `/api/admin/service-lines` | |
+| Entitlements Settings | View feature entitlements for current plan | CRM | Admin | Web | ✅ Production | `/admin/settings/entitlements`, EntitlementsSettings.tsx | |
+| Notification Settings | Configure notification preferences and channels | CRM | Admin | Web | ✅ Production | `/admin/settings/notifications`, NotificationsSettings.tsx | |
+| Security Settings | Security configuration | CRM | Admin | Web | 🟡 Functional but rough | `/admin/settings/security` | |
+| Custom Terms | Configure terms & conditions for documents | CRM | Admin | Web | ✅ Production | `/admin/settings/terms`, `/api/admin/settings/terms` | |
+| User Management | Manage user accounts and permissions | CRM | Admin | Web | ✅ Production | `/admin/users`, `/api/admin/users` | |
+| Engineer Management | Manage engineer profiles and rates | CRM | Admin | Web | ✅ Production | `/admin/engineers`, EngineersPageClient.tsx | |
+| Site Management | Registered job sites | CRM | Admin | Web | ✅ Production | `/api/admin/sites` | |
+| **CLIENT PORTAL** | | | | | | | |
+| Client Dashboard | Home page listing quotes, invoices, certificates | CRM | Client | Web | ✅ Production | `/client` | |
+| Client Documents | All documents view (certificates, agreements, invoices) | CRM | Client | Web | ✅ Production | `/client/documents` | |
+| Client Inbox | Aggregated quotes and invoices inbox | CRM | Client | Web | ✅ Production | `/api/client/inbox/invoices`, `/api/client/inbox/quotes` | |
+| **ENGINEER PORTAL** | | | | | | | |
+| Engineer Dashboard | Home page with assigned jobs overview | CRM | Engineer | Web | ✅ Production | `/engineer` | |
+| Engineer Profile | Profile and settings management | CRM | Engineer | Web | ✅ Production | `/engineer/profile`, `/api/engineer/profile` | |
+| **GEOLOCATION** | | | | | | | |
+| Address Autocomplete | Google Places API integration for address lookup | Shared | Admin | Web | ✅ Production | `/api/geo/autocomplete`, `/api/geo/details` | |
+| **SUPPORT** | | | | | | | |
+| Support Chat | In-app support chat endpoint | Shared | Admin | Web | 🟡 Functional but rough | `/api/support/chat` | |
+| **MARKETING SITE** | | | | | | | |
+| Marketing Homepage | Public landing page with features, pricing, CTAs | Shared | — | Web | ✅ Production | `/apps/marketing/app/` | Separate Next.js app |
+| Features Page | Feature overview for marketing | Shared | — | Web | ✅ Production | `/apps/marketing/app/features/` | |
+| Pricing Page | Public pricing page | Shared | — | Web | ✅ Production | `/apps/marketing/app/pricing/` | |
+| Contact Page | Contact form | Shared | — | Web | ✅ Production | `/apps/marketing/app/contact/` | |
+| About Page | Company about page | Shared | — | Web | ✅ Production | `/apps/marketing/app/about/` | |
+| Privacy & Terms | Legal pages | Shared | — | Web | ✅ Production | `/apps/marketing/app/privacy/`, `/terms/` | |
+| **PWA / MOBILE** | | | | | | | |
+| Service Worker | Workbox-powered SW with offline caching strategies | Shared | Admin, Engineer, Client | Web, Mobile-Engineer, Mobile-Admin, Mobile-Client | ✅ Production | `public/sw.js` | CacheFirst fonts, StaleWhileRevalidate images, NetworkFirst APIs |
+| Web App Manifest | PWA manifest for add-to-homescreen | Shared | Admin, Engineer, Client | Web, Mobile-Engineer, Mobile-Admin, Mobile-Client | ✅ Production | `public/manifest-client.webmanifest` | Standalone display, 192/512 icons |
+| Install PWA Button | Prompt to install as native-like app | Shared | Admin, Engineer, Client | Web | ✅ Production | InstallPwaButton.tsx | |
+| **BACKGROUND INFRASTRUCTURE** | | | | | | | |
+| BullMQ Job Queue | Redis-backed job queue for emails, PDFs, reminders | Shared | — | — | ✅ Production | `queueConfig.ts`, `worker.ts` | 3 retries, exponential backoff |
+| Cron Authentication | Header-based cron auth with timing-safe comparison | Shared | — | — | ✅ Production | `cronAuth.ts` | 5-min idempotency TTL |
+| Health Check | System health endpoint | Shared | — | — | ✅ Production | `/api/health` | |
+| Debug Auth | Dev-only auth debugging | Shared | — | — | 🧪 Experimental | `/api/debug/auth` | Dev environment only |
+
+
+---
+
+
+## A. Product Coverage Summary
+
+| Product | Feature Count | Notes |
+|---|---|---|
+| CRM | ~65 | Jobs, quotes, invoices, clients, contacts, deals, scheduling, timesheets, expenses, suppliers, reports, dashboard, import/export, tasks, agreements, variations |
+| Certs | ~18 | Certificate lifecycle (draft/issue/void/reissue), revisions with signing hash, 5 standalone builders (EIC, EICR, MWC, Fire, EML), observations, outcomes, signatures, test results, AI suggestions |
+| Tools | ~22 | 16 BS 7671 calculators, RAMS generator, safety assessment, metal prices, point counter, standalone cable calculator, tool presets |
+| Shared | ~30 | Auth (5 roles, RBAC, magic link, invites), billing (Stripe, 5 plans, module add-ons), notifications (email via Resend, SMS stub), PWA, multi-tenancy, audit trail, geolocation, queue infrastructure, marketing site |
+| **TOTAL** | **~135** | |
+
+
+---
+
+
+## B. Orphaned / Hidden Features
+
+### APIs with no clear UI linkage
+- Quote Templates — `/api/admin/quote-templates` exists but no dedicated UI page found in navigation
+- AI Dashboard — `/admin/ai/dashboard` exists as page but is wireframed/placeholder, not linked in nav
+- Intelligence Hub — `/admin/intelligence` exists but is Phase 3 placeholder, not in nav
+- Debug Auth — `/api/debug/auth` dev-only, no UI
+- Ops Login — `/ops/login` exists but ops portal is minimal
+- Weekly AI Digest cron — endpoint exists but unclear if actually scheduled
+
+### UI pages not linked from navigation
+- `/admin/variations` — not in sidebar nav (accessed from job detail only)
+- `/admin/expenses` — not in primary sidebar nav
+- `/admin/planner` — not in primary sidebar nav (separate from Schedule)
+- `/admin/tasks` — not in primary sidebar nav
+- `/admin/onboarding/automation` — not linked
+- `/admin/ai` — AI assistant hub, accessible via support menu but not sidebar
+- `/portal` — legacy redirect page
+- `/sign-in`, `/sign-in-redirect` — legacy redirect aliases
+
+### Features accessible only by direct URL
+- Standalone certificates app at separate port (3002)
+- Standalone tools app at separate port (3003)
+- `/admin/system/failed-jobs` — system admin only, not in main nav
+
+
+---
+
+
+## C. Mobile Readiness Assessment
+
+### Engineer App (Highest Priority)
+
+**Currently suitable features:**
+- Today's jobs view (`/engineer/today`)
+- Job list and detail (`/engineer/jobs`)
+- Live work timer (start/stop)
+- Time entry logging
+- Snag item reporting (with photo upload)
+- Schedule view
+- Timesheet submission
+- Certificate completion and sign-off
+- PWA installable with offline caching
+
+**Missing for true mobile:**
+- No native push notifications (only web-based)
+- No offline-first data sync (NetworkFirst strategy means no connectivity = no data)
+- No camera integration for snag photos beyond basic file upload
+- No GPS/location tracking for engineer check-in
+- No offline form submission queue
+- No barcode/QR scanning for equipment tracking
+- Timer may not persist if app is backgrounded on mobile
+
+### Office/Admin App
+
+**Currently suitable features:**
+- Dashboard viewing
+- Quote and invoice review/approval
+- Timesheet approval
+- Schedule overview
+- Client/contact lookup
+- Global search (Command Palette)
+
+**Missing for mobile:**
+- Complex forms (quote builder, invoice creation) are desktop-optimized
+- Kanban board (deals) needs touch optimization
+- Resource planner needs touch drag-and-drop
+- Report charts may not render well on small screens
+- No mobile-optimized data entry
+
+### Client App
+
+**Currently suitable features:**
+- View quotes and accept/reject
+- View and pay invoices (Stripe checkout is mobile-friendly)
+- Download certificates and documents
+- Sign agreements (SignaturePad works on touch)
+- PWA installable
+
+**Missing for mobile:**
+- Minimal feature set already — portal is fairly mobile-ready
+- No push notifications for new quotes/invoices
+- No document offline viewing
+
+
+---
+
+
+## D. Packaging Observations
+
+### Features that clearly belong together
+
+1. **Job Lifecycle Bundle**: Jobs + Scheduling + Timesheets + Snags + Variations + Checklists + Job Finance
+2. **Sales Pipeline Bundle**: Enquiries + Quotes + Deals + Quote Templates + Lead Capture + Activity Logging
+3. **Financial Bundle**: Invoices + Expenses + Supplier Bills + Purchase Orders + Rate Cards + Overheads + Break-even + Xero Integration
+4. **Compliance Bundle**: Certificates (all types) + RAMS Generator + Safety Assessment + Checklists
+5. **Engineering Tools Pack**: All 16 calculators + Metal Prices + Point Counter + Tool Presets
+
+### Features that should NOT ship together
+
+- AI features (experimental) should not be bundled with production CRM — separate beta/opt-in
+- Standalone Certificates app should remain independent from CRM (different buyer persona)
+- Standalone Tools app should remain independent (lead-gen/freemium product)
+- Marketing site is deployment infrastructure, not a product feature
+- Intelligence/Phase 3 wireframes should not be visible to paying customers
+
+### Candidates for standalone products
+
+1. **Quantract Certificates** — Already a standalone app. The 5 certificate builders (EIC, EICR, MWC, Fire, EML) are a complete product for electricians who don't need CRM. Monetize separately at £15/mo.
+2. **Quantract Tools** — Already a standalone app. The 16 engineering calculators + point counter are a strong freemium lead-gen product. Free tier with premium calculators or unlimited saves.
+3. **Quantract Client Portal** — Could be offered as white-label portal for contractors who use other CRM systems. Token-based access pattern already supports this.
+4. **Quantract AI** — Once mature, AI recommendations + certificate suggestions + weekly digest could be a premium add-on across all products.
+
+
+---
+
+
+## Appendix: Pricing Plans Reference
+
+| Plan | Price | Users | Invoices/mo | Certs/mo | Modules | Notes |
+|---|---|---|---|---|---|---|
+| Trial | Free | 10 | 50 | 30 | All | 14 days |
+| Core | £19/mo | 3 (+£4/user) | — | — | None | Foundation; add modules individually |
+| Pro | £79/mo | 10 (+£3/user) | 500 | 300 | All | Best value |
+| Pro Plus | £149/mo | 20 (+£3/user) | 1000 | 500 | All | Advanced AI |
+| Enterprise | Custom | Unlimited | Unlimited | Unlimited | All | Dedicated DB |
+
+**Module Add-ons (Core plan only):**
+- CRM: £19/mo (300 invoices, schedule, timesheets, Xero)
+- Certificates: £15/mo (150 certs/month)
+- Portal: £7/mo (customer portal)
+- Tools: £7/mo (calculator pack)
+
+**Entitlements by plan:**
+- Legal entities: 1 (Core) → 2 (Pro) → 3 (Pro+) → Unlimited (Enterprise)
+- Storage: 10GB (Core) → 100GB (Pro) → 200GB (Pro+) → Unlimited (Enterprise)
+
+
+---
+
+
+## Appendix: Database Model Count
+
+~50 Prisma models including:
+User, AuthSession, MagicLinkToken, MfaSession, Company, CompanyUser, LegalEntity, ServiceLine, Client, Engineer, Supplier, Subcontractor, Site, Job, JobStage, JobBudgetLine, SnagItem, JobChecklist, ChecklistTemplate, ChecklistTemplateItem, Quote, QuoteRevision, Agreement, Variation, VariationAttachment, Invoice, InvoiceAttachment, InvoiceChase, InvoicePayment, InvoiceVariation, Certificate, CertificateRevision, CertificateObservation, CertificateChecklist, CertificateSignatureRecord, CertificateAttachment, CertificateTestResult, TimeEntry, Timesheet, ScheduleEntry, CostItem, CostItemAttachment, SupplierBill, SupplierBillLine, Expense, RateCard, CompanyOverhead, StockItem, StockMovement, AuditEvent, Task, Comment, Mention, NotificationLog, NotificationRule, NotificationTemplate, NotificationPreference, Enquiry, EnquiryEvent, PipelineStage, Contact, Deal, DealStage, Activity, SavedView, ImportJob, InboundFormConfig, InboundIntegrationKey, AllowedDomain, PurchaseOrder, PurchaseOrderLine, ToolPreset, RamsDocument, UserPermission
+
+
+---
+
+
+## Appendix: Route & Endpoint Counts
+
+| App | Pages | API Routes | Layouts |
+|---|---|---|---|
+| CRM | ~130 | ~242 | 7 |
+| Certificates | 7 | 1 | 1 |
+| Marketing | 7 | 3 | 7 |
+| Tools | 3 | 1 | 1 |
+| **TOTAL** | **~147** | **~247** | **16** |
