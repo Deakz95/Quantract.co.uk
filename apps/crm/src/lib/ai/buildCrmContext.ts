@@ -71,7 +71,12 @@ export async function buildCrmContext(companyId: string, userId: string): Promis
     prisma.quote.count({ where: { companyId, status: "accepted" } }),
     prisma.job.count({ where: { companyId, status: { in: ["new", "pending", "scheduled", "in_progress"] } } }),
     prisma.invoice.count({ where: { companyId, status: { in: ["sent", "unpaid"] } } }),
-    prisma.enquiry.count({ where: { companyId, status: { notIn: ["won", "lost", "closed"] } } }),
+    prisma.enquiry.count({
+      where: {
+        companyId,
+        pipelineStage: { name: { notIn: ["won", "lost", "closed", "Won", "Lost", "Closed"] } },
+      },
+    }).catch(() => prisma.enquiry.count({ where: { companyId } }).catch(() => 0)),
     prisma.invoice.count({ where: { companyId, status: "draft" } }),
     prisma.companyOverhead.findMany({ where: { companyId } }).catch(() => []),
     prisma.rateCard.findMany({ where: { companyId } }).catch(() => []),
