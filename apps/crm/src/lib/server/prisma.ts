@@ -40,11 +40,11 @@ function createPrismaClient(): PrismaClient {
   // Models that do NOT have an updatedAt field — skip updatedAt injection for these.
   const NO_UPDATED_AT = new Set([
     "AuditEvent", "AuthSession", "CostItemAttachment", "EnquiryEvent",
-    "InvoiceAttachment", "InvoiceChase", "InvoicePayment", "InvoiceVariation",
-    "JobBudgetLine", "JobChecklistItem", "MagicLinkToken", "MfaSession",
-    "Mention", "NotificationLog", "NotificationPreference", "PipelineStage",
-    "PurchaseOrder", "PurchaseOrderLine", "QuoteRevision", "ScheduleEntry",
-    "StockItem", "StockMovement", "SupplierBillLine",
+    "Invite", "InvoiceAttachment", "InvoiceChase", "InvoicePayment",
+    "InvoiceVariation", "JobBudgetLine", "JobChecklistItem", "MagicLinkToken",
+    "MfaSession", "Mention", "NotificationLog", "NotificationPreference",
+    "PipelineStage", "PurchaseOrder", "PurchaseOrderLine", "QuoteRevision",
+    "ScheduleEntry", "StockItem", "StockMovement", "SupplierBillLine",
   ]);
 
   const client = base.$extends({
