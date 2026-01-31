@@ -10,7 +10,7 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 import { useToast } from "@/components/ui/useToast";
 import { apiRequest, getApiErrorMessage, requireOk } from "@/lib/apiClient";
-import { BadgeCheck, Plus, ExternalLink, FileText, Briefcase, Download } from "lucide-react";
+import { BadgeCheck, Plus, ExternalLink, FileText, Briefcase, Download, BarChart3, AlertTriangle } from "lucide-react";
 import { CERTIFICATE_TYPES } from "@/lib/certificates";
 
 type Job = {
@@ -57,6 +57,33 @@ export default function CertificatesPageClient() {
   const [exportTypes, setExportTypes] = useState<string[]>([]);
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
+
+  // Analytics state
+  type AnalyticsData = {
+    totals: { issued: number; unsatisfactory: number; fi: number; amendments: number };
+    observationStats: Array<{ code: string; count: number; percentage: number }>;
+  };
+  const [analyticsPeriod, setAnalyticsPeriod] = useState<"7" | "30" | "90">("30");
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+
+  // Fetch analytics
+  useEffect(() => {
+    const to = new Date();
+    const from = new Date();
+    from.setDate(from.getDate() - Number(analyticsPeriod));
+    const fromStr = from.toISOString().slice(0, 10);
+    const toStr = to.toISOString().slice(0, 10);
+
+    setAnalyticsLoading(true);
+    fetch(`/api/admin/certificates/analytics?from=${fromStr}&to=${toStr}`, { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.ok) setAnalytics({ totals: d.totals, observationStats: d.observationStats });
+      })
+      .catch(() => {})
+      .finally(() => setAnalyticsLoading(false));
+  }, [analyticsPeriod]);
 
   const exportDatesValid = Boolean(exportFrom && exportTo && exportFrom <= exportTo);
 
@@ -319,6 +346,97 @@ export default function CertificatesPageClient() {
   }
 
   return (
+    <div className="space-y-6">
+      {/* Analytics Dashboard */}
+      <Card>
+        <CardHeader>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="w-4 h-4" />
+              Certificate Analytics
+            </CardTitle>
+            <div className="flex items-center gap-1">
+              {(["7", "30", "90"] as const).map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setAnalyticsPeriod(p)}
+                  className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+                    analyticsPeriod === p
+                      ? "bg-[var(--primary)] text-white"
+                      : "bg-[var(--accent)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                  }`}
+                >
+                  {p}d
+                </button>
+              ))}
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {analyticsLoading && !analytics ? (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="rounded-xl border border-[var(--border)] p-4">
+                  <LoadingSkeleton className="h-3 w-20 mb-2" />
+                  <LoadingSkeleton className="h-8 w-16" />
+                </div>
+              ))}
+            </div>
+          ) : analytics ? (
+            <div className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <KpiCard label="Certificates Issued" value={analytics.totals.issued} />
+                <KpiCard
+                  label="Unsatisfactory Rate"
+                  value={analytics.totals.issued > 0 ? `${Math.round((analytics.totals.unsatisfactory / analytics.totals.issued) * 100)}%` : "—"}
+                  sub={analytics.totals.unsatisfactory > 0 ? `${analytics.totals.unsatisfactory} cert${analytics.totals.unsatisfactory !== 1 ? "s" : ""}` : undefined}
+                  warn={analytics.totals.unsatisfactory > 0}
+                />
+                <KpiCard
+                  label="FI Outstanding"
+                  value={analytics.totals.fi}
+                  warn={analytics.totals.fi > 0}
+                />
+                <KpiCard label="Amendments Created" value={analytics.totals.amendments} />
+              </div>
+
+              {analytics.observationStats.length > 0 && (
+                <div>
+                  <h3 className="text-xs font-semibold text-[var(--muted-foreground)] mb-2">Top Observation Codes</h3>
+                  <div className="rounded-xl border border-[var(--border)] overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-[var(--border)] bg-[var(--accent)]">
+                          <th className="px-3 py-2 text-left text-xs font-semibold text-[var(--muted-foreground)]">Code</th>
+                          <th className="px-3 py-2 text-right text-xs font-semibold text-[var(--muted-foreground)]">Count</th>
+                          <th className="px-3 py-2 text-right text-xs font-semibold text-[var(--muted-foreground)]">% of Issued</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {analytics.observationStats.map((s) => (
+                          <tr key={s.code} className="border-b border-[var(--border)] last:border-0">
+                            <td className="px-3 py-2">
+                              <Badge variant={s.code === "C1" || s.code === "C2" ? "destructive" : "secondary"}>
+                                {s.code}
+                              </Badge>
+                            </td>
+                            <td className="px-3 py-2 text-right font-mono">{s.count}</td>
+                            <td className="px-3 py-2 text-right text-[var(--muted-foreground)]">{s.percentage}%</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-sm text-[var(--muted-foreground)]">Unable to load analytics.</p>
+          )}
+        </CardContent>
+      </Card>
+
     <div className="grid gap-6 lg:grid-cols-12">
       <div className="lg:col-span-8">
         <Card>
@@ -561,6 +679,19 @@ export default function CertificatesPageClient() {
           </CardContent>
         </Card>
       </div>
+    </div>
+    </div>
+  );
+}
+
+function KpiCard({ label, value, sub, warn }: { label: string; value: string | number; sub?: string; warn?: boolean }) {
+  return (
+    <div className={`rounded-xl border p-4 ${warn ? "border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-950/30" : "border-[var(--border)]"}`}>
+      <p className="text-xs font-medium text-[var(--muted-foreground)]">{label}</p>
+      <p className={`mt-1 text-2xl font-bold ${warn ? "text-amber-600 dark:text-amber-400" : "text-[var(--foreground)]"}`}>
+        {value}
+      </p>
+      {sub && <p className="text-xs text-[var(--muted-foreground)] mt-0.5">{sub}</p>}
     </div>
   );
 }

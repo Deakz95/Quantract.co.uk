@@ -173,8 +173,8 @@ export async function middleware(req: NextRequest) {
   if (pathname.startsWith("/verify/")) {
     rlCleanup();
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-    const rlKey = pathname.endsWith("/pdf") ? "verify-pdf" : "verify-page";
-    const limit = pathname.endsWith("/pdf") ? 20 : 30; // per IP per window
+    const rlKey = pathname.endsWith("/pdf") ? "verify-pdf" : pathname.endsWith("/json") ? "verify-json" : "verify-page";
+    const limit = pathname.endsWith("/pdf") ? 20 : pathname.endsWith("/json") ? 20 : 30; // per IP per window
     const rl = edgeRateLimit(ip, rlKey, limit, 60_000); // 1-minute window
     if (!rl.ok) {
       return new NextResponse(JSON.stringify({ ok: false, error: "Too many requests" }), {

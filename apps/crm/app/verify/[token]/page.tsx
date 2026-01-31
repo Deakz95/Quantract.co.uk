@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getPrisma } from "@/lib/server/prisma";
 import { getCertTypeMetadata } from "@/lib/server/certs/types";
 import type { Metadata } from "next";
+import { CopyButton } from "./CopyButton";
 
 export const metadata: Metadata = {
   title: "Verify Certificate | Quantract",
@@ -10,6 +11,11 @@ export const metadata: Metadata = {
 };
 
 type Props = { params: Promise<{ token: string }> };
+
+function truncateHash(hash: string): string {
+  if (hash.length <= 20) return hash;
+  return `${hash.slice(0, 12)}…${hash.slice(-8)}`;
+}
 
 export default async function VerifyPage({ params }: Props) {
   const { token } = await params;
@@ -44,7 +50,7 @@ export default async function VerifyPage({ params }: Props) {
     select: { brandName: true },
   });
 
-  // Load latest revision
+  // Load latest revision (extended fields for trust signals)
   const latestRevision = await prisma.certificateRevision.findFirst({
     where: { certificateId: cert.id },
     orderBy: { revision: "desc" },
@@ -52,6 +58,8 @@ export default async function VerifyPage({ params }: Props) {
       revision: true,
       signingHash: true,
       issuedAt: true,
+      pdfChecksum: true,
+      pdfGeneratedAt: true,
       content: true,
     },
   });
@@ -66,6 +74,7 @@ export default async function VerifyPage({ params }: Props) {
 
   const typeMeta = getCertTypeMetadata(cert.type);
   const isRevoked = !!cert.verificationRevokedAt;
+  const companyName = company?.brandName || "—";
 
   return (
     <main className="min-h-screen flex items-center justify-center p-4 bg-[var(--background)]">
@@ -114,8 +123,8 @@ export default async function VerifyPage({ params }: Props) {
           <div className="space-y-3 text-sm">
             <Row label="Certificate Type" value={typeMeta?.displayName || cert.type} />
             <Row label="Certificate No" value={cert.certificateNumber || "—"} />
-            <Row label="Issued By" value={company?.brandName || "—"} />
-            <Row label="Issued Date" value={latestRevision.issuedAt ? new Date(latestRevision.issuedAt).toLocaleDateString("en-GB") : "—"} />
+            <Row label="Issued By" value={companyName} />
+            <Row label="Issued" value={latestRevision.issuedAt ? new Date(latestRevision.issuedAt).toLocaleDateString("en-GB") : "—"} />
             {address && <Row label="Installation Address" value={address} />}
             {cert.outcome && (
               <Row
@@ -128,13 +137,59 @@ export default async function VerifyPage({ params }: Props) {
                 <p className="text-[var(--muted-foreground)] text-xs">{cert.outcomeReason}</p>
               </div>
             )}
-            <Row label="Revision" value={`Rev ${latestRevision.revision}`} />
-            <Row label="Signing Hash" value={latestRevision.signingHash?.slice(0, 12) || "—"} mono />
+          </div>
+
+          {/* Trust Signals Panel */}
+          <div className="mt-6 pt-4 border-t border-[var(--border)]">
+            <h2 className="text-sm font-semibold text-[var(--foreground)] mb-3">Integrity Details</h2>
+            <div className="space-y-3 text-sm">
+              <Row label="Revision" value={`Rev ${latestRevision.revision}`} />
+
+              {/* Digital Signature with copy */}
+              {latestRevision.signingHash && (
+                <div className="flex justify-between gap-4">
+                  <span className="text-[var(--muted-foreground)] shrink-0" title="This hash uniquely identifies the signed contents of this certificate.">
+                    Digital Signature
+                  </span>
+                  <span className="flex items-center gap-0.5 text-[var(--foreground)] text-right font-mono text-xs">
+                    {truncateHash(latestRevision.signingHash)}
+                    <CopyButton value={latestRevision.signingHash} />
+                  </span>
+                </div>
+              )}
+
+              {latestRevision.pdfGeneratedAt && (
+                <Row
+                  label="PDF Generated"
+                  value={new Date(latestRevision.pdfGeneratedAt).toLocaleDateString("en-GB")}
+                />
+              )}
+
+              {/* PDF Checksum (audit detail) */}
+              {latestRevision.pdfChecksum && (
+                <div className="flex justify-between gap-4">
+                  <span className="text-[var(--muted-foreground)] shrink-0" title="Used by auditors to verify the downloaded PDF has not been altered.">
+                    PDF Checksum
+                  </span>
+                  <span className="flex items-center gap-0.5 text-[var(--foreground)] text-right font-mono text-xs">
+                    {truncateHash(latestRevision.pdfChecksum)}
+                    <CopyButton value={latestRevision.pdfChecksum} />
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Integrity Explanation */}
+          <div className="mt-4 p-3 rounded-lg bg-[var(--accent)] text-xs text-[var(--muted-foreground)] leading-relaxed">
+            This certificate is digitally sealed. Any change to its contents would
+            create a new revision with a different signature. You can use the
+            revision number and digital signature to confirm authenticity.
           </div>
 
           {/* PDF download */}
           {!isRevoked && (
-            <div className="mt-6 pt-4 border-t border-[var(--border)]">
+            <div className="mt-6 pt-4 border-t border-[var(--border)] space-y-2">
               <a
                 href={`/verify/${token}/pdf`}
                 target="_blank"
@@ -143,13 +198,21 @@ export default async function VerifyPage({ params }: Props) {
               >
                 Download Certificate PDF
               </a>
+              <a
+                href={`/verify/${token}/json`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block w-full text-center py-2 px-4 rounded-lg border border-[var(--border)] text-[var(--foreground)] text-xs font-medium hover:bg-[var(--accent)] transition-colors"
+              >
+                Download verification record (JSON)
+              </a>
             </div>
           )}
 
           {isRevoked && (
             <div className="mt-6 pt-4 border-t border-[var(--border)]">
               <p className="text-center text-xs text-[var(--muted-foreground)]">
-                PDF download is unavailable for revoked certificates.
+                Downloads are unavailable for revoked certificates.
               </p>
             </div>
           )}

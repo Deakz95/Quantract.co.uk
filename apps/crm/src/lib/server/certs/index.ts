@@ -7,3 +7,4 @@ export { buildCanonicalCertSnapshot, computeSigningHash, computeChecksum, canoni
 export { issueCertificate, type IssueCertificateInput, type IssueCertificateResult } from "./issue";
 export { exportCertificatesZip, type ExportFilters, type ExportResult } from "./export";
 export { createCertificateAmendment, type CreateAmendmentInput, type CreateAmendmentResult } from "./amend";
+export { getCertAnalytics, type CertAnalyticsInput, type CertAnalyticsResult, type ObservationStat } from "./analytics";

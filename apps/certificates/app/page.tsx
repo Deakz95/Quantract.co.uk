@@ -151,6 +151,71 @@ export default function CertificatesPage() {
           </div>
         </div>
 
+        {/* Certificate Insights Widget */}
+        <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-8 mb-12">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-bold">Certificate Insights</h3>
+            <span className="text-[10px] font-medium uppercase tracking-wider text-[var(--muted-foreground)] bg-[var(--muted)] px-2 py-0.5 rounded">Demo</span>
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            {[
+              { label: "Certificates issued (30 days)", value: "142" },
+              { label: "Unsatisfactory rate", value: "3.5%" },
+              { label: "FI outstanding", value: "7" },
+              { label: "Amendments created", value: "12" },
+            ].map((stat) => (
+              <div key={stat.label} className="rounded-xl bg-[var(--muted)] p-4">
+                <p className="text-xs text-[var(--muted-foreground)] mb-1">{stat.label}</p>
+                <p className="text-2xl font-bold text-[var(--foreground)]">{stat.value}</p>
+              </div>
+            ))}
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-[var(--muted-foreground)] mb-2">Top Observations</p>
+            <div className="rounded-xl border border-[var(--border)] overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-[var(--border)] bg-[var(--muted)]">
+                    <th className="px-3 py-2 text-left text-xs font-semibold text-[var(--muted-foreground)]">Code</th>
+                    <th className="px-3 py-2 text-right text-xs font-semibold text-[var(--muted-foreground)]">Count</th>
+                    <th className="px-3 py-2 text-right text-xs font-semibold text-[var(--muted-foreground)]">% of Issued</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { code: "C3", count: 38, pct: "27%" },
+                    { code: "C2", count: 14, pct: "10%" },
+                    { code: "FI", count: 7, pct: "5%" },
+                    { code: "C1", count: 3, pct: "2%" },
+                  ].map((row) => (
+                    <tr key={row.code} className="border-b border-[var(--border)] last:border-0">
+                      <td className="px-3 py-2">
+                        <span className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${
+                          row.code === "C1" || row.code === "C2"
+                            ? "bg-red-500/10 text-red-400"
+                            : row.code === "FI"
+                              ? "bg-amber-500/10 text-amber-400"
+                              : "bg-blue-500/10 text-blue-400"
+                        }`}>
+                          {row.code}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2 text-right font-mono text-[var(--foreground)]">{row.count}</td>
+                      <td className="px-3 py-2 text-right text-[var(--muted-foreground)]">{row.pct}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <p className="mt-4 text-xs text-[var(--muted-foreground)]">
+            Quantract CRM tracks certificate health, quality trends, and observation patterns across your business.{" "}
+            <a href="https://www.quantract.co.uk/auth/signup" className="text-[var(--primary)] hover:underline">
+              Try it free
+            </a>
+          </p>
+        </div>
+
         {/* Features Section */}
         <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-8 mb-12">
           <h3 className="text-lg font-bold mb-6">Why Quantract Certificates?</h3>
