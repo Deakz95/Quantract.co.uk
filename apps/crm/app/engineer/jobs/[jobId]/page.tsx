@@ -4,12 +4,11 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { notFound, redirect } from "next/navigation";
-import { getSession, getUserEmail } from "@/lib/serverAuth";
+import { notFound } from "next/navigation";
+import { requireCompanyContext, getEffectiveRole } from "@/lib/serverAuth";
 import * as repo from "@/lib/server/repo";
 import EngineerVariationForm from "@/components/engineer/EngineerVariationForm";
 import EngineerSnagCard from "@/components/engineer/EngineerSnagCard";
-import { cookies } from "next/headers";
 
 function pounds(value: number) {
   return `£${Number(value || 0).toFixed(2)}`;
@@ -26,15 +25,11 @@ export default async function Page({ params }: Props) {
     throw new Error("Missing jobId");
   }
 
-  const sid = cookies().get("qt_sid_v1")?.value;
-  const session = sid ? await getSession(sid) : null;
-  if (!session || session.user.role !== "engineer") {
-    redirect("/engineer/login");
-  }
-  const email = await getUserEmail();
-  if (!email) {
-    redirect("/engineer/login");
-  }
+  const authCtx = await requireCompanyContext();
+  const role = getEffectiveRole(authCtx);
+  if (role !== "engineer" && role !== "admin") notFound();
+  const email = authCtx.email;
+  if (!email) notFound();
 
   const job = await repo.getJobForEngineer(jobId, email);
   if (!job) notFound();
