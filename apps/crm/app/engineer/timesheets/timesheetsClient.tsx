@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/Input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/Select";
+import { Select, SelectContent, SelectItem } from "@/components/ui/Select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/Table";
 import { useToast } from "@/components/ui/useToast";
 import { Badge } from "@/components/ui/badge";
@@ -159,10 +159,8 @@ export function TimesheetsClient() {
           <div>
             <div className="text-xs font-semibold text-[var(--muted-foreground)]">Job</div>
             <Select value={jobId} onValueChange={setJobId} disabled={loading || locked}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select job" />
-              </SelectTrigger>
               <SelectContent>
+                <SelectItem value="">Select job…</SelectItem>
                 {jobs.map((j) => (
                   <SelectItem key={j.id} value={j.id}>
                     {j.title || "Job"} • {j.siteAddress || j.status}
