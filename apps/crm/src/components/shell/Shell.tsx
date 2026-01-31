@@ -59,7 +59,16 @@ export function Shell({
   const items = NAV[role];
 
   async function logout() {
-    await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+    try {
+      const res = await fetch("/api/auth/logout", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        alert(body?.message || "Logout failed. Please retry.");
+        return;
+      }
+    } catch {
+      // Network error — still redirect since cookies may have been cleared server-side
+    }
     window.location.href = `/${role}/login`;
   }
 
