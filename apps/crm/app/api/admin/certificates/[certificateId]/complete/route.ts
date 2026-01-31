@@ -53,7 +53,12 @@ export async function POST(_req: Request, ctx: { params: Promise<{ certificateId
     // Non-fatal: outcome computation is best-effort for legacy certs
   }
 
-  const cert = await repo.completeCertificate(certificateId, "admin");
-  if (!cert) return NextResponse.json({ ok: false, error: "Unable to complete certificate" }, { status: 400 });
-  return NextResponse.json({ ok: true, certificate: cert });
+  try {
+    const cert = await repo.completeCertificate(certificateId, "admin");
+    if (!cert) return NextResponse.json({ ok: false, error: "Unable to complete certificate" }, { status: 400 });
+    return NextResponse.json({ ok: true, certificate: cert });
+  } catch (err: any) {
+    const message = err?.message || "Unable to complete certificate";
+    return NextResponse.json({ ok: false, error: message }, { status: 400 });
+  }
 }

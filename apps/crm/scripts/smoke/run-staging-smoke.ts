@@ -243,7 +243,7 @@ async function main() {
   await smoke("POST /api/admin/certificates -> create cert", async () => {
     const res = await api("POST", "/api/admin/certificates", {
       jobId,
-      type: "EICR",
+      type: "MWC",
     });
     await assertStatus(res, [200, 201], "POST", "/api/admin/certificates");
     const json = await res.json();
@@ -251,25 +251,35 @@ async function main() {
     assert(certificateId, "no certificateId in response");
   });
 
-  await smoke("POST /api/admin/certificates/{id}/signatures -> add signatures", async () => {
+  await smoke("PATCH /api/admin/certificates/{id} -> set data + signatures", async () => {
     const now = new Date().toISOString();
-    const sigPath = `/api/admin/certificates/${certificateId}/signatures`;
-
-    // Engineer signature
-    const res1 = await api("POST", sigPath, {
-      role: "engineer",
-      signerName: "Smoke Engineer",
-      signedAt: now,
+    const path = `/api/admin/certificates/${certificateId}`;
+    const res = await api("PATCH", path, {
+      data: {
+        version: 1,
+        type: "MWC",
+        overview: {
+          siteName: "Smoke Test Site",
+          installationAddress: "1 Test Street",
+          clientName: clientName,
+          clientEmail: clientEmail,
+          jobDescription: "Smoke test minor works",
+        },
+        installation: {
+          descriptionOfWork: "Smoke test work",
+          supplyType: "Single phase",
+          earthingArrangement: "TN-S",
+        },
+        inspection: {},
+        declarations: {},
+        assessment: {},
+        signatures: {
+          engineer: { name: "Smoke Engineer", signatureText: "SE", signedAtISO: now },
+          customer: { name: "Smoke Customer", signatureText: "SC", signedAtISO: now },
+        },
+      },
     });
-    await assertStatus(res1, [200, 201], "POST", sigPath);
-
-    // Customer signature
-    const res2 = await api("POST", sigPath, {
-      role: "customer",
-      signerName: "Smoke Customer",
-      signedAt: now,
-    });
-    await assertStatus(res2, [200, 201], "POST", sigPath);
+    await assertStatus(res, 200, "PATCH", path);
   });
 
   await smoke("POST /api/admin/certificates/{id}/complete -> 200", async () => {
