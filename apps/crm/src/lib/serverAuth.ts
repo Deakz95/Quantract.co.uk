@@ -103,6 +103,13 @@ export async function clearSession() {
   jar.set(EMAIL_COOKIE, "", clearOpts);
   jar.set(COMPANY_COOKIE, "", clearOpts);
   jar.set(PROFILE_COOKIE, "", clearOpts);
+  // Clear Neon Auth / Better Auth cookies to prevent split-brain state
+  jar.set("better-auth.session", "", clearOpts);
+  jar.set("ba_session", "", clearOpts);
+  jar.set("__Secure-authjs.session-token", "", clearOpts);
+  jar.set("authjs.session-token", "", clearOpts);
+  // Purge auth context cache so stale entries don't survive logout
+  _authCache.clear();
 }
 
 /**

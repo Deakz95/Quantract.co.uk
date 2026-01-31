@@ -32,8 +32,22 @@ export default function AdminLogin() {
   const [error, setError] = useState<string | null>(null);
   const [rememberMe, setRememberMe] = useState(false);
 
-  // Redirect if already authenticated
+  // Redirect if already authenticated (with loop detection)
   useEffect(() => {
+    // Detect redirect loop: if we've been here with the same ?next= recently, skip the redirect
+    const loopKey = `qt_login_loop:${next}`;
+    const lastVisit = Number(sessionStorage.getItem(loopKey) || "0");
+    const now = Date.now();
+    const isLoop = now - lastVisit < 3000;
+    sessionStorage.setItem(loopKey, String(now));
+
+    if (isLoop) {
+      // Break the loop — show the login form and force-clear any stale server session
+      fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+      setCheckingAuth(false);
+      return;
+    }
+
     fetch("/api/auth/me", { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
