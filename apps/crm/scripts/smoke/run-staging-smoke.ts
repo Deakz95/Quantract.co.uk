@@ -24,10 +24,9 @@ if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
 let cookies: Record<string, string> = {};
 
 function mergeCookies(res: Response) {
-  // getSetCookie() returns an array of raw Set-Cookie header values
   const raw = res.headers.getSetCookie?.() ?? [];
   for (const h of raw) {
-    const pair = h.split(";")[0]; // "name=value"
+    const pair = h.split(";")[0];
     const eq = pair.indexOf("=");
     if (eq > 0) {
       cookies[pair.slice(0, eq).trim()] = pair.slice(eq + 1).trim();
@@ -46,20 +45,52 @@ function cookieHeader(): string {
 // ---------------------------------------------------------------------------
 let passed = 0;
 let failed = 0;
+const suiteStart = Date.now();
 
 async function smoke(label: string, fn: () => Promise<void>) {
+  const t0 = Date.now();
   try {
     await fn();
     passed++;
-    console.log(`  PASS \u2713  ${label}`);
+    console.log(`  PASS \u2713  ${label}  (${Date.now() - t0}ms)`);
   } catch (err: any) {
     failed++;
-    console.error(`  FAIL \u2717  ${label}: ${err?.message ?? err}`);
+    console.error(`  FAIL \u2717  ${label}  (${Date.now() - t0}ms)`);
+    console.error(`         ${err?.message ?? err}`);
   }
 }
 
 function assert(condition: unknown, msg: string): asserts condition {
   if (!condition) throw new Error(msg);
+}
+
+/** Read response body as text, truncated for diagnostics. */
+async function bodySnippet(res: Response): Promise<string> {
+  try {
+    const text = await res.text();
+    return text.length > 500 ? text.slice(0, 500) + "..." : text;
+  } catch {
+    return "(unable to read body)";
+  }
+}
+
+/**
+ * Assert status code with diagnostics — on mismatch, prints endpoint,
+ * actual status, and first 500 chars of response body.
+ */
+async function assertStatus(
+  res: Response,
+  expected: number | number[],
+  method: string,
+  path: string,
+): Promise<void> {
+  const codes = Array.isArray(expected) ? expected : [expected];
+  if (!codes.includes(res.status)) {
+    const body = await bodySnippet(res);
+    throw new Error(
+      `${method} ${path} -> expected ${codes.join("|")}, got ${res.status}\n         body: ${body}`,
+    );
+  }
 }
 
 async function api(
@@ -79,6 +110,23 @@ async function api(
   });
   mergeCookies(res);
   return res;
+}
+
+/** Make a request with no auth cookies. */
+async function apiNoAuth(
+  method: string,
+  path: string,
+  body?: unknown,
+): Promise<Response> {
+  const url = `${BASE_URL}${path}`;
+  return fetch(url, {
+    method,
+    headers: {
+      ...(body ? { "Content-Type": "application/json" } : {}),
+    },
+    body: body ? JSON.stringify(body) : undefined,
+    redirect: "manual",
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -103,7 +151,23 @@ async function main() {
   // A) Health ---------------------------------------------------------------
   await smoke("GET /api/health -> 200", async () => {
     const res = await api("GET", "/api/health");
-    assert(res.status === 200, `status ${res.status}`);
+    await assertStatus(res, 200, "GET", "/api/health");
+  });
+
+  // A2) Unauthenticated access -> 401 --------------------------------------
+  await smoke("GET /api/admin/clients (no auth) -> 401", async () => {
+    const res = await apiNoAuth("GET", "/api/admin/clients");
+    await assertStatus(res, [401, 403, 307], "GET", "/api/admin/clients");
+  });
+
+  await smoke("POST /api/admin/jobs (no auth) -> 401", async () => {
+    const res = await apiNoAuth("POST", "/api/admin/jobs", { title: "x" });
+    await assertStatus(res, [401, 403, 307], "POST", "/api/admin/jobs");
+  });
+
+  await smoke("GET /api/admin/certificates (no auth) -> 401", async () => {
+    const res = await apiNoAuth("GET", "/api/admin/certificates");
+    await assertStatus(res, [401, 403, 307], "GET", "/api/admin/certificates");
   });
 
   // B) Auth -----------------------------------------------------------------
@@ -113,7 +177,7 @@ async function main() {
       email: ADMIN_EMAIL,
       password: ADMIN_PASSWORD,
     });
-    assert(res.status === 200, `status ${res.status}`);
+    await assertStatus(res, 200, "POST", "/api/auth/password/login");
     assert(Object.keys(cookies).length > 0, "no cookies set");
   });
 
@@ -126,9 +190,9 @@ async function main() {
       name: clientName,
       email: clientEmail,
     });
-    assert(res.status === 200 || res.status === 201, `status ${res.status}`);
+    await assertStatus(res, [200, 201], "POST", "/api/admin/clients");
     const json = await res.json();
-    clientId = json.id ?? json.clientId;
+    clientId = json.client?.id ?? json.id ?? json.clientId;
     assert(clientId, "no clientId in response");
   });
 
@@ -138,9 +202,9 @@ async function main() {
       clientId,
       title: "Smoke Test Job",
     });
-    assert(res.status === 200 || res.status === 201, `status ${res.status}`);
+    await assertStatus(res, [200, 201], "POST", "/api/admin/jobs");
     const json = await res.json();
-    jobId = json.id ?? json.jobId;
+    jobId = json.job?.id ?? json.id ?? json.jobId;
     assert(jobId, "no jobId in response");
   });
 
@@ -150,23 +214,25 @@ async function main() {
       clientEmail,
       items: [{ description: "Smoke test item", qty: 1, unitPrice: 100 }],
     });
-    assert(res.status === 200 || res.status === 201, `status ${res.status}`);
+    await assertStatus(res, [200, 201], "POST", "/api/admin/quotes");
     const json = await res.json();
-    quoteId = json.id ?? json.quoteId;
+    quoteId = json.quote?.id ?? json.id ?? json.quoteId;
     assert(quoteId, "no quoteId in response");
   });
 
   await smoke("POST /api/admin/quotes/{id}/invoice -> create invoice", async () => {
-    const res = await api("POST", `/api/admin/quotes/${quoteId}/invoice`);
-    assert(res.status === 200 || res.status === 201, `status ${res.status}`);
+    const path = `/api/admin/quotes/${quoteId}/invoice`;
+    const res = await api("POST", path);
+    await assertStatus(res, [200, 201], "POST", path);
     const json = await res.json();
-    invoiceId = json.id ?? json.invoiceId;
+    invoiceId = json.invoice?.id ?? json.id ?? json.invoiceId;
     assert(invoiceId, "no invoiceId in response");
   });
 
   await smoke("GET /api/admin/invoices/{id}/pdf -> PDF", async () => {
-    const res = await api("GET", `/api/admin/invoices/${invoiceId}/pdf`);
-    assert(res.status === 200, `status ${res.status}`);
+    const path = `/api/admin/invoices/${invoiceId}/pdf`;
+    const res = await api("GET", path);
+    await assertStatus(res, 200, "GET", path);
     const ct = res.headers.get("content-type") ?? "";
     assert(ct.includes("application/pdf"), `content-type: ${ct}`);
     const buf = await res.arrayBuffer();
@@ -179,44 +245,52 @@ async function main() {
       jobId,
       type: "EICR",
     });
-    assert(res.status === 200 || res.status === 201, `status ${res.status}`);
+    await assertStatus(res, [200, 201], "POST", "/api/admin/certificates");
     const json = await res.json();
-    certificateId = json.id ?? json.certificateId;
+    certificateId = json.certificate?.id ?? json.id ?? json.certificateId;
     assert(certificateId, "no certificateId in response");
   });
 
-  await smoke("PATCH /api/admin/certificates/{id} -> add signatures", async () => {
+  await smoke("POST /api/admin/certificates/{id}/signatures -> add signatures", async () => {
     const now = new Date().toISOString();
-    const res = await api("PATCH", `/api/admin/certificates/${certificateId}`, {
-      data: {
-        signatures: {
-          engineer: { name: "Smoke Engineer", signedAt: now },
-          customer: { name: "Smoke Customer", signedAt: now },
-        },
-      },
+    const sigPath = `/api/admin/certificates/${certificateId}/signatures`;
+
+    // Engineer signature
+    const res1 = await api("POST", sigPath, {
+      role: "engineer",
+      signerName: "Smoke Engineer",
+      signedAt: now,
     });
-    assert(res.status === 200, `status ${res.status}`);
+    await assertStatus(res1, [200, 201], "POST", sigPath);
+
+    // Customer signature
+    const res2 = await api("POST", sigPath, {
+      role: "customer",
+      signerName: "Smoke Customer",
+      signedAt: now,
+    });
+    await assertStatus(res2, [200, 201], "POST", sigPath);
   });
 
   await smoke("POST /api/admin/certificates/{id}/complete -> 200", async () => {
-    const res = await api("POST", `/api/admin/certificates/${certificateId}/complete`);
-    assert(res.status === 200, `status ${res.status}`);
+    const path = `/api/admin/certificates/${certificateId}/complete`;
+    const res = await api("POST", path);
+    await assertStatus(res, 200, "POST", path);
   });
 
   await smoke("POST /api/admin/certificates/{id}/issue -> revision 1", async () => {
-    const res = await api("POST", `/api/admin/certificates/${certificateId}/issue`);
-    assert(res.status === 200 || res.status === 201, `status ${res.status}`);
+    const path = `/api/admin/certificates/${certificateId}/issue`;
+    const res = await api("POST", path);
+    await assertStatus(res, [200, 201], "POST", path);
     const json = await res.json();
     const revision = json.revision ?? json.revisionNumber ?? 1;
     assert(revision === 1 || revision === "1", `revision: ${revision}`);
   });
 
   await smoke("GET /api/admin/certificates/{id}/revisions/1/pdf -> PDF", async () => {
-    const res = await api(
-      "GET",
-      `/api/admin/certificates/${certificateId}/revisions/1/pdf`,
-    );
-    assert(res.status === 200, `status ${res.status}`);
+    const path = `/api/admin/certificates/${certificateId}/revisions/1/pdf`;
+    const res = await api("GET", path);
+    await assertStatus(res, 200, "GET", path);
     const ct = res.headers.get("content-type") ?? "";
     assert(ct.includes("application/pdf"), `content-type: ${ct}`);
     const buf = await res.arrayBuffer();
@@ -224,7 +298,10 @@ async function main() {
   });
 
   // Summary -----------------------------------------------------------------
-  console.log(`\n  Total: ${passed + failed} | Passed: ${passed} | Failed: ${failed}\n`);
+  const elapsed = ((Date.now() - suiteStart) / 1000).toFixed(1);
+  console.log(
+    `\n  Total: ${passed + failed} | Passed: ${passed} | Failed: ${failed} | ${elapsed}s\n`,
+  );
   process.exit(failed > 0 ? 1 : 0);
 }
 
