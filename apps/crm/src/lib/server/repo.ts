@@ -306,21 +306,39 @@ export async function createSite(input: {
   postcode?: string;
   country?: string;
   notes?: string;
+  latitude?: number | null;
+  longitude?: number | null;
 }): Promise<Site | null> {
   const client = p();
   if (!client) return null;
+
+  // Auto-geocode if postcode provided but no lat/lng
+  let lat = input.latitude ?? null;
+  let lng = input.longitude ?? null;
+  const pc = input.postcode?.trim() || null;
+  if (pc && lat == null) {
+    try {
+      const { geocodePostcode } = await import("@/lib/server/geocode");
+      const geo = await geocodePostcode(pc);
+      if (geo) { lat = geo.latitude; lng = geo.longitude; }
+    } catch { /* geocode failure is non-fatal */ }
+  }
+
   const row = await client.site
     .create({
       data: {
         clientId: input.clientId,
+        companyId: await requireCompanyIdForPrisma(),
         name: input.name ?? null,
         address1: input.address1 ?? null,
         address2: input.address2 ?? null,
         city: input.city ?? null,
         county: input.county ?? null,
-        postcode: input.postcode ?? null,
+        postcode: pc,
         country: input.country ?? null,
         notes: input.notes ?? null,
+        latitude: lat,
+        longitude: lng,
       } as any,
     })
     .catch(() => null);

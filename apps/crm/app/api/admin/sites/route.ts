@@ -67,9 +67,11 @@ export const POST = withRequestLogging(async function POST(req: Request) {
     const postcode = typeof body?.postcode === "string" ? body.postcode.trim() : null;
     let latitude: number | null = typeof body?.latitude === "number" ? body.latitude : null;
     let longitude: number | null = typeof body?.longitude === "number" ? body.longitude : null;
+    let warning: string | null = null;
     if (postcode && latitude == null) {
       const geo = await geocodePostcode(postcode);
       if (geo) { latitude = geo.latitude; longitude = geo.longitude; }
+      else { warning = "geocode_failed"; }
     }
 
     const site = await client.site.create({
@@ -104,7 +106,7 @@ export const POST = withRequestLogging(async function POST(req: Request) {
       },
     });
 
-    return NextResponse.json({ ok: true, site });
+    return NextResponse.json({ ok: true, site, ...(warning ? { warning } : {}) });
   } catch (error) {
     if (error instanceof PrismaClientKnownRequestError) {
       logError(error, { route: "/api/admin/sites", action: "create" });

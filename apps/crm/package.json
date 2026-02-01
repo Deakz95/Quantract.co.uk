@@ -26,6 +26,7 @@
     "qa:purge-test-data": "tsx scripts/qa/purge-test-data.ts",
     "qa:api:full": "tsx scripts/qa/api-full-sweep.ts",
     "qa:backfill-quote-numbers": "tsx scripts/qa/backfill-quote-numbers.ts",
+    "qa:backfill-site-latlng": "tsx scripts/qa/backfill-site-latlng.ts",
     "prisma:generate": "prisma generate",
     "prisma:validate": "prisma validate",
     "prisma:migrate:deploy": "node scripts/with-neon-conn.mjs -- prisma migrate deploy",

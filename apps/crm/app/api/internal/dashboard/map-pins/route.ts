@@ -18,6 +18,26 @@ export async function GET() {
     }
     const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
 
+    // Debug counts (dev only, no PII)
+    if (process.env.NODE_ENV !== "production") {
+      const [totalJobs, jobsWithSite, sitesWithPostcode, sitesWithLatLng] =
+        await Promise.all([
+          prisma.job.count({
+            where: { companyId: authCtx.companyId, deletedAt: null, createdAt: { gte: ninetyDaysAgo } },
+          }),
+          prisma.job.count({
+            where: { companyId: authCtx.companyId, deletedAt: null, createdAt: { gte: ninetyDaysAgo }, siteId: { not: null } },
+          }),
+          prisma.site.count({
+            where: { companyId: authCtx.companyId, postcode: { not: null } },
+          }),
+          prisma.site.count({
+            where: { companyId: authCtx.companyId, latitude: { not: null }, longitude: { not: null } },
+          }),
+        ]);
+      console.log("[map-pins debug]", { totalJobs, jobsWithSite, sitesWithPostcode, sitesWithLatLng });
+    }
+
     // Jobs with located sites
     const jobs = await prisma.job.findMany({
       where: {
@@ -94,6 +114,10 @@ export async function GET() {
         postcode: q.site.postcode || null,
         scheduledAt: null,
       });
+    }
+
+    if (process.env.NODE_ENV !== "production") {
+      console.log("[map-pins debug] pinsReturned:", pins.length);
     }
 
     return NextResponse.json({ ok: true, pins });
