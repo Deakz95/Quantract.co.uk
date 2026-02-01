@@ -3,25 +3,38 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { RefreshCw } from "lucide-react";
 import TimelineList from "./TimelineList";
+import WhatsNextCard from "./WhatsNextCard";
 import type { TimelineItem } from "./types";
 
 /* ── Filter pills ────────────────────────────────────────────── */
 
-type FilterKey = "all" | "job" | "certificate" | "invoice";
+type FilterKey = "all" | "job" | "certificate" | "invoice" | "quote" | "payment";
 
 const PILLS: { key: FilterKey; label: string }[] = [
   { key: "all", label: "All" },
   { key: "job", label: "Work" },
-  { key: "certificate", label: "Certificates" },
   { key: "invoice", label: "Invoices" },
+  { key: "payment", label: "Payments" },
+  { key: "certificate", label: "Certificates" },
+  { key: "quote", label: "Quotes" },
 ];
+
+/** Map filter key → matching timeline types */
+const FILTER_TYPES: Record<FilterKey, string[]> = {
+  all: [],
+  job: ["job", "job_completed"],
+  invoice: ["invoice"],
+  payment: ["invoice_paid"],
+  certificate: ["certificate"],
+  quote: ["quote"],
+};
 
 /* ── Skeleton loaders ────────────────────────────────────────── */
 
 function PillSkeleton() {
   return (
     <div className="flex gap-2">
-      {[56, 48, 72, 56].map((w, i) => (
+      {[56, 48, 72, 64, 80, 56].map((w, i) => (
         <div
           key={i}
           className="h-8 rounded-full bg-[var(--muted)] animate-pulse"
@@ -90,15 +103,20 @@ export default function ClientTimelineHub() {
   useEffect(() => { load(); }, [load]);
 
   /* Client-side filter — instant, no refetch */
-  const filtered = useMemo(
-    () => (filter === "all" ? items : items.filter((i) => i.type === filter)),
-    [items, filter],
-  );
+  const filtered = useMemo(() => {
+    if (filter === "all") return items;
+    const types = FILTER_TYPES[filter];
+    return items.filter((i) => types.includes(i.type));
+  }, [items, filter]);
 
   /* Counts for badge on each pill */
   const counts = useMemo(() => {
-    const c: Record<string, number> = { all: items.length, job: 0, invoice: 0, certificate: 0 };
-    for (const i of items) c[i.type] = (c[i.type] || 0) + 1;
+    const c: Record<string, number> = { all: items.length };
+    for (const key of Object.keys(FILTER_TYPES)) {
+      if (key === "all") continue;
+      const types = FILTER_TYPES[key as FilterKey];
+      c[key] = items.filter((i) => types.includes(i.type)).length;
+    }
     return c;
   }, [items]);
 
@@ -110,7 +128,7 @@ export default function ClientTimelineHub() {
           Your Activity
         </h1>
         <p className="text-sm text-[var(--muted-foreground)] mt-1">
-          Jobs, invoices, and certificates in one place.
+          Jobs, invoices, certificates, and quotes in one place.
         </p>
       </header>
 
@@ -134,12 +152,16 @@ export default function ClientTimelineHub() {
         </div>
       ) : (
         <>
+          {/* ── What Happens Next card ─────────────────────────── */}
+          <WhatsNextCard items={items} />
+
           {/* ── Filter pills (sticky on scroll) ───────────────── */}
           <div className="sticky top-0 z-10 -mx-4 px-4 py-2 bg-[var(--background)]/95 backdrop-blur-sm sm:-mx-6 sm:px-6">
             <div className="flex gap-2 overflow-x-auto no-scrollbar">
               {PILLS.map((pill) => {
                 const active = filter === pill.key;
                 const count = counts[pill.key] || 0;
+                if (pill.key !== "all" && count === 0) return null;
                 return (
                   <button
                     key={pill.key}

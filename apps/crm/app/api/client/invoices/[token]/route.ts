@@ -17,5 +17,21 @@ export async function GET(_req: Request, ctx: { params: Promise<{ token: string 
   });
   const attachments = await repo.listInvoiceAttachments(invoice.id);
   const paymentSummary = await repo.getInvoicePaymentSummary(invoice.id);
-  return NextResponse.json({ invoice: { ...invoice, attachments }, paymentSummary });
+
+  // Fetch line items from linked quote if available
+  let lineItems: Array<{ description?: string; qty: number; unitPrice: number }> | undefined;
+  let vatRate = 0.2;
+  if (invoice.quoteId) {
+    const quote = await repo.getQuoteById(invoice.quoteId);
+    if (quote) {
+      lineItems = (quote.items || []).map((it: any) => ({
+        description: it.description || "",
+        qty: Number(it.qty || it.quantity || 0),
+        unitPrice: Number(it.unitPrice || 0),
+      }));
+      vatRate = quote.vatRate ?? 0.2;
+    }
+  }
+
+  return NextResponse.json({ invoice: { ...invoice, attachments }, paymentSummary, lineItems, vatRate });
 }
