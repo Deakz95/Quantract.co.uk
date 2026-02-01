@@ -23,6 +23,8 @@
     "smoke:staging": "tsx scripts/smoke/run-staging-smoke.ts",
     "qa:staging": "tsx scripts/qa/feature-inventory-smoke.ts",
     "qa:no-leaks": "tsx scripts/qa/no-uuid-leaks.ts",
+    "qa:purge-test-data": "tsx scripts/qa/purge-test-data.ts",
+    "qa:backfill-quote-numbers": "tsx scripts/qa/backfill-quote-numbers.ts",
     "prisma:generate": "prisma generate",
     "prisma:validate": "prisma validate",
     "prisma:migrate:deploy": "node scripts/with-neon-conn.mjs -- prisma migrate deploy",

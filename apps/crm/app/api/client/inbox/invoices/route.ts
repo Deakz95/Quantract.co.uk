@@ -14,5 +14,6 @@ export async function GET() {
   }
 
   const invoices = await repo.listInvoicesForClientEmail(email);
-  return NextResponse.json(invoices);
+  const visible = invoices.filter((inv: any) => inv.status !== "draft");
+  return NextResponse.json(visible);
 }

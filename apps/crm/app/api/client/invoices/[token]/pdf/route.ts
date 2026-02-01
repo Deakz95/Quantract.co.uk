@@ -13,6 +13,7 @@ export const GET = withRequestLogging(
   }, {
     status: 404
   });
+  if (invoice.status === "draft") return NextResponse.json({ error: "not_found" }, { status: 404 });
   const brand = await repo.getBrandContextForInvoiceToken(token);
   const bytes = await renderInvoicePdf(invoice, brand);
   return new NextResponse(bytes, {

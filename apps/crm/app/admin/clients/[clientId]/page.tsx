@@ -103,7 +103,7 @@ export default async function Page({ params }: Props) {
               <Link href={`/admin/clients/${clientId}/edit`}>
                 <Button variant="secondary" type="button">Edit</Button>
               </Link>
-              <Link href="/admin/quotes/new">
+              <Link href={`/admin/quotes/new?clientId=${clientId}`}>
                 <Button type="button">New quote</Button>
               </Link>
             </div>

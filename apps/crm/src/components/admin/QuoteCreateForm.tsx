@@ -166,6 +166,20 @@ export default function QuoteCreateForm() {
     loadTemplates();
   }, [loadClients, loadQuotes, loadTemplates]);
 
+  // Pre-select client from query param (e.g. linked from client detail page)
+  useEffect(() => {
+    const preselect = searchParams.get("clientId");
+    if (preselect && clients.length > 0 && !clientId) {
+      const match = clients.find((c) => c.id === preselect);
+      if (match) {
+        setClientId(match.id);
+        setClientName(match.name);
+        setClientEmail(match.email);
+        loadSites(match.id);
+      }
+    }
+  }, [clients, searchParams, clientId, loadSites]);
+
   // Handle incoming data from Point Counter tool
   useEffect(() => {
     const from = searchParams.get("from");

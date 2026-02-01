@@ -98,8 +98,11 @@ export const POST = withRequestLogging(async function POST(req: Request) {
     let quoteNumber: string | null = null;
     if (legalEntityId) {
       quoteNumber = await allocateQuoteNumberForEntity(legalEntityId);
+      if (!quoteNumber) {
+        console.warn(`[quotes] allocateQuoteNumberForEntity returned null for entity ${legalEntityId}, falling back to company counter`);
+      }
     }
-    // Fallback to company counter if no entity
+    // Fallback to company counter if no entity or entity allocation failed
     if (!quoteNumber) {
       const co = await client.company.findUnique({
         where: { id: authCtx.companyId },
