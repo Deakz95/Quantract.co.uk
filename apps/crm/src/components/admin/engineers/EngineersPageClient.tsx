@@ -56,6 +56,7 @@ export default function EngineersPageClient() {
   const [pwSaving, setPwSaving] = useState(false);
 
   const [query, setQuery] = useState("");
+  const [activityData, setActivityData] = useState<Record<string, { lastActive: string | null; todayJobCount: number }>>({});
 
   // Create engineer form state
   const [newName, setNewName] = useState("");
@@ -100,6 +101,12 @@ export default function EngineersPageClient() {
       setEngineers(list);
 
       setRateCards(rateData.ok && Array.isArray(rateData.rateCards) ? rateData.rateCards : []);
+
+      // Fetch activity signals (non-blocking)
+      fetch('/api/admin/engineers/activity')
+        .then(r => r.json())
+        .then(json => { if (json.ok) setActivityData(json.activity); })
+        .catch(() => {});
 
       // Keep selection stable, but ensure something is selected if list exists
       setSelectedId((prev) => {
@@ -401,6 +408,16 @@ export default function EngineersPageClient() {
                         <td className="py-3">
                           <div className="font-semibold text-[var(--foreground)]">{e.name || e.email}</div>
                           <div className="text-xs text-[var(--muted-foreground)]">{e.email}</div>
+                          {activityData[e.id] && (
+                            <div className="flex gap-3 mt-0.5">
+                              {activityData[e.id].todayJobCount > 0 && (
+                                <span className="text-[10px] text-slate-400">{activityData[e.id].todayJobCount} job{activityData[e.id].todayJobCount === 1 ? '' : 's'} today</span>
+                              )}
+                              {activityData[e.id].lastActive && (
+                                <span className="text-[10px] text-slate-400">Last active {(() => { const d = Math.floor((Date.now() - new Date(activityData[e.id].lastActive!).getTime()) / 86400000); return d === 0 ? 'today' : d === 1 ? 'yesterday' : `${d}d ago`; })()}</span>
+                              )}
+                            </div>
+                          )}
                         </td>
                         <td className="py-3">
                           <Badge>{e.isActive === false ? "Inactive" : "Active"}</Badge>

@@ -42,6 +42,28 @@ export async function GET() {
       orderBy: { createdAt: "desc" },
     });
 
+    // Quotes with located sites
+    const quotes = await prisma.quote.findMany({
+      where: {
+        companyId: authCtx.companyId,
+        deletedAt: null,
+        status: { in: ["sent", "accepted"] },
+        site: {
+          latitude: { not: null },
+          longitude: { not: null },
+        },
+      },
+      select: {
+        id: true,
+        quoteNumber: true,
+        clientName: true,
+        status: true,
+        site: { select: { latitude: true, longitude: true, address1: true, city: true, postcode: true } },
+      },
+      take: 100,
+      orderBy: { createdAt: "desc" },
+    });
+
     const isEngineer = role === "engineer";
     const pins: any[] = jobs.map((j: any) => ({
       id: `job_${j.id}`,
@@ -56,6 +78,23 @@ export async function GET() {
       postcode: j.site.postcode || null,
       scheduledAt: j.scheduledAt?.toISOString() || null,
     }));
+
+    for (const q of quotes as any[]) {
+      if (!q.site) continue;
+      pins.push({
+        id: `quote_${q.id}`,
+        type: "quote",
+        status: q.status,
+        label: q.quoteNumber ? `Quote #${q.quoteNumber}` : "Quote",
+        lat: q.site.latitude,
+        lng: q.site.longitude,
+        href: `/admin/quotes/${q.id}`,
+        clientName: q.clientName || null,
+        address: [q.site.address1, q.site.city].filter(Boolean).join(", ") || null,
+        postcode: q.site.postcode || null,
+        scheduledAt: null,
+      });
+    }
 
     return NextResponse.json({ ok: true, pins });
   } catch (err: any) {

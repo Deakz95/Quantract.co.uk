@@ -15,6 +15,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 function pinColor(pin: MapPin): string {
   if (pin.type === "enquiry") return STATUS_COLORS.new;
+  if (pin.type === "quote") return "#a855f7";
   return STATUS_COLORS[pin.status] || "#6b7280";
 }
 

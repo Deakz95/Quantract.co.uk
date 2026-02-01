@@ -7,6 +7,7 @@ import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import * as repo from "@/lib/server/repo";
 import { prisma } from "@/lib/server/prisma";
 import { calcTotals } from "@/lib/calcTotals";
+import CompactTimeline from "@/components/admin/CompactTimeline";
 
 function formatGBP(n: number) {
   try {
@@ -110,6 +111,15 @@ export default async function Page({ params }: Props) {
             </div>
           </div>
         </CardHeader>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">Recent Activity</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <CompactTimeline clientId={clientId} />
+        </CardContent>
       </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">

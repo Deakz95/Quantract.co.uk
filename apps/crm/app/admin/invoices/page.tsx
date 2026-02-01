@@ -24,6 +24,7 @@ type Invoice = {
   dueDate?: string;
   dueAt?: string;
   dueAtISO?: string;
+  sentAt?: string;
   createdAt?: string;
   updatedAt?: string;
   clientName?: string;
@@ -343,7 +344,22 @@ export default function InvoicesPage() {
       key: 'status',
       label: 'Status',
       sortable: true,
-      render: (invoice) => getStatusBadge(invoice.status),
+      render: (invoice) => {
+        const dueRaw = invoice.dueDate || invoice.dueAt || invoice.dueAtISO;
+        const isOverdue = invoice.status === 'sent' && dueRaw && new Date(dueRaw) < new Date();
+        const sentDaysAgo = invoice.sentAt ? Math.floor((Date.now() - new Date(invoice.sentAt).getTime()) / 86400000) : null;
+        return (
+          <div className="flex flex-col gap-0.5">
+            <div className="flex items-center gap-1.5">
+              {getStatusBadge(invoice.status)}
+              {isOverdue && <Badge variant="destructive" className="text-[10px] px-1.5 py-0">Overdue</Badge>}
+            </div>
+            {invoice.status === 'sent' && sentDaysAgo !== null && sentDaysAgo > 0 && (
+              <span className="text-[10px] text-slate-400">Sent {sentDaysAgo}d ago</span>
+            )}
+          </div>
+        );
+      },
     },
     {
       key: 'dueDate',

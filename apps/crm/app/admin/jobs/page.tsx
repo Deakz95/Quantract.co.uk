@@ -13,7 +13,7 @@ import { undoDelete, bulkUndoAll } from "@/lib/http/undoDelete";
 import { CardGridSkeleton } from "@/components/ui/CardSkeleton";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/useToast";
-import { Briefcase, Plus, Clock, SquarePen, Copy, Trash2 } from "lucide-react";
+import { Briefcase, Plus, Clock, SquarePen, Copy, Trash2, AlertCircle } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -67,6 +67,7 @@ export default function JobsPage() {
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
+  const [healthFlags, setHealthFlags] = useState<Record<string, { hasInvoice: boolean; hasOpenSnags: boolean; hasMissingTimesheet: boolean }>>({});
 
   const loadJobs = useCallback(async () => {
     setLoading(true);
@@ -95,6 +96,10 @@ export default function JobsPage() {
 
   useEffect(() => {
     loadJobs();
+    fetch('/api/admin/jobs/health-flags')
+      .then(r => r.json())
+      .then(json => { if (json.ok) setHealthFlags(json.flags); })
+      .catch(() => {});
   }, [loadJobs]);
 
   // Extract unique clients for filter options
@@ -320,11 +325,23 @@ export default function JobsPage() {
       key: 'jobName',
       label: 'Name',
       sortable: true,
-      render: (job) => (
-        <span className="text-[var(--foreground)] font-medium">
-          {job.name || job.title || 'Untitled Job'}
-        </span>
-      ),
+      render: (job) => {
+        const flags = healthFlags[job.id];
+        const warnings: string[] = [];
+        if (flags && !flags.hasInvoice && job.status === 'completed') warnings.push('No invoice');
+        if (flags?.hasOpenSnags) warnings.push('Open snags');
+        if (flags?.hasMissingTimesheet) warnings.push('Missing timesheet');
+        return (
+          <span className="text-[var(--foreground)] font-medium inline-flex items-center gap-1.5">
+            {job.name || job.title || 'Untitled Job'}
+            {warnings.length > 0 && (
+              <span title={warnings.join(' · ')} className="inline-flex">
+                <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
+              </span>
+            )}
+          </span>
+        );
+      },
     },
     {
       key: 'description',

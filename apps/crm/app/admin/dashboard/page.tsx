@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { OnboardingChecklist } from "@/components/admin/OnboardingChecklist";
 import JobsMap from "@/components/admin/JobsMap";
+import NeedsAttention from "@/components/admin/NeedsAttention";
 import {
   FileText,
   Receipt,
@@ -33,7 +34,7 @@ import Link from "next/link";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { getCached, setCached } from "@/lib/client/swrCache";
 
-type WidgetType = 'stats' | 'quickActions' | 'recentActivity' | 'teamOverview' | 'performance' | 'calendar' | 'invoiceChart' | 'jobsMap' | 'revenue' | 'breakEven';
+type WidgetType = 'stats' | 'quickActions' | 'recentActivity' | 'teamOverview' | 'performance' | 'calendar' | 'invoiceChart' | 'jobsMap' | 'revenue' | 'breakEven' | 'needsAttention';
 
 type Widget = {
   id: string;
@@ -134,6 +135,7 @@ type BreakEvenData = {
 };
 
 const DEFAULT_WIDGETS: Widget[] = [
+  { id: 'needsAttention', type: 'needsAttention', title: 'Needs Attention', description: 'Items requiring action', size: 'full' },
   { id: 'stats', type: 'stats', title: 'Stats Overview', description: 'Key business metrics', size: 'full' },
   { id: 'quickActions', type: 'quickActions', title: 'Quick Actions', description: 'Frequently used actions', size: 'full' },
   { id: 'revenue', type: 'revenue', title: 'Revenue This Month', description: 'Monthly revenue with comparison', size: 'medium' },
@@ -1696,6 +1698,8 @@ export default function DashboardPage() {
             isRefreshing={dashboardState.refreshing.breakEven}
           />
         );
+      case 'needsAttention':
+        return <NeedsAttention />;
       case 'jobsMap':
         return (
           <JobsMapWidget

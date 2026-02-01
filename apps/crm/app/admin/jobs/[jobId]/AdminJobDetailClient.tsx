@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/useToast";
 import { Breadcrumbs, type BreadcrumbItem } from "@/components/ui/Breadcrumbs";
+import CompactTimeline from "@/components/admin/CompactTimeline";
 
 type JobStatus = "new" | "scheduled" | "in_progress" | "completed";
 type Job = {
@@ -617,6 +618,15 @@ export default function AdminJobDetail({ jobId }: Props) {
         <div className="text-sm text-[var(--muted-foreground)]">Not found.</div>
       ) : (
         <>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">Recent Activity</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CompactTimeline jobId={jobId} />
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <div className="flex flex-wrap items-center justify-between gap-2">

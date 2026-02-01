@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 
 export type MapPin = {
   id: string;
-  type: "job" | "enquiry";
+  type: "job" | "enquiry" | "quote";
   status: string;
   label: string;
   lat: number;
@@ -20,21 +20,26 @@ export type MapPin = {
 const LeafletMap = dynamic(() => import("./LeafletMap"), { ssr: false });
 
 const FILTERS = [
+  { key: "new", label: "New", color: "#6b7280", type: "job" },
   { key: "quoted", label: "Quoted", color: "#9333ea", type: "job" },
   { key: "scheduled", label: "Scheduled", color: "#2563eb", type: "job" },
   { key: "in_progress", label: "In Progress", color: "#ea580c", type: "job" },
   { key: "completed", label: "Completed", color: "#16a34a", type: "job" },
   { key: "enquiry", label: "Enquiries", color: "#eab308", type: "enquiry" },
+  { key: "quote", label: "Quotes", color: "#a855f7", type: "quote" },
 ] as const;
 
 type FilterKey = (typeof FILTERS)[number]["key"];
+
+const STORAGE_KEY = "quantract_map_filters";
 
 const STATUS_COLORS: Record<string, string> = {
   quoted: "#9333ea",
   scheduled: "#2563eb",
   in_progress: "#ea580c",
   completed: "#16a34a",
-  new: "#eab308",
+  new: "#6b7280",
+  quote: "#a855f7",
 };
 
 function formatStatus(s: string) {
@@ -73,12 +78,21 @@ export default function JobsMap({ defaultTodayOnly = false }: { defaultTodayOnly
   const [selected, setSelected] = useState<MapPin | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const [todayOnly, setTodayOnly] = useState(defaultTodayOnly);
-  const [filters, setFilters] = useState<Record<FilterKey, boolean>>({
-    quoted: true,
-    scheduled: true,
-    in_progress: true,
-    completed: true,
-    enquiry: true,
+  const [filters, setFilters] = useState<Record<FilterKey, boolean>>(() => {
+    const defaults: Record<FilterKey, boolean> = {
+      new: true,
+      quoted: true,
+      scheduled: true,
+      in_progress: true,
+      completed: true,
+      enquiry: true,
+      quote: true,
+    };
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) return { ...defaults, ...JSON.parse(saved) };
+    } catch {}
+    return defaults;
   });
 
   useEffect(() => {
@@ -93,13 +107,20 @@ export default function JobsMap({ defaultTodayOnly = false }: { defaultTodayOnly
     pins.filter((p) => {
       if (todayOnly && (!p.scheduledAt || !isToday(p.scheduledAt))) return false;
       if (p.type === "enquiry") return filters.enquiry;
+      if (p.type === "quote") return filters.quote;
       return filters[p.status as FilterKey] ?? true;
     }),
     [pins, filters, todayOnly]
   );
 
+  const pinOverload = visiblePins.length > 200;
+
   function toggle(key: FilterKey) {
-    setFilters((prev) => ({ ...prev, [key]: !prev[key] }));
+    setFilters((prev) => {
+      const next = { ...prev, [key]: !prev[key] };
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
+      return next;
+    });
   }
 
   const handlePinClick = useCallback((pin: MapPin) => {
@@ -183,6 +204,11 @@ export default function JobsMap({ defaultTodayOnly = false }: { defaultTodayOnly
         </div>
       ) : (
         <div className="relative">
+          {pinOverload && (
+            <div className="mb-2 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700">
+              Showing {visiblePins.length} pins — use filters to narrow down for best performance.
+            </div>
+          )}
           <LeafletMap pins={visiblePins} onPinClick={handlePinClick} />
 
           {/* Preview panel */}
