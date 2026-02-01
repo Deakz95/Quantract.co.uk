@@ -53,7 +53,7 @@ export const GET = withRequestLogging(async function GET(req: Request) {
         invoicePayments: {
           select: {
             amount: true,
-            paidAt: true,
+            receivedAt: true,
           },
         },
       },

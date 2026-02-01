@@ -72,9 +72,9 @@ export const GET = withRequestLogging(async function GET(req: Request) {
       where: {
         companyId: authCtx.companyId,
         engineerId: engineer.id,
-        date: { gte: weekStart, lt: weekEnd },
+        startedAt: { gte: weekStart, lt: weekEnd },
       },
-      orderBy: { date: "asc" },
+      orderBy: { startedAt: "asc" },
       include: {
         job: { select: { id: true, title: true } },
       },
