@@ -45,7 +45,7 @@ export async function GET(request: Request) {
         action: true,
         entityType: true,
         createdAt: true,
-        metadata: true,
+        meta: true,
         quote: { select: { id: true, clientName: true } },
         invoice: { select: { id: true, invoiceNumber: true, clientName: true } },
         job: { select: { id: true, title: true } },
