@@ -17,7 +17,7 @@ export const GET = withRequestLogging(
     status: 200,
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `inline; filename="quote-${(q as any).quoteNumber || q.id}.pdf"`,
+      "Content-Disposition": `inline; filename="quote-${(q as any).quoteNumber || "draft"}.pdf"`,
       "Cache-Control": "no-store"
     }
   });

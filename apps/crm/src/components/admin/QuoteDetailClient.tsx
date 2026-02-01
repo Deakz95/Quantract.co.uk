@@ -339,8 +339,8 @@ export default function QuoteDetailClient({ quoteId }: { quoteId: string }) {
   const breadcrumbItems: BreadcrumbItem[] = useMemo(() => [
     { label: "Dashboard", href: "/admin" },
     { label: "Quotes", href: "/admin/quotes" },
-    { label: quote?.quoteNumber ? `Quote ${quote.quoteNumber}` : "Quote" },
-  ], [quoteId, quote?.quoteNumber]);
+    { label: quote?.quoteNumber ? `Quote ${quote.quoteNumber}` : quote?.clientName ? `Quote — ${quote.clientName}` : "Quote" },
+  ], [quoteId, quote?.quoteNumber, quote?.clientName]);
 
   if (!quote) {
     return (

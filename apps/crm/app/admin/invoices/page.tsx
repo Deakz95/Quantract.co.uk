@@ -26,6 +26,8 @@ type Invoice = {
   dueAtISO?: string;
   createdAt?: string;
   updatedAt?: string;
+  clientName?: string;
+  clientEmail?: string;
   client?: {
     id: string;
     name: string;
@@ -97,8 +99,9 @@ export default function InvoicesPage() {
   const clientOptions = useMemo(() => {
     const uniqueClients = new Map<string, string>();
     items.forEach(inv => {
-      if (inv.client?.name) {
-        uniqueClients.set(inv.client.name, inv.client.name);
+      const name = inv.client?.name || inv.clientName;
+      if (name) {
+        uniqueClients.set(name, name);
       }
     });
     return Array.from(uniqueClients.entries()).map(([name]) => ({
@@ -137,7 +140,7 @@ export default function InvoicesPage() {
         const search = searchTerm.toLowerCase();
         const matchesSearch =
           (invoice.invoiceNumber?.toLowerCase().includes(search)) ||
-          (invoice.client?.name?.toLowerCase().includes(search));
+          ((invoice.client?.name || invoice.clientName)?.toLowerCase().includes(search));
         if (!matchesSearch) return false;
       }
 
@@ -151,7 +154,7 @@ export default function InvoicesPage() {
 
       // Client filter
       const clientFilter = filters.client as string | undefined;
-      if (clientFilter && invoice.client?.name !== clientFilter) {
+      if (clientFilter && (invoice.client?.name || invoice.clientName) !== clientFilter) {
         return false;
       }
 
@@ -179,8 +182,8 @@ export default function InvoicesPage() {
 
         // Handle nested client property
         if (sortKey === 'clientName') {
-          aVal = a.client?.name;
-          bVal = b.client?.name;
+          aVal = a.client?.name || a.clientName;
+          bVal = b.client?.name || b.clientName;
         } else {
           aVal = (a as Record<string, unknown>)[sortKey];
           bVal = (b as Record<string, unknown>)[sortKey];
@@ -314,11 +317,15 @@ export default function InvoicesPage() {
       key: 'clientName',
       label: 'Client',
       sortable: true,
-      render: (invoice) => invoice.client?.id ? (
-        <Link href={`/admin/clients/${invoice.client.id}`} className="text-[var(--primary)] hover:underline">{invoice.client.name || '-'}</Link>
-      ) : (
-        <span className="text-[var(--foreground)]">{invoice.client?.name || '-'}</span>
-      ),
+      render: (invoice) => {
+        const name = invoice.client?.name || invoice.clientName;
+        if (!name) return <span className="text-[var(--muted-foreground)]">-</span>;
+        return invoice.client?.id ? (
+          <Link href={`/admin/clients/${invoice.client.id}`} className="text-[var(--primary)] hover:underline">{name}</Link>
+        ) : (
+          <span className="text-[var(--foreground)]">{name}</span>
+        );
+      },
     },
     {
       key: 'total',
@@ -473,7 +480,7 @@ export default function InvoicesPage() {
                           <span className="font-medium text-[var(--primary)]">{i.invoiceNumber}</span>
                           {getStatusBadge(i.status)}
                         </div>
-                        <div className="text-sm text-[var(--muted-foreground)]">{i.client?.name}</div>
+                        <div className="text-sm text-[var(--muted-foreground)]">{i.client?.name || i.clientName}</div>
                         <div className="flex justify-between mt-3 text-sm">
                           <span className="font-semibold text-[var(--foreground)]">{'\u00A3'}{(i.total || 0).toFixed(2)}</span>
                           <span className="text-[var(--muted-foreground)]">Due: {formatDate(i.dueDate || i.dueAt || i.dueAtISO || '')}</span>

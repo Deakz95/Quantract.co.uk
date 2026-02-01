@@ -214,9 +214,9 @@ export function TimesheetsClient() {
             <TableBody>
               {entries.map((e) => (
                 <TableRow key={e.id}>
-                  <TableCell className="font-medium">{jobs.find((j) => j.id === e.jobId)?.title || e.jobId.slice(0, 6)}</TableCell>
-                  <TableCell>{new Date(e.startedAtISO).toLocaleString()}</TableCell>
-                  <TableCell>{e.endedAtISO ? new Date(e.endedAtISO).toLocaleString() : "—"}</TableCell>
+                  <TableCell className="font-medium">{jobs.find((j) => j.id === e.jobId)?.title || "Untitled job"}</TableCell>
+                  <TableCell>{e.startedAtISO && !isNaN(new Date(e.startedAtISO).getTime()) ? new Date(e.startedAtISO).toLocaleString() : "—"}</TableCell>
+                  <TableCell>{e.endedAtISO && !isNaN(new Date(e.endedAtISO).getTime()) ? new Date(e.endedAtISO).toLocaleString() : "—"}</TableCell>
                   <TableCell>{e.breakMinutes}</TableCell>
                   <TableCell>{renderStatusBadge(e.status)}</TableCell>
                 </TableRow>

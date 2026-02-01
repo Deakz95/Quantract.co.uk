@@ -12,6 +12,7 @@ import { Breadcrumbs, type BreadcrumbItem } from "@/components/ui/Breadcrumbs";
 type JobStatus = "new" | "scheduled" | "in_progress" | "completed";
 type Job = {
   id: string;
+  jobNumber?: number;
   quoteId?: string;
   quoteNumber?: string;
   title?: string;
@@ -23,6 +24,12 @@ type Job = {
   scheduledAtISO?: string;
   notes?: string;
   budgetSubtotal?: number;
+  site?: {
+    name?: string;
+    address1?: string;
+    city?: string;
+    postcode?: string;
+  };
 };
 
 type JobCostingSummary = {
@@ -218,13 +225,14 @@ export default function AdminJobDetail({ jobId }: Props) {
   const billedVariationIds = useMemo(() => new Set(invoices.filter((inv) => inv.variationId).map((inv) => inv.variationId as string)), [invoices]);
 
   const breadcrumbItems: BreadcrumbItem[] = useMemo(() => {
-    const jobLabel = job?.title || job?.clientName ? `Job: ${job?.title || job?.clientName}` : "Job";
+    const name = job?.title || job?.clientName;
+    const jobLabel = name ? `Job: ${name}` : "Job";
     return [
       { label: "Dashboard", href: "/admin" },
       { label: "Jobs", href: "/admin/jobs" },
       { label: jobLabel },
     ];
-  }, [jobId, job?.clientName]);
+  }, [jobId, job?.title, job?.clientName]);
 
   async function refresh() {
     setLoading(true);
@@ -586,8 +594,15 @@ export default function AdminJobDetail({ jobId }: Props) {
         <div className="min-w-0">
           <div className="text-sm font-semibold text-[var(--foreground)]">{job?.title || job?.clientName || "Job"}</div>
           {job ? (
-            <div className="mt-1 text-xs text-[var(--muted-foreground)]">
-              {job.clientName} • {job.clientEmail}{job.siteAddress ? ` • ${job.siteAddress}` : ""}{job.quoteId ? ` • Quote: ${job.quoteNumber || "Linked"}` : ""}
+            <div className="mt-1 space-y-0.5">
+              <div className="text-xs text-[var(--muted-foreground)]">
+                {job.clientName} • {job.clientEmail}{job.quoteId ? ` • Quote: ${job.quoteNumber || "Linked"}` : ""}
+              </div>
+              {(job.siteAddress || job.site?.address1 || job.site?.name) && (
+                <div className="text-xs text-[var(--muted-foreground)]">
+                  📍 {job.siteAddress || [job.site?.address1, job.site?.city, job.site?.postcode].filter(Boolean).join(", ") || job.site?.name}
+                </div>
+              )}
             </div>
           ) : null}
         </div>
