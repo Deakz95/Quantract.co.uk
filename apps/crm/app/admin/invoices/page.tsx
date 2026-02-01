@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { FilterDropdown, type Filters, type FilterConfig } from "@/components/ui/FilterDropdown";
 import { DataTable, BulkActionBar, formatRelativeTime, type Column, type Action, type SortDirection } from "@/components/ui/DataTable";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { TableSkeletonInline } from "@/components/ui/TableSkeleton";
 import { deleteWithMessage, bulkDeleteWithSummary } from "@/lib/http/deleteWithMessage";
 import { undoDelete, bulkUndoAll } from "@/lib/http/undoDelete";
 import { useToast } from "@/components/ui/useToast";
@@ -440,10 +441,7 @@ export default function InvoicesPage() {
         <Card>
           <CardContent className="p-0">
             {loading ? (
-              <div className="p-8 text-center text-[var(--muted-foreground)]">
-                <div className="w-8 h-8 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                Loading invoices...
-              </div>
+              <TableSkeletonInline columns={6} rows={8} />
             ) : items.length === 0 ? (
               <div className="p-6">
                 <EmptyState

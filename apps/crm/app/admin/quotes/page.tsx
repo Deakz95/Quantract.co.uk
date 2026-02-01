@@ -331,7 +331,7 @@ export default function QuotesPage() {
       sortable: true,
       render: (quote) => (
         <span className="text-[var(--muted-foreground)]">
-          {formatRelativeTime(quote.updatedAt || quote.acceptedAt || quote.lastSentAt)}
+          {formatRelativeTime(quote.updatedAt || quote.lastSentAt || quote.acceptedAt)}
         </span>
       ),
     },
@@ -395,7 +395,7 @@ export default function QuotesPage() {
         <Card>
           <CardContent className="p-0">
             {loading ? (
-              <TableSkeletonInline columns={6} rows={5} />
+              <TableSkeletonInline columns={6} rows={8} />
             ) : items.length === 0 ? (
               <div className="p-12 text-center">
                 <FileText className="w-12 h-12 text-[var(--muted-foreground)] mx-auto mb-4" />

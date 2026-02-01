@@ -72,6 +72,7 @@ export default function InvoiceAdminDetail({ invoiceId }: { invoiceId: string })
 
   async function setStatus(status: Invoice["status"]) {
     if (!inv) return;
+    const priorStatus = inv.status;
     setBusy(true);
     try {
       const r = await fetch(`/api/admin/invoices/${invoiceId}`, {
@@ -82,9 +83,27 @@ export default function InvoiceAdminDetail({ invoiceId }: { invoiceId: string })
       const d = await r.json();
       if (!r.ok) throw new Error(d?.error ?? "failed");
       setInv(d.invoice);
-      toast({ title: "Updated", description: `Invoice marked ${STATUS_LABEL[status]}.`, variant: "success" });
+      toast({
+        type: "success",
+        message: `Invoice marked ${STATUS_LABEL[status]}.`,
+        duration: 5000,
+        action: {
+          label: "Undo",
+          onClick: async () => {
+            const ur = await fetch(`/api/admin/invoices/${invoiceId}`, {
+              method: "PATCH",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({ status: priorStatus }),
+            });
+            const ud = await ur.json();
+            if (!ur.ok) throw new Error(ud?.error ?? "Undo failed");
+            setInv(ud.invoice);
+            toast({ type: "success", message: `Reverted to ${STATUS_LABEL[priorStatus]}.` });
+          },
+        },
+      });
     } catch {
-      toast({ title: "Error", description: "Could not update invoice.", variant: "destructive" });
+      toast({ type: "error", message: "Could not update invoice." });
     } finally {
       setBusy(false);
     }
@@ -226,14 +245,34 @@ export default function InvoiceAdminDetail({ invoiceId }: { invoiceId: string })
           )}
 
           <div className="mt-5 flex flex-wrap gap-2">
-            <Button type="button" onClick={() => setStatus("draft")} disabled={busy || inv.status === "draft"}>Draft</Button>
+            {inv.status !== "draft" && (
+              <Button
+                variant="ghost"
+                type="button"
+                disabled={busy}
+                onClick={() => {
+                  if (confirm("Revert this invoice to Draft? This may affect sent/paid status.")) {
+                    setStatus("draft");
+                  }
+                }}
+              >
+                Revert to Draft
+              </Button>
+            )}
             <Button variant="secondary" type="button" onClick={() => setStatus("sent")} disabled={busy || inv.status === "sent"}>Mark sent</Button>
-            <Button variant="secondary" type="button" onClick={() => setStatus("unpaid")} disabled={busy || inv.status === "unpaid"}>Mark unpaid</Button>
-            <Button variant="secondary" type="button" onClick={() => setStatus("paid")} disabled={busy || isPaid}>Mark paid</Button>
-            <Button variant="secondary" type="button" onClick={createPaymentLink} disabled={busy || Boolean(inv.paymentUrl)}>
-              {inv.paymentUrl ? "Payment link ready" : "Create payment link"}
-            </Button>
+            {inv.status !== "draft" && (
+              <>
+                <Button variant="secondary" type="button" onClick={() => setStatus("unpaid")} disabled={busy || inv.status === "unpaid"}>Mark unpaid</Button>
+                <Button variant="secondary" type="button" onClick={() => setStatus("paid")} disabled={busy || isPaid}>Mark paid</Button>
+                <Button variant="secondary" type="button" onClick={createPaymentLink} disabled={busy || Boolean(inv.paymentUrl)}>
+                  {inv.paymentUrl ? "Payment link ready" : "Create payment link"}
+                </Button>
+              </>
+            )}
           </div>
+          {inv.status === "draft" && (
+            <p className="mt-2 text-xs text-[var(--muted-foreground)]">Payment actions available after marking as sent.</p>
+          )}
 
           <p className="mt-4 text-xs text-[var(--muted-foreground)]">
             {isPaid ? "Paid." : isPayable ? "Awaiting payment." : "Not issued yet."}

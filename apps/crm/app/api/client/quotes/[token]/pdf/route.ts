@@ -2,6 +2,7 @@ import * as repo from "@/lib/server/repo";
 import { renderQuotePdf } from "@/lib/server/pdf";
 import { withRequestLogging } from "@/lib/server/observability";
 import { getRouteParams } from "@/lib/server/routeParams";
+import { pdfFilename } from "@/lib/server/pdfFilename";
 export const runtime = "nodejs";
 
 export const GET = withRequestLogging(
@@ -17,7 +18,7 @@ export const GET = withRequestLogging(
     status: 200,
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `inline; filename="quote-${(q as any).quoteNumber || "draft"}.pdf"`,
+      "Content-Disposition": `inline; filename="${pdfFilename("quote", (q as any).quoteNumber, (q as any).clientName)}"`,
       "Cache-Control": "no-store"
     }
   });

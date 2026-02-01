@@ -96,6 +96,7 @@ export default function QuoteDetailClient({ quoteId }: { quoteId: string }) {
 
   async function markSent() {
     if (!quote) return;
+    const priorStatus = quote.status;
     setBusy(true);
     try {
       const res = await fetch(`/api/admin/quotes/${quoteId}`, {
@@ -106,9 +107,27 @@ export default function QuoteDetailClient({ quoteId }: { quoteId: string }) {
       const data = await res.json();
       if (!data.ok) throw new Error(data.error || "Failed");
       setQuote(data.quote);
-      toast({ title: "Marked as sent", variant: "success" });
+      toast({
+        type: "success",
+        message: "Quote marked as sent.",
+        duration: 5000,
+        action: {
+          label: "Undo",
+          onClick: async () => {
+            const ur = await fetch(`/api/admin/quotes/${quoteId}`, {
+              method: "PATCH",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({ status: priorStatus }),
+            });
+            const ud = await ur.json();
+            if (!ud.ok) throw new Error(ud.error || "Undo failed");
+            setQuote(ud.quote);
+            toast({ type: "success", message: "Reverted to draft." });
+          },
+        },
+      });
     } catch (e: any) {
-      toast({ title: "Couldn't update", description: e?.message || "Unknown error", variant: "destructive" });
+      toast({ type: "error", message: e?.message || "Couldn't update quote." });
     } finally {
       setBusy(false);
     }

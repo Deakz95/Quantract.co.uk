@@ -469,7 +469,7 @@ export default function JobsPage() {
           viewMode === 'table' ? (
             <Card>
               <CardContent className="p-0">
-                <TableSkeletonInline columns={6} rows={5} />
+                <TableSkeletonInline columns={6} rows={8} />
               </CardContent>
             </Card>
           ) : (

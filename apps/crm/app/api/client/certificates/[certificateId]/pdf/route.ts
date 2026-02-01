@@ -3,6 +3,7 @@ import * as repo from "@/lib/server/repo";
 import { renderCertificatePdf } from "@/lib/server/pdf";
 import { withRequestLogging } from "@/lib/server/observability";
 import { getRouteParams } from "@/lib/server/routeParams";
+import { pdfFilename } from "@/lib/server/pdfFilename";
 export const runtime = "nodejs";
 
 export const GET = withRequestLogging(
@@ -42,7 +43,7 @@ export const GET = withRequestLogging(
     status: 200,
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `inline; filename="certificate-${c.id}.pdf"`,
+      "Content-Disposition": `inline; filename="${pdfFilename("certificate", (c as any).certificateNumber, (client as any)?.name)}"`,
       "Cache-Control": "no-store"
     }
   });

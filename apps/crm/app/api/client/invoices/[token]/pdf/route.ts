@@ -3,6 +3,7 @@ import * as repo from "@/lib/server/repo";
 import { renderInvoicePdf } from "@/lib/server/pdf";
 import { withRequestLogging } from "@/lib/server/observability";
 import { getRouteParams } from "@/lib/server/routeParams";
+import { pdfFilename } from "@/lib/server/pdfFilename";
 
 export const GET = withRequestLogging(
   async function GET(_req: Request, ctx: { params: Promise<{ token: string }> }) {
@@ -35,7 +36,7 @@ export const GET = withRequestLogging(
   return new NextResponse(bytes, {
     headers: {
       "content-type": "application/pdf",
-      "content-disposition": `inline; filename="invoice-${(invoice as any).invoiceNumber || invoice.id}.pdf"`,
+      "content-disposition": `inline; filename="${pdfFilename("invoice", (invoice as any).invoiceNumber, (invoice as any).clientName)}"`,
       "cache-control": "no-store"
     }
   });
