@@ -7,26 +7,33 @@ import { toolPresetSchema } from "@/lib/tools/types";
 
 /** GET /api/tools/presets?toolSlug=voltage-drop */
 export async function GET(req: Request) {
-  const ctx = await requireCompanyContext();
-  const prisma = getPrisma();
-  if (!prisma) return NextResponse.json({ ok: false, error: "service_unavailable" }, { status: 503 });
+  try {
+    const ctx = await requireCompanyContext();
+    const prisma = getPrisma();
+    if (!prisma) return NextResponse.json({ ok: false, error: "service_unavailable" }, { status: 503 });
 
-  const { searchParams } = new URL(req.url);
-  const toolSlug = searchParams.get("toolSlug");
+    const { searchParams } = new URL(req.url);
+    const toolSlug = searchParams.get("toolSlug");
 
-  const where: Record<string, unknown> = {
-    companyId: ctx.companyId,
-    userId: ctx.userId,
-  };
-  if (toolSlug) where.toolSlug = toolSlug;
+    const where: Record<string, unknown> = {
+      companyId: ctx.companyId,
+      userId: ctx.userId,
+    };
+    if (toolSlug) where.toolSlug = toolSlug;
 
-  const presets = await prisma.toolPreset.findMany({
-    where,
-    orderBy: { updatedAt: "desc" },
-    take: 50,
-  });
+    const presets = await prisma.toolPreset.findMany({
+      where,
+      orderBy: { updatedAt: "desc" },
+      take: 50,
+    });
 
-  return NextResponse.json({ ok: true, presets });
+    return NextResponse.json({ ok: true, presets });
+  } catch (error: any) {
+    if (error?.status === 401 || error?.status === 403) {
+      return NextResponse.json({ ok: false, error: error.message || "forbidden" }, { status: error.status });
+    }
+    return NextResponse.json({ ok: true, presets: [] });
+  }
 }
 
 /** POST /api/tools/presets — create a new preset */

@@ -19,6 +19,7 @@
     "test": "vitest run",
     "smoke": "tsx scripts/smoke/run-smoke-tests.ts",
     "smoke:staging": "tsx scripts/smoke/run-staging-smoke.ts",
+    "qa:staging": "tsx scripts/qa/feature-inventory-smoke.ts",
     "prisma:generate": "prisma generate",
     "prisma:validate": "prisma validate",
     "prisma:migrate:deploy": "node scripts/with-neon-conn.mjs -- prisma migrate deploy",

@@ -44,21 +44,26 @@ export const GET = withRequestLogging(async function GET(req: Request) {
       select: {
         id: true,
         status: true,
-        grandTotal: true,
+        items: true,
+        vatRate: true,
         createdAt: true,
         clientEmail: true,
-        agreement: {
-          select: {
-            signedAt: true,
-          },
-        },
+        acceptedAt: true,
       },
       orderBy: { createdAt: "desc" },
     });
 
+    // Compute total from items JSON
+    function quoteTotal(q: any): number {
+      const items = Array.isArray(q.items) ? q.items : [];
+      const subtotal = items.reduce((s: number, i: any) => s + (Number(i.qty || i.quantity || 1) * Number(i.unitPrice || i.price || 0)), 0);
+      const vatRate = Number(q.vatRate || 0);
+      return subtotal * (1 + vatRate);
+    }
+
     // Categorize quotes
     const won = quotes.filter(
-      (q: any) => q.status === "accepted" || q.agreement?.signedAt
+      (q: any) => q.status === "accepted" || q.acceptedAt
     );
     const lost = quotes.filter((q: any) => q.status === "rejected" || q.status === "expired");
     const pending = quotes.filter(
@@ -68,7 +73,7 @@ export const GET = withRequestLogging(async function GET(req: Request) {
         (q.status !== "accepted" &&
           q.status !== "rejected" &&
           q.status !== "expired" &&
-          !q.agreement?.signedAt)
+          !q.acceptedAt)
     );
 
     const totalQuotes = quotes.length;
@@ -76,10 +81,10 @@ export const GET = withRequestLogging(async function GET(req: Request) {
     const lostCount = lost.length;
     const pendingCount = pending.length;
 
-    const wonValue = won.reduce((sum: number, q: any) => sum + (q.grandTotal || 0), 0);
-    const lostValue = lost.reduce((sum: number, q: any) => sum + (q.grandTotal || 0), 0);
-    const pendingValue = pending.reduce((sum: number, q: any) => sum + (q.grandTotal || 0), 0);
-    const totalValue = quotes.reduce((sum: number, q: any) => sum + (q.grandTotal || 0), 0);
+    const wonValue = won.reduce((sum: number, q: any) => sum + quoteTotal(q), 0);
+    const lostValue = lost.reduce((sum: number, q: any) => sum + quoteTotal(q), 0);
+    const pendingValue = pending.reduce((sum: number, q: any) => sum + quoteTotal(q), 0);
+    const totalValue = quotes.reduce((sum: number, q: any) => sum + quoteTotal(q), 0);
 
     // Win rate (excluding pending)
     const decidedQuotes = wonCount + lostCount;
@@ -108,11 +113,11 @@ export const GET = withRequestLogging(async function GET(req: Request) {
       }
 
       monthlyStats[month].total++;
-      monthlyStats[month].totalValue += quote.grandTotal || 0;
+      monthlyStats[month].totalValue += quoteTotal(quote) || 0;
 
       if (quote.status === "accepted" || quote.agreement?.signedAt) {
         monthlyStats[month].won++;
-        monthlyStats[month].wonValue += quote.grandTotal || 0;
+        monthlyStats[month].wonValue += quoteTotal(quote) || 0;
       } else if (quote.status === "rejected" || quote.status === "expired") {
         monthlyStats[month].lost++;
       } else {

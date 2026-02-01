@@ -25,7 +25,7 @@ export const GET = withRequestLogging(async function GET() {
         companyId: authCtx.companyId,
         OR: [
           { email: authCtx.email },
-          { userId: authCtx.userId },
+          { users: { some: { id: authCtx.userId } } },
         ],
       },
     });

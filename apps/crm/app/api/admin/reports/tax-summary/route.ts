@@ -41,7 +41,7 @@ export const GET = withRequestLogging(async function GET(req: Request) {
     const invoices = await db.invoice.findMany({
       where: {
         companyId,
-        issuedAt: {
+        createdAt: {
           gte: startDate,
           lte: endDate,
         },
@@ -51,18 +51,18 @@ export const GET = withRequestLogging(async function GET(req: Request) {
         invoiceNumber: true,
         status: true,
         subtotal: true,
-        vatTotal: true,
-        grandTotal: true,
-        issuedAt: true,
+        vat: true,
+        total: true,
+        createdAt: true,
       },
-      orderBy: { issuedAt: "asc" },
+      orderBy: { createdAt: "asc" },
     });
 
     // Group by month
     const monthlyBreakdown: Record<string, any> = {};
 
     invoices.forEach((invoice: any) => {
-      const month = new Date(invoice.issuedAt).toISOString().slice(0, 7);
+      const month = new Date(invoice.createdAt).toISOString().slice(0, 7);
 
       if (!monthlyBreakdown[month]) {
         monthlyBreakdown[month] = {
@@ -76,8 +76,8 @@ export const GET = withRequestLogging(async function GET(req: Request) {
 
       monthlyBreakdown[month].count++;
       monthlyBreakdown[month].subtotal += invoice.subtotal || 0;
-      monthlyBreakdown[month].vat += invoice.vatTotal || 0;
-      monthlyBreakdown[month].total += invoice.grandTotal || 0;
+      monthlyBreakdown[month].vat += invoice.vat || 0;
+      monthlyBreakdown[month].total += invoice.total || 0;
     });
 
     const months = Object.values(monthlyBreakdown).sort((a: any, b: any) =>
@@ -86,8 +86,8 @@ export const GET = withRequestLogging(async function GET(req: Request) {
 
     // Calculate totals
     const totalSubtotal = invoices.reduce((sum: number, inv: any) => sum + (inv.subtotal || 0), 0);
-    const totalVAT = invoices.reduce((sum: number, inv: any) => sum + (inv.vatTotal || 0), 0);
-    const totalGross = invoices.reduce((sum: number, inv: any) => sum + (inv.grandTotal || 0), 0);
+    const totalVAT = invoices.reduce((sum: number, inv: any) => sum + (inv.vat || 0), 0);
+    const totalGross = invoices.reduce((sum: number, inv: any) => sum + (inv.total || 0), 0);
 
     // Get company VAT rate for reference
     const company = await db.company.findUnique({

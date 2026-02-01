@@ -37,7 +37,7 @@ export const GET = withRequestLogging(async function GET(req: Request) {
     const invoices = await db.invoice.findMany({
       where: {
         companyId,
-        issuedAt: {
+        createdAt: {
           gte: startDate,
           lte: endDate,
         },
@@ -47,24 +47,24 @@ export const GET = withRequestLogging(async function GET(req: Request) {
         invoiceNumber: true,
         status: true,
         subtotal: true,
-        vatTotal: true,
-        grandTotal: true,
-        issuedAt: true,
-        InvoicePayment: {
+        vat: true,
+        total: true,
+        createdAt: true,
+        invoicePayments: {
           select: {
             amount: true,
             paidAt: true,
           },
         },
       },
-      orderBy: { issuedAt: "asc" },
+      orderBy: { createdAt: "asc" },
     });
 
     // Group invoices by period
     const periods: Record<string, any> = {};
 
     invoices.forEach((invoice: any) => {
-      const date = new Date(invoice.issuedAt);
+      const date = new Date(invoice.createdAt);
       let periodKey = "";
 
       if (groupBy === "year") {
@@ -89,20 +89,20 @@ export const GET = withRequestLogging(async function GET(req: Request) {
       }
 
       periods[periodKey].invoicesIssued++;
-      periods[periodKey].totalIssued += invoice.grandTotal || 0;
+      periods[periodKey].totalIssued += invoice.total || 0;
 
       // Calculate paid amount
-      const paidAmount = invoice.InvoicePayment.reduce(
+      const paidAmount = invoice.invoicePayments.reduce(
         (sum: number, payment: { amount: number | null }) => sum + (payment.amount || 0),
         0
       );
 
-      if (paidAmount >= (invoice.grandTotal || 0)) {
+      if (paidAmount >= (invoice.total || 0)) {
         periods[periodKey].invoicesPaid++;
       }
 
       periods[periodKey].totalPaid += paidAmount;
-      periods[periodKey].outstanding += (invoice.grandTotal || 0) - paidAmount;
+      periods[periodKey].outstanding += (invoice.total || 0) - paidAmount;
     });
 
     // Convert to sorted array
@@ -116,16 +116,16 @@ export const GET = withRequestLogging(async function GET(req: Request) {
       }));
 
     // Calculate summary
-    const totalIssued = invoices.reduce((sum: number, inv: any) => sum + (inv.grandTotal || 0), 0);
+    const totalIssued = invoices.reduce((sum: number, inv: any) => sum + (inv.total || 0), 0);
     const totalPaid = invoices.reduce((sum: number, inv: any) => {
-      const paid = inv.InvoicePayment.reduce((s: number, p: { amount: number | null }) => s + (p.amount || 0), 0);
+      const paid = inv.invoicePayments.reduce((s: number, p: { amount: number | null }) => s + (p.amount || 0), 0);
       return sum + paid;
     }, 0);
     const totalOutstanding = totalIssued - totalPaid;
 
     const paidInvoices = invoices.filter((inv: any) => {
-      const paid = inv.InvoicePayment.reduce((s: number, p: { amount: number | null }) => s + (p.amount || 0), 0);
-      return paid >= (inv.grandTotal || 0);
+      const paid = inv.invoicePayments.reduce((s: number, p: { amount: number | null }) => s + (p.amount || 0), 0);
+      return paid >= (inv.total || 0);
     });
 
     return jsonOk({

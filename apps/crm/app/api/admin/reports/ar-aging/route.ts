@@ -35,7 +35,7 @@ export const GET = withRequestLogging(async function GET() {
         client: {
           select: { id: true, name: true, email: true },
         },
-        InvoicePayment: {
+        invoicePayments: {
           select: { amount: true },
         },
       },
@@ -67,11 +67,11 @@ export const GET = withRequestLogging(async function GET() {
       );
 
       // Calculate outstanding amount
-      const totalPaid = invoice.InvoicePayment.reduce(
+      const totalPaid = invoice.invoicePayments.reduce(
         (sum: number, payment: { amount: number | null }) => sum + (payment.amount || 0),
         0
       );
-      const outstanding = (invoice.grandTotal || 0) - totalPaid;
+      const outstanding = (invoice.total || 0) - totalPaid;
 
       if (outstanding <= 0) continue; // Skip if fully paid
 
@@ -80,12 +80,12 @@ export const GET = withRequestLogging(async function GET() {
         invoiceNumber: invoice.invoiceNumber,
         client: invoice.client?.name || "Unknown",
         clientEmail: invoice.client?.email,
-        total: invoice.grandTotal,
+        total: invoice.total,
         paid: totalPaid,
         outstanding,
         dueAt: invoice.dueAt,
         daysOverdue,
-        issuedAt: invoice.issuedAt,
+        createdAt: invoice.createdAt,
       };
 
       // Categorize by days overdue

@@ -36,7 +36,7 @@ export const GET = withRequestLogging(async function GET(req: Request) {
     const engineer = await client.engineer.findFirst({
       where: {
         companyId: authCtx.companyId,
-        OR: [{ email: authCtx.email }, { userId: authCtx.userId }],
+        OR: [{ email: authCtx.email }, { users: { some: { id: authCtx.userId } } }],
       },
     });
 
@@ -116,7 +116,7 @@ export const POST = withRequestLogging(async function POST(req: Request) {
     const engineer = await client.engineer.findFirst({
       where: {
         companyId: authCtx.companyId,
-        OR: [{ email: authCtx.email }, { userId: authCtx.userId }],
+        OR: [{ email: authCtx.email }, { users: { some: { id: authCtx.userId } } }],
       },
     });
 

@@ -40,7 +40,7 @@ export const GET = withRequestLogging(async function GET(req: Request) {
         companyId: authCtx.companyId,
         OR: [
           { email: authCtx.email },
-          { userId: authCtx.userId },
+          { users: { some: { id: authCtx.userId } } },
         ],
       },
     });

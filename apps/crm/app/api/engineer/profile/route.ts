@@ -29,7 +29,6 @@ export const GET = withRequestLogging(async function GET() {
         id: true,
         email: true,
         name: true,
-        phone: true,
         role: true,
         createdAt: true,
         updatedAt: true,
@@ -46,7 +45,7 @@ export const GET = withRequestLogging(async function GET() {
       engineer = await client.engineer.findFirst({
         where: {
           OR: [
-            { userId: authCtx.userId },
+            { users: { some: { id: authCtx.userId } } },
             { email: authCtx.email },
           ],
           companyId: authCtx.companyId,
@@ -56,11 +55,9 @@ export const GET = withRequestLogging(async function GET() {
           name: true,
           email: true,
           phone: true,
-          hourlyRate: true,
-          skills: true,
-          certifications: true,
-          notes: true,
-          status: true,
+          costRatePerHour: true,
+          chargeRatePerHour: true,
+          isActive: true,
           createdAt: true,
         },
       });
@@ -73,7 +70,6 @@ export const GET = withRequestLogging(async function GET() {
           id: user.id,
           email: user.email,
           name: user.name,
-          phone: user.phone,
           role: user.role,
           createdAt: user.createdAt,
         },
@@ -114,14 +110,12 @@ export const PATCH = withRequestLogging(async function PATCH(req: Request) {
       where: { id: authCtx.userId },
       data: {
         name: body.name ? String(body.name).trim() : undefined,
-        phone: body.phone ? String(body.phone).trim() : undefined,
         updatedAt: new Date(),
       },
       select: {
         id: true,
         email: true,
         name: true,
-        phone: true,
         role: true,
       },
     });
