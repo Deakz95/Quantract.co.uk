@@ -41,7 +41,7 @@ export default function ClientHome() {
             <Link className="text-sm font-semibold text-[var(--foreground)] hover:underline" href="/client/certificates">
               Certificates
             </Link>
-            <Link className="text-sm font-semibold text-[var(--foreground)] hover:underline" href="/client/hub/timeline">
+            <Link className="text-sm font-semibold text-[var(--foreground)] hover:underline" href="/client/timeline">
               Timeline
             </Link>
             <Link className="text-sm font-semibold text-[var(--foreground)] hover:underline" href="/client/troubleshoot">

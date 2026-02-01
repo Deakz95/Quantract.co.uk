@@ -39,7 +39,7 @@ export default function EngineerHome() {
           <CardTitle>Job Locations</CardTitle>
         </CardHeader>
         <CardContent>
-          <JobsMap />
+          <JobsMap defaultTodayOnly />
         </CardContent>
       </Card>
     </div>

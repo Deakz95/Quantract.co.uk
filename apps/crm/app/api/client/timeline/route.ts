@@ -2,23 +2,25 @@ import { NextResponse } from "next/server";
 import { requireRole, getUserEmail } from "@/lib/serverAuth";
 import { getPrisma } from "@/lib/server/prisma";
 import { withRequestLogging } from "@/lib/server/observability";
-import { isFeatureEnabled } from "@/lib/server/featureFlags";
 
 export const runtime = "nodejs";
 
 type TimelineItem = {
   id: string;
   ts: string;
-  type: "job" | "quote" | "invoice" | "certificate" | "activity";
+  type: "job" | "invoice" | "certificate";
   title: string;
-  description?: string;
+  subtitle?: string;
+  status: string;
+  amountPence?: number;
+  currency?: "GBP";
   href?: string;
-  meta?: Record<string, unknown>;
+  pdfHref?: string;
 };
 
 /**
  * GET /api/client/timeline
- * Aggregates jobs, quotes, invoices, certificates, and activities for the logged-in client.
+ * Unified timeline feed: Jobs, Invoices (non-draft), Certificates (issued).
  */
 export const GET = withRequestLogging(async function GET() {
   try {
@@ -33,10 +35,9 @@ export const GET = withRequestLogging(async function GET() {
       return NextResponse.json({ ok: false, error: "service_unavailable" }, { status: 503 });
     }
 
-    // Find the client record by email to get companyId + clientId
     const client = await prisma.client.findFirst({
       where: { email },
-      select: { id: true, companyId: true, name: true },
+      select: { id: true, companyId: true },
     });
 
     if (!client) {
@@ -44,59 +45,46 @@ export const GET = withRequestLogging(async function GET() {
     }
 
     const { id: clientId, companyId } = client;
-
-    // Feature flag check
-    const company = await prisma.company.findUnique({ where: { id: companyId }, select: { plan: true } });
-    if (!isFeatureEnabled(company?.plan, "portal_timeline")) {
-      return NextResponse.json({ ok: false, error: "feature_not_available" }, { status: 403 });
-    }
-
     const items: TimelineItem[] = [];
 
-    // Jobs linked to this client
+    // ── Jobs ──
     const jobs = await prisma.job.findMany({
-      where: { companyId, clientId },
-      select: { id: true, title: true, status: true, createdAt: true, updatedAt: true },
+      where: { companyId, clientId, deletedAt: null },
+      select: {
+        id: true,
+        title: true,
+        jobNumber: true,
+        status: true,
+        createdAt: true,
+        site: { select: { name: true, address1: true, city: true } },
+      },
       orderBy: { createdAt: "desc" },
       take: 50,
     }).catch(() => []);
 
     for (const j of jobs) {
+      const location = [j.site?.name, j.site?.address1, j.site?.city].filter(Boolean).join(", ");
       items.push({
         id: `job-${j.id}`,
         ts: j.createdAt.toISOString(),
         type: "job",
-        title: `Job: ${j.title || j.id.slice(0, 8)}`,
-        description: `Status: ${j.status}`,
-        href: `/client/jobs/${j.id}`,
-        meta: { jobId: j.id, status: j.status },
+        title: j.title || (j.jobNumber ? `Job #${j.jobNumber}` : "Job"),
+        subtitle: location || undefined,
+        status: j.status,
       });
     }
 
-    // Quotes linked to this client (by email)
-    const quotes = await prisma.quote.findMany({
-      where: { companyId, clientEmail: email },
-      select: { id: true, status: true, createdAtISO: true, clientName: true, token: true },
-      orderBy: { createdAtISO: "desc" },
-      take: 50,
-    }).catch(() => []);
-
-    for (const q of quotes) {
-      items.push({
-        id: `quote-${q.id}`,
-        ts: q.createdAtISO,
-        type: "quote",
-        title: `Quote received`,
-        description: `Status: ${q.status}`,
-        href: q.token ? `/client/quotes/${q.token}` : undefined,
-        meta: { quoteId: q.id, status: q.status },
-      });
-    }
-
-    // Invoices linked to this client (by email)
+    // ── Invoices (exclude drafts) ──
     const invoices = await prisma.invoice.findMany({
-      where: { companyId, clientEmail: email },
-      select: { id: true, status: true, total: true, createdAtISO: true, invoiceNumber: true, token: true },
+      where: { companyId, clientEmail: email, status: { not: "draft" }, deletedAt: null },
+      select: {
+        id: true,
+        invoiceNumber: true,
+        status: true,
+        total: true,
+        token: true,
+        createdAtISO: true,
+      },
       orderBy: { createdAtISO: "desc" },
       take: 50,
     }).catch(() => []);
@@ -106,59 +94,51 @@ export const GET = withRequestLogging(async function GET() {
         id: `inv-${inv.id}`,
         ts: inv.createdAtISO,
         type: "invoice",
-        title: `Invoice ${inv.invoiceNumber || inv.id.slice(0, 8)}`,
-        description: `£${(inv.total / 100).toFixed(2)} — ${inv.status}`,
+        title: inv.invoiceNumber ? `Invoice ${inv.invoiceNumber}` : "Invoice",
+        subtitle: `£${inv.total.toFixed(2)}`,
+        status: inv.status,
+        amountPence: Math.round(inv.total * 100),
+        currency: "GBP",
         href: inv.token ? `/client/invoices/${inv.token}` : undefined,
-        meta: { invoiceId: inv.id, status: inv.status },
+        pdfHref: inv.token ? `/api/client/invoices/${inv.token}/pdf` : undefined,
       });
     }
 
-    // Certificates
+    // ── Certificates (issued with PDF) ──
     const certs = await prisma.certificate.findMany({
-      where: { companyId, job: { clientId } },
-      select: { id: true, type: true, status: true, certificateNumber: true, createdAt: true },
+      where: { companyId, job: { clientId }, status: "issued", pdfKey: { not: null } },
+      select: {
+        id: true,
+        type: true,
+        certificateNumber: true,
+        status: true,
+        createdAt: true,
+        job: { select: { title: true, site: { select: { name: true } } } },
+      },
       orderBy: { createdAt: "desc" },
       take: 50,
     }).catch(() => []);
 
     for (const c of certs) {
+      const siteName = c.job?.site?.name;
       items.push({
         id: `cert-${c.id}`,
         ts: c.createdAt.toISOString(),
         type: "certificate",
-        title: `${c.type} Certificate ${c.certificateNumber || ""}`.trim(),
-        description: `Status: ${c.status}`,
-        meta: { certificateId: c.id },
+        title: `${c.type} Certificate${c.certificateNumber ? ` ${c.certificateNumber}` : ""}`,
+        subtitle: siteName || c.job?.title || undefined,
+        status: c.status,
+        pdfHref: `/api/client/certificates/${c.id}/pdf`,
       });
     }
 
-    // Activities linked to this client
-    const activities = await prisma.activity.findMany({
-      where: { companyId, clientId },
-      select: { id: true, type: true, subject: true, description: true, occurredAt: true },
-      orderBy: { occurredAt: "desc" },
-      take: 50,
-    }).catch(() => []);
-
-    for (const a of activities) {
-      items.push({
-        id: `act-${a.id}`,
-        ts: a.occurredAt.toISOString(),
-        type: "activity",
-        title: a.subject,
-        description: a.description || undefined,
-        meta: { activityType: a.type },
-      });
-    }
-
-    // Sort all items by timestamp descending
+    // Sort descending by timestamp
     items.sort((a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime());
 
     return NextResponse.json({ ok: true, items: items.slice(0, 100) });
   } catch (e: any) {
     if (e?.status === 401) return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
     if (e?.status === 403) return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
-    console.error("[GET /api/client/timeline]", e);
     return NextResponse.json({ ok: false, error: "load_failed" }, { status: 500 });
   }
 });

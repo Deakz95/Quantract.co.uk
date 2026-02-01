@@ -34,7 +34,9 @@ export async function GET() {
         title: true,
         status: true,
         jobNumber: true,
-        site: { select: { latitude: true, longitude: true } },
+        scheduledAt: true,
+        client: { select: { name: true } },
+        site: { select: { latitude: true, longitude: true, address1: true, city: true, postcode: true } },
       },
       take: 200,
       orderBy: { createdAt: "desc" },
@@ -49,6 +51,10 @@ export async function GET() {
       lat: j.site.latitude,
       lng: j.site.longitude,
       href: isEngineer ? `/engineer/jobs/${j.id}` : `/admin/jobs/${j.id}`,
+      clientName: j.client?.name || null,
+      address: [j.site.address1, j.site.city].filter(Boolean).join(", ") || null,
+      postcode: j.site.postcode || null,
+      scheduledAt: j.scheduledAt?.toISOString() || null,
     }));
 
     return NextResponse.json({ ok: true, pins });

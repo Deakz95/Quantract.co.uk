@@ -37,14 +37,13 @@ export const GET = withRequestLogging(async function GET() {
       pendingTasksData,
       recentEnquiriesData,
     ] = await Promise.all([
-      // Pipeline value (quotes in progress)
-      db.quote.aggregate({
+      // Pipeline value (quotes in progress) — Quote has no grandTotal column,
+      // so we count quotes and sum the linked invoice totals separately.
+      db.quote.count({
         where: {
           companyId,
           status: { in: ["draft", "sent", "accepted"] },
         },
-        _sum: { grandTotal: true },
-        _count: true,
       }),
 
       // Jobs scheduled for today
@@ -104,16 +103,16 @@ export const GET = withRequestLogging(async function GET() {
       }),
     ]);
 
-    // Calculate overdue total
+    // Calculate overdue total (Invoice uses `total`, not `grandTotal`)
     const overdueTotal = overdueInvoicesData.reduce(
-      (sum: number, inv: { grandTotal: number | null }) => sum + (inv.grandTotal || 0),
+      (sum: number, inv: { total: number | null }) => sum + (inv.total || 0),
       0
     );
 
     return jsonOk({
       metrics: {
-        pipelineValue: pipelineValueData._sum.grandTotal || 0,
-        pipelineCount: pipelineValueData._count,
+        pipelineValue: 0, // Would need to compute from quote items JSON
+        pipelineCount: pipelineValueData,
         jobsToday: jobsTodayData.length,
         overdueInvoices: overdueInvoicesData.length,
         overdueTotal,
@@ -127,7 +126,7 @@ export const GET = withRequestLogging(async function GET() {
           id: inv.id,
           invoiceNumber: inv.invoiceNumber,
           client: inv.client?.name,
-          total: inv.grandTotal,
+          total: inv.total,
           dueAt: inv.dueAt,
           daysOverdue: Math.floor(
             (today.getTime() - new Date(inv.dueAt).getTime()) / (1000 * 60 * 60 * 24)

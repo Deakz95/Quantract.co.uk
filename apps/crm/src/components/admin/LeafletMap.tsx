@@ -3,16 +3,7 @@
 import { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-
-type MapPin = {
-  id: string;
-  type: "job" | "enquiry";
-  status: string;
-  label: string;
-  lat: number;
-  lng: number;
-  href: string;
-};
+import type { MapPin } from "./JobsMap";
 
 const STATUS_COLORS: Record<string, string> = {
   quoted: "#9333ea",
@@ -40,7 +31,7 @@ function createIcon(color: string) {
   });
 }
 
-export default function LeafletMap({ pins }: { pins: MapPin[] }) {
+export default function LeafletMap({ pins, onPinClick }: { pins: MapPin[]; onPinClick?: (pin: MapPin) => void }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<L.LayerGroup | null>(null);
@@ -78,14 +69,20 @@ export default function LeafletMap({ pins }: { pins: MapPin[] }) {
 
     const markers: L.Marker[] = [];
     for (const pin of pins) {
-      const marker = L.marker([pin.lat, pin.lng], { icon: createIcon(pinColor(pin)) })
-        .bindPopup(
+      const marker = L.marker([pin.lat, pin.lng], { icon: createIcon(pinColor(pin)) });
+
+      if (onPinClick) {
+        marker.on("click", () => onPinClick(pin));
+      } else {
+        marker.bindPopup(
           `<div style="font-family:system-ui;font-size:13px;">
             <strong>${pin.label}</strong><br/>
             <span style="text-transform:capitalize;color:#666;">${pin.status.replace(/_/g, " ")}</span><br/>
             <a href="${pin.href}" style="color:#2563eb;text-decoration:underline;font-size:12px;">Open</a>
           </div>`
         );
+      }
+
       layer.addLayer(marker);
       markers.push(marker);
     }
@@ -94,7 +91,7 @@ export default function LeafletMap({ pins }: { pins: MapPin[] }) {
       const group = L.featureGroup(markers);
       map.fitBounds(group.getBounds().pad(0.1));
     }
-  }, [pins]);
+  }, [pins, onPinClick]);
 
   return (
     <div
