@@ -50,10 +50,12 @@ export default function EngineerProfilePage() {
           phone: data.profile.user.phone || "",
         });
       } else {
-        setError(data.error || "Failed to load profile");
+        console.error("[EngineerProfile] load failed:", data.error);
+        setError("load_failed");
       }
-    } catch {
-      setError("Network error. Please try again.");
+    } catch (e) {
+      console.error("[EngineerProfile] load error:", e);
+      setError("load_failed");
     } finally {
       setLoading(false);
     }
@@ -72,10 +74,12 @@ export default function EngineerProfilePage() {
       if (data.ok) {
         await loadProfile();
       } else {
-        setError(data.error || "Failed to save");
+        console.error("[EngineerProfile] save failed:", data.error);
+        setError("save_failed");
       }
-    } catch {
-      setError("Network error. Please try again.");
+    } catch (e) {
+      console.error("[EngineerProfile] save error:", e);
+      setError("save_failed");
     } finally {
       setSaving(false);
     }
@@ -93,11 +97,11 @@ export default function EngineerProfilePage() {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
         <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
-        <h3 className="text-lg font-semibold text-[var(--foreground)] mb-2">Unable to load profile</h3>
-        <p className="text-sm text-[var(--muted-foreground)] mb-4">{error}</p>
+        <h3 className="text-lg font-semibold text-[var(--foreground)] mb-2">Couldn&apos;t load your profile right now.</h3>
+        <p className="text-sm text-[var(--muted-foreground)] mb-4">Check signal and try again.</p>
         <Button onClick={loadProfile} variant="outline">
           <RefreshCw className="w-4 h-4 mr-2" />
-          Try Again
+          Retry
         </Button>
       </div>
     );
@@ -110,10 +114,10 @@ export default function EngineerProfilePage() {
         <p className="text-sm text-[var(--muted-foreground)]">View and update your profile information</p>
       </div>
 
-      {error && (
+      {error === "save_failed" && (
         <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-600 text-sm flex items-center gap-2">
           <AlertCircle className="w-4 h-4" />
-          {error}
+          Couldn&apos;t save your changes. Please try again.
         </div>
       )}
 
