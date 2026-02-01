@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireCompanyContext, getEffectiveRole } from "@/lib/serverAuth";
 import { getPrisma } from "@/lib/server/prisma";
 import { clampMoney } from "@/lib/invoiceMath";
+import { calcTotals } from "@/lib/calcTotals";
 import { withRequestLogging, logError } from "@/lib/server/observability";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { randomBytes, randomUUID } from "crypto";
@@ -96,11 +97,18 @@ export const POST = withRequestLogging(async function POST(req: Request) {
         return NextResponse.json({ ok: true, invoice: existingInvoice });
       }
 
-      // Compute totals from items JSON
+      // Compute totals from items JSON using shared calculator
       const items = (quote.items as any[]) || [];
-      const subtotal = items.reduce((sum: number, item: any) => sum + (Number(item.total) || Number(item.unitPrice || 0) * Number(item.qty || item.quantity || 1)), 0);
-      const vat = clampMoney(subtotal * (quote.vatRate || 0));
-      const total = clampMoney(subtotal + vat);
+      const computed = calcTotals(
+        items.map((it: any) => ({
+          qty: Number(it.qty || it.quantity || 0),
+          unitPrice: Number(it.unitPrice || 0),
+        })),
+        quote.vatRate ?? 0.2,
+      );
+      const subtotal = computed.subtotal;
+      const vat = computed.vat;
+      const total = computed.total;
 
       // Resolve legal entity for numbering
       const resolved = await resolveLegalEntity({ jobId: null });

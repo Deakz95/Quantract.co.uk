@@ -2,6 +2,7 @@ import { test, expect } from "@playwright/test";
 import {
   createQuoteViaApi,
   generateInvoiceForQuote,
+  QA_TAG,
 } from "./_staging-helpers";
 
 test.describe("Admin launch spine", () => {
@@ -14,7 +15,7 @@ test.describe("Admin launch spine", () => {
 
     // 2. Create client
     await page.goto("/admin/clients/new");
-    await page.getByPlaceholder("e.g. Jane Doe").fill("E2E Test Client");
+    await page.getByPlaceholder("e.g. Jane Doe").fill(`E2E Test Client [${QA_TAG}]`);
     await page.getByPlaceholder("jane@example.com").fill(`e2e-${Date.now()}@test.com`);
     await page.getByPlaceholder("07").fill("07000000000");
     await page.getByRole("button", { name: /create client/i }).click();
@@ -26,7 +27,7 @@ test.describe("Admin launch spine", () => {
     const siteRes = await page.request.post("/api/admin/sites", {
       data: {
         clientId,
-        name: "E2E Test Site",
+        name: `E2E Test Site [${QA_TAG}]`,
         postcode: "SW1A 1AA",
         latitude: 51.5014,
         longitude: -0.1419,
@@ -60,7 +61,7 @@ test.describe("Admin launch spine", () => {
       return select.options[select.options.length - 1].value;
     }, "select");
     await clientSelect.selectOption(lastOptionValue);
-    await page.getByPlaceholder("e.g. Kitchen rewire").fill("E2E Test Job");
+    await page.getByPlaceholder("e.g. Kitchen rewire").fill(`E2E Test Job [${QA_TAG}]`);
     await page.getByRole("button", { name: /create job/i }).click();
     await page.waitForURL(/\/admin\/jobs\//);
     const jobId = page.url().split("/admin/jobs/")[1]?.split(/[?#]/)[0];
@@ -68,7 +69,7 @@ test.describe("Admin launch spine", () => {
 
     // 5. Create quote via API (faster and more reliable than UI)
     const apiQuote = await createQuoteViaApi(page, {
-      clientName: "E2E Quote Client",
+      clientName: `E2E Quote Client [${QA_TAG}]`,
       clientEmail: `e2e-quote-${Date.now()}@test.com`,
     });
     const quoteId = apiQuote.id;

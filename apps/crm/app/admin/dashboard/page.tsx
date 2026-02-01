@@ -140,6 +140,7 @@ const DEFAULT_WIDGETS: Widget[] = [
   { id: 'breakEven', type: 'breakEven', title: 'Break-even Tracker', description: 'Monthly break-even progress', size: 'medium' },
   { id: 'recentActivity', type: 'recentActivity', title: 'Recent Activity', description: 'Latest business activity', size: 'medium' },
   { id: 'teamOverview', type: 'teamOverview', title: 'Team Overview', description: 'Team member status', size: 'medium' },
+  { id: 'jobsMap', type: 'jobsMap', title: 'Jobs Map', description: 'Geographic job distribution', size: 'large' },
   { id: 'performance', type: 'performance', title: 'Performance Banner', description: 'Business performance summary', size: 'full' },
 ];
 
@@ -148,7 +149,6 @@ const AVAILABLE_WIDGETS: Widget[] = [
   { id: 'breakEven', type: 'breakEven', title: 'Break-even Tracker', description: 'Monthly break-even progress', size: 'medium' },
   { id: 'calendar', type: 'calendar', title: 'Calendar', description: 'Upcoming appointments', size: 'medium' },
   { id: 'invoiceChart', type: 'invoiceChart', title: 'Invoice Chart', description: 'Monthly invoice breakdown', size: 'medium' },
-  { id: 'jobsMap', type: 'jobsMap', title: 'Jobs Map', description: 'Geographic job distribution', size: 'large' },
 ];
 
 const quickActions = [

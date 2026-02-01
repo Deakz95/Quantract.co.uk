@@ -3,6 +3,9 @@ import { expect, type Page } from "@playwright/test";
 export const BASE_URL =
   process.env.PLAYWRIGHT_BASE_URL || "https://crm.quantract.co.uk";
 
+/** Tag embedded in all QA-created records for reliable cleanup. */
+export const QA_TAG = "AUTOMATED_QA";
+
 /**
  * Create a quote via the admin API. Page must already be authenticated
  * (handled by global setup + storageState).
@@ -12,7 +15,7 @@ export async function createQuoteViaApi(
   params?: { clientName?: string; clientEmail?: string }
 ) {
   const uniq = Date.now();
-  const clientName = params?.clientName || `Test Client ${uniq}`;
+  const clientName = params?.clientName || `Test Client ${uniq} [${QA_TAG}]`;
   const clientEmail = params?.clientEmail || `client${uniq}@example.com`;
 
   const res = await page.request.post("/api/admin/quotes", {
@@ -22,7 +25,7 @@ export async function createQuoteViaApi(
       vatRate: 0.2,
       items: [{ id: "1", name: "Line item", qty: 1, unit: 100, total: 100 }],
       status: "draft",
-      notes: "Created by Playwright E2E",
+      notes: `Created by Playwright E2E [${QA_TAG}]`,
     },
   });
 

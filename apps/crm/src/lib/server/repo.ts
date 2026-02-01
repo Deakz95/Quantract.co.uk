@@ -342,6 +342,8 @@ function toQuote(row: any): Quote {
   return {
     id: row.id,
     token: row.token,
+    quoteNumber: row.quoteNumber ?? undefined,
+    legalEntityId: row.legalEntityId ?? undefined,
     invoiceNumber: row.invoiceNumber ?? undefined,
     companyId: row.companyId ?? undefined,
     clientId: row.clientId ?? undefined,
@@ -2565,7 +2567,8 @@ export async function ensureJobForQuote(quoteId: string): Promise<Job | null> {
             return `${clientName} — ${desc}`;
           }
           if (clientName) return clientName;
-          return `Job from Quote ${quoteId.slice(0, 8)}`;
+          if ((q as any).quoteNumber) return `Job — ${(q as any).quoteNumber}`;
+          return "Job";
         })(),
         status: "new",
         budgetSubtotal: totals.subtotal,

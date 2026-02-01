@@ -13,7 +13,23 @@ export const GET = withRequestLogging(
     const inv = await repo.getInvoiceById(invoiceId);
     if (!inv) return new Response("Not found", { status: 404 });
     const brand = await repo.getBrandContextForCurrentCompany();
-    const pdf = await renderInvoicePdf(inv, brand);
+
+    // Fetch line items from linked quote if available
+    let lineItems: Array<{ description?: string; qty: number; unitPrice: number }> | undefined;
+    let vatRate = 0.2;
+    if (inv.quoteId) {
+      const quote = await repo.getQuoteById(inv.quoteId);
+      if (quote) {
+        lineItems = (quote.items || []).map((it: any) => ({
+          description: it.description || "",
+          qty: Number(it.qty || it.quantity || 0),
+          unitPrice: Number(it.unitPrice || 0),
+        }));
+        vatRate = quote.vatRate ?? 0.2;
+      }
+    }
+
+    const pdf = await renderInvoicePdf(inv, brand, { lineItems, vatRate });
     return new Response(pdf, {
       status: 200,
       headers: {

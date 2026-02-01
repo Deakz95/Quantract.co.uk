@@ -1,20 +1,25 @@
 /**
  * Purge stale E2E / QA test data from the database.
- * Deletes clients matching test naming patterns and cascades to related records.
+ * Deletes clients matching test naming patterns or the AUTOMATED_QA tag,
+ * and cascades to related records.
  * Usage: npm run qa:purge-test-data
  */
 import { PrismaClient } from "@prisma/client";
+
+/** Must match the QA_TAG constant used in fixture creation scripts. */
+const QA_TAG = "AUTOMATED_QA";
 
 async function main() {
   const prisma = new PrismaClient();
 
   try {
-    // Find test clients
+    // Find test clients by legacy name/email patterns OR the QA_TAG
     const testClients = await prisma.client.findMany({
       where: {
         OR: [
           { name: { startsWith: "E2E Test" } },
           { name: { startsWith: "ZZZ QA Smoke" } },
+          { name: { contains: `[${QA_TAG}]` } },
           { email: { startsWith: "e2e-", endsWith: "@test.com" } },
         ],
       },
@@ -57,6 +62,16 @@ async function main() {
 
     const clients = await prisma.client.deleteMany({ where: { id: { in: clientIds } } });
     console.log(`  Deleted ${clients.count} clients`);
+
+    // Also purge orphaned records tagged with QA_TAG but not linked to a matched client
+    const orphanQuotes = await prisma.quote.deleteMany({ where: { clientName: { contains: `[${QA_TAG}]` } } }).catch(() => ({ count: 0 }));
+    if (orphanQuotes.count) console.log(`  Deleted ${orphanQuotes.count} orphan tagged quotes`);
+
+    const orphanJobs = await prisma.job.deleteMany({ where: { title: { contains: `[${QA_TAG}]` } } }).catch(() => ({ count: 0 }));
+    if (orphanJobs.count) console.log(`  Deleted ${orphanJobs.count} orphan tagged jobs`);
+
+    const orphanSites = await prisma.site.deleteMany({ where: { name: { contains: `[${QA_TAG}]` } } }).catch(() => ({ count: 0 }));
+    if (orphanSites.count) console.log(`  Deleted ${orphanSites.count} orphan tagged sites`);
 
     console.log("Purge complete.");
   } finally {

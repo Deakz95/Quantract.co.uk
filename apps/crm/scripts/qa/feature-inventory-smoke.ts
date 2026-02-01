@@ -151,6 +151,9 @@ let engineerId: string;
 
 const ts = Date.now();
 
+/** Tag embedded in all QA-created records for reliable cleanup. */
+const QA_TAG = "AUTOMATED_QA";
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -236,7 +239,7 @@ async function main() {
   section("CRM Core: Clients, Contacts, Enquiries, Deals");
 
   clientEmail = `smoke-${ts}@test.quantract.co.uk`;
-  clientName = `ZZZ QA Smoke ${ts}`;
+  clientName = `ZZZ QA Smoke ${ts} [${QA_TAG}]`;
 
   await smoke("POST /api/admin/clients -> create client", async () => {
     const res = await api("POST", "/api/admin/clients", {
@@ -265,7 +268,7 @@ async function main() {
     const res = await api("POST", "/api/admin/contacts", {
       clientId,
       firstName: `QA`,
-      lastName: `Contact ${ts}`,
+      lastName: `Contact ${ts} [${QA_TAG}]`,
       email: `qa-contact-${ts}@test.quantract.co.uk`,
     });
     await assertStatus(res, [200, 201], "POST", "/api/admin/contacts");
@@ -288,7 +291,7 @@ async function main() {
     assert(stageId, "no stages found — cannot create enquiry");
     const res = await api("POST", "/api/admin/enquiries", {
       stageId,
-      name: `QA Enquiry ${ts}`,
+      name: `QA Enquiry ${ts} [${QA_TAG}]`,
       email: `qa-enquiry-${ts}@test.quantract.co.uk`,
     });
     await assertStatus(res, [200, 201], "POST", "/api/admin/enquiries");
@@ -321,7 +324,7 @@ async function main() {
     const res = await api("POST", "/api/admin/jobs", {
       manual: true,
       clientId,
-      title: `QA Smoke Job ${ts}`,
+      title: `QA Smoke Job ${ts} [${QA_TAG}]`,
     });
     await assertStatus(res, [200, 201], "POST", "/api/admin/jobs");
     const json = await res.json();
@@ -359,6 +362,7 @@ async function main() {
     const res = await api("POST", "/api/admin/quotes", {
       clientName,
       clientEmail,
+      notes: `[${QA_TAG}]`,
       items: [{ description: "QA smoke test item", qty: 1, unitPrice: 100 }],
     });
     await assertStatus(res, [200, 201], "POST", "/api/admin/quotes");
@@ -444,7 +448,7 @@ async function main() {
           version: 1,
           type: "MWC",
           overview: {
-            siteName: "QA Smoke Site",
+            siteName: `QA Smoke Site [${QA_TAG}]`,
             installationAddress: "1 QA Street",
             clientName,
             clientEmail,
@@ -742,8 +746,9 @@ async function main() {
   const total = passed + failed + skipped;
   const elapsed = ((Date.now() - suiteStart) / 1000).toFixed(1);
   console.log(
-    `\n  Total: ${total} | Passed: ${passed} | Failed: ${failed} | Skipped: ${skipped} | ${elapsed}s\n`,
+    `\n  Total: ${total} | Passed: ${passed} | Failed: ${failed} | Skipped: ${skipped} | ${elapsed}s`,
   );
+  console.log(`\n  To cleanup: npm run qa:purge-test-data\n`);
   process.exit(failed > 0 ? 1 : 0);
 }
 

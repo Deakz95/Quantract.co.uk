@@ -39,7 +39,12 @@ export default function JobsMap() {
   useEffect(() => {
     fetch("/api/internal/dashboard/map-pins")
       .then((r) => r.json())
-      .then((d) => { if (d.ok) setPins(d.pins); })
+      .then((d) => {
+        if (d.ok) {
+          if (process.env.NODE_ENV === "development") console.log("[JobsMap] pins received:", d.pins?.length ?? 0);
+          setPins(d.pins);
+        }
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);

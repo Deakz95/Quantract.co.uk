@@ -241,7 +241,7 @@ export const POST = withRequestLogging(async function POST(req: Request) {
           quoteId,
           clientId: quote.clientId,
           siteId: quoteSiteId,
-          title: `Job from Quote ${quoteId.slice(0, 8)}`,
+          title: quote.quoteNumber ? `Job — ${quote.quoteNumber}` : (quote.clientName || "Job"),
           status: "pending",
           budgetSubtotal: 0,
           budgetVat: 0,

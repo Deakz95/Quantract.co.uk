@@ -142,6 +142,9 @@ let certificateId: string;
 
 const ts = Date.now();
 
+/** Tag embedded in all QA-created records for reliable cleanup. */
+const QA_TAG = "AUTOMATED_QA";
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -183,7 +186,7 @@ async function main() {
 
   // C) CRM Core -------------------------------------------------------------
   clientEmail = `smoke-${ts}@test.quantract.co.uk`;
-  clientName = "ZZZ Smoke Test Client";
+  clientName = `ZZZ Smoke Test Client [${QA_TAG}]`;
 
   await smoke("POST /api/admin/clients -> create client", async () => {
     const res = await api("POST", "/api/admin/clients", {
@@ -200,7 +203,7 @@ async function main() {
     const res = await api("POST", "/api/admin/jobs", {
       manual: true,
       clientId,
-      title: "Smoke Test Job",
+      title: `Smoke Test Job [${QA_TAG}]`,
     });
     await assertStatus(res, [200, 201], "POST", "/api/admin/jobs");
     const json = await res.json();
@@ -212,6 +215,7 @@ async function main() {
     const res = await api("POST", "/api/admin/quotes", {
       clientName,
       clientEmail,
+      notes: `[${QA_TAG}]`,
       items: [{ description: "Smoke test item", qty: 1, unitPrice: 100 }],
     });
     await assertStatus(res, [200, 201], "POST", "/api/admin/quotes");
@@ -259,7 +263,7 @@ async function main() {
         version: 1,
         type: "MWC",
         overview: {
-          siteName: "Smoke Test Site",
+          siteName: `Smoke Test Site [${QA_TAG}]`,
           installationAddress: "1 Test Street",
           clientName: clientName,
           clientEmail: clientEmail,
@@ -310,8 +314,9 @@ async function main() {
   // Summary -----------------------------------------------------------------
   const elapsed = ((Date.now() - suiteStart) / 1000).toFixed(1);
   console.log(
-    `\n  Total: ${passed + failed} | Passed: ${passed} | Failed: ${failed} | ${elapsed}s\n`,
+    `\n  Total: ${passed + failed} | Passed: ${passed} | Failed: ${failed} | ${elapsed}s`,
   );
+  console.log(`\n  To cleanup: npm run qa:purge-test-data\n`);
   process.exit(failed > 0 ? 1 : 0);
 }
 

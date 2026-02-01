@@ -13,6 +13,9 @@ export async function GET() {
     }
 
     const prisma = getPrisma();
+    if (!prisma) {
+      return NextResponse.json({ ok: false, error: "service_unavailable" }, { status: 503 });
+    }
     const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
 
     // Jobs with located sites

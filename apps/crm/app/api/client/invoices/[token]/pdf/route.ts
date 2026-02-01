@@ -15,7 +15,23 @@ export const GET = withRequestLogging(
   });
   if (invoice.status === "draft") return NextResponse.json({ error: "not_found" }, { status: 404 });
   const brand = await repo.getBrandContextForInvoiceToken(token);
-  const bytes = await renderInvoicePdf(invoice, brand);
+
+  // Fetch line items from linked quote if available
+  let lineItems: Array<{ description?: string; qty: number; unitPrice: number }> | undefined;
+  let vatRate = 0.2;
+  if (invoice.quoteId) {
+    const quote = await repo.getQuoteById(invoice.quoteId);
+    if (quote) {
+      lineItems = (quote.items || []).map((it: any) => ({
+        description: it.description || "",
+        qty: Number(it.qty || it.quantity || 0),
+        unitPrice: Number(it.unitPrice || 0),
+      }));
+      vatRate = quote.vatRate ?? 0.2;
+    }
+  }
+
+  const bytes = await renderInvoicePdf(invoice, brand, { lineItems, vatRate });
   return new NextResponse(bytes, {
     headers: {
       "content-type": "application/pdf",

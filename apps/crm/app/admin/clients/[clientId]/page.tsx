@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import * as repo from "@/lib/server/repo";
 import { prisma } from "@/lib/server/prisma";
+import { calcTotals } from "@/lib/calcTotals";
 
 function formatGBP(n: number) {
   try {
@@ -133,8 +134,7 @@ export default async function Page({ params }: Props) {
                   </thead>
                   <tbody>
                     {quotes.map((q) => {
-                      const subtotal = q.items.reduce((sum, it) => sum + it.qty * it.unitPrice, 0);
-                      const total = subtotal + subtotal * q.vatRate;
+                      const { total } = calcTotals(q.items, q.vatRate);
                       const ag = agreementByQuote.get(q.id);
 
                       return (

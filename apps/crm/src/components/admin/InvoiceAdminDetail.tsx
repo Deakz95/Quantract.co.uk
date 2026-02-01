@@ -172,19 +172,25 @@ export default function InvoiceAdminDetail({ invoiceId }: { invoiceId: string })
 
             <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4">
               <div className="text-xs font-semibold text-[var(--muted-foreground)]">Links</div>
-              <div className="mt-2 flex flex-wrap gap-2">
-                <Link href={`/api/client/invoices/${inv.token}/pdf`} target="_blank">
-                  <Button variant="secondary" type="button">PDF</Button>
-                </Link>
-                <Link href={clientLink} target="_blank">
-                  <Button variant="secondary" type="button">Client view</Button>
-                </Link>
-              </div>
-              <div className="mt-2">
-                <Button type="button" variant="secondary" className="text-xs" onClick={() => { navigator.clipboard.writeText(window.location.origin + clientLink); toast({ title: "Copied", description: "Client link copied to clipboard.", variant: "success" }); }}>
-                  Copy client link
-                </Button>
-              </div>
+              {inv.status === "draft" ? (
+                <div className="mt-2 text-xs text-[var(--muted-foreground)]">Available after you mark the invoice as Sent.</div>
+              ) : (
+                <>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <Link href={`/api/client/invoices/${inv.token}/pdf`} target="_blank">
+                      <Button variant="secondary" type="button">PDF</Button>
+                    </Link>
+                    <Link href={clientLink} target="_blank">
+                      <Button variant="secondary" type="button">Client view</Button>
+                    </Link>
+                  </div>
+                  <div className="mt-2">
+                    <Button type="button" variant="secondary" className="text-xs" onClick={() => { navigator.clipboard.writeText(window.location.origin + clientLink); toast({ title: "Copied", description: "Client link copied to clipboard.", variant: "success" }); }}>
+                      Copy client link
+                    </Button>
+                  </div>
+                </>
+              )}
               {inv.paymentUrl ? (
                 <div className="mt-2 text-xs text-[var(--muted-foreground)] break-all">Payment URL: {inv.paymentUrl}</div>
               ) : null}

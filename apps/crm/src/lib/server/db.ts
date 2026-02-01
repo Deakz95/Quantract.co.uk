@@ -6,6 +6,7 @@ import type { CertificateData, CertificateType } from "@/lib/certificates";
 export type { CertificateType } from "@/lib/certificates";
 
 import { clampMoney } from "@/lib/invoiceMath";
+import { calcTotals } from "@/lib/calcTotals";
 
 export type QuoteItem = {
   id: string;
@@ -21,6 +22,8 @@ export type AgreementStatus = "draft" | "signed";
 export type Quote = {
   id: string;
   token: string; // share token for client link
+  quoteNumber?: string;
+  legalEntityId?: string;
   invoiceNumber?: string;
   companyId?: string;
   clientId?: string;
@@ -547,9 +550,7 @@ function writeDb(db: DbShape) {
 }
 
 export function quoteTotals(q: Quote) {
-  const subtotal = clampMoney(q.items.reduce((sum, it) => sum + it.qty * it.unitPrice, 0));
-  const vat = clampMoney(subtotal * q.vatRate);
-  const total = clampMoney(subtotal + vat);
+  const { subtotal, vat, total } = calcTotals(q.items, q.vatRate);
   return { subtotal, vat, total };
 }
 

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { calcTotals } from "@/lib/calcTotals";
 
 export type LineItem = {
   description: string;
@@ -32,6 +33,7 @@ export default function LineItemsEditor(props: {
   setItems: (next: LineItem[]) => void;
   disabled?: boolean;
   showTotals?: boolean;
+  vatRate?: number;
 }) {
   const items = props.items || [];
   const disabled = !!props.disabled;
@@ -58,7 +60,9 @@ export default function LineItemsEditor(props: {
     setOpenDropdown(null);
   }
 
-  const subtotal = computeSubtotal(items);
+  const vatRate = props.vatRate ?? 0.2;
+  const totals = calcTotals(items, vatRate);
+  const subtotal = totals.subtotal;
 
   return (
     <div className="grid gap-4">
@@ -172,8 +176,10 @@ export default function LineItemsEditor(props: {
           Add item
         </Button>
         {props.showTotals && (
-          <div className="text-sm text-[var(--muted-foreground)]">
-            Subtotal: <span className="font-bold text-[var(--foreground)] text-base">{fmtGBP(subtotal)}</span>
+          <div className="text-sm text-[var(--muted-foreground)] text-right space-y-1">
+            <div>Subtotal (ex VAT): <span className="font-bold text-[var(--foreground)]">{fmtGBP(subtotal)}</span></div>
+            <div>VAT ({Math.round(vatRate * 100)}%): <span className="font-bold text-[var(--foreground)]">{fmtGBP(totals.vat)}</span></div>
+            <div>Total (inc VAT): <span className="font-bold text-[var(--foreground)] text-base">{fmtGBP(totals.total)}</span></div>
           </div>
         )}
       </div>

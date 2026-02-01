@@ -270,26 +270,27 @@ export async function renderAuditAgreementPdf(a: Agreement) {
 }
 
 
-export async function renderInvoicePdf(inv: Invoice, brand?: BrandContext) {
+export async function renderInvoicePdf(
+  inv: Invoice,
+  brand?: BrandContext,
+  opts?: { lineItems?: Array<{ description?: string; qty: number; unitPrice: number }>; vatRate?: number },
+) {
   const { doc, font, bold } = await newDoc();
   const page = doc.addPage([595.28, 841.89]); // A4
   let y = 800;
   const left = 50;
 
-  const line = (text: string, opts?: { size?: number; bold?: boolean }) => {
+  const line = (text: string, opts?: { size?: number; bold?: boolean; x?: number }) => {
     const size = opts?.size ?? 11;
     const used = opts?.bold ? bold : font;
-    page.drawText(text, { x: left, y, size, font: used });
+    page.drawText(text, { x: opts?.x ?? left, y, size, font: used });
     y -= size + 6;
   };
 
   y = await drawBrandHeader({ doc, page, font, bold, brand, left, y });
   line("Invoice", { size: 14, bold: true });
   y -= 6;
-  if ((inv as any).invoiceNumber) line(`Invoice No: ${(inv as any).invoiceNumber}`, { size: 10 });
-  if (inv.invoiceNumber) {
-    line(`Invoice No: ${inv.invoiceNumber}`, { size: 10 });
-  }
+  if (inv.invoiceNumber) line(`Invoice No: ${inv.invoiceNumber}`, { size: 10 });
   line(`Invoice ID: ${inv.id}`, { size: 10 });
   line(`Created: ${new Date(inv.createdAtISO).toLocaleString("en-GB")}`, { size: 10 });
   if (inv.status === "paid" && inv.paidAtISO) line(`Paid: ${new Date(inv.paidAtISO).toLocaleString("en-GB")}`, { size: 10 });
@@ -300,14 +301,43 @@ export async function renderInvoicePdf(inv: Invoice, brand?: BrandContext) {
   line(inv.clientEmail);
   y -= 12;
 
+  // Line items table (if available from linked quote)
+  const items = opts?.lineItems;
+  if (items && items.length > 0) {
+    line("Line Items", { bold: true });
+    y -= 2;
+    // Table header
+    const colDesc = left;
+    const colQty = 340;
+    const colUnit = 400;
+    const colLine = 480;
+    const hdrSize = 9;
+    page.drawText("Description", { x: colDesc, y, size: hdrSize, font: bold });
+    page.drawText("Qty", { x: colQty, y, size: hdrSize, font: bold });
+    page.drawText("Unit £", { x: colUnit, y, size: hdrSize, font: bold });
+    page.drawText("Line £", { x: colLine, y, size: hdrSize, font: bold });
+    y -= hdrSize + 8;
+
+    for (const item of items) {
+      const desc = (item.description || "Item").slice(0, 60);
+      const lineTotal = Math.round(item.qty * item.unitPrice * 100) / 100;
+      page.drawText(desc, { x: colDesc, y, size: 10, font });
+      page.drawText(String(item.qty), { x: colQty, y, size: 10, font });
+      page.drawText(pounds(item.unitPrice), { x: colUnit, y, size: 10, font });
+      page.drawText(pounds(lineTotal), { x: colLine, y, size: 10, font });
+      y -= 16;
+    }
+    y -= 4;
+  }
+
   line("Summary", { bold: true });
-  line(`Subtotal: ${pounds(inv.subtotal)}`, { size: 11 });
-  line(`VAT: ${pounds(inv.vat)}`, { size: 11 });
-  line(`Total: ${pounds(inv.total)}`, { size: 12, bold: true });
+  line(`Subtotal (ex VAT): ${pounds(inv.subtotal)}`, { size: 11 });
+  const vatPct = opts?.vatRate != null ? Math.round(opts.vatRate * 100) : Math.round((inv.subtotal > 0 ? inv.vat / inv.subtotal : 0.2) * 100);
+  line(`VAT (${vatPct}%): ${pounds(inv.vat)}`, { size: 11 });
+  line(`Total (inc VAT): ${pounds(inv.total)}`, { size: 12, bold: true });
 
   y -= 10;
   line(`Status: ${inv.status.toUpperCase()}`, { size: 10, bold: true });
-  if (inv.quoteId) line(`Linked quote: ${inv.quoteId}`, { size: 10 });
 
   const bytes = await doc.save();
   return Buffer.from(bytes);

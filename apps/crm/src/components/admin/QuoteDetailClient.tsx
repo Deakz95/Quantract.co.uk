@@ -359,7 +359,7 @@ export default function QuoteDetailClient({ quoteId }: { quoteId: string }) {
       <Card>
         <CardHeader className="flex items-start justify-between gap-3 sm:flex-row">
           <div>
-            <CardTitle>Quote</CardTitle>
+            <CardTitle>{quote.quoteNumber ? `Quote ${quote.quoteNumber}` : quote.clientName ? `Quote — ${quote.clientName}` : "Quote"}</CardTitle>
             <div className="mt-1 text-xs text-[var(--muted-foreground)]">
               Status: <span className="font-semibold text-[var(--foreground)]">{quote.status}</span>
             </div>
