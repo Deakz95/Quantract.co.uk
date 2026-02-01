@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/useToast";
 import { isScheduleEnabled } from "@/lib/billing/plans";
+import { toTitleCase } from "@/lib/cn";
 
 type Job = { id: string; title?: string; clientName: string; status: string };
 type Engineer = { id: string; email: string; name?: string };
@@ -223,7 +224,7 @@ export default function AdminSchedulePage() {
                     <select name="engineerEmail" required className="rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)]">
                       <option value="">Select…</option>
                       {engineers.map((en) => {
-                        const displayName = en.name || en.email.split("@")[0];
+                        const displayName = toTitleCase(en.name || en.email.split("@")[0]);
                         return (
                           <option key={en.id} value={en.email}>
                             {displayName}
@@ -288,7 +289,7 @@ export default function AdminSchedulePage() {
                               const end = new Date(e.endAtISO);
                               const time = `${start.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}–${end.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`;
                               const eng = engineers.find((en) => en.email.toLowerCase() === (e.engineerEmail || "").toLowerCase());
-                              const engDisplay = eng?.name || e.engineerName || (e.engineerEmail ? e.engineerEmail.split("@")[0] : undefined);
+                              const engDisplay = toTitleCase(eng?.name || e.engineerName || (e.engineerEmail ? e.engineerEmail.split("@")[0] : undefined));
                               return (
                                 <Link key={e.id} href={`/admin/jobs/${e.jobId}`}>
                                   <div className="rounded-lg bg-[var(--primary)]/10 border border-[var(--primary)]/20 p-1.5 text-xs hover:bg-[var(--primary)]/20 transition-colors cursor-pointer">
@@ -326,7 +327,7 @@ export default function AdminSchedulePage() {
                     return (
                       <div key={en.id} className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-4">
                         <div className="flex flex-wrap items-center justify-between gap-2">
-                          <div className="font-semibold text-[var(--foreground)]">{en.name || en.email.split("@")[0]}</div>
+                          <div className="font-semibold text-[var(--foreground)]">{toTitleCase(en.name || en.email.split("@")[0])}</div>
                           <Badge variant="secondary">{list.length} entries</Badge>
                         </div>
 
