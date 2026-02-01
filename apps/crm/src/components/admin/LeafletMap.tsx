@@ -53,6 +53,11 @@ export default function LeafletMap({ pins, onPinClick }: { pins: MapPin[]; onPin
     markersRef.current = L.layerGroup().addTo(map);
     mapRef.current = map;
 
+    // Leaflet needs invalidateSize when mounted inside cards/tabs that may
+    // not have their final dimensions at initial render time.
+    requestAnimationFrame(() => map.invalidateSize());
+    setTimeout(() => map.invalidateSize(), 250);
+
     return () => {
       map.remove();
       mapRef.current = null;
@@ -97,8 +102,7 @@ export default function LeafletMap({ pins, onPinClick }: { pins: MapPin[]; onPin
   return (
     <div
       ref={containerRef}
-      className="aspect-video rounded-xl overflow-hidden"
-      style={{ minHeight: 200 }}
+      className="rounded-xl overflow-hidden h-[320px] md:h-[420px]"
     />
   );
 }

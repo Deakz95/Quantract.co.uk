@@ -1544,17 +1544,44 @@ export default function DashboardPage() {
     fetchDashboardData();
   }, [fetchDashboardData]);
 
-  // Load saved layout from localStorage
+  // Load saved layout from localStorage + one-time needsAttention migration
   useEffect(() => {
     const saved = localStorage.getItem('dashboard-widgets');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
         // Validate the saved widgets exist in AVAILABLE_WIDGETS
-        const validWidgets = parsed.filter((w: Widget) =>
+        let validWidgets: Widget[] = parsed.filter((w: Widget) =>
           AVAILABLE_WIDGETS.some(aw => aw.id === w.id)
         );
         if (validWidgets.length > 0) {
+          // One-time migrations: inject widgets that were added after the user saved their layout
+          const migrations: { key: string; widgetId: string; insertAt: number }[] = [
+            { key: 'dashboard-migrated-needsAttention', widgetId: 'needsAttention', insertAt: 1 },
+            { key: 'dashboard-migrated-jobsMap', widgetId: 'jobsMap', insertAt: 2 },
+          ];
+          let layoutChanged = false;
+          for (const m of migrations) {
+            if (
+              !localStorage.getItem(m.key) &&
+              !validWidgets.some((w: Widget) => w.id === m.widgetId)
+            ) {
+              const widget = AVAILABLE_WIDGETS.find(w => w.id === m.widgetId);
+              if (widget) {
+                const idx = Math.min(m.insertAt, validWidgets.length);
+                validWidgets = [
+                  ...validWidgets.slice(0, idx),
+                  widget,
+                  ...validWidgets.slice(idx),
+                ];
+                layoutChanged = true;
+              }
+              localStorage.setItem(m.key, '1');
+            }
+          }
+          if (layoutChanged) {
+            localStorage.setItem('dashboard-widgets', JSON.stringify(validWidgets));
+          }
           setWidgets(validWidgets);
         }
       } catch {

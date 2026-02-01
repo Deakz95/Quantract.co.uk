@@ -153,6 +153,11 @@ export default function JobsMap({ defaultTodayOnly = false }: { defaultTodayOnly
 
   return (
     <div>
+      {process.env.NODE_ENV !== "production" && (
+        <div className="mb-2 px-3 py-1 bg-blue-50 border border-blue-200 rounded text-xs text-blue-700">
+          DEV: JobsMap mounted — {pins.length} total pins, {visiblePins.length} visible
+        </div>
+      )}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-2">
         {FILTERS.map((f) => (
           <label key={f.key} className="flex items-center gap-1.5 cursor-pointer select-none">
