@@ -5,6 +5,8 @@ import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { FeatureGate } from "@/components/billing/FeatureGate";
+import { useEntitlements } from "@/components/billing/useEntitlements";
 
 type ScheduleEntry = {
   id: string;
@@ -51,6 +53,9 @@ function formatTimeRange(entry: ScheduleEntry) {
 }
 
 export default function EngineerSchedulePage() {
+  const { hasFeature } = useEntitlements();
+  const scheduleEnabled = hasFeature("feature_schedule");
+
   const [weekStart, setWeekStart] = useState(() => mondayOf(new Date()));
   const [jobs, setJobs] = useState<Job[]>([]);
   const [entries, setEntries] = useState<ScheduleEntry[]>([]);
@@ -113,6 +118,11 @@ export default function EngineerSchedulePage() {
   }, [clashes]);
 
   return (
+    <FeatureGate
+      enabled={scheduleEnabled}
+      title="Schedule requires a Pro plan or CRM module"
+      description="Upgrade your plan to access scheduling and engineer availability."
+    >
     <div className="space-y-4">
         <Card>
           <CardContent>
@@ -189,5 +199,6 @@ export default function EngineerSchedulePage() {
           </div>
         )}
     </div>
+    </FeatureGate>
   );
 }
