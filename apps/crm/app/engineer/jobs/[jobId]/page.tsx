@@ -27,6 +27,7 @@ export default async function Page({ params }: Props) {
   const stages = await repo.listJobStages(jobId);
   const variations = await repo.listVariationsForJob(jobId);
   const certs = await repo.listCertificatesForJob(jobId);
+  const budgetLines = await repo.listJobBudgetLines(jobId);
 
   return (
     <EngineerJobDetail
@@ -41,6 +42,7 @@ export default async function Page({ params }: Props) {
         scheduledAtISO: job.scheduledAtISO,
         notes: job.notes,
         quoteId: job.quoteId,
+        stockConsumedAt: (job as any).stockConsumedAt ? new Date((job as any).stockConsumedAt).toISOString() : undefined,
       }}
       quote={quote ? {
         token: quote.token,
@@ -51,6 +53,12 @@ export default async function Page({ params }: Props) {
       stages={stages.map((s) => ({ id: s.id, name: s.name, status: s.status }))}
       variations={variations.map((v) => ({ id: v.id, title: v.title, stageName: v.stageName, status: v.status, total: v.total }))}
       certs={certs.map((c) => ({ id: c.id, type: c.type, status: c.status, certificateNumber: c.certificateNumber, completedAtISO: c.completedAtISO }))}
+      budgetLines={budgetLines.filter((bl) => bl.stockItemId).map((bl) => ({
+        id: bl.id,
+        description: bl.description,
+        stockItemId: bl.stockItemId!,
+        stockQty: bl.stockQty ?? 0,
+      }))}
     />
   );
 }

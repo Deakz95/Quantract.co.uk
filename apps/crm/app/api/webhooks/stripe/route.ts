@@ -76,6 +76,14 @@ export const POST = withRequestLogging(async function POST(req: Request) {
           const invoiceId = String(session?.metadata?.invoiceId || "");
           const inv = invoiceId ? await repo.getInvoiceById(invoiceId) : await repo.findInvoiceByPaymentRef(sessionId);
           if (inv) {
+            // Deduplicate: skip if this session was already recorded
+            const existingSummary = await repo.getInvoicePaymentSummary(inv.id);
+            const alreadyRecorded = existingSummary?.payments?.some(
+              (p: any) => p.providerRef === sessionId
+            );
+            if (alreadyRecorded) {
+              return NextResponse.json({ ok: true });
+            }
             const amountTotal = Number(session?.amount_total || 0) / 100;
             await repo.recordInvoicePayment({
               invoiceId: inv.id,

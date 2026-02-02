@@ -29,8 +29,8 @@ export const POST = withRequestLogging(
       });
     } catch (error) {
       logError(error, { route: "/api/client/quotes/[token]/accept", action: "accept" });
-      const msg = error instanceof Error ? error.message : String(error);
-      return NextResponse.json({ ok: false, error: "accept_failed", detail: msg }, { status: 500 });
+      logError(error, { route: "/api/client/quotes/[token]/accept", action: "accept" });
+      return NextResponse.json({ ok: false, error: "accept_failed" }, { status: 500 });
     }
   }
 );

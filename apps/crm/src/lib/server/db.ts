@@ -441,6 +441,8 @@ export type JobBudgetLine = {
   unitPrice: number;
   total: number;
   sortOrder: number;
+  stockItemId?: string | null;
+  stockQty?: number | null;
   createdAtISO: string;
   updatedAtISO: string;
 };

@@ -137,7 +137,10 @@ let clientName: string;
 let clientEmail: string;
 let jobId: string;
 let quoteId: string;
+let quoteToken: string;
 let invoiceId: string;
+let invoiceToken: string;
+let agreementToken: string;
 let certificateId: string;
 
 const ts = Date.now();
@@ -221,6 +224,7 @@ async function main() {
     await assertStatus(res, [200, 201], "POST", "/api/admin/quotes");
     const json = await res.json();
     quoteId = json.quote?.id ?? json.id ?? json.quoteId;
+    quoteToken = json.quote?.token ?? json.token ?? "";
     assert(quoteId, "no quoteId in response");
   });
 
@@ -230,6 +234,7 @@ async function main() {
     await assertStatus(res, [200, 201], "POST", path);
     const json = await res.json();
     invoiceId = json.invoice?.id ?? json.id ?? json.invoiceId;
+    invoiceToken = json.invoice?.token ?? json.token ?? "";
     assert(invoiceId, "no invoiceId in response");
   });
 
@@ -310,6 +315,101 @@ async function main() {
     const buf = await res.arrayBuffer();
     assert(buf.byteLength > 1024, `PDF too small: ${buf.byteLength} bytes`);
   });
+
+  // E) Client Portal ---------------------------------------------------------
+
+  // Quote view via token
+  if (quoteToken) {
+    await smoke("GET /api/client/quotes/{token} -> quote view", async () => {
+      const path = `/api/client/quotes/${quoteToken}`;
+      const res = await apiNoAuth("GET", path);
+      await assertStatus(res, 200, "GET", path);
+      const json = await res.json();
+      assert(json.ok, "response not ok");
+      assert(json.quote, "no quote in response");
+    });
+
+    await smoke("POST /api/client/quotes/{token}/accept -> idempotent accept", async () => {
+      const path = `/api/client/quotes/${quoteToken}/accept`;
+      const res = await apiNoAuth("POST", path);
+      await assertStatus(res, 200, "POST", path);
+      const json = await res.json();
+      assert(json.ok, "response not ok");
+      assert(json.quote?.status === "accepted", `status: ${json.quote?.status}`);
+
+      // Second call should also succeed (idempotent)
+      const res2 = await apiNoAuth("POST", path);
+      await assertStatus(res2, 200, "POST", `${path} (2nd call)`);
+      const json2 = await res2.json();
+      assert(json2.ok, "2nd accept not ok");
+
+      // Capture agreement token if available
+      if (json.quote?.agreement?.shareUrl) {
+        const m = String(json.quote.agreement.shareUrl).match(/\/client\/agreements\/(.+)$/);
+        if (m) agreementToken = m[1];
+      }
+    });
+
+    await smoke("GET /api/client/quotes/{token}/pdf -> PDF", async () => {
+      const path = `/api/client/quotes/${quoteToken}/pdf`;
+      const res = await apiNoAuth("GET", path);
+      await assertStatus(res, 200, "GET", path);
+      const ct = res.headers.get("content-type") ?? "";
+      assert(ct.includes("application/pdf"), `content-type: ${ct}`);
+    });
+  }
+
+  // Agreement token page
+  if (agreementToken) {
+    await smoke("GET /api/client/agreements/{token} -> loads", async () => {
+      const path = `/api/client/agreements/${agreementToken}`;
+      const res = await apiNoAuth("GET", path);
+      await assertStatus(res, 200, "GET", path);
+      const json = await res.json();
+      assert(json.ok, "response not ok");
+    });
+
+    await smoke("POST /api/client/agreements/{token}/sign -> idempotent sign", async () => {
+      const path = `/api/client/agreements/${agreementToken}/sign`;
+      const res = await apiNoAuth("POST", path, {
+        signerName: `Smoke Signer [${QA_TAG}]`,
+        signerEmail: clientEmail,
+        acceptedTerms: true,
+      });
+      await assertStatus(res, 200, "POST", path);
+      const json = await res.json();
+      assert(json.ok, "response not ok");
+      assert(json.agreement?.status === "signed", `status: ${json.agreement?.status}`);
+
+      // Second call should also succeed (idempotent)
+      const res2 = await apiNoAuth("POST", path, {
+        signerName: `Smoke Signer [${QA_TAG}]`,
+        signerEmail: clientEmail,
+        acceptedTerms: true,
+      });
+      await assertStatus(res2, 200, "POST", `${path} (2nd call)`);
+    });
+  }
+
+  // Invoice token access
+  if (invoiceToken) {
+    await smoke("GET /api/client/invoices/{token} -> invoice view", async () => {
+      const path = `/api/client/invoices/${invoiceToken}`;
+      const res = await apiNoAuth("GET", path);
+      await assertStatus(res, 200, "GET", path);
+      const json = await res.json();
+      assert(json.ok, "response not ok");
+      assert(json.invoice, "no invoice in response");
+    });
+
+    await smoke("GET /api/client/invoices/{token}/pdf -> PDF", async () => {
+      const path = `/api/client/invoices/${invoiceToken}/pdf`;
+      const res = await apiNoAuth("GET", path);
+      await assertStatus(res, 200, "GET", path);
+      const ct = res.headers.get("content-type") ?? "";
+      assert(ct.includes("application/pdf"), `content-type: ${ct}`);
+    });
+  }
 
   // Summary -----------------------------------------------------------------
   const elapsed = ((Date.now() - suiteStart) / 1000).toFixed(1);

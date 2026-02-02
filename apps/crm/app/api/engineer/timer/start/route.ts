@@ -31,12 +31,9 @@ export const POST = withRequestLogging(async function POST(req: Request) {
       ...result
     });
   } catch (e: any) {
-    const msg = e?.message || "Unauthorized";
-    return NextResponse.json({
-      ok: false,
-      error: msg
-    }, {
-      status: e?.status || 401
-    });
+    if (e?.status === 401) return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
+    if (e?.status === 409) return NextResponse.json({ ok: false, error: "Timesheet is locked for this week." }, { status: 409 });
+    console.error("[POST /api/engineer/timer/start]", e);
+    return NextResponse.json({ ok: false, error: "Could not start timer. Please try again." }, { status: 500 });
   }
 });

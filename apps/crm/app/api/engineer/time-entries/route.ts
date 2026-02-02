@@ -18,11 +18,9 @@ export const GET = withRequestLogging(async function GET(req: Request) {
       items: rows
     });
   } catch (err: any) {
-    return NextResponse.json({
-      error: err?.message || "Unauthorized"
-    }, {
-      status: err?.status || 401
-    });
+    if (err?.status === 401) return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
+    console.error("[engineer/time-entries]", err);
+    return NextResponse.json({ error: "Something went wrong. Please try again." }, { status: 500 });
   }
 });
 export const POST = withRequestLogging(async function POST(req: Request) {
@@ -64,10 +62,8 @@ export const POST = withRequestLogging(async function POST(req: Request) {
       item: created
     });
   } catch (err: any) {
-    return NextResponse.json({
-      error: err?.message || "Unauthorized"
-    }, {
-      status: err?.status || 401
-    });
+    if (err?.status === 401) return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
+    console.error("[engineer/time-entries]", err);
+    return NextResponse.json({ error: "Something went wrong. Please try again." }, { status: 500 });
   }
 });

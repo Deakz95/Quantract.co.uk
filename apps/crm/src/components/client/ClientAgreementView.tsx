@@ -51,7 +51,7 @@ export default function ClientAgreementView({ token }: { token: string }) {
       setAgreement(data.agreement);
       setSignerName((data.agreement?.signerName as string) || "");
     } catch (e: any) {
-      toast({ title: "Couldn't load agreement", description: e?.message || "Unknown error" });
+      toast({ title: "Couldn't load agreement", description: "Please check your connection and try again." });
     } finally {
       setBusy(false);
     }
@@ -63,7 +63,7 @@ export default function ClientAgreementView({ token }: { token: string }) {
   }, [token]);
 
   async function sign() {
-    if (!agreement) return;
+    if (!agreement || busy) return;
     setBusy(true);
     try {
       const res = await fetch(`/api/client/agreements/${token}/sign`, {
@@ -76,7 +76,7 @@ export default function ClientAgreementView({ token }: { token: string }) {
       toast({ title: "Agreement signed", description: "Thanks — we’ll get you booked in." });
       await load();
     } catch (e: any) {
-      toast({ title: "Couldn't sign", description: e?.message || "Unknown error" });
+      toast({ title: "Couldn't sign", description: "Please try again. If this persists, contact the office." });
     } finally {
       setBusy(false);
     }
@@ -203,7 +203,8 @@ export default function ClientAgreementView({ token }: { token: string }) {
           {agreement.status === "signed" ? (
             <div className="space-y-2 text-sm text-[var(--muted-foreground)]">
               <div>
-                Signed by <span className="font-semibold text-[var(--foreground)]">{agreement.signerName}</span>.
+                Signed by <span className="font-semibold text-[var(--foreground)]">{agreement.signerName}</span>
+                {agreement.signedAtISO ? ` on ${new Date(agreement.signedAtISO).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}` : ""}.
               </div>
               <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3 text-xs text-[var(--muted-foreground)]">
                 Next up: download the signing certificate, and we’ll issue invoices when the job is scheduled.

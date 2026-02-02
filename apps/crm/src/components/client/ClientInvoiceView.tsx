@@ -2,11 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
-import { ChevronDown, ChevronUp, Download, Shield } from "lucide-react";
+import { ChevronDown, ChevronUp, Download, Shield, CheckCircle2 } from "lucide-react";
 
 type Invoice = {
   id: string;
@@ -58,6 +59,8 @@ function pounds(n: number) {
 }
 
 export default function ClientInvoiceView({ token }: { token: string }) {
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [inv, setInv] = useState<Invoice | null>(null);
   const [summary, setSummary] = useState<PaymentSummary | null>(null);
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
@@ -66,6 +69,9 @@ export default function ClientInvoiceView({ token }: { token: string }) {
   const [amountInput, setAmountInput] = useState<string>("");
   const [showLineItems, setShowLineItems] = useState(false);
   const [fetchError, setFetchError] = useState<"not_found" | "error" | null>(null);
+  const [payConfirm, setPayConfirm] = useState<"pending" | "succeeded" | null>(
+    searchParams.get("paid") === "1" ? "pending" : null
+  );
 
   const canPay = useMemo(() => {
     if (!inv) return false;
@@ -99,8 +105,41 @@ export default function ClientInvoiceView({ token }: { token: string }) {
     };
   }, [token]);
 
+  // CP-4C: When returning from Stripe (?paid=1), poll for payment confirmation
+  useEffect(() => {
+    if (payConfirm !== "pending") return;
+    let cancelled = false;
+    let attempts = 0;
+    const poll = () => {
+      attempts += 1;
+      fetch(`/api/client/invoices/${token}`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => {
+          if (cancelled || !d?.invoice) return;
+          setInv(d.invoice);
+          if (d.paymentSummary) setSummary(d.paymentSummary);
+          if (d.invoice.status === "paid" || Number(d.paymentSummary?.balanceDue ?? NaN) <= 0) {
+            setPayConfirm("succeeded");
+            router.replace(`/client/invoices/${token}`);
+          } else if (attempts < 10) {
+            setTimeout(poll, 2000);
+          } else {
+            // Give up polling — webhook may be delayed, show what we have
+            setPayConfirm("succeeded");
+            router.replace(`/client/invoices/${token}`);
+          }
+        })
+        .catch(() => {
+          if (!cancelled && attempts < 10) setTimeout(poll, 2000);
+        });
+    };
+    // Short initial delay to give webhook time to arrive
+    const t = setTimeout(poll, 1500);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [payConfirm, token, router]);
+
   async function startPay() {
-    if (!inv) return;
+    if (!inv || paying) return;
 
     const balanceDue = Number(summary?.balanceDue ?? inv.total);
     const raw = Number(String(amountInput || "").replace(/[^0-9.]/g, ""));
@@ -306,8 +345,25 @@ export default function ClientInvoiceView({ token }: { token: string }) {
             ) : null}
           </div>
 
+          {/* Payment confirmation banner */}
+          {payConfirm === "pending" && (
+            <div className="mt-4 rounded-2xl border border-[var(--border)] bg-[var(--muted)] p-4 text-center">
+              <div className="text-sm font-semibold text-[var(--foreground)]">Checking payment status&hellip;</div>
+              <div className="mt-1 text-xs text-[var(--muted-foreground)]">This may take a moment. Please don&rsquo;t close this page.</div>
+            </div>
+          )}
+          {payConfirm === "succeeded" && isPaid && (
+            <div className="mt-4 rounded-2xl border border-green-200 bg-green-50 p-4 flex items-center gap-3">
+              <CheckCircle2 size={20} strokeWidth={1.8} className="shrink-0 text-green-600" />
+              <div>
+                <div className="text-sm font-semibold text-green-900">Payment received</div>
+                <div className="text-xs text-green-700">Thank you — your invoice has been marked as paid.</div>
+              </div>
+            </div>
+          )}
+
           {/* Pay section */}
-          {!isPaid && canPay ? (
+          {!isPaid && canPay && payConfirm !== "pending" ? (
             <div className="mt-4 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4">
               <div className="text-sm font-semibold text-[var(--foreground)]">Pay invoice</div>
               <div className="mt-1 text-xs text-[var(--muted-foreground)]">

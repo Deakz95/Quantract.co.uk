@@ -78,7 +78,11 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
   const [confirmVoid, setConfirmVoid] = useState(false);
   const [confirmRemoveIndex, setConfirmRemoveIndex] = useState<number | null>(null);
   const [amendmentLineage, setAmendmentLineage] = useState<{ amends: any | null; amendments: any[] }>({ amends: null, amendments: [] });
+  const [lastSaveFailed, setLastSaveFailed] = useState(false);
   const skipAutoSave = useRef(true);
+
+  // ── localStorage draft key ──────────────────────────────────
+  const draftKey = `cert-draft-${certificateId}`;
 
   const apiBase = mode === "admin" ? "/api/admin/certificates" : "/api/engineer/certificates";
 
@@ -96,6 +100,20 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
     ];
   }, [mode, certificateId, cert?.type]);
 
+  // Save draft to localStorage
+  const saveDraft = useCallback((certState: Certificate | null, dataState: CertificateData | null, rowsState: TestResultRow[]) => {
+    try {
+      if (certState && dataState) {
+        localStorage.setItem(draftKey, JSON.stringify({ cert: certState, data: dataState, rows: rowsState, savedAt: Date.now() }));
+      }
+    } catch { /* quota exceeded — ignore */ }
+  }, [draftKey]);
+
+  // Clear draft from localStorage (after successful server save)
+  const clearDraft = useCallback(() => {
+    try { localStorage.removeItem(draftKey); } catch { /* ignore */ }
+  }, [draftKey]);
+
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
@@ -103,10 +121,35 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
       const d = await r.json();
       if (d.ok) {
         const nextCert = d.certificate as Certificate;
-        setCert(nextCert);
-        setRows(Array.isArray(d.testResults) ? d.testResults : []);
-        setData(normalizeCertificateData(nextCert.type, nextCert.data));
+        const serverData = normalizeCertificateData(nextCert.type, nextCert.data);
+        const serverRows = Array.isArray(d.testResults) ? d.testResults : [];
+
+        // Check for a local draft that may be newer
+        let usedDraft = false;
+        try {
+          const raw = localStorage.getItem(draftKey);
+          if (raw) {
+            const draft = JSON.parse(raw);
+            // Use draft if it was saved after the server data and is for the same cert
+            if (draft?.data && draft.savedAt && nextCert.status === "draft") {
+              setCert({ ...nextCert, inspectorName: draft.cert?.inspectorName ?? nextCert.inspectorName, inspectorEmail: draft.cert?.inspectorEmail ?? nextCert.inspectorEmail, certificateNumber: draft.cert?.certificateNumber ?? nextCert.certificateNumber });
+              setData(normalizeCertificateData(nextCert.type, draft.data));
+              setRows(Array.isArray(draft.rows) ? draft.rows : serverRows);
+              usedDraft = true;
+              toast({ title: "Draft restored", description: "Unsaved changes were recovered from your device.", variant: "default" });
+            }
+          }
+        } catch { /* ignore corrupt draft */ }
+
+        if (!usedDraft) {
+          setCert(nextCert);
+          setRows(serverRows);
+          setData(serverData);
+          clearDraft();
+        }
+
         setLastSavedAt(null);
+        setLastSaveFailed(false);
         skipAutoSave.current = true;
       } else {
         setCert(null);
@@ -116,7 +159,7 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
     } finally {
       setLoading(false);
     }
-  }, [apiBase, certificateId]);
+  }, [apiBase, certificateId, draftKey, clearDraft, toast]);
 
   useEffect(() => {
     refresh();
@@ -157,16 +200,21 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
         if (d.certificate) setCert(d.certificate);
         if (Array.isArray(d.testResults)) setRows(d.testResults);
         setLastSavedAt(new Date().toLocaleTimeString("en-GB"));
+        setLastSaveFailed(false);
+        clearDraft();
       } catch (error: unknown) {
+        setLastSaveFailed(true);
+        // Persist to localStorage as fallback
+        saveDraft(cert, data, rows);
         if (mode === "manual") {
-          toast({ title: "Error", description: getErrorMessage(error, "Could not save."), variant: "destructive" });
+          toast({ title: "Save failed", description: "Changes saved locally on your device. They will retry automatically.", variant: "destructive" });
         }
       } finally {
         if (mode === "manual") setBusy(false);
         setSaving(false);
       }
     },
-    [apiBase, certificateId, cert, data, rows, toast]
+    [apiBase, certificateId, cert, data, rows, toast, saveDraft, clearDraft]
   );
 
   useEffect(() => {
@@ -176,11 +224,13 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
       return;
     }
     if (!canEdit) return;
+    // Always persist to localStorage immediately as safety net
+    saveDraft(cert, data, rows);
     const timer = setTimeout(() => {
       void save("auto");
     }, 900);
     return () => clearTimeout(timer);
-  }, [data, rows, cert, canEdit, save]);
+  }, [data, rows, cert, canEdit, save, saveDraft]);
 
   function updateDataField(path: string[], value: string) {
     setData((prev) => (prev ? setNestedValue(prev, path, value) : prev));
@@ -418,14 +468,19 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
 
               <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
                 <div className="text-xs text-[var(--muted-foreground)]">
-                  {saving ? "Saving changes…" : lastSavedAt ? `Autosaved at ${lastSavedAt}` : "Autosave enabled."}
+                  {saving ? "Saving changes…" : lastSaveFailed ? (
+                    <span className="text-amber-600 dark:text-amber-400">
+                      Save failed — changes saved locally.{" "}
+                      <button type="button" className="underline font-semibold" onClick={() => save("manual")}>Retry</button>
+                    </span>
+                  ) : lastSavedAt ? `Autosaved at ${lastSavedAt}` : "Autosave enabled."}
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <Button
                     type="button"
                     variant="secondary"
                     onClick={markComplete}
-                    disabled={busy || !readiness.ok || cert.status === "void" || cert.status === "issued"}
+                    disabled={busy || !readiness.ok || cert.status === "void" || cert.status === "issued" || lastSaveFailed}
                   >
                     Mark complete
                   </Button>

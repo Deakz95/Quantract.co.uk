@@ -19,7 +19,9 @@ export const GET = withRequestLogging(async function GET(_req: Request, ctx: { p
     const snagItems = await repo.listSnagItemsForJob(jobId);
     return NextResponse.json({ ok: true, snagItems });
   } catch (e: any) {
-    return NextResponse.json({ ok: false, error: e?.message || "Unauthorized" }, { status: e?.status || 401 });
+    if (e?.status === 401) return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
+    console.error("[engineer/snag-items]", e);
+    return NextResponse.json({ ok: false, error: "Something went wrong. Please try again." }, { status: 500 });
   }
 });
 
@@ -46,6 +48,8 @@ export const POST = withRequestLogging(async function POST(req: Request, ctx: { 
     }
     return NextResponse.json({ ok: true, snagItem: created });
   } catch (e: any) {
-    return NextResponse.json({ ok: false, error: e?.message || "Unauthorized" }, { status: e?.status || 401 });
+    if (e?.status === 401) return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
+    console.error("[engineer/snag-items]", e);
+    return NextResponse.json({ ok: false, error: "Something went wrong. Please try again." }, { status: 500 });
   }
 });

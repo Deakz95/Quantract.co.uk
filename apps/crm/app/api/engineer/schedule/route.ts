@@ -97,7 +97,7 @@ export const GET = withRequestLogging(async function GET(req: Request) {
     }
     const err = error as any;
     if (err?.status === 401 || err?.status === 403) {
-      return NextResponse.json({ ok: false, error: err.message || "forbidden" }, { status: err.status });
+      return NextResponse.json({ ok: false, error: "forbidden" }, { status: err.status });
     }
     logError(error, { route: "/api/engineer/schedule", action: "list" });
     return NextResponse.json({ ok: false, error: "load_failed" }, { status: 500 });

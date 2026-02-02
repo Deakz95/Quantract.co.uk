@@ -734,6 +734,8 @@ function toJobBudgetLine(row: any): JobBudgetLine {
     unitPrice: Number(row.unitPrice ?? 0),
     total: Number(row.total ?? 0),
     sortOrder: Number(row.sortOrder ?? 0),
+    stockItemId: row.stockItemId || null,
+    stockQty: row.stockQty != null ? Number(row.stockQty) : null,
     createdAtISO: new Date(row.createdAt).toISOString(),
     updatedAtISO: new Date(row.updatedAt).toISOString(),
   };

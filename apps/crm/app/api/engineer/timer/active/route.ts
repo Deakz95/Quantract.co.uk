@@ -18,12 +18,8 @@ export const GET = withRequestLogging(async function GET() {
       active
     });
   } catch (e: any) {
-    const msg = e?.message || "Unauthorized";
-    return NextResponse.json({
-      ok: false,
-      error: msg
-    }, {
-      status: e?.status || 401
-    });
+    if (e?.status === 401) return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
+    console.error("[GET /api/engineer/timer/active]", e);
+    return NextResponse.json({ ok: false, error: "Could not check timer status." }, { status: 500 });
   }
 });

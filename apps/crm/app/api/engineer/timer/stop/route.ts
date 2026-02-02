@@ -18,12 +18,8 @@ export const POST = withRequestLogging(async function POST() {
       stopped
     });
   } catch (e: any) {
-    const msg = e?.message || "Unauthorized";
-    return NextResponse.json({
-      ok: false,
-      error: msg
-    }, {
-      status: e?.status || 401
-    });
+    if (e?.status === 401) return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
+    console.error("[POST /api/engineer/timer/stop]", e);
+    return NextResponse.json({ ok: false, error: "Could not stop timer. Please try again." }, { status: 500 });
   }
 });

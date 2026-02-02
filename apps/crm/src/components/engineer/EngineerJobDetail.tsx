@@ -18,6 +18,13 @@ type QuoteItem = {
   unitPrice: number;
 };
 
+type StockBudgetLine = {
+  id: string;
+  description: string;
+  stockItemId: string;
+  stockQty: number;
+};
+
 type JobData = {
   id: string;
   title?: string;
@@ -29,6 +36,7 @@ type JobData = {
   scheduledAtISO?: string;
   notes?: string;
   quoteId?: string;
+  stockConsumedAt?: string;
 };
 
 type QuoteData = {
@@ -98,6 +106,7 @@ export default function EngineerJobDetail({
   stages,
   variations,
   certs,
+  budgetLines,
 }: {
   job: JobData;
   quote: QuoteData;
@@ -105,6 +114,7 @@ export default function EngineerJobDetail({
   stages: StageData[];
   variations: VariationData[];
   certs: CertData[];
+  budgetLines?: StockBudgetLine[];
 }) {
   const { toast } = useToast();
   const [active, setActive] = useState<ActiveTimer>(null);
@@ -112,6 +122,9 @@ export default function EngineerJobDetail({
   const [busy, setBusy] = useState(false);
   const [scopeOpen, setScopeOpen] = useState(false);
   const [jobStatus, setJobStatus] = useState(job.status);
+  const [stockConsumed, setStockConsumed] = useState(!!job.stockConsumedAt);
+  const [consumingStock, setConsumingStock] = useState(false);
+  const [insufficient, setInsufficient] = useState<Array<{ description: string; stockQty: number; available: number }>>([]);
 
   // ── Timer polling ───────────────────────────────────────────
   const fetchTimer = useCallback(async () => {
@@ -138,6 +151,7 @@ export default function EngineerJobDetail({
 
   // ── Actions ─────────────────────────────────────────────────
   async function startTimer() {
+    if (busy) return; // guard against rapid double-click
     setBusy(true);
     try {
       const res = await fetch("/api/engineer/timer/start", {
@@ -147,8 +161,13 @@ export default function EngineerJobDetail({
       });
       const data = await res.json();
       if (!res.ok || !data?.ok) throw new Error(data?.error || "Could not start timer");
-      setActive(data.active || null);
-      toast({ title: "Timer started", variant: "success" });
+      setActive(data.active || data.started || null);
+      if (data.started) {
+        toast({ title: "Timer started", variant: "success" });
+      } else if (data.active) {
+        // Existing timer returned (idempotent) — just reflect it
+        toast({ title: "Timer already running", variant: "default" });
+      }
     } catch (e: any) {
       toast({ title: "Timer error", description: e?.message, variant: "destructive" });
     } finally {
@@ -157,6 +176,7 @@ export default function EngineerJobDetail({
   }
 
   async function stopTimer() {
+    if (busy) return; // guard against rapid double-click
     setBusy(true);
     try {
       const res = await fetch("/api/engineer/timer/stop", { method: "POST" });
@@ -195,6 +215,37 @@ export default function EngineerJobDetail({
       toast({ title: "Copy failed", variant: "destructive" });
     }
   }
+
+  async function consumeStock() {
+    if (!confirm("Consume stock for this job? Quantities will be deducted from your truck stock.")) return;
+    setConsumingStock(true);
+    setInsufficient([]);
+    try {
+      const res = await fetch(`/api/engineer/jobs/${job.id}/consume-stock`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok || !data?.ok) throw new Error(data?.error || "Could not consume stock");
+      if (data.alreadyConsumed) {
+        setStockConsumed(true);
+        toast({ title: "Already consumed", description: "Stock was already consumed for this job." });
+      } else {
+        const consumedCount = data.consumed?.length ?? 0;
+        const insufficientList = data.insufficient ?? [];
+        if (insufficientList.length > 0) {
+          setInsufficient(insufficientList);
+          toast({ title: "Partial stock consume", description: `${consumedCount} consumed, ${insufficientList.length} insufficient.`, variant: "destructive" });
+        } else {
+          setStockConsumed(true);
+          toast({ title: "Stock consumed", description: `${consumedCount} item(s) consumed.`, variant: "success" });
+        }
+      }
+    } catch (e: any) {
+      toast({ title: "Stock error", description: e?.message || "Could not consume stock.", variant: "destructive" });
+    } finally {
+      setConsumingStock(false);
+    }
+  }
+
+  const hasStockLines = (budgetLines ?? []).length > 0;
 
   const isTimerOnThisJob = active?.jobId === job.id;
   const hasActiveTimer = Boolean(active);
@@ -406,6 +457,47 @@ export default function EngineerJobDetail({
       <EngineerVariationForm jobId={job.id} stages={stages} />
 
       <EngineerSnagCard jobId={job.id} />
+
+      {/* ── Stock consume ────────────────────────────────── */}
+      {hasStockLines && (
+        <Card>
+          <CardHeader><CardTitle>Stock</CardTitle></CardHeader>
+          <CardContent>
+            {stockConsumed ? (
+              <div className="flex items-center gap-2">
+                <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">Stock consumed &#10003;</Badge>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="text-sm text-[var(--muted-foreground)]">
+                  This job has {budgetLines?.length} stock-mapped item{(budgetLines?.length ?? 0) !== 1 ? "s" : ""} to consume from your truck stock.
+                </div>
+                <div className="space-y-1">
+                  {(budgetLines ?? []).map((bl) => (
+                    <div key={bl.id} className="flex items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--background)] p-2 text-sm">
+                      <span className="text-[var(--foreground)]">{bl.description || bl.stockItemId.slice(0, 8)}</span>
+                      <span className="text-[var(--muted-foreground)]">×{bl.stockQty}</span>
+                    </div>
+                  ))}
+                </div>
+                {insufficient.length > 0 && (
+                  <div className="rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-900/20 p-3 space-y-1">
+                    <div className="text-sm font-semibold text-amber-800 dark:text-amber-300">Insufficient stock:</div>
+                    {insufficient.map((item, i) => (
+                      <div key={i} className="text-xs text-amber-700 dark:text-amber-400">
+                        {item.description}: need {item.stockQty}, have {item.available}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <Button type="button" onClick={consumeStock} disabled={consumingStock || busy}>
+                  {consumingStock ? "Consuming..." : "Consume Stock"}
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* ── Certificates ───────────────────────────────────── */}
       <Card>

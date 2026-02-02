@@ -33,6 +33,8 @@ export const PATCH = withRequestLogging(
     }
     return NextResponse.json({ ok: true, snagItem: updated });
   } catch (e: any) {
-    return NextResponse.json({ ok: false, error: e?.message || "Unauthorized" }, { status: e?.status || 401 });
+    if (e?.status === 401) return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
+    console.error("[engineer/snag-items/[snagId]]", e);
+    return NextResponse.json({ ok: false, error: "Something went wrong. Please try again." }, { status: 500 });
   }
 });

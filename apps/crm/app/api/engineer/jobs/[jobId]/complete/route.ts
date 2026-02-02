@@ -28,8 +28,8 @@ export const POST = withRequestLogging(async function POST(
 
     return NextResponse.json({ ok: true, job: updated });
   } catch (e: any) {
-    const msg = e?.message || "Unauthorized";
-    const status = e?.status || 500;
-    return NextResponse.json({ ok: false, error: msg }, { status });
+    if (e?.status === 401) return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
+    console.error("[POST /api/engineer/jobs/[jobId]/complete]", e);
+    return NextResponse.json({ ok: false, error: "Could not complete job. Please try again." }, { status: 500 });
   }
 });

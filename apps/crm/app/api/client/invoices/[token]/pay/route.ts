@@ -65,9 +65,36 @@ export const POST = withRequestLogging(
       status: 400
     });
   }
+
+  // CP-4A: Reuse existing open Stripe checkout session if available
+  const amountCents = Math.round(amount * 100);
+  if (inv.paymentRef) {
+    try {
+      const existing = await stripe.checkout.sessions.retrieve(inv.paymentRef);
+      if (
+        existing &&
+        existing.status === "open" &&
+        existing.url &&
+        existing.amount_total === amountCents
+      ) {
+        return NextResponse.json({
+          ok: true,
+          invoice: inv,
+          paymentSummary: summary,
+          paymentUrl: existing.url,
+          reused: true,
+        });
+      }
+    } catch {
+      // Session expired or invalid — create a new one below
+    }
+  }
+
   const base = appBaseUrl();
   const successUrl = `${base}/client/invoices/${inv.token}?paid=1`;
   const cancelUrl = `${base}/client/invoices/${inv.token}`;
+
+  // CP-4B: Idempotency key prevents duplicate sessions for same invoice+amount
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
     currency: "gbp",
@@ -75,7 +102,7 @@ export const POST = withRequestLogging(
       quantity: 1,
       price_data: {
         currency: "gbp",
-        unit_amount: Math.round(amount * 100),
+        unit_amount: amountCents,
         product_data: {
           name: `Invoice ${inv.invoiceNumber || inv.id}`,
           description: inv.quoteId ? `Quote: ${inv.quoteId}` : undefined
@@ -88,6 +115,8 @@ export const POST = withRequestLogging(
       invoiceId: inv.id,
       invoiceToken: inv.token
     }
+  }, {
+    idempotencyKey: `invpay_${inv.id}_${amountCents}`,
   });
 
   // Track last session for convenience (webhook uses metadata.invoiceId first).
