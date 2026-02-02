@@ -438,6 +438,7 @@ model Company {
   maintenanceAlerts            MaintenanceAlert[]
   truckStocks                  TruckStock[]
   remoteAssistSessions         RemoteAssistSession[]
+  aiEstimates                  AiEstimate[]
 }
 
 model CompanyUser {
@@ -2145,4 +2146,24 @@ model MaintenanceAlert {
 
   @@index([companyId, status, dueAt])
   @@index([companyId, assetId])
+}
+
+model AiEstimate {
+  id                 String   @id @default(cuid())
+  companyId          String
+  userId             String?
+  description        String?
+  imageSummary       String?
+  estimateJson       Json
+  confidence         String   @default("low")
+  tradeCategory      String?
+  totalCost          Float?
+  convertedToQuoteId String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@index([companyId, tradeCategory])
+  @@index([companyId, createdAt])
 }
