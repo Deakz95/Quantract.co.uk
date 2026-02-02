@@ -52,7 +52,11 @@
       "Bash(python -c:*)",
       "Bash(git status:*)",
       "Bash(gh run list:*)",
-      "WebFetch(domain:api.render.com)"
+      "WebFetch(domain:api.render.com)",
+      "Bash(npx next build)",
+      "Bash(git stash:*)",
+      "Bash(git stash pop:*)",
+      "Bash(git diff:*)"
     ]
   }
 }

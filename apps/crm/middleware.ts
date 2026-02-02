@@ -93,7 +93,7 @@ function isPublicPath(pathname: string) {
   if (pathname.startsWith("/api/cron/")) return true;
 
   // Webhooks / health (if any)
-  if (pathname === "/api/health") return true;
+  if (pathname === "/api/health" || pathname.startsWith("/api/health/")) return true;
   if (pathname.startsWith("/api/webhooks/")) return true;
 
   return false;

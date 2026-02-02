@@ -107,4 +107,8 @@ const configWithPWA = withPWA(nextConfig);
 
 export default withSentryConfig(configWithPWA, {
   silent: true,
+  // Upload sourcemaps to Sentry for readable stack traces
+  widenClientFileUpload: true,
+  // Hide sourcemaps from end-users in production
+  hideSourceMaps: true,
 });

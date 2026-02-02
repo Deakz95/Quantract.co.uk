@@ -27,6 +27,7 @@
     "qa:api:full": "tsx scripts/qa/api-full-sweep.ts",
     "qa:backfill-quote-numbers": "tsx scripts/qa/backfill-quote-numbers.ts",
     "qa:stock-consume": "tsx scripts/qa/stock-consume-smoke.ts",
+    "qa:security-audit": "tsx scripts/qa/security-audit.ts",
     "qa:backfill-site-latlng": "tsx scripts/qa/backfill-site-latlng.ts",
     "prisma:generate": "prisma generate",
     "prisma:validate": "prisma validate",

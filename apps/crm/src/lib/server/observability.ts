@@ -1,5 +1,6 @@
 import * as Sentry from "@sentry/nextjs";
-import { getCompanyId } from "@/lib/serverAuth";
+import { getCompanyId, getAuthContext } from "@/lib/serverAuth";
+import { requestContext } from "./requestContext";
 
 /**
  * Structured logging with Sentry integration
@@ -195,28 +196,47 @@ export function logError(error: Error | unknown, context?: Record<string, unknow
 export function withRequestLogging<T extends (...args: any[]) => any>(handler: T): T {
   return (async (...args: Parameters<T>) => {
     const req = args[0] as Request;
+    const requestId = req.headers.get("x-request-id") ?? undefined;
+    const route = new URL(req.url).pathname;
     const start = Date.now();
     let status = 500;
 
+    // Resolve auth context once (best-effort, never throws)
+    let companyId: string | null = null;
+    let userId: string | null = null;
     try {
-      const response = await handler(...args);
-      status = response.status;
-      return response;
-    } catch (error: unknown) {
-      if (typeof (error as { status?: number })?.status === "number") {
-        status = (error as { status: number }).status;
-      }
-      throw error;
-    } finally {
-      const durationMs = Date.now() - start;
-      const route = new URL(req.url).pathname;
-      let companyId: string | null = null;
-      try {
-        companyId = await getCompanyId();
-      } catch {
-        companyId = null;
-      }
-      logRequest({ route, status, durationMs, companyId });
+      const ctx = await getAuthContext();
+      companyId = ctx?.companyId ?? null;
+      userId = ctx?.userId ?? null;
+    } catch {
+      // auth resolution failed — continue without context
     }
+
+    // Run handler inside AsyncLocalStorage + Sentry scope
+    return requestContext.run(
+      { requestId: requestId ?? "", companyId: companyId ?? undefined, userId: userId ?? undefined, route },
+      async () => {
+        return Sentry.withScope(async (scope) => {
+          if (requestId) scope.setTag("requestId", requestId);
+          if (companyId) scope.setTag("companyId", companyId);
+          if (userId) scope.setTag("userId", userId);
+          scope.setTag("route", route);
+
+          try {
+            const response = await handler(...args);
+            status = response.status;
+            return response;
+          } catch (error: unknown) {
+            if (typeof (error as { status?: number })?.status === "number") {
+              status = (error as { status: number }).status;
+            }
+            throw error;
+          } finally {
+            const durationMs = Date.now() - start;
+            logRequest({ route, status, durationMs, companyId, userId, requestId });
+          }
+        });
+      },
+    );
   }) as T;
 }

@@ -3,6 +3,7 @@ import { requireCompanyContext, getEffectiveRole } from "@/lib/serverAuth";
 import { getPrisma } from "@/lib/server/prisma";
 import { withRequestLogging } from "@/lib/server/observability";
 import { syncLowStockAlert } from "@/lib/server/stockAlerts";
+import { log } from "@/lib/server/logger";
 
 export const runtime = "nodejs";
 
@@ -98,7 +99,7 @@ export const PATCH = withRequestLogging(async function PATCH(
     return NextResponse.json({ ok: true, data: record });
   } catch (e: any) {
     if (e?.status === 401) return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
-    console.error("[PATCH /api/admin/truck-stock/[id]]", e);
+    log.error("truck-stock/PATCH", { error: e?.message });
     return NextResponse.json({ ok: false, error: "update_failed" }, { status: 500 });
   }
 });
@@ -159,7 +160,7 @@ export const DELETE = withRequestLogging(async function DELETE(
     return NextResponse.json({ ok: true });
   } catch (e: any) {
     if (e?.status === 401) return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
-    console.error("[DELETE /api/admin/truck-stock/[id]]", e);
+    log.error("truck-stock/DELETE", { error: e?.message });
     return NextResponse.json({ ok: false, error: "delete_failed" }, { status: 500 });
   }
 });

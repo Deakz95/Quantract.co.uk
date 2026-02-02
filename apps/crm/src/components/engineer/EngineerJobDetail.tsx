@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/useToast";
 import EngineerVariationForm from "@/components/engineer/EngineerVariationForm";
 import EngineerSnagCard from "@/components/engineer/EngineerSnagCard";
+import BottomDrawer from "@/components/ui/BottomDrawer";
 
 // ── Types (mirrors server-side shapes) ──────────────────────────
 
@@ -97,6 +98,38 @@ function googleMapsUrl(address: string) {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
 }
 
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+  return isMobile;
+}
+
+// ── CollapsibleSection ──────────────────────────────────────────
+
+function CollapsibleSection({ title, defaultOpen, children, count }: {
+  title: string; defaultOpen: boolean; children: React.ReactNode; count?: number;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <Card>
+      <CardHeader>
+        <button type="button" onClick={() => setOpen(!open)}
+          className="flex w-full items-center justify-between min-h-[44px] text-left">
+          <CardTitle>{title}{count != null ? ` (${count})` : ""}</CardTitle>
+          <span className="text-xs text-[var(--muted-foreground)]">{open ? "Hide" : "Show"}</span>
+        </button>
+      </CardHeader>
+      {open && <CardContent>{children}</CardContent>}
+    </Card>
+  );
+}
+
 // ── Component ───────────────────────────────────────────────────
 
 export default function EngineerJobDetail({
@@ -117,6 +150,7 @@ export default function EngineerJobDetail({
   budgetLines?: StockBudgetLine[];
 }) {
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [active, setActive] = useState<ActiveTimer>(null);
   const [elapsed, setElapsed] = useState("");
   const [busy, setBusy] = useState(false);
@@ -125,6 +159,7 @@ export default function EngineerJobDetail({
   const [stockConsumed, setStockConsumed] = useState(!!job.stockConsumedAt);
   const [consumingStock, setConsumingStock] = useState(false);
   const [insufficient, setInsufficient] = useState<Array<{ description: string; stockQty: number; available: number }>>([]);
+  const [drawerMode, setDrawerMode] = useState<"cost" | "time" | null>(null);
 
   // ── Timer polling ───────────────────────────────────────────
   const fetchTimer = useCallback(async () => {
@@ -151,7 +186,7 @@ export default function EngineerJobDetail({
 
   // ── Actions ─────────────────────────────────────────────────
   async function startTimer() {
-    if (busy) return; // guard against rapid double-click
+    if (busy) return;
     setBusy(true);
     try {
       const res = await fetch("/api/engineer/timer/start", {
@@ -165,7 +200,6 @@ export default function EngineerJobDetail({
       if (data.started) {
         toast({ title: "Timer started", variant: "success" });
       } else if (data.active) {
-        // Existing timer returned (idempotent) — just reflect it
         toast({ title: "Timer already running", variant: "default" });
       }
     } catch (e: any) {
@@ -176,7 +210,7 @@ export default function EngineerJobDetail({
   }
 
   async function stopTimer() {
-    if (busy) return; // guard against rapid double-click
+    if (busy) return;
     setBusy(true);
     try {
       const res = await fetch("/api/engineer/timer/stop", { method: "POST" });
@@ -250,13 +284,199 @@ export default function EngineerJobDetail({
   const isTimerOnThisJob = active?.jobId === job.id;
   const hasActiveTimer = Boolean(active);
 
+  // ── Drawer form handlers ────────────────────────────────────
+
+  async function handleLogTime(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    const date = fd.get("date") as string;
+    const start = fd.get("startTime") as string;
+    const duration = parseFloat(fd.get("duration") as string) || 1;
+    const breakMins = parseInt(fd.get("breakMinutes") as string) || 0;
+    const notes = (fd.get("notes") as string)?.trim() || undefined;
+
+    const startedAt = new Date(`${date}T${start}`);
+    const endedAt = new Date(startedAt.getTime() + duration * 3600000);
+
+    try {
+      const res = await fetch("/api/engineer/time-entries", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          jobId: job.id,
+          startedAtISO: startedAt.toISOString(),
+          endedAtISO: endedAt.toISOString(),
+          breakMinutes: breakMins,
+          notes,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Failed");
+      toast({ title: "Time logged", variant: "success" });
+      setDrawerMode(null);
+    } catch (err: any) {
+      toast({ title: "Error", description: err?.message, variant: "destructive" });
+    }
+  }
+
+  async function handleAddCost(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    const description = (fd.get("description") as string)?.trim();
+    const type = fd.get("type") as string;
+    const quantity = parseFloat(fd.get("quantity") as string) || 1;
+    const unitCost = parseFloat(fd.get("unitCost") as string) || 0;
+    const supplier = (fd.get("supplier") as string)?.trim() || undefined;
+
+    if (!description) return;
+
+    try {
+      const res = await fetch(`/api/engineer/jobs/${job.id}/cost-items`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ description, type, quantity, unitCost, supplier }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Failed");
+      toast({ title: "Cost added", variant: "success" });
+      setDrawerMode(null);
+    } catch (err: any) {
+      toast({ title: "Error", description: err?.message, variant: "destructive" });
+    }
+  }
+
+  // ── Section content helpers ─────────────────────────────────
+
+  const documentsContent = (
+    <div className="space-y-2 text-sm">
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3">
+        <div>
+          <div className="font-semibold text-[var(--foreground)]">Quote PDF</div>
+          <div className="text-xs text-[var(--muted-foreground)]">{quote ? "Ready" : "Not available"}</div>
+        </div>
+        {quote?.token && (
+          <a className="text-sm font-semibold text-[var(--foreground)] hover:underline min-h-[44px] inline-flex items-center" href={`/api/client/quotes/${quote.token}/pdf`} target="_blank" rel="noreferrer">
+            Open
+          </a>
+        )}
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3">
+        <div>
+          <div className="font-semibold text-[var(--foreground)]">Agreement</div>
+          <div className="text-xs text-[var(--muted-foreground)]">{agreement ? `Status: ${agreement.status}` : "Not created"}</div>
+        </div>
+        {agreement?.token && (
+          <a className="text-sm font-semibold text-[var(--foreground)] hover:underline min-h-[44px] inline-flex items-center" href={`/api/client/agreements/${agreement.token}/pdf`} target="_blank" rel="noreferrer">
+            Open
+          </a>
+        )}
+      </div>
+    </div>
+  );
+
+  const stagesContent = stages.length === 0 ? (
+    <div className="text-sm text-[var(--muted-foreground)]">No stages set up yet.</div>
+  ) : (
+    <div className="space-y-2">
+      {stages.map((stage) => (
+        <div key={stage.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3 text-sm">
+          <div className="font-semibold text-[var(--foreground)]">{stage.name}</div>
+          <Badge>{stage.status.replace("_", " ")}</Badge>
+        </div>
+      ))}
+    </div>
+  );
+
+  const variationsContent = (
+    <div className="space-y-4">
+      {variations.length === 0 ? (
+        <div className="text-sm text-[var(--muted-foreground)]">No variations raised yet.</div>
+      ) : (
+        <div className="space-y-2">
+          {variations.map((v) => (
+            <div key={v.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3 text-sm">
+              <div className="min-w-0">
+                <div className="font-semibold text-[var(--foreground)]">{v.title}</div>
+                <div className="mt-0.5 text-xs text-[var(--muted-foreground)]">
+                  {v.stageName ? `${v.stageName} \u2022 ` : ""}{v.status} \u2022 {pounds(v.total)}
+                </div>
+              </div>
+              <Badge>{v.status}</Badge>
+            </div>
+          ))}
+        </div>
+      )}
+      <EngineerVariationForm jobId={job.id} stages={stages} />
+    </div>
+  );
+
+  const stockContent = stockConsumed ? (
+    <div className="flex items-center gap-2">
+      <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">Stock consumed &#10003;</Badge>
+    </div>
+  ) : (
+    <div className="space-y-3">
+      <div className="text-sm text-[var(--muted-foreground)]">
+        This job has {budgetLines?.length} stock-mapped item{(budgetLines?.length ?? 0) !== 1 ? "s" : ""} to consume from your truck stock.
+      </div>
+      <div className="space-y-1">
+        {(budgetLines ?? []).map((bl) => (
+          <div key={bl.id} className="flex items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--background)] p-2 text-sm">
+            <span className="text-[var(--foreground)]">{bl.description || bl.stockItemId.slice(0, 8)}</span>
+            <span className="text-[var(--muted-foreground)]">×{bl.stockQty}</span>
+          </div>
+        ))}
+      </div>
+      {insufficient.length > 0 && (
+        <div className="rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-900/20 p-3 space-y-1">
+          <div className="text-sm font-semibold text-amber-800 dark:text-amber-300">Insufficient stock:</div>
+          {insufficient.map((item, i) => (
+            <div key={i} className="text-xs text-amber-700 dark:text-amber-400">
+              {item.description}: need {item.stockQty}, have {item.available}
+            </div>
+          ))}
+        </div>
+      )}
+      <Button type="button" onClick={consumeStock} disabled={consumingStock || busy}>
+        {consumingStock ? "Consuming..." : "Consume Stock"}
+      </Button>
+    </div>
+  );
+
+  const certsContent = certs.length === 0 ? (
+    <div className="text-sm text-[var(--muted-foreground)]">No certificates assigned yet.</div>
+  ) : (
+    <div className="space-y-2">
+      {certs.map((cert) => (
+        <div key={cert.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="text-sm font-semibold text-[var(--foreground)]">{cert.type} {cert.certificateNumber ? `\u2022 ${cert.certificateNumber}` : `\u2022 #${cert.id.slice(0, 8)}`}</div>
+              <Badge>{cert.status}</Badge>
+            </div>
+            {cert.completedAtISO && (
+              <div className="mt-1 text-xs text-[var(--muted-foreground)]">Completed {new Date(cert.completedAtISO).toLocaleString("en-GB")}</div>
+            )}
+          </div>
+          <Link className="text-sm font-semibold text-[var(--foreground)] hover:underline min-h-[44px] inline-flex items-center" href={`/engineer/certificates/${cert.id}`}>
+            Open
+          </Link>
+        </div>
+      ))}
+    </div>
+  );
+
+  const today = new Date().toISOString().slice(0, 10);
+
   return (
     <div className="space-y-5 pb-24">
       {/* ── Job header ─────────────────────────────────────── */}
       <Card>
         <CardHeader>
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <CardTitle>{job.title || `Job #${job.id.slice(0, 8)}`}</CardTitle>
+            <CardTitle className="line-clamp-2 md:line-clamp-none">
+              {job.title || `Job #${job.id.slice(0, 8)}`}
+            </CardTitle>
             <div className="flex items-center gap-2">
               <Badge>{jobStatus.replace("_", " ")}</Badge>
             </div>
@@ -322,7 +542,7 @@ export default function EngineerJobDetail({
         </div>
       )}
 
-      {/* ── Scope (collapsible) ────────────────────────────── */}
+      {/* ── Scope (collapsible — has own toggle) ─────────── */}
       <Card>
         <CardHeader>
           <button
@@ -380,173 +600,224 @@ export default function EngineerJobDetail({
         )}
       </Card>
 
-      {/* ── Documents ──────────────────────────────────────── */}
-      <Card>
-        <CardHeader><CardTitle>Documents</CardTitle></CardHeader>
-        <CardContent>
-          <div className="space-y-2 text-sm">
-            <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3">
-              <div>
-                <div className="font-semibold text-[var(--foreground)]">Quote PDF</div>
-                <div className="text-xs text-[var(--muted-foreground)]">{quote ? "Ready" : "Not available"}</div>
-              </div>
-              {quote?.token && (
-                <a className="text-sm font-semibold text-[var(--foreground)] hover:underline min-h-[44px] inline-flex items-center" href={`/api/client/quotes/${quote.token}/pdf`} target="_blank" rel="noreferrer">
-                  Open
-                </a>
-              )}
-            </div>
-            <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3">
-              <div>
-                <div className="font-semibold text-[var(--foreground)]">Agreement</div>
-                <div className="text-xs text-[var(--muted-foreground)]">{agreement ? `Status: ${agreement.status}` : "Not created"}</div>
-              </div>
-              {agreement?.token && (
-                <a className="text-sm font-semibold text-[var(--foreground)] hover:underline min-h-[44px] inline-flex items-center" href={`/api/client/agreements/${agreement.token}/pdf`} target="_blank" rel="noreferrer">
-                  Open
-                </a>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* ── Sections: mobile = collapsible, desktop = always expanded ── */}
 
-      {/* ── Stages ─────────────────────────────────────────── */}
-      <Card>
-        <CardHeader><CardTitle>Stages</CardTitle></CardHeader>
-        <CardContent>
-          {stages.length === 0 ? (
-            <div className="text-sm text-[var(--muted-foreground)]">No stages set up yet.</div>
-          ) : (
-            <div className="space-y-2">
-              {stages.map((stage) => (
-                <div key={stage.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3 text-sm">
-                  <div className="font-semibold text-[var(--foreground)]">{stage.name}</div>
-                  <Badge>{stage.status.replace("_", " ")}</Badge>
-                </div>
-              ))}
-            </div>
+      {isMobile ? (
+        <>
+          <CollapsibleSection title="Documents" defaultOpen={false}>
+            {documentsContent}
+          </CollapsibleSection>
+
+          <CollapsibleSection title="Stages" defaultOpen={false} count={stages.length}>
+            {stagesContent}
+          </CollapsibleSection>
+
+          <CollapsibleSection title="Variations" defaultOpen={false} count={variations.length}>
+            {variationsContent}
+          </CollapsibleSection>
+
+          <CollapsibleSection title="Snag List" defaultOpen={false}>
+            <EngineerSnagCard jobId={job.id} />
+          </CollapsibleSection>
+
+          {hasStockLines && (
+            <CollapsibleSection title="Stock" defaultOpen={false} count={budgetLines?.length}>
+              {stockContent}
+            </CollapsibleSection>
           )}
-        </CardContent>
-      </Card>
 
-      {/* ── Variations ─────────────────────────────────────── */}
-      <Card>
-        <CardHeader><CardTitle>Variations</CardTitle></CardHeader>
-        <CardContent>
-          {variations.length === 0 ? (
-            <div className="text-sm text-[var(--muted-foreground)]">No variations raised yet.</div>
-          ) : (
-            <div className="space-y-2">
-              {variations.map((v) => (
-                <div key={v.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3 text-sm">
-                  <div className="min-w-0">
-                    <div className="font-semibold text-[var(--foreground)]">{v.title}</div>
-                    <div className="mt-0.5 text-xs text-[var(--muted-foreground)]">
-                      {v.stageName ? `${v.stageName} \u2022 ` : ""}{v.status} \u2022 {pounds(v.total)}
-                    </div>
-                  </div>
-                  <Badge>{v.status}</Badge>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+          <CollapsibleSection title="Certificates" defaultOpen={false} count={certs.length}>
+            {certsContent}
+          </CollapsibleSection>
+        </>
+      ) : (
+        <>
+          {/* Documents */}
+          <Card>
+            <CardHeader><CardTitle>Documents</CardTitle></CardHeader>
+            <CardContent>{documentsContent}</CardContent>
+          </Card>
 
-      <EngineerVariationForm jobId={job.id} stages={stages} />
+          {/* Stages */}
+          <Card>
+            <CardHeader><CardTitle>Stages</CardTitle></CardHeader>
+            <CardContent>{stagesContent}</CardContent>
+          </Card>
 
-      <EngineerSnagCard jobId={job.id} />
-
-      {/* ── Stock consume ────────────────────────────────── */}
-      {hasStockLines && (
-        <Card>
-          <CardHeader><CardTitle>Stock</CardTitle></CardHeader>
-          <CardContent>
-            {stockConsumed ? (
-              <div className="flex items-center gap-2">
-                <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">Stock consumed &#10003;</Badge>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="text-sm text-[var(--muted-foreground)]">
-                  This job has {budgetLines?.length} stock-mapped item{(budgetLines?.length ?? 0) !== 1 ? "s" : ""} to consume from your truck stock.
-                </div>
-                <div className="space-y-1">
-                  {(budgetLines ?? []).map((bl) => (
-                    <div key={bl.id} className="flex items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--background)] p-2 text-sm">
-                      <span className="text-[var(--foreground)]">{bl.description || bl.stockItemId.slice(0, 8)}</span>
-                      <span className="text-[var(--muted-foreground)]">×{bl.stockQty}</span>
+          {/* Variations */}
+          <Card>
+            <CardHeader><CardTitle>Variations</CardTitle></CardHeader>
+            <CardContent>
+              {variations.length === 0 ? (
+                <div className="text-sm text-[var(--muted-foreground)]">No variations raised yet.</div>
+              ) : (
+                <div className="space-y-2">
+                  {variations.map((v) => (
+                    <div key={v.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3 text-sm">
+                      <div className="min-w-0">
+                        <div className="font-semibold text-[var(--foreground)]">{v.title}</div>
+                        <div className="mt-0.5 text-xs text-[var(--muted-foreground)]">
+                          {v.stageName ? `${v.stageName} \u2022 ` : ""}{v.status} \u2022 {pounds(v.total)}
+                        </div>
+                      </div>
+                      <Badge>{v.status}</Badge>
                     </div>
                   ))}
                 </div>
-                {insufficient.length > 0 && (
-                  <div className="rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-900/20 p-3 space-y-1">
-                    <div className="text-sm font-semibold text-amber-800 dark:text-amber-300">Insufficient stock:</div>
-                    {insufficient.map((item, i) => (
-                      <div key={i} className="text-xs text-amber-700 dark:text-amber-400">
-                        {item.description}: need {item.stockQty}, have {item.available}
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <Button type="button" onClick={consumeStock} disabled={consumingStock || busy}>
-                  {consumingStock ? "Consuming..." : "Consume Stock"}
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              )}
+            </CardContent>
+          </Card>
+
+          <EngineerVariationForm jobId={job.id} stages={stages} />
+          <EngineerSnagCard jobId={job.id} />
+
+          {/* Stock */}
+          {hasStockLines && (
+            <Card>
+              <CardHeader><CardTitle>Stock</CardTitle></CardHeader>
+              <CardContent>{stockContent}</CardContent>
+            </Card>
+          )}
+
+          {/* Certificates */}
+          <Card>
+            <CardHeader><CardTitle>Certificates</CardTitle></CardHeader>
+            <CardContent>{certsContent}</CardContent>
+          </Card>
+        </>
       )}
 
-      {/* ── Certificates ───────────────────────────────────── */}
-      <Card>
-        <CardHeader><CardTitle>Certificates</CardTitle></CardHeader>
-        <CardContent>
-          {certs.length === 0 ? (
-            <div className="text-sm text-[var(--muted-foreground)]">No certificates assigned yet.</div>
-          ) : (
-            <div className="space-y-2">
-              {certs.map((cert) => (
-                <div key={cert.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3">
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <div className="text-sm font-semibold text-[var(--foreground)]">{cert.type} {cert.certificateNumber ? `\u2022 ${cert.certificateNumber}` : `\u2022 #${cert.id.slice(0, 8)}`}</div>
-                      <Badge>{cert.status}</Badge>
-                    </div>
-                    {cert.completedAtISO && (
-                      <div className="mt-1 text-xs text-[var(--muted-foreground)]">Completed {new Date(cert.completedAtISO).toLocaleString("en-GB")}</div>
-                    )}
-                  </div>
-                  <Link className="text-sm font-semibold text-[var(--foreground)] hover:underline min-h-[44px] inline-flex items-center" href={`/engineer/certificates/${cert.id}`}>
-                    Open
-                  </Link>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
       {/* ── Sticky bottom action bar ───────────────────────── */}
-      <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-[var(--border)] bg-[var(--background)] px-4 pb-[env(safe-area-inset-bottom,8px)] pt-3">
-        <div className="mx-auto flex max-w-6xl items-center justify-center gap-3">
-          {isTimerOnThisJob ? (
-            <Button type="button" onClick={stopTimer} disabled={busy} className="min-h-[44px] min-w-[44px] flex-1 max-w-[200px]">
-              Stop timer \u2022 {elapsed}
-            </Button>
-          ) : (
-            <Button type="button" onClick={startTimer} disabled={busy || hasActiveTimer} className="min-h-[44px] min-w-[44px] flex-1 max-w-[200px]">
-              {hasActiveTimer ? "Timer on another job" : "Start timer"}
-            </Button>
-          )}
-          {jobStatus !== "completed" && (
-            <Button variant="secondary" type="button" onClick={markComplete} disabled={busy} className="min-h-[44px] min-w-[44px]">
-              Complete
-            </Button>
-          )}
+      {isMobile ? (
+        <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-[var(--border)] bg-[var(--background)] pb-[env(safe-area-inset-bottom,8px)]">
+          <div className="grid grid-cols-4 h-[56px]">
+            <button
+              type="button"
+              onClick={isTimerOnThisJob ? stopTimer : startTimer}
+              disabled={busy || (!isTimerOnThisJob && hasActiveTimer)}
+              className="flex flex-col items-center justify-center gap-0.5 text-[var(--foreground)] disabled:opacity-40"
+            >
+              <span className="text-lg">{isTimerOnThisJob ? "\u23F8" : "\u25B6"}</span>
+              <span className="text-[10px] leading-none">{isTimerOnThisJob ? "Stop" : "Timer"}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setDrawerMode("cost")}
+              className="flex flex-col items-center justify-center gap-0.5 text-[var(--foreground)]"
+            >
+              <span className="text-lg">+</span>
+              <span className="text-[10px] leading-none">Add Cost</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setDrawerMode("time")}
+              className="flex flex-col items-center justify-center gap-0.5 text-[var(--foreground)]"
+            >
+              <span className="text-lg">{"\u23F1"}</span>
+              <span className="text-[10px] leading-none">Log Time</span>
+            </button>
+            {jobStatus !== "completed" && (
+              <button
+                type="button"
+                onClick={markComplete}
+                disabled={busy}
+                className="flex flex-col items-center justify-center gap-0.5 text-[var(--foreground)] disabled:opacity-40"
+              >
+                <span className="text-lg">{"\u2713"}</span>
+                <span className="text-[10px] leading-none">Complete</span>
+              </button>
+            )}
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-[var(--border)] bg-[var(--background)] px-4 pb-[env(safe-area-inset-bottom,8px)] pt-3">
+          <div className="mx-auto flex max-w-6xl items-center justify-center gap-3">
+            {isTimerOnThisJob ? (
+              <Button type="button" onClick={stopTimer} disabled={busy} className="min-h-[44px] min-w-[44px] flex-1 max-w-[200px]">
+                Stop timer \u2022 {elapsed}
+              </Button>
+            ) : (
+              <Button type="button" onClick={startTimer} disabled={busy || hasActiveTimer} className="min-h-[44px] min-w-[44px] flex-1 max-w-[200px]">
+                {hasActiveTimer ? "Timer on another job" : "Start timer"}
+              </Button>
+            )}
+            {jobStatus !== "completed" && (
+              <Button variant="secondary" type="button" onClick={markComplete} disabled={busy} className="min-h-[44px] min-w-[44px]">
+                Complete
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Log Time Drawer ────────────────────────────────── */}
+      <BottomDrawer open={drawerMode === "time"} onClose={() => setDrawerMode(null)} title="Log Time">
+        <form onSubmit={handleLogTime} className="space-y-4">
+          <label className="block">
+            <span className="text-sm font-medium text-[var(--foreground)]">Date</span>
+            <input type="date" name="date" defaultValue={today} required
+              className="mt-1 block w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm min-h-[44px]" />
+          </label>
+          <label className="block">
+            <span className="text-sm font-medium text-[var(--foreground)]">Start time</span>
+            <input type="time" name="startTime" defaultValue="09:00" required
+              className="mt-1 block w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm min-h-[44px]" />
+          </label>
+          <label className="block">
+            <span className="text-sm font-medium text-[var(--foreground)]">Duration (hours)</span>
+            <input type="number" name="duration" defaultValue={1} step={0.25} min={0.25} required
+              className="mt-1 block w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm min-h-[44px]" />
+          </label>
+          <label className="block">
+            <span className="text-sm font-medium text-[var(--foreground)]">Break (mins)</span>
+            <input type="number" name="breakMinutes" defaultValue={0} min={0}
+              className="mt-1 block w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm min-h-[44px]" />
+          </label>
+          <label className="block">
+            <span className="text-sm font-medium text-[var(--foreground)]">Notes</span>
+            <textarea name="notes" rows={2}
+              className="mt-1 block w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm" />
+          </label>
+          <Button type="submit" className="w-full min-h-[44px]">Log Time</Button>
+        </form>
+      </BottomDrawer>
+
+      {/* ── Add Cost Drawer ────────────────────────────────── */}
+      <BottomDrawer open={drawerMode === "cost"} onClose={() => setDrawerMode(null)} title="Add Cost">
+        <form onSubmit={handleAddCost} className="space-y-4">
+          <label className="block">
+            <span className="text-sm font-medium text-[var(--foreground)]">Description</span>
+            <input type="text" name="description" required
+              className="mt-1 block w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm min-h-[44px]" />
+          </label>
+          <label className="block">
+            <span className="text-sm font-medium text-[var(--foreground)]">Type</span>
+            <select name="type" defaultValue="material"
+              className="mt-1 block w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm min-h-[44px]">
+              <option value="material">Material</option>
+              <option value="subcontractor">Subcontractor</option>
+              <option value="plant">Plant</option>
+              <option value="other">Other</option>
+            </select>
+          </label>
+          <label className="block">
+            <span className="text-sm font-medium text-[var(--foreground)]">Quantity</span>
+            <input type="number" name="quantity" defaultValue={1} min={1} step={1}
+              className="mt-1 block w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm min-h-[44px]" />
+          </label>
+          <label className="block">
+            <span className="text-sm font-medium text-[var(--foreground)]">Unit cost (&pound;)</span>
+            <input type="number" name="unitCost" defaultValue={0} min={0} step={0.01}
+              className="mt-1 block w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm min-h-[44px]" />
+          </label>
+          <label className="block">
+            <span className="text-sm font-medium text-[var(--foreground)]">Notes / Supplier</span>
+            <input type="text" name="supplier"
+              className="mt-1 block w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm min-h-[44px]" />
+          </label>
+          <Button type="submit" className="w-full min-h-[44px]">Add Cost</Button>
+        </form>
+      </BottomDrawer>
     </div>
   );
 }

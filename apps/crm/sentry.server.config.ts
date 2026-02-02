@@ -6,8 +6,13 @@ Sentry.init({
   // Performance monitoring
   tracesSampleRate: 0.1, // 10% of transactions
 
-  // Environment detection
-  environment: process.env.NODE_ENV || "development",
+  // Environment detection — use Render service name to distinguish staging vs production
+  environment:
+    process.env.RENDER_SERVICE_NAME?.includes("staging")
+      ? "staging"
+      : process.env.NODE_ENV === "production"
+        ? "production"
+        : "development",
   enabled: Boolean(process.env.SENTRY_DSN),
 
   // Release tracking (for source maps)

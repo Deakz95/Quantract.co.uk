@@ -7,6 +7,8 @@
  * Deduplication: @@unique([companyId, type, entityId]) on StockAlert.
  */
 
+import { log } from "./logger";
+
 type StockRecord = {
   id: string;
   qty: number;
@@ -76,7 +78,8 @@ export async function syncLowStockAlert(
   } catch (e: any) {
     // P2002 = unique constraint race (another request already upserted) — safe to ignore
     if (e?.code === "P2002") return;
-    console.error("[stockAlerts] syncLowStockAlert failed", {
+    log.error("stockAlerts", {
+      action: "syncLowStockAlert",
       companyId,
       truckStockId: record.id,
       stockItemId: record.stockItemId,

@@ -1,0 +1,3071 @@
+[
+  {
+    "pathTemplate": "/api/admin/activities",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/activities/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/activities/{activityId}",
+    "methods": [
+      "GET",
+      "PATCH",
+      "DELETE"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/activities/[activityId]/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "activityId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/agreements/{agreementId}/pdf",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/agreements/[agreementId]/pdf/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "agreementId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/ai/apply",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/ai/apply/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/ai/estimate-from-photo",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/ai/estimate-from-photo/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/ai/recommendations",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/ai/recommendations/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/billing/checkout",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/billing/checkout/route.ts",
+    "category": "billing",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/billing/portal",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/billing/portal/route.ts",
+    "category": "billing",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/billing/status",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/billing/status/route.ts",
+    "category": "billing",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/certificates",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/certificates/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/certificates/{certificateId}",
+    "methods": [
+      "GET",
+      "PATCH"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/certificates/[certificateId]/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "certificateId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/certificates/{certificateId}/amend",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/certificates/[certificateId]/amend/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "certificateId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/certificates/{certificateId}/amendments",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/certificates/[certificateId]/amendments/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "certificateId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/certificates/{certificateId}/attachments",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/certificates/[certificateId]/attachments/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "certificateId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/certificates/{certificateId}/checklists",
+    "methods": [
+      "GET",
+      "PATCH"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/certificates/[certificateId]/checklists/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "certificateId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/certificates/{certificateId}/complete",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/certificates/[certificateId]/complete/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "certificateId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/certificates/{certificateId}/issue",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/certificates/[certificateId]/issue/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "certificateId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/certificates/{certificateId}/observations",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/certificates/[certificateId]/observations/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "certificateId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/certificates/{certificateId}/outcome",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/certificates/[certificateId]/outcome/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "certificateId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/certificates/{certificateId}/pdf",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/certificates/[certificateId]/pdf/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "certificateId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/certificates/{certificateId}/reissue",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/certificates/[certificateId]/reissue/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "certificateId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/certificates/{certificateId}/revisions",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/certificates/[certificateId]/revisions/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "certificateId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/certificates/{certificateId}/revisions/{revision}/pdf",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/certificates/[certificateId]/revisions/[revision]/pdf/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "certificateId",
+      "revision"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/certificates/{certificateId}/revisions/{revision}/regenerate-pdf",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/certificates/[certificateId]/revisions/[revision]/regenerate-pdf/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "certificateId",
+      "revision"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/certificates/{certificateId}/signatures",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/certificates/[certificateId]/signatures/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "certificateId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/certificates/{certificateId}/verification/restore",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/certificates/[certificateId]/verification/restore/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "certificateId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/certificates/{certificateId}/verification/revoke",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/certificates/[certificateId]/verification/revoke/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "certificateId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/certificates/{certificateId}/void",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/certificates/[certificateId]/void/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "certificateId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/certificates/analytics",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/certificates/analytics/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/certificates/export",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/certificates/export/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/checklist-templates",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/checklist-templates/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/checklist-templates/{id}",
+    "methods": [
+      "GET",
+      "PATCH",
+      "DELETE"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/checklist-templates/[id]/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "id"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/clients",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/clients/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/clients/{clientId}",
+    "methods": [
+      "GET",
+      "PATCH",
+      "DELETE"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/clients/[clientId]/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "clientId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/clients/{clientId}/contacts",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/clients/[clientId]/contacts/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "clientId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/contacts",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/contacts/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/contacts/{contactId}",
+    "methods": [
+      "GET",
+      "PATCH",
+      "DELETE"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/contacts/[contactId]/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "contactId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/cost-items/{costItemId}/attachments",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/cost-items/[costItemId]/attachments/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "costItemId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/cost-items/{costItemId}/attachments/{attachmentId}",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/cost-items/[costItemId]/attachments/[attachmentId]/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "costItemId",
+      "attachmentId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/dashboard",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/dashboard/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/dashboard/activity",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/dashboard/activity/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/dashboard/break-even",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/dashboard/break-even/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/dashboard/revenue",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/dashboard/revenue/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/dashboard/summary",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/dashboard/summary/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/deal-stages",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/deal-stages/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/deal-stages/{stageId}",
+    "methods": [
+      "GET",
+      "PATCH",
+      "DELETE"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/deal-stages/[stageId]/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "stageId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/deal-stages/reorder",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/deal-stages/reorder/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/deals",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/deals/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/deals/{dealId}",
+    "methods": [
+      "GET",
+      "PATCH",
+      "DELETE"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/deals/[dealId]/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "dealId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/deals/{dealId}/move-stage",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/deals/[dealId]/move-stage/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "dealId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/engineers",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/engineers/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/engineers/{engineerId}",
+    "methods": [
+      "PATCH",
+      "DELETE"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/engineers/[engineerId]/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "engineerId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/enquiries",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/enquiries/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/enquiries/{id}",
+    "methods": [
+      "GET",
+      "PATCH",
+      "DELETE"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/enquiries/[id]/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "id"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/enquiries/{id}/move-stage",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/enquiries/[id]/move-stage/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "id"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/entitlements",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/entitlements/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/expenses",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/expenses/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/expenses/{id}/confirm",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/expenses/[id]/confirm/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "id"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/expenses/{id}/parse",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/expenses/[id]/parse/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "id"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/expenses/parse",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/expenses/parse/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/expenses/upload",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/expenses/upload/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/export/clients",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/export/clients/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/export/contacts",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/export/contacts/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/export/deals",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/export/deals/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/impersonate/status",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/impersonate/status/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/import/{importId}/status",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/import/[importId]/status/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "importId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/import/execute",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/import/execute/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/import/preview",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/import/preview/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/import/upload",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/import/upload/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/invites",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/invites/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/invites/{inviteId}",
+    "methods": [
+      "DELETE"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/invites/[inviteId]/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "inviteId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/invoices",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/invoices/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/invoices/{invoiceId}",
+    "methods": [
+      "GET",
+      "PATCH",
+      "DELETE"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/invoices/[invoiceId]/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "invoiceId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/invoices/{invoiceId}/certificates",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/invoices/[invoiceId]/certificates/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "invoiceId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/invoices/{invoiceId}/certificates/{certificateId}",
+    "methods": [
+      "DELETE"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/invoices/[invoiceId]/certificates/[certificateId]/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "invoiceId",
+      "certificateId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/invoices/{invoiceId}/payment-link",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/invoices/[invoiceId]/payment-link/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "invoiceId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/invoices/{invoiceId}/pdf",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/invoices/[invoiceId]/pdf/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "invoiceId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/invoices/{invoiceId}/remind",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/invoices/[invoiceId]/remind/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "invoiceId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/invoices/{invoiceId}/send",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/invoices/[invoiceId]/send/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "invoiceId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/invoices/auto-chase/run",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/invoices/auto-chase/run/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/jobs",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/jobs/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/jobs/{jobId}",
+    "methods": [
+      "GET",
+      "PATCH",
+      "DELETE"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/jobs/[jobId]/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "jobId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/jobs/{jobId}/budget-lines",
+    "methods": [
+      "GET",
+      "POST",
+      "PUT"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/jobs/[jobId]/budget-lines/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "jobId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/jobs/{jobId}/certificates",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/jobs/[jobId]/certificates/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "jobId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/jobs/{jobId}/cost-items",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/jobs/[jobId]/cost-items/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "jobId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/jobs/{jobId}/costing",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/jobs/[jobId]/costing/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "jobId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/jobs/{jobId}/finance-overview",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/jobs/[jobId]/finance-overview/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "jobId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/jobs/{jobId}/invoices",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/jobs/[jobId]/invoices/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "jobId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/jobs/{jobId}/snag-items",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/jobs/[jobId]/snag-items/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "jobId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/jobs/{jobId}/stages",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/jobs/[jobId]/stages/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "jobId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/jobs/{jobId}/supplier-bills",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/jobs/[jobId]/supplier-bills/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "jobId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/jobs/{jobId}/time-entries",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/jobs/[jobId]/time-entries/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "jobId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/jobs/{jobId}/variations",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/jobs/[jobId]/variations/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "jobId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/jobs/failed",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/jobs/failed/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/lead-capture/domains",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/lead-capture/domains/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/lead-capture/domains/{domainId}",
+    "methods": [
+      "GET",
+      "PATCH",
+      "DELETE"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/lead-capture/domains/[domainId]/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "domainId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/lead-capture/forms",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/lead-capture/forms/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/lead-capture/forms/{formId}",
+    "methods": [
+      "GET",
+      "PATCH",
+      "DELETE"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/lead-capture/forms/[formId]/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "formId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/lead-capture/keys",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/lead-capture/keys/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/lead-capture/keys/{keyId}",
+    "methods": [
+      "GET",
+      "PATCH",
+      "DELETE"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/lead-capture/keys/[keyId]/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "keyId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/leads/scoring",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/leads/scoring/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/leads/scoring/rescore",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/leads/scoring/rescore/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/legal-entities",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/legal-entities/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/legal-entities/{entityId}",
+    "methods": [
+      "GET",
+      "PATCH",
+      "DELETE"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/legal-entities/[entityId]/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "entityId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/maintenance/alerts",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/maintenance/alerts/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/maintenance/alerts/{alertId}",
+    "methods": [
+      "PATCH",
+      "DELETE"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/maintenance/alerts/[alertId]/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "alertId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/maintenance/assets",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/maintenance/assets/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/maintenance/assets/{assetId}",
+    "methods": [
+      "GET",
+      "PATCH",
+      "DELETE"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/maintenance/assets/[assetId]/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "assetId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/maintenance/rules",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/maintenance/rules/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/maintenance/rules/{ruleId}",
+    "methods": [
+      "GET",
+      "PATCH",
+      "DELETE"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/maintenance/rules/[ruleId]/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "ruleId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/materials/stock-items",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/materials/stock-items/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/materials/stock-movements",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/materials/stock-movements/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/notifications/logs",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/notifications/logs/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/notifications/recent",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/notifications/recent/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/notifications/rules",
+    "methods": [
+      "GET",
+      "PATCH"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/notifications/rules/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/notifications/settings",
+    "methods": [
+      "GET",
+      "PATCH"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/notifications/settings/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/notifications/templates",
+    "methods": [
+      "GET",
+      "PATCH"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/notifications/templates/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/notifications/test-sms",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/notifications/test-sms/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/overheads",
+    "methods": [
+      "GET",
+      "POST",
+      "PATCH",
+      "DELETE"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/overheads/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/planner",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/planner/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/planner/move",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/planner/move/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/purchase-orders",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/purchase-orders/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/quote-templates",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/quote-templates/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/quotes",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/quotes/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/quotes/{quoteId}",
+    "methods": [
+      "GET",
+      "PATCH",
+      "DELETE"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/quotes/[quoteId]/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "quoteId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/quotes/{quoteId}/accept",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/quotes/[quoteId]/accept/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "quoteId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/quotes/{quoteId}/duplicate",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/quotes/[quoteId]/duplicate/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "quoteId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/quotes/{quoteId}/invoice",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/quotes/[quoteId]/invoice/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "quoteId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/quotes/{quoteId}/reject",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/quotes/[quoteId]/reject/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "quoteId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/quotes/{quoteId}/send",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/quotes/[quoteId]/send/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "quoteId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/quotes/{quoteId}/token",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/quotes/[quoteId]/token/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "quoteId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/quotes/lookup",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/quotes/lookup/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/quotes/summary",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/quotes/summary/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/rams",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/rams/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/rams/{id}",
+    "methods": [
+      "GET",
+      "PUT"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/rams/[id]/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "id"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/rams/{id}/issue",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/rams/[id]/issue/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "id"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/rams/{id}/pdf",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/rams/[id]/pdf/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "id"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/rate-cards",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/rate-cards/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/remote-assist/sessions",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/remote-assist/sessions/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/remote-assist/sessions/{sessionId}/signal",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/remote-assist/sessions/[sessionId]/signal/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "sessionId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/reports/activity",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/reports/activity/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/reports/ar-aging",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/reports/ar-aging/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/reports/dashboard",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/reports/dashboard/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/reports/engineer-utilisation",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/reports/engineer-utilisation/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/reports/pipeline",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/reports/pipeline/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/reports/profitability",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/reports/profitability/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/reports/quote-win-rate",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/reports/quote-win-rate/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/reports/revenue",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/reports/revenue/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/reports/sales",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/reports/sales/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/reports/tax-summary",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/reports/tax-summary/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/reports/time-vs-estimate",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/reports/time-vs-estimate/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/reset-demo-data",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/reset-demo-data/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/saved-views",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/saved-views/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/saved-views/{viewId}",
+    "methods": [
+      "PATCH",
+      "DELETE"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/saved-views/[viewId]/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "viewId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/schedule",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/schedule/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/search",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/search/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/service-lines",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/service-lines/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/service-lines/{serviceLineId}",
+    "methods": [
+      "GET",
+      "PATCH",
+      "DELETE"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/service-lines/[serviceLineId]/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "serviceLineId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/settings",
+    "methods": [
+      "GET",
+      "PATCH"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/settings/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/settings/financials",
+    "methods": [
+      "GET",
+      "PATCH"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/settings/financials/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/settings/logo",
+    "methods": [
+      "PUT"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/settings/logo/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/settings/terms",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/settings/terms/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/sites",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/sites/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/snag-items/{snagId}",
+    "methods": [
+      "PATCH"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/snag-items/[snagId]/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "snagId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/stages",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/stages/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/stages/{stageId}",
+    "methods": [
+      "PATCH"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/stages/[stageId]/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "stageId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/subcontractors",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/subcontractors/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/supplier-bills/{billId}/lines",
+    "methods": [
+      "GET",
+      "PUT"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/supplier-bills/[billId]/lines/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "billId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/supplier-bills/{billId}/pdf",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/supplier-bills/[billId]/pdf/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "billId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/supplier-bills/{billId}/post",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/supplier-bills/[billId]/post/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "billId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/suppliers",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/suppliers/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/suppliers/summary",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/suppliers/summary/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/timesheets",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/timesheets/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/timesheets/{id}",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/timesheets/[id]/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "id"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/timesheets/{id}/approve",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/timesheets/[id]/approve/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "id"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/timesheets/{id}/reject",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/timesheets/[id]/reject/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "id"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/truck-stock",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/truck-stock/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/truck-stock/log",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/truck-stock/log/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/undo-delete",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/undo-delete/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/users",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/users/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/users/{userId}/permissions",
+    "methods": [
+      "GET",
+      "PUT"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/users/[userId]/permissions/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "userId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/users/set-password",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/users/set-password/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/variations/{variationId}",
+    "methods": [
+      "GET",
+      "PATCH"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/variations/[variationId]/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "variationId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/variations/{variationId}/attachments/{attachmentId}",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/variations/[variationId]/attachments/[attachmentId]/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "variationId",
+      "attachmentId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/variations/{variationId}/pdf",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/variations/[variationId]/pdf/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "variationId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/variations/{variationId}/send",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/variations/[variationId]/send/route.ts",
+    "category": "admin",
+    "paramNames": [
+      "variationId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/admin/xero/export-pack",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/xero/export-pack/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/xero/invoices.csv",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/xero/invoices.csv/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/xero/oauth/callback",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/xero/oauth/callback/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/admin/xero/oauth/start",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/admin/xero/oauth/start/route.ts",
+    "category": "admin",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/ai/chat",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/ai/chat/route.ts",
+    "category": "ai",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/ai/prompts",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/ai/prompts/route.ts",
+    "category": "ai",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/ai/session",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/ai/session/route.ts",
+    "category": "ai",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/ai/status",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/ai/status/route.ts",
+    "category": "ai",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/auth",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/auth/route.ts",
+    "category": "auth",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/auth/{...path}",
+    "methods": [
+      "GET",
+      "POST",
+      "PUT",
+      "PATCH",
+      "DELETE"
+    ],
+    "source": "scan",
+    "filePath": "app/api/auth/[...path]/route.ts",
+    "category": "auth",
+    "paramNames": [
+      "...path"
+    ]
+  },
+  {
+    "pathTemplate": "/api/auth/fix-company",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/auth/fix-company/route.ts",
+    "category": "auth",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/auth/forgot-password",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/auth/forgot-password/route.ts",
+    "category": "auth",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/auth/login",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/auth/login/route.ts",
+    "category": "auth",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/auth/logout",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/auth/logout/route.ts",
+    "category": "auth",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/auth/magic-link/request",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/auth/magic-link/request/route.ts",
+    "category": "auth",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/auth/magic-link/verify",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/auth/magic-link/verify/route.ts",
+    "category": "auth",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/auth/me",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/auth/me/route.ts",
+    "category": "auth",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/auth/password/change",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/auth/password/change/route.ts",
+    "category": "auth",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/auth/password/login",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/auth/password/login/route.ts",
+    "category": "auth",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/auth/resend-verification",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/auth/resend-verification/route.ts",
+    "category": "auth",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/auth/reset-password",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/auth/reset-password/route.ts",
+    "category": "auth",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/auth/session-sync",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/auth/session-sync/route.ts",
+    "category": "auth",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/auth/setup-account",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/auth/setup-account/route.ts",
+    "category": "auth",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/auth/switch-company",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/auth/switch-company/route.ts",
+    "category": "auth",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/client/agreements/{token}",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/client/agreements/[token]/route.ts",
+    "category": "client",
+    "paramNames": [
+      "token"
+    ]
+  },
+  {
+    "pathTemplate": "/api/client/agreements/{token}/certificate",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/client/agreements/[token]/certificate/route.ts",
+    "category": "client",
+    "paramNames": [
+      "token"
+    ]
+  },
+  {
+    "pathTemplate": "/api/client/agreements/{token}/pdf",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/client/agreements/[token]/pdf/route.ts",
+    "category": "client",
+    "paramNames": [
+      "token"
+    ]
+  },
+  {
+    "pathTemplate": "/api/client/agreements/{token}/sign",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/client/agreements/[token]/sign/route.ts",
+    "category": "client",
+    "paramNames": [
+      "token"
+    ]
+  },
+  {
+    "pathTemplate": "/api/client/certificates",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/client/certificates/route.ts",
+    "category": "client",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/client/certificates/{certificateId}/pdf",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/client/certificates/[certificateId]/pdf/route.ts",
+    "category": "client",
+    "paramNames": [
+      "certificateId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/client/inbox/invoices",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/client/inbox/invoices/route.ts",
+    "category": "client",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/client/inbox/quotes",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/client/inbox/quotes/route.ts",
+    "category": "client",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/client/invoices/{token}",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/client/invoices/[token]/route.ts",
+    "category": "client",
+    "paramNames": [
+      "token"
+    ]
+  },
+  {
+    "pathTemplate": "/api/client/invoices/{token}/attachments/{attachmentId}",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/client/invoices/[token]/attachments/[attachmentId]/route.ts",
+    "category": "client",
+    "paramNames": [
+      "token",
+      "attachmentId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/client/invoices/{token}/pay",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/client/invoices/[token]/pay/route.ts",
+    "category": "client",
+    "paramNames": [
+      "token"
+    ]
+  },
+  {
+    "pathTemplate": "/api/client/invoices/{token}/pdf",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/client/invoices/[token]/pdf/route.ts",
+    "category": "client",
+    "paramNames": [
+      "token"
+    ]
+  },
+  {
+    "pathTemplate": "/api/client/invoices/{token}/receipts/{paymentId}/pdf",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/client/invoices/[token]/receipts/[paymentId]/pdf/route.ts",
+    "category": "client",
+    "paramNames": [
+      "token",
+      "paymentId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/client/quotes/{token}",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/client/quotes/[token]/route.ts",
+    "category": "client",
+    "paramNames": [
+      "token"
+    ]
+  },
+  {
+    "pathTemplate": "/api/client/quotes/{token}/accept",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/client/quotes/[token]/accept/route.ts",
+    "category": "client",
+    "paramNames": [
+      "token"
+    ]
+  },
+  {
+    "pathTemplate": "/api/client/quotes/{token}/pdf",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/client/quotes/[token]/pdf/route.ts",
+    "category": "client",
+    "paramNames": [
+      "token"
+    ]
+  },
+  {
+    "pathTemplate": "/api/client/timeline",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/client/timeline/route.ts",
+    "category": "client",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/client/troubleshoot",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/client/troubleshoot/route.ts",
+    "category": "client",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/client/variations/{token}",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/client/variations/[token]/route.ts",
+    "category": "client",
+    "paramNames": [
+      "token"
+    ]
+  },
+  {
+    "pathTemplate": "/api/client/variations/{token}/decision",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/client/variations/[token]/decision/route.ts",
+    "category": "client",
+    "paramNames": [
+      "token"
+    ]
+  },
+  {
+    "pathTemplate": "/api/client/variations/{token}/pdf",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/client/variations/[token]/pdf/route.ts",
+    "category": "client",
+    "paramNames": [
+      "token"
+    ]
+  },
+  {
+    "pathTemplate": "/api/cron/cleanup-assist-sessions",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/cron/cleanup-assist-sessions/route.ts",
+    "category": "cron",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/cron/maintenance-alerts",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/cron/maintenance-alerts/route.ts",
+    "category": "cron",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/debug/auth",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/debug/auth/route.ts",
+    "category": "other",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/engineer/certificates/{certificateId}",
+    "methods": [
+      "GET",
+      "PATCH"
+    ],
+    "source": "scan",
+    "filePath": "app/api/engineer/certificates/[certificateId]/route.ts",
+    "category": "engineer",
+    "paramNames": [
+      "certificateId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/engineer/certificates/{certificateId}/complete",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/engineer/certificates/[certificateId]/complete/route.ts",
+    "category": "engineer",
+    "paramNames": [
+      "certificateId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/engineer/jobs",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/engineer/jobs/route.ts",
+    "category": "engineer",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/engineer/jobs/{jobId}/snag-items",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/engineer/jobs/[jobId]/snag-items/route.ts",
+    "category": "engineer",
+    "paramNames": [
+      "jobId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/engineer/jobs/{jobId}/variations",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/engineer/jobs/[jobId]/variations/route.ts",
+    "category": "engineer",
+    "paramNames": [
+      "jobId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/engineer/profile",
+    "methods": [
+      "GET",
+      "PATCH"
+    ],
+    "source": "scan",
+    "filePath": "app/api/engineer/profile/route.ts",
+    "category": "engineer",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/engineer/schedule",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/engineer/schedule/route.ts",
+    "category": "engineer",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/engineer/snag-items/{snagId}",
+    "methods": [
+      "PATCH"
+    ],
+    "source": "scan",
+    "filePath": "app/api/engineer/snag-items/[snagId]/route.ts",
+    "category": "engineer",
+    "paramNames": [
+      "snagId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/engineer/time-entries",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/engineer/time-entries/route.ts",
+    "category": "engineer",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/engineer/timer/active",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/engineer/timer/active/route.ts",
+    "category": "engineer",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/engineer/timer/start",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/engineer/timer/start/route.ts",
+    "category": "engineer",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/engineer/timer/stop",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/engineer/timer/stop/route.ts",
+    "category": "engineer",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/engineer/timesheets",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/engineer/timesheets/route.ts",
+    "category": "engineer",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/geo/autocomplete",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/geo/autocomplete/route.ts",
+    "category": "geo",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/geo/details",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/geo/details/route.ts",
+    "category": "geo",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/health",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/health/route.ts",
+    "category": "other",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/internal/cron/auto-chase-overdue-invoices",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/internal/cron/auto-chase-overdue-invoices/route.ts",
+    "category": "internal",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/internal/cron/invoice-reminders",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/internal/cron/invoice-reminders/route.ts",
+    "category": "internal",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/internal/cron/retry-failed-emails",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/internal/cron/retry-failed-emails/route.ts",
+    "category": "internal",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/internal/cron/retry-failed-xero-sync",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/internal/cron/retry-failed-xero-sync/route.ts",
+    "category": "internal",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/internal/cron/weekly-ai-digest",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/internal/cron/weekly-ai-digest/route.ts",
+    "category": "internal",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/internal/dashboard/map-pins",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/internal/dashboard/map-pins/route.ts",
+    "category": "internal",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/jobs/{jobId}/checklists",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/jobs/[jobId]/checklists/route.ts",
+    "category": "other",
+    "paramNames": [
+      "jobId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/jobs/{jobId}/checklists/{checklistId}/items/{itemId}",
+    "methods": [
+      "PATCH"
+    ],
+    "source": "scan",
+    "filePath": "app/api/jobs/[jobId]/checklists/[checklistId]/items/[itemId]/route.ts",
+    "category": "other",
+    "paramNames": [
+      "jobId",
+      "checklistId",
+      "itemId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/profile/complete",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/profile/complete/route.ts",
+    "category": "other",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/public/invites/{token}",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/public/invites/[token]/route.ts",
+    "category": "public",
+    "paramNames": [
+      "token"
+    ]
+  },
+  {
+    "pathTemplate": "/api/public/invites/{token}/accept",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/public/invites/[token]/accept/route.ts",
+    "category": "public",
+    "paramNames": [
+      "token"
+    ]
+  },
+  {
+    "pathTemplate": "/api/public/tenants/{tenantSlug}/enquiries",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/public/tenants/[tenantSlug]/enquiries/route.ts",
+    "category": "public",
+    "paramNames": [
+      "tenantSlug"
+    ]
+  },
+  {
+    "pathTemplate": "/api/support/chat",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/support/chat/route.ts",
+    "category": "support",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/tasks",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/tasks/route.ts",
+    "category": "other",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/tasks/{taskId}",
+    "methods": [
+      "GET",
+      "PATCH",
+      "DELETE"
+    ],
+    "source": "scan",
+    "filePath": "app/api/tasks/[taskId]/route.ts",
+    "category": "other",
+    "paramNames": [
+      "taskId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/tasks/{taskId}/comments",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/tasks/[taskId]/comments/route.ts",
+    "category": "other",
+    "paramNames": [
+      "taskId"
+    ]
+  },
+  {
+    "pathTemplate": "/api/tenant/provision",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/tenant/provision/route.ts",
+    "category": "other",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/tools/metal-prices",
+    "methods": [
+      "GET"
+    ],
+    "source": "scan",
+    "filePath": "app/api/tools/metal-prices/route.ts",
+    "category": "other",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/tools/presets",
+    "methods": [
+      "GET",
+      "POST",
+      "DELETE"
+    ],
+    "source": "scan",
+    "filePath": "app/api/tools/presets/route.ts",
+    "category": "other",
+    "paramNames": []
+  },
+  {
+    "pathTemplate": "/api/webhooks/stripe",
+    "methods": [
+      "POST"
+    ],
+    "source": "scan",
+    "filePath": "app/api/webhooks/stripe/route.ts",
+    "category": "billing",
+    "paramNames": []
+  }
+]

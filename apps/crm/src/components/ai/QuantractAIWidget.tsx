@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { makeRecId } from "@/lib/ai/recId";
 import { storeAttrib, loadAttrib, clearAttrib } from "@/lib/ai/attrib";
 
@@ -255,7 +255,19 @@ function QuantractAIWidgetInner({
   position = "bottom-right",
 }: QuantractAIWidgetProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
+
+  // Suppress on mobile engineer routes
+  const [_isMobileWidget, _setIsMobileWidget] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    _setIsMobileWidget(mq.matches);
+    const handler = (e: MediaQueryListEvent) => _setIsMobileWidget(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+  if (_isMobileWidget && pathname?.startsWith("/engineer")) return null;
   const [isOpen, setIsOpen] = useState(false);
   const deepLinkHandled = useRef(false);
 
