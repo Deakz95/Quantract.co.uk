@@ -60,6 +60,7 @@ declare module "lucide-react" {
   export const Plus: LucideIcon;
   export const X: LucideIcon;
   export const Settings: LucideIcon;
+  export const Box: LucideIcon;
   export const Briefcase: LucideIcon;
   export const Clock: LucideIcon;
   export const FileText: LucideIcon;

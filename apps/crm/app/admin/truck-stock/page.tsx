@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
-import { Plus, ChevronDown, ChevronUp, Briefcase, Trash2, X } from "lucide-react";
+import Link from "next/link";
+import { Plus, ChevronDown, ChevronUp, Briefcase, Trash2, X, AlertTriangle } from "lucide-react";
 
 interface StockItemOption {
   id: string;
@@ -28,6 +30,7 @@ interface Engineer {
 }
 
 export default function TruckStockPage() {
+  const searchParams = useSearchParams();
   const [records, setRecords] = useState<TruckStockRecord[]>([]);
   const [stockItems, setStockItems] = useState<StockItemOption[]>([]);
   const [engineers, setEngineers] = useState<Engineer[]>([]);
@@ -35,7 +38,7 @@ export default function TruckStockPage() {
   const [lowOnly, setLowOnly] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [featureDisabled, setFeatureDisabled] = useState(false);
-  const [filterEngineer, setFilterEngineer] = useState("");
+  const [filterEngineer, setFilterEngineer] = useState(searchParams.get("engineer") || "");
   const [filterSearch, setFilterSearch] = useState("");
 
   // Add record form
@@ -48,6 +51,7 @@ export default function TruckStockPage() {
   const [newQty, setNewQty] = useState(1);
   const [newMinQty, setNewMinQty] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [openAlertCount, setOpenAlertCount] = useState(0);
 
   /** Load TruckStock records (the primary data — not StockItem definitions) */
   function loadRecords() {
@@ -84,7 +88,14 @@ export default function TruckStockPage() {
       .catch(() => {});
   }
 
-  useEffect(() => { loadRecords(); }, [lowOnly]);
+  function loadAlertCount() {
+    fetch("/api/admin/stock-alerts?type=truck_stock_low&status=open&limit=1")
+      .then((r) => r.json())
+      .then((d) => { if (d.ok) setOpenAlertCount(d.total ?? 0); })
+      .catch(() => {});
+  }
+
+  useEffect(() => { loadRecords(); loadAlertCount(); }, [lowOnly]);
   useEffect(() => { loadStockItems(); loadEngineers(); }, []);
 
   /** Adjust qty on an existing record by ±delta using POST /truck-stock (existing upsert endpoint) */
@@ -226,6 +237,14 @@ export default function TruckStockPage() {
               Low stock only
             </label>
           </div>
+          {openAlertCount > 0 && (
+            <Link href="/admin/stock-alerts">
+              <Button size="sm" variant="secondary" className="text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-900 dark:hover:bg-red-950/20">
+                <AlertTriangle className="w-4 h-4 mr-1.5" />
+                {openAlertCount} Low Stock Alert{openAlertCount !== 1 ? "s" : ""}
+              </Button>
+            </Link>
+          )}
           <Button size="sm" onClick={() => setShowAdd(true)}>
             <Plus className="w-4 h-4 mr-1.5" />
             Add Stock Item
@@ -389,7 +408,16 @@ export default function TruckStockPage() {
                     className={`border-b border-[var(--border)] ${rec.qty <= rec.minQty ? "bg-red-50 dark:bg-red-950/20" : ""}`}
                   >
                     <td className="py-2.5 px-4 text-[var(--foreground)]">{rec.user.name || rec.user.email}</td>
-                    <td className="py-2.5 px-4 font-medium text-[var(--foreground)]">{rec.stockItem.name}</td>
+                    <td className="py-2.5 px-4 font-medium text-[var(--foreground)]">
+                      <span className="flex items-center gap-2">
+                        {rec.stockItem.name}
+                        {rec.minQty > 0 && rec.qty <= rec.minQty && (
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">
+                            Low
+                          </span>
+                        )}
+                      </span>
+                    </td>
                     <td className="py-2.5 px-4 text-[var(--muted-foreground)]">{rec.stockItem.sku || "-"}</td>
                     <td className="py-2.5 px-4 text-right text-[var(--foreground)] font-medium">
                       {rec.qty} {rec.stockItem.unit}

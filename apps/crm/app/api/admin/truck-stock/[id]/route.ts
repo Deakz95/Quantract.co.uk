@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireCompanyContext, getEffectiveRole } from "@/lib/serverAuth";
 import { getPrisma } from "@/lib/server/prisma";
 import { withRequestLogging } from "@/lib/server/observability";
+import { syncLowStockAlert } from "@/lib/server/stockAlerts";
 
 export const runtime = "nodejs";
 
@@ -92,6 +93,8 @@ export const PATCH = withRequestLogging(async function PATCH(
       },
     });
 
+    await syncLowStockAlert(prisma, authCtx.companyId, record);
+
     return NextResponse.json({ ok: true, data: record });
   } catch (e: any) {
     if (e?.status === 401) return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
@@ -141,6 +144,18 @@ export const DELETE = withRequestLogging(async function DELETE(
     }
 
     await prisma.truckStock.delete({ where: { id } });
+
+    // Resolve any open alerts for this record
+    await prisma.stockAlert.updateMany({
+      where: {
+        companyId: authCtx.companyId,
+        type: "truck_stock_low",
+        entityId: id,
+        status: "open",
+      },
+      data: { status: "resolved" },
+    }).catch(() => null);
+
     return NextResponse.json({ ok: true });
   } catch (e: any) {
     if (e?.status === 401) return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });

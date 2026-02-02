@@ -4,6 +4,9 @@ import * as repo from "@/lib/server/repo";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export const metadata: Metadata = {
   referrer: "no-referrer",
 };

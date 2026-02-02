@@ -3,6 +3,7 @@ import { requireCompanyContext, getEffectiveRole } from "@/lib/serverAuth";
 import { getPrisma } from "@/lib/server/prisma";
 import { withRequestLogging } from "@/lib/server/observability";
 import { isFeatureEnabled } from "@/lib/server/featureFlags";
+import { syncLowStockAlert } from "@/lib/server/stockAlerts";
 
 export const runtime = "nodejs";
 
@@ -88,6 +89,7 @@ export const POST = withRequestLogging(async function POST(req: Request) {
           qty: newQty,
           minQty: body.minQty || 0,
         },
+        include: { stockItem: { select: { id: true, name: true, sku: true, unit: true } }, user: { select: { id: true, name: true, email: true } } },
       });
 
       await prisma.truckStockLog.create({
@@ -100,6 +102,8 @@ export const POST = withRequestLogging(async function POST(req: Request) {
           jobId: body.jobId || null,
         },
       });
+
+      await syncLowStockAlert(prisma, authCtx.companyId, record);
 
       return NextResponse.json({ ok: true, data: record });
     } else if (body.qty !== undefined) {
@@ -114,7 +118,11 @@ export const POST = withRequestLogging(async function POST(req: Request) {
           qty: Math.max(0, Number(body.qty)),
           minQty: body.minQty || 0,
         },
+        include: { stockItem: { select: { id: true, name: true, sku: true, unit: true } }, user: { select: { id: true, name: true, email: true } } },
       });
+
+      await syncLowStockAlert(prisma, authCtx.companyId, record);
+
       return NextResponse.json({ ok: true, data: record });
     }
 
