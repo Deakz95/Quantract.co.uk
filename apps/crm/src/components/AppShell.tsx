@@ -60,40 +60,99 @@ type NavItem = {
   icon: ComponentType<{ className?: string }>;
   external?: boolean;
   section?: string;
+  beta?: boolean;
 };
 
-const adminNav: NavItem[] = [
-  { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
-  // Sales
-  { label: "Enquiries", href: "/admin/enquiries", icon: Inbox, section: "Sales" },
-  { label: "Quotes", href: "/admin/quotes", icon: FileText, section: "Sales" },
-  { label: "Deals", href: "/admin/deals", icon: Target, section: "Sales" },
-  // Work
-  { label: "Jobs", href: "/admin/jobs", icon: Briefcase, section: "Work" },
-  { label: "Schedule", href: "/admin/schedule", icon: CalendarDays, section: "Work" },
-  { label: "Timesheets", href: "/admin/timesheets", icon: Clock, section: "Work" },
-  { label: "Certificates", href: "/admin/certificates", icon: BadgeCheck, section: "Work" },
-  // Finance
-  { label: "Invoices", href: "/admin/invoices", icon: Receipt, section: "Finance" },
-  // People
-  { label: "Clients", href: "/admin/clients", icon: Users, section: "People" },
-  { label: "Contacts", href: "/admin/contacts", icon: Users, section: "People" },
-  { label: "Engineers", href: "/admin/engineers", icon: Users, section: "People" },
-  // Field Tools
-  { label: "Tools", href: "/admin/tools", icon: Settings, section: "Field Tools" },
-  { label: "Truck Stock", href: "/admin/truck-stock", icon: Briefcase, section: "Field Tools" },
-  { label: "AI Estimator", href: "/admin/tools/ai-estimator", icon: Sparkles, section: "Field Tools" },
-  { label: "Remote Assist", href: "/admin/remote-assist", icon: Activity, section: "Field Tools" },
-  { label: "Maintenance", href: "/admin/maintenance/alerts", icon: Settings, section: "Field Tools" },
-  // Admin
-  { label: "Reports", href: "/admin/reports", icon: FileBarChart, section: "Admin" },
-  { label: "Import", href: "/admin/import", icon: Upload, section: "Admin" },
-  { label: "Invites", href: "/admin/invites", icon: Mail, section: "Admin" },
-  { label: "Settings", href: "/admin/settings", icon: Settings, section: "Admin" },
-  // Portal access
-  { label: "→ Client Portal", href: "/client", icon: ChevronRight, section: "Portals" },
-  { label: "→ Engineer Portal", href: "/engineer", icon: ChevronRight, section: "Portals" },
+type NavSection = {
+  id: string;
+  title: string;
+  items: NavItem[];
+  dividerBefore?: boolean;
+};
+
+const ADMIN_SECTIONS: NavSection[] = [
+  {
+    id: "core",
+    title: "Core",
+    items: [
+      { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
+      { label: "Jobs", href: "/admin/jobs", icon: Briefcase },
+      { label: "Quotes", href: "/admin/quotes", icon: FileText },
+      { label: "Invoices", href: "/admin/invoices", icon: Receipt },
+      { label: "Certificates", href: "/admin/certificates", icon: BadgeCheck },
+      { label: "Schedule", href: "/admin/schedule", icon: CalendarDays },
+    ],
+  },
+  {
+    id: "sales",
+    title: "Sales",
+    items: [
+      { label: "Deals", href: "/admin/deals", icon: Target },
+      { label: "Enquiries", href: "/admin/enquiries", icon: Inbox },
+      { label: "Reports", href: "/admin/reports", icon: FileBarChart },
+    ],
+  },
+  {
+    id: "work",
+    title: "Work",
+    items: [
+      { label: "Jobs", href: "/admin/jobs", icon: Briefcase },
+      { label: "Timesheets", href: "/admin/timesheets", icon: Clock },
+      { label: "Engineers", href: "/admin/engineers", icon: Users },
+    ],
+  },
+  {
+    id: "money",
+    title: "Money",
+    items: [
+      { label: "Quotes", href: "/admin/quotes", icon: FileText },
+      { label: "Invoices", href: "/admin/invoices", icon: Receipt },
+    ],
+  },
+  {
+    id: "people",
+    title: "People",
+    items: [
+      { label: "Clients", href: "/admin/clients", icon: Users },
+      { label: "Contacts", href: "/admin/contacts", icon: Users },
+      { label: "Engineers", href: "/admin/engineers", icon: Users },
+    ],
+  },
+  {
+    id: "portals",
+    title: "Portals",
+    items: [
+      { label: "Client Portal", href: "/client", icon: ChevronRight },
+      { label: "Engineer Portal", href: "/engineer", icon: ChevronRight },
+    ],
+  },
+  {
+    id: "tools",
+    title: "Tools",
+    items: [
+      { label: "AI Estimator", href: "/admin/tools/ai-estimator", icon: Sparkles },
+      { label: "Field Tools", href: "/admin/tools", icon: Settings },
+      { label: "Truck Stock", href: "/admin/truck-stock", icon: Briefcase, beta: true },
+      { label: "Remote Assist", href: "/admin/remote-assist", icon: Activity, beta: true },
+      { label: "Maintenance", href: "/admin/maintenance/alerts", icon: Settings, beta: true },
+    ],
+  },
+  {
+    id: "admin",
+    title: "Admin",
+    dividerBefore: true,
+    items: [
+      { label: "Settings", href: "/admin/settings", icon: Settings },
+      { label: "Import", href: "/admin/import", icon: Upload },
+      { label: "Invites", href: "/admin/invites", icon: Mail },
+    ],
+  },
 ];
+
+const DEFAULT_OPEN_SECTIONS = new Set(["core", "sales", "work", "money"]);
+
+// Legacy flat array for client/engineer roles (no sections)
+const adminNav: NavItem[] = ADMIN_SECTIONS.flatMap((s) => s.items);
 
 const clientNav: NavItem[] = [
   { label: "My Quotes", href: "/client", icon: FileText },
@@ -109,83 +168,109 @@ const engineerNav: NavItem[] = [
   { label: "Settings", href: "/engineer/settings", icon: Settings },
 ];
 
-const COLLAPSIBLE_SECTIONS = new Set(["Field Tools", "People", "Portals"]);
-
-function renderNavItems(
-  items: NavItem[],
-  isActive: (href: string) => boolean,
-  onNavigate?: () => void,
-  collapsedSections?: Set<string>,
-  toggleSection?: (s: string) => void,
-) {
-  const elements: ReactNode[] = [];
-  let lastSection: string | undefined;
-
-  for (const item of items) {
-    if (item.section && item.section !== lastSection) {
-      lastSection = item.section;
-      const isCollapsible = COLLAPSIBLE_SECTIONS.has(item.section);
-      const isCollapsed = isCollapsible && collapsedSections?.has(item.section);
-
-      if (isCollapsible && toggleSection) {
-        elements.push(
-          <button
-            key={`section-${item.section}`}
-            type="button"
-            onClick={() => toggleSection(item.section!)}
-            className="flex items-center justify-between w-full pt-3 pb-1 px-4 text-[10px] font-bold uppercase tracking-widest text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
-          >
-            <span>{item.section}</span>
-            <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${isCollapsed ? "-rotate-90" : ""}`} />
-          </button>
-        );
-      } else {
-        elements.push(
-          <div key={`section-${item.section}`} className="pt-3 pb-1 px-4 text-[10px] font-bold uppercase tracking-widest text-[var(--muted-foreground)]">
-            {item.section}
-          </div>
-        );
-      }
-    }
-
-    const sectionCollapsed = item.section && COLLAPSIBLE_SECTIONS.has(item.section) && collapsedSections?.has(item.section);
-    if (sectionCollapsed) continue;
-
-    if (item.external) {
-      elements.push(
-        <a
-          key={item.href}
-          href={item.href}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={onNavigate}
-          className="nav-item flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--foreground)]"
-        >
-          <item.icon className="h-4 w-4" />
-          {item.label}
-          <ChevronRight className="h-3 w-3 ml-auto opacity-50" />
-        </a>
-      );
-    } else {
-      elements.push(
-        <Link
-          key={item.href}
-          href={item.href}
-          onClick={onNavigate}
-          className={cn(
-            "nav-item flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium",
-            isActive(item.href) && "active"
-          )}
-        >
-          <item.icon className="h-4 w-4" />
-          {item.label}
-          {isActive(item.href) && <ChevronRight className="h-4 w-4 ml-auto" />}
-        </Link>
-      );
-    }
+function renderNavLink(item: NavItem, isActive: (href: string) => boolean, onNavigate?: () => void) {
+  if (item.beta) {
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        onClick={onNavigate}
+        title="In progress"
+        className={cn(
+          "nav-item flex items-center gap-3 rounded-xl px-4 py-2 text-sm font-medium",
+          isActive(item.href) && "active"
+        )}
+      >
+        <item.icon className="h-4 w-4" />
+        {item.label}
+        <span className="ml-auto text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-[var(--muted)] text-[var(--muted-foreground)]">
+          Beta
+        </span>
+      </Link>
+    );
   }
+  if (item.external) {
+    return (
+      <a
+        key={item.href}
+        href={item.href}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={onNavigate}
+        className="nav-item flex items-center gap-3 rounded-xl px-4 py-2 text-sm font-medium text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--foreground)]"
+      >
+        <item.icon className="h-4 w-4" />
+        {item.label}
+        <ChevronRight className="h-3 w-3 ml-auto opacity-50" />
+      </a>
+    );
+  }
+  return (
+    <Link
+      key={item.href}
+      href={item.href}
+      onClick={onNavigate}
+      className={cn(
+        "nav-item flex items-center gap-3 rounded-xl px-4 py-2 text-sm font-medium",
+        isActive(item.href) && "active"
+      )}
+    >
+      <item.icon className="h-4 w-4" />
+      {item.label}
+      {isActive(item.href) && <ChevronRight className="h-4 w-4 ml-auto" />}
+    </Link>
+  );
+}
 
-  return elements;
+function renderAccordionNav(
+  sections: NavSection[],
+  isActive: (href: string) => boolean,
+  openSections: Record<string, boolean>,
+  toggleSection: (id: string) => void,
+  onNavigate?: () => void,
+) {
+  return sections.map((section) => {
+    const isOpen = openSections[section.id] ?? false;
+    return (
+      <div key={section.id}>
+        {section.dividerBefore && <div className="my-2 border-t border-[var(--border)]" />}
+        <button
+          type="button"
+          onClick={() => toggleSection(section.id)}
+          aria-expanded={isOpen}
+          aria-controls={`nav-section-${section.id}`}
+          className="flex items-center justify-between w-full px-4 py-2 text-[11px] font-bold uppercase tracking-widest text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors rounded-lg hover:bg-[var(--muted)]/50"
+        >
+          <span>{section.title}</span>
+          <ChevronDown
+            className={cn(
+              "w-3.5 h-3.5 transition-transform duration-200",
+              isOpen ? "" : "-rotate-90"
+            )}
+          />
+        </button>
+        <div
+          id={`nav-section-${section.id}`}
+          className="grid transition-[grid-template-rows,opacity] duration-200"
+          style={{
+            gridTemplateRows: isOpen ? "1fr" : "0fr",
+            opacity: isOpen ? 1 : 0,
+          }}
+        >
+          <div className="overflow-hidden">
+            <div className="space-y-0.5 pt-0.5 pb-1">
+              {section.items.map((item) => renderNavLink(item, isActive, onNavigate))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  });
+}
+
+/** Legacy flat list for client/engineer roles */
+function renderFlatNav(items: NavItem[], isActive: (href: string) => boolean, onNavigate?: () => void) {
+  return items.map((item) => renderNavLink(item, isActive, onNavigate));
 }
 
 export function AppShell({
@@ -205,31 +290,57 @@ export function AppShell({
   const plan = billingStatus?.plan ?? "";
   const isFree = !plan || plan === "free" || plan === "trial";
   const nav = useMemo(() => {
-    const base = role === "admin" ? adminNav : role === "engineer" ? engineerNav : clientNav;
-    if (role === "admin" && isFree) {
-      return base.filter((item) => item.label !== "Deals");
-    }
-    return base;
-  }, [role, isFree]);
+    return role === "engineer" ? engineerNav : clientNav;
+  }, [role]);
+
+  const adminSections = useMemo(() => {
+    if (!isFree) return ADMIN_SECTIONS;
+    return ADMIN_SECTIONS.map((s) => ({
+      ...s,
+      items: s.items.filter((item) => item.label !== "Deals"),
+    })).filter((s) => s.items.length > 0);
+  }, [isFree]);
   const pathname = usePathname();
   const [newOpen, setNewOpen] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(() => {
-    if (typeof window === "undefined") return new Set(["Field Tools", "People", "Portals"]);
+  // Accordion open/close state — persisted to localStorage
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>(() => {
+    if (typeof window === "undefined") {
+      const init: Record<string, boolean> = {};
+      for (const s of ADMIN_SECTIONS) init[s.id] = DEFAULT_OPEN_SECTIONS.has(s.id);
+      return init;
+    }
     try {
-      const stored = localStorage.getItem("qt-nav-collapsed");
-      if (stored) return new Set(JSON.parse(stored));
+      const stored = localStorage.getItem("qt-nav-open");
+      if (stored) return JSON.parse(stored);
     } catch { /* ignore */ }
-    return new Set(["Field Tools", "People", "Portals"]);
+    const init: Record<string, boolean> = {};
+    for (const s of ADMIN_SECTIONS) init[s.id] = DEFAULT_OPEN_SECTIONS.has(s.id);
+    return init;
   });
-  const toggleSection = (section: string) => {
-    setCollapsedSections((prev) => {
-      const next = new Set(prev);
-      if (next.has(section)) next.delete(section); else next.add(section);
-      try { localStorage.setItem("qt-nav-collapsed", JSON.stringify([...next])); } catch { /* ignore */ }
+
+  // Auto-open the section containing the current route (never closes other sections)
+  useEffect(() => {
+    if (role !== "admin") return;
+    const match = ADMIN_SECTIONS.find((s) =>
+      s.items.some((item) => pathname === item.href || pathname.startsWith(item.href + "/"))
+    );
+    if (!match) return;
+    setOpenSections((prev) => {
+      if (prev[match.id]) return prev; // already open — no-op
+      const next = { ...prev, [match.id]: true };
+      try { localStorage.setItem("qt-nav-open", JSON.stringify(next)); } catch { /* ignore */ }
+      return next;
+    });
+  }, [pathname, role]);
+
+  const toggleSection = (id: string) => {
+    setOpenSections((prev) => {
+      const next = { ...prev, [id]: !prev[id] };
+      try { localStorage.setItem("qt-nav-open", JSON.stringify(next)); } catch { /* ignore */ }
       return next;
     });
   };
@@ -617,7 +728,9 @@ export function AppShell({
             onClick={(e) => e.stopPropagation()}
           >
             <nav className="space-y-0.5">
-              {renderNavItems(nav, isActive, () => setMobileNavOpen(false), collapsedSections, toggleSection)}
+              {role === "admin"
+                ? renderAccordionNav(adminSections, isActive, openSections, toggleSection, () => setMobileNavOpen(false))
+                : renderFlatNav(nav, isActive, () => setMobileNavOpen(false))}
             </nav>
           </div>
         </div>
@@ -630,7 +743,9 @@ export function AppShell({
           <aside className="hidden lg:block lg:col-span-3">
             <div className="sticky top-20">
               <nav className="space-y-0.5">
-                {renderNavItems(nav, isActive, undefined, collapsedSections, toggleSection)}
+                {role === "admin"
+                  ? renderAccordionNav(adminSections, isActive, openSections, toggleSection)
+                  : renderFlatNav(nav, isActive)}
               </nav>
             </div>
           </aside>

@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
+import { Button } from "@/components/ui/button";
+import { AlertTriangle } from "lucide-react";
 
 interface Alert {
   id: string;
@@ -14,10 +16,10 @@ interface Alert {
 }
 
 const STATUS_STYLES: Record<string, string> = {
-  open: "bg-red-100 text-red-800",
-  ack: "bg-yellow-100 text-yellow-800",
-  dismissed: "bg-gray-100 text-gray-600",
-  sent: "bg-blue-100 text-blue-800",
+  open: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
+  ack: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300",
+  dismissed: "bg-[var(--muted)] text-[var(--muted-foreground)]",
+  sent: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
 };
 
 export default function MaintenanceAlertsPage() {
@@ -26,6 +28,7 @@ export default function MaintenanceAlertsPage() {
   const [filter, setFilter] = useState<string>("open");
 
   useEffect(() => {
+    setLoading(true);
     const params = filter ? `?status=${filter}` : "";
     fetch(`/api/admin/maintenance/alerts${params}`)
       .then((r) => r.json())
@@ -45,67 +48,81 @@ export default function MaintenanceAlertsPage() {
   }
 
   return (
-    <AppShell role="admin" title="Maintenance Alerts">
-    <div className="mx-auto max-w-5xl p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Maintenance Alerts</h1>
-        <div className="flex gap-2">
-          {["open", "ack", "dismissed", ""].map((s) => (
-            <button
-              key={s}
-              onClick={() => setFilter(s)}
-              className={`px-3 py-1 rounded text-sm ${filter === s ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700"}`}
+    <AppShell role="admin" title="Maintenance Alerts" subtitle="Track upcoming and overdue maintenance tasks">
+      <div className="space-y-4">
+        {/* Filter buttons */}
+        <div className="flex gap-2 flex-wrap">
+          {[
+            { value: "open", label: "Open" },
+            { value: "ack", label: "Acknowledged" },
+            { value: "dismissed", label: "Dismissed" },
+            { value: "", label: "All" },
+          ].map((s) => (
+            <Button
+              key={s.value}
+              size="sm"
+              variant={filter === s.value ? "default" : "secondary"}
+              onClick={() => setFilter(s.value)}
             >
-              {s || "All"}
-            </button>
+              {s.label}
+            </Button>
           ))}
         </div>
-      </div>
 
-      {loading ? (
-        <p className="text-gray-500">Loading...</p>
-      ) : alerts.length === 0 ? (
-        <p className="text-gray-500">No alerts found.</p>
-      ) : (
-        <div className="space-y-3">
-          {alerts.map((alert) => (
-            <div key={alert.id} className="border rounded-lg p-4 flex items-start justify-between gap-4">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${STATUS_STYLES[alert.status] || "bg-gray-100"}`}>
-                    {alert.status}
-                  </span>
-                  <span className="text-sm text-gray-500">
-                    Due {new Date(alert.dueAt).toLocaleDateString()}
-                  </span>
+        {/* Content */}
+        {loading ? (
+          <div className="p-8 text-center text-[var(--muted-foreground)]">
+            <div className="w-8 h-8 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            Loading alerts...
+          </div>
+        ) : alerts.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-[var(--border)] p-8 text-center">
+            <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-[var(--muted-foreground)] opacity-50" />
+            <p className="text-sm font-medium text-[var(--foreground)] mb-1">No alerts found</p>
+            <p className="text-xs text-[var(--muted-foreground)]">
+              {filter ? `No ${filter} alerts. Try a different filter or check back later.` : "No maintenance alerts have been generated yet."}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {alerts.map((alert) => (
+              <div key={alert.id} className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 flex items-start justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${STATUS_STYLES[alert.status] || "bg-[var(--muted)] text-[var(--muted-foreground)]"}`}>
+                      {alert.status}
+                    </span>
+                    <span className="text-sm text-[var(--muted-foreground)]">
+                      Due {new Date(alert.dueAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <p className="text-sm font-medium text-[var(--foreground)]">{alert.message}</p>
+                  {alert.asset && (
+                    <span className="text-xs text-[var(--primary)]">
+                      {alert.asset.name}{alert.asset.type ? ` (${alert.asset.type})` : ""}
+                    </span>
+                  )}
+                  {alert.rule && (
+                    <span className="text-xs text-[var(--muted-foreground)] ml-2">Rule: {alert.rule.name}</span>
+                  )}
                 </div>
-                <p className="text-sm font-medium">{alert.message}</p>
-                {alert.asset && (
-                  <Link href={`/admin/maintenance/alerts`} className="text-xs text-blue-600 hover:underline">
-                    {alert.asset.name}{alert.asset.type ? ` (${alert.asset.type})` : ""}
-                  </Link>
-                )}
-                {alert.rule && (
-                  <span className="text-xs text-gray-400 ml-2">Rule: {alert.rule.name}</span>
-                )}
+                <div className="flex gap-1">
+                  {alert.status === "open" && (
+                    <Button size="sm" variant="secondary" onClick={() => updateStatus(alert.id, "ack")}>
+                      Acknowledge
+                    </Button>
+                  )}
+                  {(alert.status === "open" || alert.status === "ack") && (
+                    <Button size="sm" variant="ghost" onClick={() => updateStatus(alert.id, "dismissed")}>
+                      Dismiss
+                    </Button>
+                  )}
+                </div>
               </div>
-              <div className="flex gap-1">
-                {alert.status === "open" && (
-                  <button onClick={() => updateStatus(alert.id, "ack")} className="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded hover:bg-yellow-200">
-                    Acknowledge
-                  </button>
-                )}
-                {(alert.status === "open" || alert.status === "ack") && (
-                  <button onClick={() => updateStatus(alert.id, "dismissed")} className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded hover:bg-gray-200">
-                    Dismiss
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+            ))}
+          </div>
+        )}
+      </div>
     </AppShell>
   );
 }
