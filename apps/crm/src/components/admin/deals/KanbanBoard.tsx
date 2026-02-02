@@ -8,7 +8,7 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useToast } from "@/components/ui/useToast";
 import { apiRequest, getApiErrorMessage, requireOk } from "@/lib/apiClient";
-import { Plus, Settings, Target } from "lucide-react";
+import { Plus, Settings, Target, ChevronDown, AlertTriangle, CheckCircle, Info } from "lucide-react";
 import KanbanColumn from "./KanbanColumn";
 import DealForm from "./DealForm";
 import StageSettingsDialog from "./StageSettingsDialog";
@@ -55,6 +55,13 @@ export default function KanbanBoard() {
   const [createOpen, setCreateOpen] = useState(false);
   const [stageSettingsOpen, setStageSettingsOpen] = useState(false);
 
+  // Recommendations
+  const [recsOpen, setRecsOpen] = useState(true);
+  const [recs, setRecs] = useState<{
+    stats: { winRate: number; avgDealSize: number; avgDaysInStage: number; totalPipelineValue: number; openDeals: number; wonDeals: number; lostDeals: number };
+    insights: Array<{ type: "warning" | "info" | "success"; title: string; message: string; dealId?: string }>;
+  } | null>(null);
+
   const load = useCallback(async () => {
     setLoading(true);
     setLoadError(null);
@@ -76,6 +83,11 @@ export default function KanbanBoard() {
 
       setStagesWithDeals(dealsRes.stages || []);
       setStages(stagesRes.stages || []);
+
+      // Fetch recommendations (non-blocking)
+      apiRequest<{ ok: boolean; stats: any; insights: any }>("/api/admin/deals/recommendations", { cache: "no-store" })
+        .then((r) => { if (r.ok) setRecs({ stats: r.stats, insights: r.insights }); })
+        .catch(() => {});
     } catch (error) {
       const message = getApiErrorMessage(error, "Unable to load deals");
       setLoadError(message);
@@ -208,6 +220,74 @@ export default function KanbanBoard() {
           </Button>
         </div>
       </div>
+
+      {/* Recommendations */}
+      {recs && (recs.insights.length > 0 || recs.stats.openDeals > 0) && (
+        <div className="mb-6">
+          <button
+            type="button"
+            onClick={() => setRecsOpen((v) => !v)}
+            className="flex items-center gap-2 text-sm font-semibold text-[var(--foreground)] mb-3"
+          >
+            <ChevronDown className={`w-4 h-4 transition-transform ${recsOpen ? "" : "-rotate-90"}`} />
+            Pipeline Insights
+          </button>
+          {recsOpen && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="rounded-xl border border-[var(--border)] bg-[var(--background)] p-3 text-center">
+                  <div className="text-lg font-bold text-[var(--foreground)]">{recs.stats.winRate}%</div>
+                  <div className="text-xs text-[var(--muted-foreground)]">Win Rate</div>
+                </div>
+                <div className="rounded-xl border border-[var(--border)] bg-[var(--background)] p-3 text-center">
+                  <div className="text-lg font-bold text-[var(--foreground)]">
+                    {new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 }).format(recs.stats.avgDealSize)}
+                  </div>
+                  <div className="text-xs text-[var(--muted-foreground)]">Avg Deal Size</div>
+                </div>
+                <div className="rounded-xl border border-[var(--border)] bg-[var(--background)] p-3 text-center">
+                  <div className="text-lg font-bold text-[var(--foreground)]">{recs.stats.avgDaysInStage}d</div>
+                  <div className="text-xs text-[var(--muted-foreground)]">Avg Days in Stage</div>
+                </div>
+                <div className="rounded-xl border border-[var(--border)] bg-[var(--background)] p-3 text-center">
+                  <div className="text-lg font-bold text-[var(--foreground)]">
+                    {new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 }).format(recs.stats.totalPipelineValue)}
+                  </div>
+                  <div className="text-xs text-[var(--muted-foreground)]">Pipeline Value</div>
+                </div>
+              </div>
+              {recs.insights.length > 0 && (
+                <div className="space-y-2">
+                  {recs.insights.map((insight, i) => (
+                    <div
+                      key={i}
+                      className={`flex items-start gap-3 rounded-xl border p-3 text-sm ${
+                        insight.type === "warning"
+                          ? "border-amber-200 bg-amber-50 text-amber-800"
+                          : insight.type === "success"
+                          ? "border-green-200 bg-green-50 text-green-800"
+                          : "border-blue-200 bg-blue-50 text-blue-800"
+                      }`}
+                    >
+                      {insight.type === "warning" ? (
+                        <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+                      ) : insight.type === "success" ? (
+                        <CheckCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                      ) : (
+                        <Info className="w-4 h-4 mt-0.5 shrink-0" />
+                      )}
+                      <div>
+                        <div className="font-medium">{insight.title}</div>
+                        <div className="text-xs opacity-80">{insight.message}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Kanban Board */}
       {stagesWithDeals.length === 0 ? (
