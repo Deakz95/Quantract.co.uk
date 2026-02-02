@@ -13,7 +13,7 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/useToast";
 import { apiRequest, getApiErrorMessage, requireOk } from "@/lib/apiClient";
-import { ArrowLeft, Calendar, DollarSign, User, Building, FileText, Percent } from "lucide-react";
+import { ArrowLeft, Calendar, PoundSterling, User, Building, FileText, Percent } from "lucide-react";
 import DealForm from "@/components/admin/deals/DealForm";
 
 type DealStage = {
@@ -231,7 +231,7 @@ export default function DealDetailPage() {
               <CardContent>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="flex items-start gap-3">
-                    <DollarSign className="w-5 h-5 text-[var(--muted-foreground)] mt-0.5" />
+                    <PoundSterling className="w-5 h-5 text-[var(--muted-foreground)] mt-0.5" />
                     <div>
                       <div className="text-xs font-semibold text-[var(--muted-foreground)]">Value</div>
                       <div className="text-lg font-bold text-[var(--foreground)]">{formatCurrency(deal.value)}</div>

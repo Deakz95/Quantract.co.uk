@@ -100,6 +100,7 @@ export default function CertificatesPageClient() {
           issuedTo: exportTo,
           includeAllRevisions: exportAllRevisions,
           types: exportTypes.length > 0 ? exportTypes : undefined,
+          status: ["completed", "issued"],
         }),
       });
       if (!res.ok) {
@@ -462,26 +463,45 @@ export default function CertificatesPageClient() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <label className="grid gap-1">
-                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Choose job</span>
-                <select
-                  className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-sm"
-                  value={jobId}
-                  onChange={(e) => setJobId(e.target.value)}
-                >
-                  <option value="">Select job...</option>
-                  {jobs.map((j) => {
-                    const label = j.client?.name || j.clientName || "Unnamed";
-                    const site = j.site?.name || j.siteAddress || "";
-                    const shortId = j.id.slice(0, 8);
-                    return (
-                      <option key={j.id} value={j.id}>
-                        {label}{site ? ` — ${site}` : ""} — {j.status} (#{shortId})
-                      </option>
-                    );
-                  })}
-                </select>
-              </label>
+              {/* Controls row */}
+              <div className="flex flex-wrap items-end gap-3">
+                <label className="grid gap-1 min-w-[200px] flex-1">
+                  <span className="text-xs font-semibold text-[var(--muted-foreground)]">Choose job</span>
+                  <select
+                    className="w-full rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-sm truncate"
+                    value={jobId}
+                    onChange={(e) => setJobId(e.target.value)}
+                  >
+                    <option value="">Select job...</option>
+                    {jobs.map((j) => {
+                      const label = j.client?.name || j.clientName || "Unnamed";
+                      const site = j.site?.name || j.siteAddress || "";
+                      const shortId = j.id.slice(0, 8);
+                      return (
+                        <option key={j.id} value={j.id}>
+                          {label}{site ? ` — ${site}` : ""} — {j.status} (#{shortId})
+                        </option>
+                      );
+                    })}
+                  </select>
+                </label>
+                <label className="grid gap-1 min-w-[140px]">
+                  <span className="text-xs font-semibold text-[var(--muted-foreground)]">Certificate type</span>
+                  <select
+                    className="w-full rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-sm"
+                    value={type}
+                    onChange={(e) => setType(e.target.value as Certificate["type"])}
+                    disabled={!jobId}
+                  >
+                    <option value="MWC">MWC</option>
+                    <option value="EIC">EIC</option>
+                    <option value="EICR">EICR</option>
+                  </select>
+                </label>
+                <Button type="button" onClick={createCertificate} disabled={!jobId || busy} className="min-h-[44px] whitespace-nowrap">
+                  {busy ? "Creating..." : "Create Certificate"}
+                </Button>
+              </div>
 
               {!jobId ? (
                 <EmptyState
@@ -549,45 +569,6 @@ export default function CertificatesPageClient() {
       <div className="lg:col-span-4 space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Plus className="w-4 h-4" />
-              Create Certificate
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-3">
-              <div className="text-xs text-[var(--muted-foreground)]">
-                {selectedJob ? (
-                  <>
-                    Selected job: <span className="font-semibold text-[var(--foreground)]">{selectedJob.clientName}</span>
-                    {selectedJob.siteAddress ? ` - ${selectedJob.siteAddress}` : ""}
-                  </>
-                ) : (
-                  "Choose a job above to enable certificate creation."
-                )}
-              </div>
-              <label className="grid gap-1">
-                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Certificate type</span>
-                <select
-                  className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-sm"
-                  value={type}
-                  onChange={(e) => setType(e.target.value as Certificate["type"])}
-                  disabled={!jobId}
-                >
-                  <option value="MWC">Minor Works Certificate (MWC)</option>
-                  <option value="EIC">Electrical Installation Certificate (EIC)</option>
-                  <option value="EICR">Electrical Installation Condition Report (EICR)</option>
-                </select>
-              </label>
-              <Button type="button" onClick={createCertificate} disabled={!jobId || busy}>
-                {busy ? "Creating..." : "Create Certificate"}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <ExternalLink className="w-4 h-4" />
               Standalone Tool
@@ -613,73 +594,74 @@ export default function CertificatesPageClient() {
             </a>
           </CardContent>
         </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Download className="w-4 h-4" />
-              Export Bundle
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-[var(--muted-foreground)] mb-3">
-              Download a regulator-ready ZIP with PDFs, JSON snapshots, and CSV summary.
-            </p>
-            <div className="grid gap-3">
-              <label className="grid gap-1">
-                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Issued from</span>
-                <input
-                  type="date"
-                  value={exportFrom}
-                  onChange={(e) => setExportFrom(e.target.value)}
-                  className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
-                />
-              </label>
-              <label className="grid gap-1">
-                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Issued to</span>
-                <input
-                  type="date"
-                  value={exportTo}
-                  onChange={(e) => setExportTo(e.target.value)}
-                  className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
-                />
-              </label>
-              <label className="grid gap-1">
-                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Certificate types (optional)</span>
-                <select
-                  multiple
-                  value={exportTypes}
-                  onChange={(e) => setExportTypes(Array.from(e.target.selectedOptions, (o) => o.value))}
-                  className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm h-24"
-                >
-                  {CERTIFICATE_TYPES.map((t) => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
-                </select>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={exportAllRevisions}
-                  onChange={(e) => setExportAllRevisions(e.target.checked)}
-                  className="w-4 h-4 accent-[var(--primary)]"
-                />
-                <span className="text-sm text-[var(--foreground)]">Include all revisions</span>
-              </label>
-              {exportFrom && exportTo && exportFrom > exportTo && (
-                <p className="text-xs text-[var(--error)]">&quot;From&quot; date must be before &quot;to&quot; date.</p>
-              )}
-              {exportError && (
-                <p className="text-xs text-[var(--error)]">{exportError}</p>
-              )}
-              <Button type="button" onClick={downloadExport} disabled={exporting || !exportDatesValid}>
-                {exporting ? "Generating..." : "Download Export"}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
+
+    {/* Export Bundle — full width below main grid */}
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Download className="w-4 h-4" />
+          Export Completed Certificates
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="text-sm text-[var(--muted-foreground)] mb-3">
+          Download a regulator-ready ZIP of completed and issued certificates with PDFs, JSON snapshots, and CSV summary.
+        </p>
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="grid gap-1 min-w-[140px]">
+            <span className="text-xs font-semibold text-[var(--muted-foreground)]">Issued from</span>
+            <input
+              type="date"
+              value={exportFrom}
+              onChange={(e) => setExportFrom(e.target.value)}
+              className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="grid gap-1 min-w-[140px]">
+            <span className="text-xs font-semibold text-[var(--muted-foreground)]">Issued to</span>
+            <input
+              type="date"
+              value={exportTo}
+              onChange={(e) => setExportTo(e.target.value)}
+              className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="grid gap-1 min-w-[140px]">
+            <span className="text-xs font-semibold text-[var(--muted-foreground)]">Types (optional)</span>
+            <select
+              multiple
+              value={exportTypes}
+              onChange={(e) => setExportTypes(Array.from(e.target.selectedOptions, (o) => o.value))}
+              className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm h-20"
+            >
+              {CERTIFICATE_TYPES.map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+          </label>
+          <label className="flex items-center gap-2 cursor-pointer self-center">
+            <input
+              type="checkbox"
+              checked={exportAllRevisions}
+              onChange={(e) => setExportAllRevisions(e.target.checked)}
+              className="w-4 h-4 accent-[var(--primary)]"
+            />
+            <span className="text-sm text-[var(--foreground)]">All revisions</span>
+          </label>
+          <Button type="button" onClick={downloadExport} disabled={exporting || !exportDatesValid} className="min-h-[44px]">
+            {exporting ? "Generating..." : "Download Export"}
+          </Button>
+        </div>
+        {exportFrom && exportTo && exportFrom > exportTo && (
+          <p className="mt-2 text-xs text-[var(--error)]">&quot;From&quot; date must be before &quot;to&quot; date.</p>
+        )}
+        {exportError && (
+          <p className="mt-2 text-xs text-[var(--error)]">{exportError}</p>
+        )}
+      </CardContent>
+    </Card>
     </div>
   );
 }

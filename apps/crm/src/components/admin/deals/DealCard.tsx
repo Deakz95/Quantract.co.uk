@@ -3,7 +3,7 @@
 import { DragEvent, useState } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, DollarSign, User, Building } from "lucide-react";
+import { Calendar, PoundSterling, User, Building } from "lucide-react";
 
 type DealStage = {
   id: string;
@@ -98,7 +98,7 @@ export default function DealCard({ deal }: DealCardProps) {
 
         {/* Value */}
         <div className="flex items-center gap-1.5 text-[var(--foreground)] mb-3">
-          <DollarSign className="w-4 h-4 text-[var(--primary)]" />
+          <PoundSterling className="w-4 h-4 text-[var(--primary)]" />
           <span className="font-bold">{formatCurrency(deal.value)}</span>
           {deal.probability != null && (
             <Badge variant="secondary" className="ml-auto text-xs">

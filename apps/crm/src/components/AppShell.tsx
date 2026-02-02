@@ -23,6 +23,7 @@ import {
   X,
   Sparkles,
   ChevronRight,
+  ChevronDown,
   Plus,
   Inbox,
   Target,
@@ -108,10 +109,14 @@ const engineerNav: NavItem[] = [
   { label: "Settings", href: "/engineer/settings", icon: Settings },
 ];
 
+const COLLAPSIBLE_SECTIONS = new Set(["Field Tools", "People", "Portals"]);
+
 function renderNavItems(
   items: NavItem[],
   isActive: (href: string) => boolean,
   onNavigate?: () => void,
+  collapsedSections?: Set<string>,
+  toggleSection?: (s: string) => void,
 ) {
   const elements: ReactNode[] = [];
   let lastSection: string | undefined;
@@ -119,12 +124,32 @@ function renderNavItems(
   for (const item of items) {
     if (item.section && item.section !== lastSection) {
       lastSection = item.section;
-      elements.push(
-        <div key={`section-${item.section}`} className="pt-3 pb-1 px-4 text-[10px] font-bold uppercase tracking-widest text-[var(--muted-foreground)]">
-          {item.section}
-        </div>
-      );
+      const isCollapsible = COLLAPSIBLE_SECTIONS.has(item.section);
+      const isCollapsed = isCollapsible && collapsedSections?.has(item.section);
+
+      if (isCollapsible && toggleSection) {
+        elements.push(
+          <button
+            key={`section-${item.section}`}
+            type="button"
+            onClick={() => toggleSection(item.section!)}
+            className="flex items-center justify-between w-full pt-3 pb-1 px-4 text-[10px] font-bold uppercase tracking-widest text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
+          >
+            <span>{item.section}</span>
+            <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${isCollapsed ? "-rotate-90" : ""}`} />
+          </button>
+        );
+      } else {
+        elements.push(
+          <div key={`section-${item.section}`} className="pt-3 pb-1 px-4 text-[10px] font-bold uppercase tracking-widest text-[var(--muted-foreground)]">
+            {item.section}
+          </div>
+        );
+      }
     }
+
+    const sectionCollapsed = item.section && COLLAPSIBLE_SECTIONS.has(item.section) && collapsedSections?.has(item.section);
+    if (sectionCollapsed) continue;
 
     if (item.external) {
       elements.push(
@@ -192,6 +217,22 @@ export function AppShell({
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(() => {
+    if (typeof window === "undefined") return new Set(["Field Tools", "People", "Portals"]);
+    try {
+      const stored = localStorage.getItem("qt-nav-collapsed");
+      if (stored) return new Set(JSON.parse(stored));
+    } catch { /* ignore */ }
+    return new Set(["Field Tools", "People", "Portals"]);
+  });
+  const toggleSection = (section: string) => {
+    setCollapsedSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(section)) next.delete(section); else next.add(section);
+      try { localStorage.setItem("qt-nav-collapsed", JSON.stringify([...next])); } catch { /* ignore */ }
+      return next;
+    });
+  };
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifCount, setNotifCount] = useState(0);
   const [notifLogs, setNotifLogs] = useState<Array<{ id: string; channel: string; eventKey: string; recipient: string; status: string; createdAtISO: string; quoteId?: string; invoiceId?: string; jobId?: string }>>([]);
@@ -576,7 +617,7 @@ export function AppShell({
             onClick={(e) => e.stopPropagation()}
           >
             <nav className="space-y-0.5">
-              {renderNavItems(nav, isActive, () => setMobileNavOpen(false))}
+              {renderNavItems(nav, isActive, () => setMobileNavOpen(false), collapsedSections, toggleSection)}
             </nav>
           </div>
         </div>
@@ -589,7 +630,7 @@ export function AppShell({
           <aside className="hidden lg:block lg:col-span-3">
             <div className="sticky top-20">
               <nav className="space-y-0.5">
-                {renderNavItems(nav, isActive)}
+                {renderNavItems(nav, isActive, undefined, collapsedSections, toggleSection)}
               </nav>
             </div>
           </aside>

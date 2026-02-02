@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { apiRequest, getApiErrorMessage } from "@/lib/apiClient";
-import { ArrowLeft, RefreshCcw, GitBranch, DollarSign, Target } from "lucide-react";
+import { ArrowLeft, RefreshCcw, GitBranch, PoundSterling, Target } from "lucide-react";
 import { FunnelChart, type FunnelStage } from "@/components/admin/reports/FunnelChart";
 import { MetricCard } from "@/components/admin/reports/MetricCard";
 import { DateRangePicker } from "@/components/admin/reports/DateRangePicker";
@@ -158,7 +158,7 @@ export default function PipelineReportPage() {
               <MetricCard
                 title="Total Pipeline Value"
                 value={formatCurrency(data.totalValue)}
-                icon={DollarSign}
+                icon={PoundSterling}
                 iconColor="from-blue-500 to-blue-600"
               />
               <MetricCard

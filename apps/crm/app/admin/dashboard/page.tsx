@@ -24,7 +24,7 @@ import {
   RefreshCw,
   CheckCircle,
   Send,
-  DollarSign,
+  PoundSterling,
   Calendar,
   Award,
   Inbox,
@@ -207,7 +207,7 @@ function getActivityIcon(type: ActivityItem['type']) {
     case 'quote_sent': return Send;
     case 'quote_accepted': return CheckCircle;
     case 'invoice_sent': return Receipt;
-    case 'invoice_paid': return DollarSign;
+    case 'invoice_paid': return PoundSterling;
     case 'job_completed': return CheckCircle;
     case 'job_scheduled': return Calendar;
     case 'certificate_issued': return Award;
@@ -620,7 +620,7 @@ function RevenueWidget({
 
             {!showChart && (
               <div className="pt-4 border-t border-[var(--border)] text-center py-4 text-[var(--muted-foreground)]">
-                <DollarSign className="w-6 h-6 mx-auto mb-1 opacity-50" />
+                <PoundSterling className="w-6 h-6 mx-auto mb-1 opacity-50" />
                 <p className="text-xs">No revenue data yet</p>
               </div>
             )}

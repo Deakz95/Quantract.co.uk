@@ -28,6 +28,7 @@ export type ExportFilters = {
   issuedTo: string;   // ISO date yyyy-mm-dd
   includeAllRevisions?: boolean;
   types?: string[];
+  status?: string[];  // e.g. ["completed", "issued"]
 };
 
 export type ExportResult = {
@@ -93,7 +94,7 @@ export async function exportCertificatesZip(opts: {
     issuedAt: { gte: fromDate, lte: toDate },
     certificate: {
       companyId,
-      status: "issued",
+      status: filters.status?.length ? { in: filters.status } : "issued",
       currentRevision: { gt: 0 },
     },
   };
@@ -158,7 +159,7 @@ export async function exportCertificatesZip(opts: {
         OR: orConditions,
         certificate: {
           companyId,
-          status: "issued",
+          status: filters.status?.length ? { in: filters.status } : "issued",
           currentRevision: { gt: 0 },
         },
       },

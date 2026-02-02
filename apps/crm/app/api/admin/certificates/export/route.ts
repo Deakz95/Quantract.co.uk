@@ -60,6 +60,7 @@ export const POST = withRequestLogging(async function POST(req: Request) {
     issuedTo,
     includeAllRevisions: body.includeAllRevisions === true,
     types: Array.isArray(body.types) ? body.types.filter((t: unknown) => typeof t === "string") : undefined,
+    status: Array.isArray(body.status) ? body.status.filter((s: unknown) => typeof s === "string") : undefined,
   };
 
   try {

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { apiRequest, getApiErrorMessage } from "@/lib/apiClient";
-import { ArrowLeft, RefreshCcw, TrendingUp, TrendingDown, DollarSign, Target, Percent, Award } from "lucide-react";
+import { ArrowLeft, RefreshCcw, TrendingUp, TrendingDown, PoundSterling, Target, Percent, Award } from "lucide-react";
 import { ChartWidget, type ChartDataPoint } from "@/components/admin/reports/ChartWidget";
 import { MetricCard } from "@/components/admin/reports/MetricCard";
 import { DateRangePicker } from "@/components/admin/reports/DateRangePicker";
@@ -231,7 +231,7 @@ export default function SalesReportPage() {
               <MetricCard
                 title="Total Revenue"
                 value={formatCurrency(data.totalValue)}
-                icon={DollarSign}
+                icon={PoundSterling}
                 iconColor="from-blue-500 to-blue-600"
               />
               <MetricCard

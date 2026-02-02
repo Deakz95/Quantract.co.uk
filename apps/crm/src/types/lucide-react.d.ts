@@ -23,6 +23,7 @@ declare module "lucide-react" {
   export const Building: LucideIcon;
   export const MessageSquare: LucideIcon;
   export const DollarSign: LucideIcon;
+  export const PoundSterling: LucideIcon;
   export const Percent: LucideIcon;
   export const Activity: LucideIcon;
   export const CheckSquare: LucideIcon;
