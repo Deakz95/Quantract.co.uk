@@ -48,7 +48,7 @@ export const GET = withRequestLogging(async function GET() {
           select: { id: true, invoiceNumber: true, clientName: true },
         },
         job: {
-          select: { id: true, title: true },
+          select: { id: true, title: true, jobNumber: true },
         },
         certificate: {
           select: { id: true, certificateNumber: true },
@@ -91,6 +91,7 @@ export const GET = withRequestLogging(async function GET() {
         select: {
           id: true,
           title: true,
+          jobNumber: true,
           status: true,
           updatedAt: true,
         },
@@ -155,7 +156,7 @@ export const GET = withRequestLogging(async function GET() {
       }
 
       if (event.entityType === "job" && event.jobId) {
-        const jobTitle = event.job?.title || `Job ${event.jobId.slice(0, 8)}`;
+        const jobTitle = event.job?.title || (event.job?.jobNumber ? `J-${String(event.job.jobNumber).padStart(4, "0")}` : "Job");
         if (event.action === "completed") {
           activity = {
             id: event.id,
@@ -263,7 +264,7 @@ export const GET = withRequestLogging(async function GET() {
         if (activities.length >= 10) break;
         if (activities.some(a => a.entityId === job.id)) continue;
 
-        const jobTitle = job.title || `Job ${job.id.slice(0, 8)}`;
+        const jobTitle = job.title || ((job as any).jobNumber ? `J-${String((job as any).jobNumber).padStart(4, "0")}` : "Job");
         if (job.status === "completed") {
           activities.push({
             id: `job-${job.id}`,

@@ -10,6 +10,14 @@ import { useToast } from "@/components/ui/useToast";
 import { Breadcrumbs, type BreadcrumbItem } from "@/components/ui/Breadcrumbs";
 import CompactTimeline from "@/components/admin/CompactTimeline";
 
+function cleanJobTitle(raw?: string | null, jobNumber?: number | null): string {
+  const jNum = jobNumber ? `J-${String(jobNumber).padStart(4, "0")}` : null;
+  if (!raw || /^Job from Quote\s/i.test(raw) || /^Job\s*—\s*$/i.test(raw)) {
+    return jNum || "Job";
+  }
+  return jNum ? `${jNum}: ${raw}` : raw;
+}
+
 type JobStatus = "new" | "scheduled" | "in_progress" | "completed";
 type Job = {
   id: string;
@@ -593,7 +601,7 @@ export default function AdminJobDetail({ jobId }: Props) {
       <Breadcrumbs items={breadcrumbItems} />
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
-          <div className="text-sm font-semibold text-[var(--foreground)]">{job?.title || job?.clientName || "Job"}</div>
+          <div className="text-sm font-semibold text-[var(--foreground)]">{cleanJobTitle(job?.title, job?.jobNumber) || job?.clientName || "Job"}</div>
           {job ? (
             <div className="mt-1 space-y-0.5">
               <div className="text-xs text-[var(--muted-foreground)]">

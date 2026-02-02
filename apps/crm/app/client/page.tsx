@@ -115,7 +115,7 @@ export default function ClientHome() {
 
       <div className="rounded-2xl border border-[var(--border)] bg-[var(--muted)] p-4">
         <p className="text-xs text-[var(--muted-foreground)]">
-          What happens next: review your quote, accept it, sign the agreement, then use invoices here to pay or download receipts. Secure token links still work if you aren't logged in.
+          What happens next: review your quote, accept it, sign the agreement, then use invoices here to pay or download receipts. You can also access your documents anytime using the links we email you.
         </p>
       </div>
     </div>

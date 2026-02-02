@@ -105,15 +105,17 @@ export default function AiEstimatorPage() {
         <div className="flex items-center gap-4">
           <button
             onClick={() => fileRef.current?.click()}
-            className="px-4 py-2 bg-gray-100 text-sm rounded hover:bg-gray-200"
+            className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--background)] text-sm font-medium text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors"
           >
-            {imagePreview ? "Change Photo" : "Upload Photo"}
+            {imagePreview ? "Change photo" : "Upload photo (optional)"}
           </button>
           <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
-          {imagePreview && (
-            <button onClick={() => { setImagePreview(null); setImageBase64(null); }} className="text-xs text-red-500">
+          {imagePreview ? (
+            <button onClick={() => { setImagePreview(null); setImageBase64(null); }} className="min-h-[44px] px-2 text-xs text-red-500 hover:text-red-700 transition-colors">
               Remove
             </button>
+          ) : (
+            <span className="text-xs text-[var(--muted-foreground)]">No file selected</span>
           )}
         </div>
 

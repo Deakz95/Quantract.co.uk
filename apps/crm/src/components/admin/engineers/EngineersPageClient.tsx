@@ -12,6 +12,7 @@ import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 import { useToast } from "@/components/ui/useToast";
 import { apiRequest, getApiErrorMessage } from "@/lib/apiClient";
 import { getPlanDefinition, isEngineerLimitReached } from "@/lib/billing/plans";
+import { toTitleCase } from "@/lib/cn";
 
 type Engineer = {
   id: string;
@@ -195,9 +196,16 @@ export default function EngineersPageClient() {
   );
 
   const filtered = useMemo(() => {
+    // Deduplicate by id first
+    const seen = new Set<string>();
+    const unique = engineers.filter((e) => {
+      if (seen.has(e.id)) return false;
+      seen.add(e.id);
+      return true;
+    });
     const s = query.trim().toLowerCase();
-    if (!s) return engineers;
-    return engineers.filter((e) =>
+    if (!s) return unique;
+    return unique.filter((e) =>
       [e.name, e.email, e.id].filter(Boolean).some((v) => String(v).toLowerCase().includes(s))
     );
   }, [engineers, query]);
@@ -406,7 +414,7 @@ export default function EngineersPageClient() {
                         className={`border-t border-[var(--border)] ${selectedId === e.id ? "bg-[var(--muted)]" : ""}`}
                       >
                         <td className="py-3">
-                          <div className="font-semibold text-[var(--foreground)]">{e.name || e.email}</div>
+                          <div className="font-semibold text-[var(--foreground)]">{toTitleCase(e.name) || e.email}</div>
                           <div className="text-xs text-[var(--muted-foreground)]">{e.email}</div>
                           {activityData[e.id] && (
                             <div className="flex gap-3 mt-0.5">

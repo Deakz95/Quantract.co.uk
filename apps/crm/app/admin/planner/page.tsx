@@ -44,7 +44,7 @@ export default function PlannerPage() {
     ]);
     const engJson = await engRes.json();
     const planJson = await planRes.json();
-    setEngineers(engJson.data || []);
+    setEngineers(engJson.engineers || engJson.data || []);
     setEntries((planJson.data || []).map((e: any) => ({
       ...e,
       start: new Date(e.start).toISOString(),

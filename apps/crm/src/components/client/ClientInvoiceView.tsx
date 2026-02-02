@@ -65,6 +65,7 @@ export default function ClientInvoiceView({ token }: { token: string }) {
   const [paying, setPaying] = useState(false);
   const [amountInput, setAmountInput] = useState<string>("");
   const [showLineItems, setShowLineItems] = useState(false);
+  const [fetchError, setFetchError] = useState<"not_found" | "error" | null>(null);
 
   const canPay = useMemo(() => {
     if (!inv) return false;
@@ -75,9 +76,16 @@ export default function ClientInvoiceView({ token }: { token: string }) {
   useEffect(() => {
     let mounted = true;
     fetch(`/api/client/invoices/${token}`)
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) {
+          if (mounted) setFetchError(r.status === 404 ? "not_found" : "error");
+          return null;
+        }
+        return r.json();
+      })
       .then((d) => {
-        if (!mounted) return;
+        if (!mounted || !d) return;
+        if (!d.invoice) { setFetchError("not_found"); return; }
         setInv(d.invoice ?? null);
         setSummary(d.paymentSummary ?? null);
         if (Array.isArray(d.lineItems)) setLineItems(d.lineItems);
@@ -85,7 +93,7 @@ export default function ClientInvoiceView({ token }: { token: string }) {
         const bal = Number(d?.paymentSummary?.balanceDue ?? NaN);
         if (Number.isFinite(bal)) setAmountInput(bal.toFixed(2));
       })
-      .catch(() => {});
+      .catch(() => { if (mounted) setFetchError("error"); });
     return () => {
       mounted = false;
     };
@@ -121,6 +129,30 @@ export default function ClientInvoiceView({ token }: { token: string }) {
     }
   }
 
+  if (fetchError) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Invoice</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {fetchError === "not_found" ? (
+            <div className="text-center py-8">
+              <p className="text-sm font-medium text-[var(--foreground)]">Invoice not found</p>
+              <p className="mt-1 text-xs text-[var(--muted-foreground)]">This invoice link is invalid or has expired. Please contact your contractor for an updated link.</p>
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-sm font-medium text-[var(--foreground)]">Something went wrong</p>
+              <p className="mt-1 text-xs text-[var(--muted-foreground)]">Please check your connection and try again.</p>
+              <button type="button" onClick={() => window.location.reload()} className="mt-3 text-xs font-medium text-[var(--primary)] hover:underline">Retry</button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (!inv) {
     return (
       <Card>
@@ -128,7 +160,7 @@ export default function ClientInvoiceView({ token }: { token: string }) {
           <CardTitle>Invoice</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-sm text-[var(--muted-foreground)]">Loading\u2026</div>
+          <div className="text-sm text-[var(--muted-foreground)]">Loading...</div>
         </CardContent>
       </Card>
     );

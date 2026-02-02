@@ -7,6 +7,34 @@ import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Breadcrumbs, type BreadcrumbItem } from "@/components/ui/Breadcrumbs";
 
+const AUDIT_LABELS: Record<string, string> = {
+  "quote.created": "Quote created",
+  "quote.sent": "Quote sent to client",
+  "quote.accepted": "Quote accepted",
+  "quote.rejected": "Quote rejected",
+  "quote.revised": "Quote revised",
+  "quote.expired": "Quote expired",
+  "quote.viewed": "Quote viewed by client",
+  "quote.updated": "Quote updated",
+  "quote.deleted": "Quote deleted",
+  "agreement.created": "Agreement created",
+  "agreement.sent": "Agreement sent",
+  "agreement.signed": "Agreement signed",
+  "agreement.viewed": "Agreement viewed",
+  "invoice.created": "Invoice created",
+  "invoice.sent": "Invoice sent to client",
+  "invoice.paid": "Invoice marked as paid",
+  "invoice.viewed": "Invoice viewed",
+  "job.created": "Job created",
+  "job.completed": "Job completed",
+};
+
+function humanizeAuditAction(action: string): string {
+  if (AUDIT_LABELS[action]) return AUDIT_LABELS[action];
+  // Fallback: "quote.sent" → "Quote sent"
+  return action.replace(/[._]/g, " ").replace(/^\w/, (c) => c.toUpperCase());
+}
+
 type Quote = {
   id: string;
   token: string;
@@ -661,7 +689,7 @@ export default function QuoteDetailClient({ quoteId }: { quoteId: string }) {
                       .map((e) => (
                         <tr key={e.id} className="border-t border-[var(--border)]">
                           <td className="py-3 px-3 text-xs text-[var(--muted-foreground)]">{new Date(e.createdAtISO).toLocaleString()}</td>
-                          <td className="py-3 px-3 font-semibold text-[var(--foreground)]">{e.action}</td>
+                          <td className="py-3 px-3 font-semibold text-[var(--foreground)]">{humanizeAuditAction(e.action)}</td>
                           <td className="py-3 px-3 text-xs text-[var(--muted-foreground)]">{e.actorRole}{e.actor ? ` • ${e.actor}` : ""}</td>
                         </tr>
                       ))}

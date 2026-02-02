@@ -1,8 +1,8 @@
 import Link from "next/link";
 
-export default function NotFound() {
+export default function AdminNotFound() {
   return (
-    <div className="min-h-screen bg-[var(--muted)] flex items-center justify-center px-4">
+    <div className="flex items-center justify-center px-4 py-24">
       <div className="max-w-md w-full rounded-2xl border border-[var(--border)] bg-[var(--background)] p-8 text-center shadow-sm">
         <div className="text-5xl font-extrabold text-[var(--muted-foreground)] mb-4">404</div>
         <h1 className="text-lg font-bold text-[var(--foreground)]">Page not found</h1>
@@ -15,12 +15,6 @@ export default function NotFound() {
             className="inline-flex items-center justify-center min-h-[44px] px-4 py-2 rounded-lg bg-[var(--primary)] text-sm font-medium text-white hover:opacity-90 transition-opacity"
           >
             Go to Dashboard
-          </Link>
-          <Link
-            href="/"
-            className="inline-flex items-center justify-center min-h-[44px] px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--background)] text-sm font-medium text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors"
-          >
-            Home
           </Link>
         </div>
       </div>

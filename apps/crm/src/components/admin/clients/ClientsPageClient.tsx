@@ -424,7 +424,7 @@ export default function ClientsPageClient() {
     },
     {
       key: "updatedAtISO",
-      label: "Last Updated",
+      label: "Updated",
       sortable: true,
       render: (client) => (
         <span className="text-[var(--muted-foreground)]">{formatRelativeTime(client.updatedAtISO)}</span>

@@ -42,6 +42,7 @@ export async function GET(req: Request) {
           siteName: q.site?.name,
           total,
           status: q.status,
+          updatedAt: q.updatedAt?.toISOString?.() ?? q.createdAt?.toISOString?.() ?? null,
           lastSentAt: q.sentAt,
           acceptedAt: q.acceptedAt,
         };

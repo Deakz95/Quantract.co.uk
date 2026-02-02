@@ -67,17 +67,17 @@ export function FunnelChart({
                 <div className="relative flex items-center">
                   {/* Stage bar */}
                   <div
-                    className="relative h-12 rounded-lg transition-all duration-300 group-hover:shadow-lg flex items-center justify-between px-4 overflow-hidden"
+                    className="relative h-12 rounded-lg transition-all duration-300 group-hover:shadow-lg flex items-center justify-between px-4"
                     style={{
                       width: `${widthPercent}%`,
-                      minWidth: "120px",
+                      minWidth: "160px",
                       backgroundColor: color,
                       clipPath: index === stages.length - 1
                         ? undefined
                         : "polygon(0 0, 100% 0, 98% 100%, 2% 100%)",
                     }}
                   >
-                    <span className="text-white font-semibold text-sm truncate">
+                    <span className="text-white font-semibold text-sm whitespace-nowrap">
                       {stage.name}
                     </span>
                     <span className="text-white/90 text-xs font-medium whitespace-nowrap ml-2">

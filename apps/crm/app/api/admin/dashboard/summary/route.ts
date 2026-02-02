@@ -78,7 +78,7 @@ export const GET = withRequestLogging(async function GET() {
         include: {
           quote: { select: { id: true, clientName: true } },
           invoice: { select: { id: true, invoiceNumber: true, clientName: true } },
-          job: { select: { id: true, title: true } },
+          job: { select: { id: true, title: true, jobNumber: true } },
           certificate: { select: { id: true, certificateNumber: true } },
         },
       }),
@@ -98,7 +98,7 @@ export const GET = withRequestLogging(async function GET() {
         where: { companyId: authCtx.companyId, deletedAt: null },
         orderBy: { updatedAt: "desc" },
         take: 5,
-        select: { id: true, title: true, status: true, updatedAt: true },
+        select: { id: true, title: true, jobNumber: true, status: true, updatedAt: true },
       }),
 
       // Revenue queries
@@ -161,7 +161,7 @@ export const GET = withRequestLogging(async function GET() {
         else if (event.action === "paid") activity = { id: event.id, type: "invoice_paid", description: `Invoice #${num} marked as paid`, entityId: event.invoiceId, entityType: "invoice", timestamp: event.createdAt.toISOString(), link: `/admin/invoices/${event.invoiceId}` };
       }
       if (event.entityType === "job" && event.jobId) {
-        const jt = event.job?.title || `Job ${event.jobId.slice(0, 8)}`;
+        const jt = event.job?.title || (event.job?.jobNumber ? `J-${String(event.job.jobNumber).padStart(4, "0")}` : "Job");
         if (event.action === "completed") activity = { id: event.id, type: "job_completed", description: `${jt} completed`, entityId: event.jobId, entityType: "job", timestamp: event.createdAt.toISOString(), link: `/admin/jobs/${event.jobId}` };
         else if (event.action === "scheduled") activity = { id: event.id, type: "job_scheduled", description: `${jt} scheduled`, entityId: event.jobId, entityType: "job", timestamp: event.createdAt.toISOString(), link: `/admin/jobs/${event.jobId}` };
       }
@@ -190,7 +190,7 @@ export const GET = withRequestLogging(async function GET() {
       for (const job of recentJobs) {
         if (activities.length >= 10) break;
         if (activities.some(a => a.entityId === job.id)) continue;
-        const jt = job.title || `Job ${job.id.slice(0, 8)}`;
+        const jt = job.title || (job.jobNumber ? `J-${String(job.jobNumber).padStart(4, "0")}` : "Job");
         if (job.status === "completed") activities.push({ id: `job-${job.id}`, type: "job_completed", description: `${jt} completed`, entityId: job.id, entityType: "job", timestamp: job.updatedAt.toISOString(), link: `/admin/jobs/${job.id}` });
         else if (job.status === "scheduled") activities.push({ id: `job-${job.id}`, type: "job_scheduled", description: `${jt} scheduled`, entityId: job.id, entityType: "job", timestamp: job.updatedAt.toISOString(), link: `/admin/jobs/${job.id}` });
       }

@@ -53,16 +53,60 @@ export async function GET(request: Request) {
       },
     });
 
+    const ACTION_LABELS: Record<string, string> = {
+      "created": "Created",
+      "updated": "Updated",
+      "sent": "Sent",
+      "viewed": "Viewed",
+      "accepted": "Accepted",
+      "rejected": "Rejected",
+      "completed": "Completed",
+      "paid": "Marked paid",
+      "unpaid": "Marked unpaid",
+      "cancelled": "Cancelled",
+      "deleted": "Deleted",
+      "issued": "Issued",
+      "voided": "Voided",
+      "scheduled": "Scheduled",
+      "assigned": "Assigned",
+      "invoice.created": "Invoice created",
+      "invoice.sent": "Invoice sent",
+      "invoice.paid": "Invoice paid",
+      "invoice.unpaid": "Invoice unpaid",
+      "invoice.viewed": "Invoice viewed",
+      "quote.sent": "Quote sent",
+      "quote.accepted": "Quote accepted",
+      "quote.rejected": "Quote rejected",
+      "quote.viewed": "Quote viewed",
+      "job.created": "Job created",
+      "job.completed": "Job completed",
+      "job.scheduled": "Job scheduled",
+      "certificate.issued": "Certificate issued",
+      "certificate.voided": "Certificate voided",
+      "payment.link.created": "Payment link created",
+      "site.created": "Site created",
+      "site.updated": "Site updated",
+    };
+
+    function formatAction(action: string): string {
+      if (ACTION_LABELS[action]) return ACTION_LABELS[action];
+      // Fallback: "invoice.viewed" → "Invoice viewed", "some_thing" → "Some thing"
+      return action
+        .replace(/[._]/g, " ")
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+    }
+
     const items = events.map((e: any) => {
-      let description = `${e.entityType} ${e.action}`;
+      const label = formatAction(e.action);
+      let description = `${e.entityType} — ${label}`;
       if (e.entityType === "job" && e.job) {
-        description = `${e.job.title ?? "Job"} — ${e.action}`;
+        description = `${e.job.title ?? "Job"} — ${label}`;
       } else if (e.entityType === "quote" && e.quote) {
-        description = `Quote to ${e.quote.clientName ?? "client"} — ${e.action}`;
+        description = `Quote to ${e.quote.clientName ?? "client"} — ${label}`;
       } else if (e.entityType === "invoice" && e.invoice) {
-        description = `Invoice #${e.invoice.invoiceNumber ?? ""} — ${e.action}`;
+        description = `Invoice #${e.invoice.invoiceNumber ?? ""} — ${label}`;
       } else if (e.entityType === "certificate" && e.certificate) {
-        description = `Certificate #${e.certificate.certificateNumber ?? ""} — ${e.action}`;
+        description = `Certificate #${e.certificate.certificateNumber ?? ""} — ${label}`;
       }
 
       return {

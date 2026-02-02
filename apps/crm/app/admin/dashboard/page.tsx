@@ -33,6 +33,7 @@ import {
 import Link from "next/link";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { getCached, setCached } from "@/lib/client/swrCache";
+import { toTitleCase } from "@/lib/cn";
 
 type WidgetType = 'stats' | 'quickActions' | 'recentActivity' | 'teamOverview' | 'performance' | 'calendar' | 'invoiceChart' | 'jobsMap' | 'revenue' | 'breakEven' | 'needsAttention';
 
@@ -251,11 +252,11 @@ function StatsWidget({ data, loading, onRefresh, isRefreshing }: {
 }) {
   const stats = data ? [
     {
-      label: "Open Quotes",
+      label: "Quotes Sent",
       value: data.quotes.pendingCount.toString(),
       change: data.quotes.draftCount > 0
         ? `${data.quotes.draftCount} draft, ${data.quotes.sentCount} sent`
-        : data.quotes.pendingValue > 0 ? `${formatCurrency(data.quotes.pendingValue)} pending` : "No pending value",
+        : data.quotes.pendingValue > 0 ? `${formatCurrency(data.quotes.pendingValue)} pending` : "No quotes awaiting response",
       icon: FileText,
       color: "from-blue-500 to-blue-600",
       href: "/admin/quotes",
@@ -327,7 +328,7 @@ function StatsWidget({ data, loading, onRefresh, isRefreshing }: {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: "Open Quotes", icon: FileText, color: "from-blue-500 to-blue-600", href: "/admin/quotes" },
+          { label: "Quotes Sent", icon: FileText, color: "from-blue-500 to-blue-600", href: "/admin/quotes" },
           { label: "Unpaid Invoices", icon: Receipt, color: "from-amber-500 to-orange-500", href: "/admin/invoices" },
           { label: "Active Jobs", icon: Briefcase, color: "from-emerald-500 to-teal-500", href: "/admin/jobs" },
           { label: "Timesheets", icon: Clock, color: "from-violet-500 to-purple-500", href: "/admin/timesheets" },
@@ -470,7 +471,7 @@ function RecentActivityWidget({
           </Link>
           <div className="flex items-center gap-2">
             <RefreshButton onClick={onRefresh} isRefreshing={isRefreshing} />
-            <Badge variant="secondary">Last 10</Badge>
+            {activities.length > 1 && <Badge variant="secondary">Last {Math.min(activities.length, 10)}</Badge>}
           </div>
         </div>
       </CardHeader>
@@ -688,7 +689,7 @@ function TeamOverviewWidget({ engineers, loading, onRefresh, isRefreshing }: {
           </div>
         ) : (
           <div className="space-y-4">
-            {engineers.slice(0, 5).map((member, i) => {
+            {engineers.filter((m, i, arr) => arr.findIndex((x) => x.id === m.id) === i).slice(0, 5).map((member, i) => {
               const initials = (member.name || member.email || 'U')
                 .split(' ')
                 .map((n) => n[0]?.toUpperCase())
@@ -700,7 +701,7 @@ function TeamOverviewWidget({ engineers, loading, onRefresh, isRefreshing }: {
                     {initials}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-[var(--foreground)]">{member.name || member.email}</div>
+                    <div className="text-sm font-medium text-[var(--foreground)]">{toTitleCase(member.name) || member.email}</div>
                     <div className="text-xs text-[var(--muted-foreground)]">{member.role || 'Engineer'}</div>
                   </div>
                   <Badge variant="success" className="text-xs">Active</Badge>

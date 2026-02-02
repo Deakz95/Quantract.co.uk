@@ -18,6 +18,15 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+/** Strip legacy "Job from Quote <uuid>" titles */
+function cleanJobTitle(raw?: string | null, jobNumber?: string | null): string {
+  if (!raw) return jobNumber ? `J-${jobNumber}` : "Untitled Job";
+  if (/^Job from Quote\s/i.test(raw) || /^Job\s*—\s*$/i.test(raw)) {
+    return jobNumber ? `J-${jobNumber}` : "Untitled Job";
+  }
+  return raw;
+}
+
 type Job = {
   id: string;
   jobNumber?: string;
@@ -144,7 +153,7 @@ export default function JobsPage() {
       // Search filter
       if (searchTerm) {
         const search = searchTerm.toLowerCase();
-        const jobName = job.name || job.title || '';
+        const jobName = cleanJobTitle(job.name || job.title, job.jobNumber);
         const siteAddress = job.site?.address || job.site?.address1 || '';
         const matchesSearch =
           (job.jobNumber?.toLowerCase().includes(search)) ||
@@ -333,7 +342,7 @@ export default function JobsPage() {
         if (flags?.hasMissingTimesheet) warnings.push('Missing timesheet');
         return (
           <span className="text-[var(--foreground)] font-medium inline-flex items-center gap-1.5">
-            {job.name || job.title || 'Untitled Job'}
+            {cleanJobTitle(job.name || job.title, job.jobNumber)}
             {warnings.length > 0 && (
               <span title={warnings.join(' · ')} className="inline-flex">
                 <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
@@ -533,7 +542,7 @@ export default function JobsPage() {
                       </div>
                       {getStatusBadge(job.status)}
                     </div>
-                    <h3 className="font-semibold text-[var(--foreground)] mb-2 line-clamp-1">{job.name || job.title || 'Untitled Job'}</h3>
+                    <h3 className="font-semibold text-[var(--foreground)] mb-2 line-clamp-1">{cleanJobTitle(job.name || job.title, job.jobNumber)}</h3>
                     {(job.site?.address || job.site?.address1) && (
                       <div className="flex items-center gap-2 text-sm text-[var(--muted-foreground)] mb-2">
                         <Briefcase className="w-4 h-4" />

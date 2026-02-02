@@ -79,6 +79,7 @@ export function EnquiryListClient() {
   });
 
   const [confirmingDelete, setConfirmingDelete] = useState<Enquiry | null>(null);
+  const [sortBy, setSortBy] = useState<"recent" | "priority">("recent");
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -220,8 +221,6 @@ export function EnquiryListClient() {
       />
     );
   }
-
-  const [sortBy, setSortBy] = useState<"recent" | "priority">("recent");
 
   const sortedEnquiries = sortBy === "priority"
     ? [...enquiries].sort((a, b) => {
