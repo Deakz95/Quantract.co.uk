@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { RefreshCw, Clock, AlertCircle } from "lucide-react";
+import { toTitleCase } from "@/lib/cn";
 
 type Engineer = { id: string; name: string };
 type Entry = { id: string; engineerId: string; engineer?: string; jobId: string; job?: string; start: string; end: string };
@@ -163,9 +164,9 @@ export default function PlannerPage() {
                   <div key={eng.id} className="grid border-b border-[var(--border)]" style={{ gridTemplateColumns: "200px repeat(7, 1fr)" }}>
                     <div className="p-4 text-sm font-medium text-[var(--foreground)] flex items-center gap-2">
                       <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--accent)] flex items-center justify-center text-white text-xs font-semibold">
-                        {eng.name?.split(' ').map(n => n[0]).join('') || '?'}
+                        {toTitleCase(eng.name)?.split(' ').map(n => n[0]).join('') || '?'}
                       </div>
-                      {eng.name}
+                      {toTitleCase(eng.name)}
                     </div>
 
                     {days.map(day => (

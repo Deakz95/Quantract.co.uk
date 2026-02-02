@@ -36,6 +36,7 @@ const NAV: Record<Role, { label: string; href: string; section?: string }[]> = {
     { label: "Quotes", href: "/client/quotes" },
     { label: "Invoices", href: "/client/invoices" },
     { label: "Documents", href: "/client/documents" },
+    { label: "Troubleshooter", href: "/client/troubleshoot" },
   ],
   engineer: [
     { label: "Today", href: "/engineer/today" },

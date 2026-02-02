@@ -20,9 +20,10 @@ import { useRouter } from "next/navigation";
 
 /** Strip legacy "Job from Quote <uuid>" titles */
 function cleanJobTitle(raw?: string | null, jobNumber?: string | null): string {
-  if (!raw) return jobNumber ? `J-${jobNumber}` : "Untitled Job";
+  // jobNumber from API is already formatted as "J-XXXX", don't double-prefix
+  if (!raw) return jobNumber || "Untitled Job";
   if (/^Job from Quote\s/i.test(raw) || /^Job\s*—\s*$/i.test(raw)) {
-    return jobNumber ? `J-${jobNumber}` : "Untitled Job";
+    return jobNumber || "Untitled Job";
   }
   return raw;
 }

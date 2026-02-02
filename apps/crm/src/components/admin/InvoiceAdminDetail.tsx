@@ -204,7 +204,7 @@ export default function InvoiceAdminDetail({ invoiceId }: { invoiceId: string })
                     </Link>
                   </div>
                   <div className="mt-2">
-                    <Button type="button" variant="secondary" className="text-xs" onClick={() => { navigator.clipboard.writeText(window.location.origin + clientLink); toast({ title: "Copied", description: "Client link copied to clipboard.", variant: "success" }); }}>
+                    <Button type="button" variant="secondary" className="text-xs" onClick={async () => { try { await navigator.clipboard.writeText(window.location.origin + clientLink); toast({ type: "success", message: "Client link copied to clipboard." }); } catch { toast({ type: "error", message: "Copy failed — browser blocked clipboard access." }); } }}>
                       Copy client link
                     </Button>
                   </div>

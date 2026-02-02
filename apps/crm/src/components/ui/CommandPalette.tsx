@@ -72,6 +72,7 @@ export function CommandPalette({
   onOpenChange: (open: boolean) => void;
 }) {
   const router = useRouter();
+  const isMac = typeof navigator !== "undefined" && /Mac|iPod|iPhone|iPad/.test(navigator.platform);
   const inputRef = React.useRef<HTMLInputElement>(null);
   const [query, setQuery] = React.useState("");
   const [results, setResults] = React.useState<SearchResult[]>([]);
@@ -335,7 +336,7 @@ export function CommandPalette({
             </div>
             <span className="flex items-center gap-1">
               <kbd className="px-1.5 py-0.5 rounded bg-[var(--muted)] font-mono">
-                <span className="text-[10px]">cmd</span>
+                <span className="text-[10px]">{isMac ? "⌘" : "ctrl"}</span>
               </kbd>
               <kbd className="px-1.5 py-0.5 rounded bg-[var(--muted)] font-mono">K</kbd>
               toggle

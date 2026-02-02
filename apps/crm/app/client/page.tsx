@@ -79,14 +79,9 @@ export default function ClientHome() {
 
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="text-xl font-bold tracking-tight text-[var(--foreground)]">
-          Client Portal
-        </h1>
-        <p className="text-sm text-[var(--muted-foreground)] mt-1">
-          Everything you need in one place.
-        </p>
-      </header>
+      <p className="text-sm text-[var(--muted-foreground)]">
+        Everything you need in one place.
+      </p>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {NAV_CARDS.map((card) => (
