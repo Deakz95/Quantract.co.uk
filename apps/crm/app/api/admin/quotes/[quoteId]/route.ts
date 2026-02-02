@@ -65,12 +65,19 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ quoteId: stri
     if (q.status !== "draft" && q.status !== "sent") {
       return NextResponse.json({ ok: false, error: "Cannot edit items on accepted/rejected quotes" }, { status: 400 });
     }
-    const newItems = (body.items as Array<{ description: string; qty: number; unitPrice: number }>).map((it: { description: string; qty: number; unitPrice: number }) => ({
-      id: crypto.randomUUID(),
-      description: String(it.description || ""),
-      qty: Number(it.qty) || 1,
-      unitPrice: Number(it.unitPrice) || 0,
-    }));
+    const newItems = (body.items as any[]).map((it: any) => {
+      const base: any = {
+        id: crypto.randomUUID(),
+        description: String(it.description || ""),
+        qty: Number(it.qty) || 1,
+        unitPrice: Number(it.unitPrice) || 0,
+      };
+      if (typeof it.stockItemId === "string" && it.stockItemId) {
+        base.stockItemId = it.stockItemId;
+        base.stockQty = typeof it.stockQty === "number" && Number.isFinite(it.stockQty) ? Math.max(0, Math.round(it.stockQty)) : Math.max(0, Math.round(base.qty));
+      }
+      return base;
+    });
     await prisma.quote.update({
       where: { id: quoteId },
       data: { items: newItems, updatedAt: new Date() },

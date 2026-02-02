@@ -439,6 +439,7 @@ model Company {
   truckStocks                  TruckStock[]
   remoteAssistSessions         RemoteAssistSession[]
   aiEstimates                  AiEstimate[]
+  stockAlerts                  StockAlert[]
 }
 
 model CompanyUser {
@@ -848,6 +849,7 @@ model Job {
   activities              Activity[]
   ramsDocuments           RamsDocument[]
   installedAssets         InstalledAsset[]
+  stockConsumedAt         DateTime?
 
   @@unique([companyId, jobNumber])
   @@index([companyId])
@@ -1012,6 +1014,8 @@ model JobBudgetLine {
   unitPrice   Float    @default(0)
   total       Float    @default(0)
   sortOrder   Int      @default(0)
+  stockItemId String?
+  stockQty    Int?
   createdAt   DateTime @default(now())
   updatedAt   DateTime
   company     Company  @relation(fields: [companyId], references: [id])
@@ -1316,6 +1320,7 @@ model TruckStock {
 
   @@unique([companyId, userId, stockItemId])
   @@index([companyId, userId])
+  @@index([companyId, minQty])
 }
 
 model TruckStockLog {
@@ -1330,6 +1335,23 @@ model TruckStockLog {
 
   @@index([companyId, userId])
   @@index([companyId, stockItemId])
+}
+
+model StockAlert {
+  id        String   @id @default(cuid())
+  companyId String
+  type      String   // "truck_stock_low"
+  entityId  String   // TruckStock.id
+  status    String   @default("open") // "open" | "resolved"
+  message   String
+  meta      Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@unique([companyId, type, entityId])
+  @@index([companyId, status])
 }
 
 model RemoteAssistSession {

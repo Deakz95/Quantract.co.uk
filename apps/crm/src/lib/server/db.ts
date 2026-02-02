@@ -13,6 +13,8 @@ export type QuoteItem = {
   description: string;
   qty: number;
   unitPrice: number; // pounds
+  stockItemId?: string;
+  stockQty?: number; // Int — qty of stock to consume
 };
 
 export type QuoteStatus = "draft" | "sent" | "accepted";

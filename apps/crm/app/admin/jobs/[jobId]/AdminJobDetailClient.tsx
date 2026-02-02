@@ -29,9 +29,11 @@ type Job = {
   clientEmail: string;
   siteAddress?: string;
   status: JobStatus;
+  engineerId?: string;
   engineerEmail?: string;
   scheduledAtISO?: string;
   notes?: string;
+  stockConsumedAt?: string;
   budgetSubtotal?: number;
   site?: {
     name?: string;
@@ -97,6 +99,8 @@ type JobBudgetLine = {
   unitPrice: number;
   total: number;
   sortOrder: number;
+  stockItemId?: string;
+  stockQty?: number;
 };
 
 type Certificate = {
@@ -191,6 +195,7 @@ export default function AdminJobDetail({ jobId }: Props) {
   const [snagBusy, setSnagBusy] = useState(false);
   const [snagTitle, setSnagTitle] = useState("");
   const [snagDescription, setSnagDescription] = useState("");
+  const [consumingStock, setConsumingStock] = useState(false);
   const [snagUpdatingId, setSnagUpdatingId] = useState<string | null>(null);
 
   // Variation quick-create (creates a draft then you edit line items in the variation editor)
@@ -523,6 +528,40 @@ export default function AdminJobDetail({ jobId }: Props) {
     }
   }
 
+  const hasStockMappedLines = budgetLines.some((l) => l.stockItemId);
+
+  async function consumeStock() {
+    if (!job?.engineerId) {
+      toast({ title: "No engineer assigned", description: "Assign an engineer to this job before consuming stock.", variant: "destructive" });
+      return;
+    }
+    if (!confirm("Consume stock for this job? This will deduct mapped quantities from the engineer's truck stock.")) return;
+    setConsumingStock(true);
+    try {
+      const r = await fetch(`/api/admin/jobs/${jobId}/consume-stock`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ engineerId: job.engineerId }),
+      });
+      const d = await r.json();
+      if (!r.ok || !d.ok) throw new Error(d?.error || "failed");
+      if (d.alreadyConsumed) {
+        toast({ title: "Already consumed", description: "Stock was already consumed for this job.", variant: "default" });
+      } else {
+        const consumedCount = d.consumed?.length ?? 0;
+        const insufficientCount = d.insufficient?.length ?? 0;
+        const parts = [`${consumedCount} item(s) consumed`];
+        if (insufficientCount > 0) parts.push(`${insufficientCount} insufficient`);
+        toast({ title: "Stock consumed", description: parts.join(", "), variant: insufficientCount > 0 ? "destructive" : "success" });
+      }
+      refresh();
+    } catch (error: unknown) {
+      toast({ title: "Error", description: getErrorMessage(error, "Could not consume stock."), variant: "destructive" });
+    } finally {
+      setConsumingStock(false);
+    }
+  }
+
   async function saveBudgetLines() {
     setBudgetBusy(true);
     try {
@@ -755,6 +794,18 @@ export default function AdminJobDetail({ jobId }: Props) {
                       ))}
                     </tbody>
                   </table>
+                </div>
+              )}
+              {/* Consume stock button */}
+              {hasStockMappedLines && (
+                <div className="mt-4 pt-3 border-t border-[var(--border)] flex items-center gap-3">
+                  {job?.stockConsumedAt ? (
+                    <span className="text-xs font-medium text-green-700 dark:text-green-400">Stock consumed &#10003;</span>
+                  ) : (
+                    <Button size="sm" onClick={consumeStock} disabled={consumingStock}>
+                      {consumingStock ? "Consuming..." : "Consume Stock"}
+                    </Button>
+                  )}
                 </div>
               )}
             </CardContent>

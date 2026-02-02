@@ -82,12 +82,19 @@ export const POST = withRequestLogging(async function POST(req: Request) {
 
     // Calculate totals from items — normalise each item to ensure id + numeric fields
     const rawItems = Array.isArray(body?.items) ? body.items : [];
-    const items = rawItems.map((it: any) => ({
-      id: it.id || randomUUID(),
-      description: String(it.description ?? ""),
-      qty: typeof it.qty === "number" && Number.isFinite(it.qty) ? it.qty : (Number(it.qty) || 0),
-      unitPrice: typeof it.unitPrice === "number" && Number.isFinite(it.unitPrice) ? it.unitPrice : (Number(it.unitPrice) || 0),
-    }));
+    const items = rawItems.map((it: any) => {
+      const base: any = {
+        id: it.id || randomUUID(),
+        description: String(it.description ?? ""),
+        qty: typeof it.qty === "number" && Number.isFinite(it.qty) ? it.qty : (Number(it.qty) || 0),
+        unitPrice: typeof it.unitPrice === "number" && Number.isFinite(it.unitPrice) ? it.unitPrice : (Number(it.unitPrice) || 0),
+      };
+      if (typeof it.stockItemId === "string" && it.stockItemId) {
+        base.stockItemId = it.stockItemId;
+        base.stockQty = typeof it.stockQty === "number" && Number.isFinite(it.stockQty) ? Math.max(0, Math.round(it.stockQty)) : Math.max(0, Math.round(base.qty));
+      }
+      return base;
+    });
     const vatRate = typeof body?.vatRate === "number" ? body.vatRate : 0.2;
 
     // Resolve legal entity for numbering scope

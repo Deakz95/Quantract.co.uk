@@ -2739,6 +2739,8 @@ async function syncJobBudgetLinesFromQuote(jobId: string, quote: Quote, opts?: {
       unitPrice: Number(item.unitPrice ?? 0),
       total: Number(item.qty ?? 1) * Number(item.unitPrice ?? 0),
       sortOrder: idx,
+      stockItemId: item.stockItemId || null,
+      stockQty: typeof item.stockQty === "number" ? Math.max(0, Math.round(item.stockQty)) : null,
     })),
   }).catch(() => null);
   const subtotal = items.reduce((sum, item) => sum + Number(item.qty ?? 1) * Number(item.unitPrice ?? 0), 0);

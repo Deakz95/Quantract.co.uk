@@ -28,14 +28,16 @@ import {
   Calendar,
   Award,
   Inbox,
-  Target
+  Target,
+  AlertTriangle,
+  Lock
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { getCached, setCached } from "@/lib/client/swrCache";
 import { toTitleCase } from "@/lib/cn";
 
-type WidgetType = 'stats' | 'quickActions' | 'recentActivity' | 'teamOverview' | 'performance' | 'calendar' | 'invoiceChart' | 'jobsMap' | 'revenue' | 'breakEven' | 'needsAttention';
+type WidgetType = 'stats' | 'quickActions' | 'recentActivity' | 'teamOverview' | 'performance' | 'calendar' | 'invoiceChart' | 'jobsMap' | 'revenue' | 'breakEven' | 'needsAttention' | 'lowStock' | 'maintenanceAlerts' | 'recentStockChanges';
 
 type Widget = {
   id: string;
@@ -135,6 +137,25 @@ type BreakEvenData = {
   workingDaysPerMonth?: number;
 };
 
+type StockChangeItem = {
+  id: string;
+  stockItemId: string;
+  stockItemName: string | null;
+  userId: string;
+  userName: string | null;
+  qtyDelta: number;
+  reason: string | null;
+  jobId: string | null;
+  createdAt: string;
+};
+
+type WidgetsData = {
+  featureFlags: { truck_inventory: boolean; maintenance_alerts: boolean };
+  lowStockCount: number;
+  openMaintenanceAlertsCount: number;
+  recentStockChanges: StockChangeItem[];
+};
+
 const DEFAULT_WIDGETS: Widget[] = [
   { id: 'needsAttention', type: 'needsAttention', title: 'Needs Attention', description: 'Items requiring action', size: 'full' },
   { id: 'stats', type: 'stats', title: 'Stats Overview', description: 'Key business metrics', size: 'full' },
@@ -152,6 +173,9 @@ const AVAILABLE_WIDGETS: Widget[] = [
   { id: 'breakEven', type: 'breakEven', title: 'Break-even Tracker', description: 'Monthly break-even progress', size: 'medium' },
   { id: 'calendar', type: 'calendar', title: 'Calendar', description: 'Upcoming appointments', size: 'medium' },
   { id: 'invoiceChart', type: 'invoiceChart', title: 'Invoice Chart', description: 'Monthly invoice breakdown', size: 'medium' },
+  { id: 'lowStock', type: 'lowStock', title: 'Low Stock', description: 'Truck stock items below minimum', size: 'small' },
+  { id: 'maintenanceAlerts', type: 'maintenanceAlerts', title: 'Maintenance Alerts', description: 'Open maintenance alerts', size: 'small' },
+  { id: 'recentStockChanges', type: 'recentStockChanges', title: 'Recent Stock Changes', description: 'Latest truck stock movements', size: 'medium' },
 ];
 
 const quickActions = [
@@ -1099,6 +1123,177 @@ function BreakEvenWidget({
   );
 }
 
+function FeatureDisabledCard({ title, icon: Icon }: { title: string; icon: React.ElementType }) {
+  return (
+    <Card className="h-full">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Icon className="w-5 h-5 text-[var(--muted-foreground)]" />
+          {title}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="text-center py-6 text-[var(--muted-foreground)]">
+          <Lock className="w-8 h-8 mx-auto mb-2 opacity-50" />
+          <p className="text-sm font-medium">Enable to view</p>
+          <p className="text-xs mt-1">This feature is not included in your current plan.</p>
+          <Link href="/admin/settings/billing" className="text-xs text-[var(--primary)] hover:underline mt-2 block">
+            Upgrade plan
+          </Link>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function LowStockWidget({ data, loading }: { data: WidgetsData | null; loading: boolean }) {
+  if (loading) {
+    return (
+      <Card className="h-full">
+        <CardHeader><CardTitle>Low Stock</CardTitle></CardHeader>
+        <CardContent><div className="h-16 bg-[var(--muted)] rounded animate-pulse" /></CardContent>
+      </Card>
+    );
+  }
+  if (data && !data.featureFlags.truck_inventory) {
+    return <FeatureDisabledCard title="Low Stock" icon={Briefcase} />;
+  }
+  const count = data?.lowStockCount ?? 0;
+  return (
+    <Link href="/admin/truck-stock?filter=low">
+      <Card variant="interactive" className="h-full group">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Briefcase className="w-5 h-5 text-[var(--primary)]" />
+              Low Stock
+            </CardTitle>
+            <ArrowUpRight className="w-4 h-4 text-[var(--muted-foreground)] opacity-0 group-hover:opacity-100 transition-opacity" />
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="text-3xl font-bold text-[var(--foreground)]">{count}</div>
+          <p className="text-sm text-[var(--muted-foreground)] mt-1">
+            {count === 0 ? 'All stock levels healthy' : `item${count !== 1 ? 's' : ''} below minimum`}
+          </p>
+          {count > 0 && (
+            <Badge variant="destructive" className="mt-2">Needs restock</Badge>
+          )}
+        </CardContent>
+      </Card>
+    </Link>
+  );
+}
+
+function MaintenanceAlertsWidget({ data, loading }: { data: WidgetsData | null; loading: boolean }) {
+  if (loading) {
+    return (
+      <Card className="h-full">
+        <CardHeader><CardTitle>Maintenance Alerts</CardTitle></CardHeader>
+        <CardContent><div className="h-16 bg-[var(--muted)] rounded animate-pulse" /></CardContent>
+      </Card>
+    );
+  }
+  if (data && !data.featureFlags.maintenance_alerts) {
+    return <FeatureDisabledCard title="Maintenance Alerts" icon={Settings} />;
+  }
+  const count = data?.openMaintenanceAlertsCount ?? 0;
+  return (
+    <Link href="/admin/maintenance/alerts">
+      <Card variant="interactive" className="h-full group">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Settings className="w-5 h-5 text-[var(--primary)]" />
+              Maintenance Alerts
+            </CardTitle>
+            <ArrowUpRight className="w-4 h-4 text-[var(--muted-foreground)] opacity-0 group-hover:opacity-100 transition-opacity" />
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="text-3xl font-bold text-[var(--foreground)]">{count}</div>
+          <p className="text-sm text-[var(--muted-foreground)] mt-1">
+            {count === 0 ? 'No open alerts' : `open alert${count !== 1 ? 's' : ''}`}
+          </p>
+          {count > 0 && (
+            <Badge variant="warning" className="mt-2">
+              <AlertTriangle className="w-3 h-3 mr-1" />
+              Action needed
+            </Badge>
+          )}
+        </CardContent>
+      </Card>
+    </Link>
+  );
+}
+
+function RecentStockChangesWidget({ data, loading }: { data: WidgetsData | null; loading: boolean }) {
+  if (loading) {
+    return (
+      <Card className="h-full">
+        <CardHeader><CardTitle>Recent Stock Changes</CardTitle></CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-10 bg-[var(--muted)] rounded animate-pulse" />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+  if (data && !data.featureFlags.truck_inventory) {
+    return <FeatureDisabledCard title="Recent Stock Changes" icon={Briefcase} />;
+  }
+  const changes = data?.recentStockChanges ?? [];
+  return (
+    <Card className="h-full">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Briefcase className="w-5 h-5 text-[var(--primary)]" />
+            Recent Stock Changes
+          </CardTitle>
+          <Link href="/admin/truck-stock">
+            <Badge variant="outline" className="cursor-pointer hover:bg-[var(--muted)]">
+              View All <ArrowUpRight className="w-3 h-3 ml-1" />
+            </Badge>
+          </Link>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {changes.length === 0 ? (
+          <div className="text-center py-6 text-[var(--muted-foreground)]">
+            <Briefcase className="w-8 h-8 mx-auto mb-2 opacity-50" />
+            <p className="text-sm">No recent stock changes</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {changes.map((change) => (
+              <div key={change.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[var(--muted)] transition-colors">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${change.qtyDelta > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                  {change.qtyDelta > 0 ? '+' : ''}{change.qtyDelta}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-[var(--foreground)] truncate">
+                    {change.stockItemName || change.stockItemId.slice(0, 8)}
+                  </div>
+                  <div className="text-xs text-[var(--muted-foreground)]">
+                    {change.userName || 'Unknown'}{change.reason ? ` — ${change.reason}` : ''}
+                  </div>
+                </div>
+                <div className="text-xs text-[var(--muted-foreground)]">
+                  {formatRelativeTime(change.createdAt)}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 function QuickQuoteModal({ onClose }: { onClose: () => void }) {
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
@@ -1304,6 +1499,7 @@ type DashboardState = {
   activities: ActivityItem[];
   revenue: RevenueData | null;
   breakEven: BreakEvenData | null;
+  widgetsData: WidgetsData | null;
   loading: boolean;
   secondaryLoading: boolean;
   refreshing: {
@@ -1332,6 +1528,7 @@ export default function DashboardPage() {
     activities: [],
     revenue: null,
     breakEven: null,
+    widgetsData: null,
     loading: true,
     secondaryLoading: true,
     refreshing: {
@@ -1395,11 +1592,12 @@ export default function DashboardPage() {
           secondaryLoading: true,
         }));
 
-        // Only schedule/jobs/breakEven still need separate calls
-        const [jobsRes, scheduleRes, breakEvenRes] = await Promise.all([
+        // Only schedule/jobs/breakEven/widgets still need separate calls
+        const [jobsRes, scheduleRes, breakEvenRes, widgetsRes] = await Promise.all([
           fetch('/api/admin/jobs').then((r) => r.json()).catch(() => []),
           fetch('/api/admin/schedule').then((r) => r.json()).catch(() => null),
           fetch('/api/admin/dashboard/break-even').then((r) => r.json()).catch(() => null),
+          fetch('/api/admin/dashboard/widgets').then((r) => r.json()).catch(() => null),
         ]);
 
         setDashboardState((prev) => ({
@@ -1407,6 +1605,7 @@ export default function DashboardPage() {
           jobs: Array.isArray(jobsRes) ? jobsRes : (jobsRes?.data || []),
           schedule: scheduleRes?.ok ? (scheduleRes.entries || []) : [],
           breakEven: breakEvenRes?.ok ? breakEvenRes.data : null,
+          widgetsData: widgetsRes?.ok ? widgetsRes : null,
           secondaryLoading: false,
           refreshing: { stats: false, activity: false, revenue: false, breakEven: false, team: false, schedule: false },
         }));
@@ -1423,13 +1622,14 @@ export default function DashboardPage() {
         secondaryLoading: true,
       }));
 
-      const [engineersRes, jobsRes, scheduleRes, activityRes, revenueRes, breakEvenRes] = await Promise.all([
+      const [engineersRes, jobsRes, scheduleRes, activityRes, revenueRes, breakEvenRes, widgetsRes] = await Promise.all([
         fetch('/api/admin/engineers').then((r) => r.json()).catch(() => null),
         fetch('/api/admin/jobs').then((r) => r.json()).catch(() => []),
         fetch('/api/admin/schedule').then((r) => r.json()).catch(() => null),
         fetch('/api/admin/dashboard/activity').then((r) => r.json()).catch(() => null),
         fetch('/api/admin/dashboard/revenue').then((r) => r.json()).catch(() => null),
         fetch('/api/admin/dashboard/break-even').then((r) => r.json()).catch(() => null),
+        fetch('/api/admin/dashboard/widgets').then((r) => r.json()).catch(() => null),
       ]);
 
       setDashboardState((prev) => ({
@@ -1440,6 +1640,7 @@ export default function DashboardPage() {
         activities: activityRes?.ok ? (activityRes.activities || []) : [],
         revenue: revenueRes?.ok ? revenueRes.data : null,
         breakEven: breakEvenRes?.ok ? breakEvenRes.data : null,
+        widgetsData: widgetsRes?.ok ? widgetsRes : null,
         secondaryLoading: false,
         refreshing: { stats: false, activity: false, revenue: false, breakEven: false, team: false, schedule: false },
       }));
@@ -1560,6 +1761,9 @@ export default function DashboardPage() {
           const migrations: { key: string; widgetId: string; insertAt: number }[] = [
             { key: 'dashboard-migrated-needsAttention', widgetId: 'needsAttention', insertAt: 1 },
             { key: 'dashboard-migrated-jobsMap', widgetId: 'jobsMap', insertAt: 2 },
+            { key: 'dashboard-migrated-lowStock', widgetId: 'lowStock', insertAt: 99 },
+            { key: 'dashboard-migrated-maintenanceAlerts', widgetId: 'maintenanceAlerts', insertAt: 99 },
+            { key: 'dashboard-migrated-recentStockChanges', widgetId: 'recentStockChanges', insertAt: 99 },
           ];
           let layoutChanged = false;
           for (const m of migrations) {
@@ -1621,27 +1825,49 @@ export default function DashboardPage() {
     setIsCustomizing(false);
   };
 
+  const [dragOverWidget, setDragOverWidget] = useState<string | null>(null);
+
   const handleDragStart = (e: React.DragEvent, widgetId: string) => {
-    setDraggedWidget(widgetId);
+    // Required for Chrome/HTML5 DnD: without setData(), drop will never fire
+    e.dataTransfer.setData('text/plain', widgetId);
     e.dataTransfer.effectAllowed = 'move';
+    // Defer so the browser captures the element before we dim it
+    requestAnimationFrame(() => setDraggedWidget(widgetId));
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragOver = (e: React.DragEvent, targetId: string) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
+    if (draggedWidget && targetId !== draggedWidget) {
+      setDragOverWidget(targetId);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    // Only clear if leaving the widget container (not entering a child)
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setDragOverWidget(null);
+    }
   };
 
   const handleDrop = (e: React.DragEvent, targetId: string) => {
     e.preventDefault();
-    if (!draggedWidget || draggedWidget === targetId) return;
+    setDragOverWidget(null);
+    const sourceId = draggedWidget || e.dataTransfer.getData('text/plain');
+    if (!sourceId || sourceId === targetId) return;
 
-    const fromIndex = widgets.findIndex(w => w.id === draggedWidget);
+    const fromIndex = widgets.findIndex(w => w.id === sourceId);
     const toIndex = widgets.findIndex(w => w.id === targetId);
 
     if (fromIndex !== -1 && toIndex !== -1) {
       moveWidget(fromIndex, toIndex);
     }
     setDraggedWidget(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedWidget(null);
+    setDragOverWidget(null);
   };
 
   const availableToAdd = AVAILABLE_WIDGETS.filter(aw => !widgets.some(w => w.id === aw.id));
@@ -1738,6 +1964,12 @@ export default function DashboardPage() {
             isRefreshing={dashboardState.refreshing.stats}
           />
         );
+      case 'lowStock':
+        return <LowStockWidget data={dashboardState.widgetsData} loading={secLoading} />;
+      case 'maintenanceAlerts':
+        return <MaintenanceAlertsWidget data={dashboardState.widgetsData} loading={secLoading} />;
+      case 'recentStockChanges':
+        return <RecentStockChangesWidget data={dashboardState.widgetsData} loading={secLoading} />;
       default:
         return null;
     }
@@ -1809,11 +2041,13 @@ export default function DashboardPage() {
           {widgets.map((widget) => (
             <div
               key={widget.id}
-              className={`${getWidgetClassName(widget.size)} ${isCustomizing ? 'relative group' : ''} ${draggedWidget === widget.id ? 'opacity-50' : ''}`}
+              className={`${getWidgetClassName(widget.size)} transition-all duration-150 ${isCustomizing ? 'relative group' : ''} ${draggedWidget === widget.id ? 'opacity-50 scale-[0.97]' : ''} ${dragOverWidget === widget.id ? 'ring-2 ring-[var(--primary)] rounded-2xl cursor-move' : ''}`}
               draggable={isCustomizing}
               onDragStart={(e) => handleDragStart(e, widget.id)}
-              onDragOver={handleDragOver}
+              onDragOver={(e) => handleDragOver(e, widget.id)}
+              onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, widget.id)}
+              onDragEnd={handleDragEnd}
             >
               {isCustomizing && (
                 <div className="absolute -top-2 -right-2 z-10 flex gap-1">

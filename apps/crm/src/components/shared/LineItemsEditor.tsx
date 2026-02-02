@@ -8,6 +8,8 @@ export type LineItem = {
   description: string;
   qty: number;
   unitPrice: number;
+  stockItemId?: string;
+  stockQty?: number; // Int — qty of stock to consume
 };
 
 export function computeSubtotal(items: LineItem[]): number {
@@ -28,12 +30,15 @@ const DESCRIPTION_PRESETS = [
   "All materials, labour, and equipment required to complete the project",
 ];
 
+export type StockItemOption = { id: string; name: string; sku?: string; unit?: string };
+
 export default function LineItemsEditor(props: {
   items: LineItem[];
   setItems: (next: LineItem[]) => void;
   disabled?: boolean;
   showTotals?: boolean;
   vatRate?: number;
+  stockItems?: StockItemOption[];
 }) {
   const items = props.items || [];
   const disabled = !!props.disabled;
@@ -162,6 +167,58 @@ export default function LineItemsEditor(props: {
               </Button>
             </div>
           </div>
+
+          {/* Stock linking row */}
+          {props.stockItems && props.stockItems.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-[var(--border)] flex flex-wrap items-center gap-3">
+              <span className="text-xs font-semibold text-[var(--muted-foreground)]">Stock</span>
+              <select
+                className="h-9 rounded-lg border border-[var(--border)] bg-[var(--background)] px-2 text-sm text-[var(--foreground)] min-w-[180px]"
+                value={it.stockItemId || ""}
+                onChange={(e) => {
+                  const sid = e.target.value || undefined;
+                  setItem(i, {
+                    stockItemId: sid,
+                    stockQty: sid ? Math.max(0, Math.floor(it.qty || 0)) : undefined,
+                  });
+                }}
+                disabled={disabled}
+              >
+                <option value="">— None —</option>
+                {props.stockItems.map((si) => (
+                  <option key={si.id} value={si.id}>
+                    {si.name}{si.sku ? ` (${si.sku})` : ""}{si.unit ? ` [${si.unit}]` : ""}
+                  </option>
+                ))}
+              </select>
+              {it.stockItemId && (
+                <>
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs text-[var(--muted-foreground)]">Qty</span>
+                    <input
+                      type="number"
+                      className="w-20 h-9 rounded-lg border border-[var(--border)] bg-[var(--background)] px-2 text-sm text-center text-[var(--foreground)]"
+                      value={it.stockQty ?? ""}
+                      onChange={(e) => setItem(i, { stockQty: e.target.value === "" ? 0 : Math.max(0, Math.round(Number(e.target.value))) })}
+                      min={0}
+                      step={1}
+                      disabled={disabled}
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setItem(i, { stockItemId: undefined, stockQty: undefined })}
+                    disabled={disabled}
+                    className="text-xs text-[var(--muted-foreground)]"
+                  >
+                    Unlink
+                  </Button>
+                </>
+              )}
+            </div>
+          )}
         </div>
       ))}
 
