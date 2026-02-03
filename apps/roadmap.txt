@@ -1,0 +1,648 @@
+id: stage-a2
+intent: "Stripe billing wiring for plans + add-ons (company subscription state)"
+scope:
+crm: "apps/crm"
+mobile_engineer: "apps/mobile/engineer"
+proposed_changes:
+
+"Define plan catalog (FREE/PRO/PRO_PLUS/ENTERPRISE) + add-ons (storage, extra engineers, QR packs, AI maintenance) in one server config"
+
+"Create billing tables: CompanyBilling with stripeCustomerId, stripeSubscriptionId, plan, status, currentPeriodEnd"
+
+"Stripe webhook handler to sync subscription status into CompanyBilling"
+
+"Billing settings page in CRM: view current plan, manage subscription, manage payment method"
+
+"Update entitlements computation to depend on CompanyBilling plan + add-ons"
+non_goals:
+
+"No QR purchases yet (that is C3)"
+
+"No PDF template editor yet"
+api_routes:
+
+"POST /api/billing/checkout"
+
+"POST /api/billing/portal"
+
+"POST /api/webhooks/stripe"
+
+"GET /api/billing/me"
+data_model:
+
+"New Prisma model: CompanyBilling (1:1 Company)"
+acceptance:
+
+"Company can start a subscription and billing status updates via webhook"
+
+"Entitlements reflect plan tier automatically"
+
+"Web + mobile show locked features when plan insufficient"
+commands_read_only_first:
+
+"git status"
+
+"pnpm -C apps/crm prisma validate"
+commands_execute:
+
+"pnpm -C apps/crm prisma migrate dev -n add_company_billing"
+
+"pnpm -C apps/crm tsc --noEmit"
+
+"pnpm -C apps/crm next build"
+
+"pnpm -C apps/mobile/engineer tsc --noEmit"
+risks:
+
+"Webhook security + idempotency must be correct"
+
+"Handling upgrade/downgrade proration and canceled states cleanly"
+needs_approval: true
+
+id: stage-a3
+intent: "Fix subdomain/custom domain gating + UI state bugs (plan-aware + state-aware)"
+scope:
+crm: "apps/crm"
+mobile_engineer: null
+proposed_changes:
+
+"Audit domain settings UI logic: hide Free-only upsell prompts when company already qualifies"
+
+"Ensure Enterprise internal company can create subdomains/custom domains"
+
+"Fix ‘Custom domain Pro’ section not dropping after upgrade"
+
+"Add server-side entitlement check to domain mutation routes"
+non_goals:
+
+"No new domain features"
+api_routes:
+
+"Existing domain routes only (no new routes)"
+data_model:
+
+"No migrations expected"
+acceptance:
+
+"Free company sees no confusing domain UI (only upgrade prompt)"
+
+"Pro+ company can add subdomain and/or custom domain"
+
+"Enterprise company (yours) is not blocked"
+commands_read_only_first:
+
+"git status"
+
+"pnpm -C apps/crm tsc --noEmit"
+commands_execute:
+
+"pnpm -C apps/crm next build"
+risks:
+
+"Multiple tenant states (pending/verified) could cause edge cases"
+needs_approval: true
+
+id: stage-b1
+intent: "Documents platform: canonical Document model + internal storage provider (base)"
+scope:
+crm: "apps/crm"
+mobile_engineer: "apps/mobile/engineer"
+proposed_changes:
+
+"Create Document model: type, mime, bytes, hash, storageProvider=internal, storageKey, createdByUserId"
+
+"Add server helpers to write/read document bytes via existing storage layer (S3/R2/etc.)"
+
+"Standardize certificate PDF generation to create Document row (if not already)"
+
+"Expose document download route (auth) and a public signed-link helper (for later QR)"
+
+"Mobile: add Document download/view helper (open PDF in native viewer) but no offline caching yet"
+non_goals:
+
+"No BYOS (Google Drive) yet (that is B3)"
+
+"No storage caps yet (that is B2)"
+api_routes:
+
+"GET /api/documents/[documentId]"
+
+"POST /api/documents/[documentId]/signed-url (internal use; returns short-lived URL)"
+data_model:
+
+"New Prisma model: Document"
+acceptance:
+
+"At least one flow (certificate PDF) writes a Document row and downloads via API"
+
+"No raw storage keys leak to clients unless signed"
+commands_read_only_first:
+
+"git status"
+
+"pnpm -C apps/crm prisma validate"
+commands_execute:
+
+"pnpm -C apps/crm prisma migrate dev -n add_document_model"
+
+"pnpm -C apps/crm tsc --noEmit"
+
+"pnpm -C apps/crm next build"
+
+"pnpm -C apps/mobile/engineer tsc --noEmit"
+risks:
+
+"Large file streaming in Next route handlers must be done correctly"
+needs_approval: true
+
+id: stage-b2
+intent: "Storage metering + plan caps + enforcement (paid storage foundation)"
+scope:
+crm: "apps/crm"
+mobile_engineer: "apps/mobile/engineer"
+proposed_changes:
+
+"Add CompanyStorageUsage: bytesUsed, updatedAt"
+
+"On document create: increment bytesUsed (transactional) and enforce caps based on entitlements"
+
+"Add background reconciliation job/cron to recompute bytesUsed from Document table"
+
+"CRM: Storage usage page (bar + cap + upgrade CTA)"
+
+"Mobile: show ‘storage full’ errors gracefully on upload flows"
+non_goals:
+
+"No BYOS connectors yet"
+api_routes:
+
+"GET /api/storage/usage"
+
+"POST /api/cron/reconcile-storage (protected)"
+data_model:
+
+"New Prisma model: CompanyStorageUsage"
+acceptance:
+
+"Uploads blocked when cap exceeded (with friendly error)"
+
+"Reconcile job corrects drift"
+commands_read_only_first:
+
+"git status"
+commands_execute:
+
+"pnpm -C apps/crm prisma migrate dev -n add_storage_usage"
+
+"pnpm -C apps/crm tsc --noEmit"
+
+"pnpm -C apps/crm next build"
+risks:
+
+"Race conditions if multiple uploads happen simultaneously; must be transactional"
+needs_approval: true
+
+id: stage-b3
+intent: "BYOS storage provider support (Google Drive/S3-style external links) for Pro+/Enterprise"
+scope:
+crm: "apps/crm"
+mobile_engineer: "apps/mobile/engineer"
+proposed_changes:
+
+"Add DocumentStorageProvider config per Company (internal|external_url|s3|gdrive later)"
+
+"Implement simplest BYOS first: external URL storage (company provides base folder URL + rules)"
+
+"Document rows can reference externalUrl instead of storageKey"
+
+"CRM: Settings page to configure BYOS provider (gated by entitlement)"
+
+"Mobile: open externalUrl in native browser if provided"
+non_goals:
+
+"Full Google Drive OAuth integration (later add-on)"
+api_routes:
+
+"GET/POST /api/admin/storage/settings"
+data_model:
+
+"New Prisma model: CompanyStorageSettings"
+acceptance:
+
+"Pro+/Enterprise can set externalUrl provider and new documents can store as external references"
+commands_read_only_first:
+
+"git status"
+commands_execute:
+
+"pnpm -C apps/crm prisma migrate dev -n add_storage_settings"
+
+"pnpm -C apps/crm tsc --noEmit"
+
+"pnpm -C apps/mobile/engineer tsc --noEmit"
+risks:
+
+"External URL correctness is on customer; must message clearly"
+needs_approval: true
+
+id: stage-c1
+intent: "QR Tag core models + admin generation (no ecommerce yet)"
+scope:
+crm: "apps/crm"
+mobile_engineer: "apps/mobile/engineer"
+proposed_changes:
+
+"Add QrTag model: companyId, code (unguessable), label, status, createdAt"
+
+"Add QrAssignment: qrTagId, certificateId, documentId, assignedByUserId, assignedAt"
+
+"CRM admin page: generate N codes + print sheet (PDF or HTML print view)"
+
+"Mobile: add QR scan screen (using expo-barcode-scanner) that resolves code and shows assign flow"
+non_goals:
+
+"No public resolver yet (that is C2)"
+
+"No purchase/Stripe yet (that is C3)"
+api_routes:
+
+"POST /api/admin/qr-tags/generate"
+
+"GET /api/admin/qr-tags"
+
+"POST /api/engineer/qr-tags/assign"
+data_model:
+
+"New Prisma models: QrTag, QrAssignment"
+acceptance:
+
+"Admin can generate tags; engineer can scan and assign certificate->tag"
+commands_read_only_first:
+
+"git status"
+commands_execute:
+
+"pnpm -C apps/crm prisma migrate dev -n add_qr_tags"
+
+"pnpm -C apps/mobile/engineer tsc --noEmit"
+risks:
+
+"Code must be unguessable; rate limit assignment endpoint"
+needs_approval: true
+
+id: stage-c2
+intent: "Public QR resolver: scan QR opens latest certificate PDF (or asset page + history)"
+scope:
+crm: "apps/crm"
+mobile_engineer: null
+proposed_changes:
+
+"Public route: GET /q/[code] resolves active tag"
+
+"Redirect to signed Document URL for latest assigned certificate PDF"
+
+"Optional: show branded landing page with company name + certificate history list"
+
+"Add security: unguessable code + rate limiting + no data leakage beyond intended PDF"
+non_goals:
+
+"No login required for basic view (unless company toggles ‘private QR’ later)"
+api_routes:
+
+"GET /q/[code]"
+data_model:
+
+"No migrations (uses QrTag/QrAssignment/Document)"
+acceptance:
+
+"Scanning a QR opens latest certificate PDF quickly"
+
+"Invalid/disabled codes return a safe 404 page"
+commands_read_only_first:
+
+"git status"
+commands_execute:
+
+"pnpm -C apps/crm next build"
+risks:
+
+"Public exposure: ensure only intended PDF is accessible, no client data leakage"
+needs_approval: true
+
+id: stage-c3
+intent: "QR code purchase flow (Stripe) + printable generation"
+scope:
+crm: "apps/crm"
+mobile_engineer: null
+proposed_changes:
+
+"Stripe product ‘QR Packs’ + checkout flow"
+
+"Upon successful payment: generate N QrTags and show download/print sheet"
+
+"CRM page ‘Buy QR Codes’ with order history"
+non_goals:
+
+"No physical fulfilment integration yet"
+api_routes:
+
+"POST /api/qr/checkout"
+
+"POST /api/webhooks/stripe (extend)"
+data_model:
+
+"New Prisma model: QrOrder (companyId, qty, stripePaymentIntentId, status)"
+acceptance:
+
+"Payment -> codes generated -> printable sheet available"
+commands_read_only_first:
+
+"git status"
+commands_execute:
+
+"pnpm -C apps/crm prisma migrate dev -n add_qr_orders"
+
+"pnpm -C apps/crm next build"
+risks:
+
+"Webhook idempotency for fulfillment; avoid double-generation"
+needs_approval: true
+
+id: stage-d1
+intent: "PDF branding v1 (CompanyBrand + template blocks) across quotes/invoices/certs"
+scope:
+crm: "apps/crm"
+mobile_engineer: null
+proposed_changes:
+
+"Add CompanyBrand model (logo documentId, primary/secondary colors, footer text, contact details)"
+
+"Update PDF renderers to apply brand (header/footer/logo/colors) consistently"
+
+"CRM settings page to edit brand (admin/office-only role)"
+non_goals:
+
+"No layout editor yet (D2)"
+api_routes:
+
+"GET/POST /api/admin/brand"
+data_model:
+
+"New Prisma model: CompanyBrand"
+acceptance:
+
+"Company can brand quote/invoice/cert PDFs with logo/colors/footer"
+commands_read_only_first:
+
+"git status"
+commands_execute:
+
+"pnpm -C apps/crm prisma migrate dev -n add_company_brand"
+
+"pnpm -C apps/crm next build"
+risks:
+
+"PDF rendering regressions; must snapshot test key PDFs"
+needs_approval: true
+
+id: stage-d2
+intent: "PDF template editor v2 (layout canvas) for invoices/quotes/certs (versioned)"
+scope:
+crm: "apps/crm"
+mobile_engineer: null
+proposed_changes:
+
+"Add PdfTemplate + PdfTemplateVersion models (per company, per docType)"
+
+"Build template editor UI (grid canvas): text/image/line/table elements + bindings"
+
+"Preview render pipeline uses template version"
+
+"Set default template per doc type"
+non_goals:
+
+"No advanced conditional logic (Level 3) yet"
+api_routes:
+
+"CRUD /api/admin/pdf-templates"
+
+"POST /api/admin/pdf-templates/[id]/preview"
+data_model:
+
+"New Prisma models: PdfTemplate, PdfTemplateVersion"
+acceptance:
+
+"Company can edit layout and have it applied to new PDFs; old PDFs unchanged (versioned)"
+commands_read_only_first:
+
+"git status"
+commands_execute:
+
+"pnpm -C apps/crm prisma migrate dev -n add_pdf_templates"
+
+"pnpm -C apps/crm next build"
+risks:
+
+"Template editor complexity; must keep MVP minimal"
+needs_approval: true
+
+id: stage-e1
+intent: "Receipts: capture + categorize + store as Documents"
+scope:
+crm: "apps/crm"
+mobile_engineer: "apps/mobile/engineer"
+proposed_changes:
+
+"Add ExpenseReceipt model (category, amount, vat, supplier, notes, documentId, jobId optional)"
+
+"Engineer app: receipt capture (photo) + quick form + offline outbox integration"
+
+"CRM: receipts list + filters + export CSV"
+non_goals:
+
+"No Xero integration yet (later)"
+api_routes:
+
+"POST/GET /api/engineer/receipts"
+
+"GET /api/admin/receipts/export"
+data_model:
+
+"New Prisma model: ExpenseReceipt"
+acceptance:
+
+"Engineer can add receipt offline; sync later; office can export CSV"
+commands_read_only_first:
+
+"git status"
+commands_execute:
+
+"pnpm -C apps/crm prisma migrate dev -n add_expense_receipts"
+
+"pnpm -C apps/mobile/engineer tsc --noEmit"
+risks:
+
+"Photo size/upload reliability; add compression limits"
+needs_approval: true
+
+id: stage-f1
+intent: "Checks (van/ladder/scaffold): templates + entries + PDF output stored as Document"
+scope:
+crm: "apps/crm"
+mobile_engineer: "apps/mobile/engineer"
+proposed_changes:
+
+"Add Asset model (van, ladder, scaffold) with identifiers"
+
+"Add CheckTemplate + CheckEntry models"
+
+"Engineer app: complete daily/weekly/monthly checks (offline-first)"
+
+"Generate PDF summary per check entry; store as Document; view/download in CRM"
+non_goals:
+
+"No advanced inspection workflows yet"
+api_routes:
+
+"CRUD /api/admin/check-templates"
+
+"POST/GET /api/engineer/checks"
+data_model:
+
+"New Prisma models: Asset, CheckTemplate, CheckEntry"
+acceptance:
+
+"Checks can be completed and produce a PDF stored/retrievable"
+commands_read_only_first:
+
+"git status"
+commands_execute:
+
+"pnpm -C apps/crm prisma migrate dev -n add_checks"
+
+"pnpm -C apps/mobile/engineer tsc --noEmit"
+risks:
+
+"Offline conflict handling; keep entries append-only"
+needs_approval: true
+
+id: stage-g4_4
+intent: "Engineer app: Cost items (write) + offline outbox + list"
+scope:
+crm: "apps/crm"
+mobile_engineer: "apps/mobile/engineer"
+proposed_changes:
+
+"Job detail shows cost items list via GET /api/engineer/jobs/[jobId]/cost-items"
+
+"Add cost form + offline enqueue + sync"
+
+"Idempotency key header for cost create to prevent duplicates"
+non_goals:
+
+"No receipts attachment yet"
+api_routes:
+
+"Existing /api/engineer/jobs/[jobId]/cost-items (GET/POST)"
+data_model:
+
+"No migrations expected (reuse existing CostItem model)"
+acceptance:
+
+"Engineer can add cost offline; sync later; no duplicates"
+commands_read_only_first:
+
+"git status"
+commands_execute:
+
+"pnpm -C apps/mobile/engineer tsc --noEmit"
+risks:
+
+"Idempotency must be enforced server-side if retries happen"
+needs_approval: true
+
+id: stage-g4_5
+intent: "Engineer app: Certificates offline-first (SQLite drafts + safe sync) + PDF storage"
+scope:
+crm: "apps/crm"
+mobile_engineer: "apps/mobile/engineer"
+proposed_changes:
+
+"Mobile: SQLite store for certificate drafts (per certificateId) with autosave"
+
+"Sync engine: background flush when online; retry; conflict strategy (server version check)"
+
+"Mark complete only when server confirms save + PDF document created"
+
+"Offline: fill cert, kill app, reopen -> draft persists"
+non_goals:
+
+"No advanced merge conflicts; use last-write-wins with warning"
+api_routes:
+
+"GET /api/engineer/certificates/[certificateId]"
+
+"PATCH/POST save draft endpoint (if not present)"
+
+"POST /api/engineer/certificates/[certificateId]/complete"
+data_model:
+
+"Maybe add certificate updatedAt/version field if not already present"
+acceptance:
+
+"Airplane mode: fill cert -> survives restart -> sync later -> no data loss"
+commands_read_only_first:
+
+"git status"
+commands_execute:
+
+"pnpm -C apps/mobile/engineer tsc --noEmit"
+
+"pnpm -C apps/mobile/engineer expo export --platform ios --dev false || true"
+risks:
+
+"Certificate schema changes; keep draft mapping stable"
+needs_approval: true
+
+id: stage-h1
+intent: "AI maintenance: Ops API + controlled actions + audit log (read-only first)"
+scope:
+crm: "apps/crm"
+mobile_engineer: null
+proposed_changes:
+
+"Create /api/ops/* endpoints behind OPS_SECRET and IP allowlist (if possible)"
+
+"Expose safe actions: check health, list queue backlog, retry job, restart worker (if supported)"
+
+"Create OpsAuditLog model recording every action and payload"
+
+"Integrate your existing AI by giving it a limited toolset that only calls Ops API endpoints"
+non_goals:
+
+"No autonomous deploy/rollback yet"
+api_routes:
+
+"GET /api/ops/health"
+
+"GET /api/ops/queues"
+
+"POST /api/ops/jobs/[id]/retry"
+data_model:
+
+"New Prisma model: OpsAuditLog"
+acceptance:
+
+"AI can query status; actions require explicit approval token; every action logged"
+commands_read_only_first:
+
+"git status"
+commands_execute:
+
+"pnpm -C apps/crm prisma migrate dev -n add_ops_audit_log"
+
+"pnpm -C apps/crm next build"
+risks:
+
+"Security risk if ops endpoints exposed; must be tightly gated"
+needs_approval: true

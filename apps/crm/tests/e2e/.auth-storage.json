@@ -1,0 +1,65 @@
+{
+  "cookies": [
+    {
+      "name": "qt_tenant_subdomain",
+      "value": "crm",
+      "domain": "crm.quantract.co.uk",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "__Host-qt_session_v1",
+      "value": "role%3Aadmin",
+      "domain": "crm.quantract.co.uk",
+      "path": "/",
+      "expires": 1770518639.867,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "__Host-qt_sid_v1",
+      "value": "d0afecd9-c043-4b45-8f0f-a88a790e812d",
+      "domain": "crm.quantract.co.uk",
+      "path": "/",
+      "expires": 1770518639.867,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "__Host-qt_user_email",
+      "value": "callumdeakin1995%40hotmail.com",
+      "domain": "crm.quantract.co.uk",
+      "path": "/",
+      "expires": 1770518639.867,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "__Host-qt_company_id",
+      "value": "c8991875-511d-4765-8615-14f2e9803641",
+      "domain": "crm.quantract.co.uk",
+      "path": "/",
+      "expires": 1770518639.867,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "__Host-qt_profile_complete",
+      "value": "1",
+      "domain": "crm.quantract.co.uk",
+      "path": "/",
+      "expires": 1770518639.867,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": []
+}

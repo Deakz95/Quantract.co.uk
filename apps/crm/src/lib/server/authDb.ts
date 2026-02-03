@@ -150,3 +150,90 @@ export async function getSession(sessionId: string) {
   if (session.expiresAt.getTime() < Date.now()) return null;
   return { ...session, user: session.user };
 }
+
+// ============================================================================
+// APP TOKENS (bearer auth for mobile / Expo)
+// ============================================================================
+
+const APP_TOKEN_TTL_DAYS = 30;
+
+export async function createAppToken(
+  sessionId: string,
+  opts?: { deviceName?: string; deviceId?: string },
+) {
+  const db = getPrisma();
+  const raw = randomToken(48);
+  const tokenHash = sha256(raw);
+  const expiresAt = new Date(Date.now() + APP_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000);
+  await db.appToken.create({
+    data: {
+      sessionId,
+      tokenHash,
+      expiresAt,
+      deviceName: opts?.deviceName ?? null,
+      deviceId: opts?.deviceId ?? null,
+    },
+  });
+  return { raw, expiresAt };
+}
+
+/**
+ * Validate a raw bearer token. Returns the linked AuthSession + User if valid.
+ * Updates lastUsedAt best-effort.
+ */
+export async function validateAppToken(rawToken: string) {
+  const db = getPrisma();
+  const tokenHash = sha256(rawToken);
+  const appToken = await db.appToken.findUnique({ where: { tokenHash } });
+  if (!appToken) return null;
+  if (appToken.revokedAt) return null;
+  if (appToken.expiresAt.getTime() < Date.now()) return null;
+
+  // Load the underlying session
+  const session = await getSession(appToken.sessionId);
+  if (!session) return null;
+
+  // Best-effort lastUsedAt update (fire and forget)
+  db.appToken.update({
+    where: { id: appToken.id },
+    data: { lastUsedAt: new Date() },
+  }).catch(() => {});
+
+  return { appTokenId: appToken.id, session };
+}
+
+export async function revokeAppToken(rawToken: string) {
+  const db = getPrisma();
+  const tokenHash = sha256(rawToken);
+  await db.appToken.updateMany({
+    where: { tokenHash, revokedAt: null },
+    data: { revokedAt: new Date() },
+  });
+}
+
+export async function revokeAppTokenById(appTokenId: string) {
+  const db = getPrisma();
+  await db.appToken.updateMany({
+    where: { id: appTokenId, revokedAt: null },
+    data: { revokedAt: new Date() },
+  });
+}
+
+/**
+ * Rotate: revoke old token, create new one on the same session.
+ * Returns the new raw token + expiry.
+ */
+export async function rotateAppToken(
+  rawToken: string,
+  opts?: { deviceName?: string; deviceId?: string },
+) {
+  const validated = await validateAppToken(rawToken);
+  if (!validated) return null;
+
+  // Revoke old
+  await revokeAppTokenById(validated.appTokenId);
+
+  // Issue new on same session
+  const newToken = await createAppToken(validated.session.id, opts);
+  return { ...newToken, session: validated.session };
+}

@@ -1,4 +1,4 @@
-import { getSession } from "@/lib/server/authDb";
+import { getSession, validateAppToken } from "@/lib/server/authDb";
 import { hasCapability, ROLE_DEFAULTS, type Capability } from "@/lib/permissions";
 import { p } from "@/lib/server/prisma";
 import { neonAuth } from "@neondatabase/auth/next/server";
@@ -245,6 +245,14 @@ export async function getAuthContext(): Promise<AuthContext | null> {
 }
 
 export async function requireRole(role: Role) {
+  // Bearer token (mobile app) — checked first, no cookies needed
+  const bearer = await resolveBearerToken();
+  if (bearer) {
+    if (role && bearer.role !== role && bearer.role !== "admin") {
+      const err: any = new Error("Forbidden"); err.status = 403; throw err;
+    }
+    return bearer;
+  }
   const neon = await resolveNeonSession();
   if (neon) {
     const ctx = neon as any;
@@ -289,6 +297,12 @@ export async function requireRole(role: Role) {
  */
 export async function requireRoles(roles: Role | Role[]) {
   const allowed = Array.isArray(roles) ? roles : [roles];
+
+  // Bearer token (mobile app) — checked first, no cookies needed
+  const bearer = await resolveBearerToken();
+  if (bearer && (allowed.includes(bearer.role) || bearer.role === "admin")) {
+    return bearer;
+  }
 
   // Check Neon Auth first
   const neon = await resolveNeonSession();
@@ -570,6 +584,36 @@ export async function requireCapability(required: Capability) {
   return ctx;
 }
 
+
+/**
+ * Resolve auth context from a Bearer token (mobile app / Expo).
+ * Returns null if no Authorization header or token is invalid.
+ */
+async function resolveBearerToken(): Promise<AuthContext | null> {
+  try {
+    // headers() is exported at runtime in Next 16 but missing from @types/next
+    const { headers: getHeaders } = await import("next/headers") as any;
+    const hdrs = await getHeaders();
+    const authHeader = (hdrs as any).get("authorization") || "";
+    if (!authHeader.startsWith("Bearer ")) return null;
+    const rawToken = authHeader.slice(7).trim();
+    if (!rawToken) return null;
+
+    const result = await validateAppToken(rawToken);
+    if (!result) return null;
+
+    const { session } = result;
+    return {
+      role: session.user.role as Role,
+      email: session.user.email,
+      companyId: session.user.companyId ?? null,
+      userId: session.user.id,
+      sessionId: session.id,
+    };
+  } catch {
+    return null;
+  }
+}
 
 async function resolveBetterAuthSession() {
   const cookieStore = await cookies();
