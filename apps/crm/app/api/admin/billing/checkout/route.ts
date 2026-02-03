@@ -5,9 +5,13 @@ import { getStripe, appBaseUrl } from "@/lib/server/stripe";
 import { withRequestLogging } from "@/lib/server/observability";
 export const runtime = "nodejs";
 const PRICE_ENV: Record<string, string> = {
+  // Legacy plan names (backward compatibility)
   solo: "STRIPE_PRICE_SOLO",
   team: "STRIPE_PRICE_TEAM",
-  pro: "STRIPE_PRICE_PRO"
+  // New plan names
+  core: "STRIPE_PRICE_CORE_MONTHLY",
+  pro: "STRIPE_PRICE_PRO_MONTHLY",
+  pro_plus: "STRIPE_PRICE_PRO_PLUS_MONTHLY",
 };
 export const POST = withRequestLogging(async function POST(req: Request) {
   await requireRole("admin");

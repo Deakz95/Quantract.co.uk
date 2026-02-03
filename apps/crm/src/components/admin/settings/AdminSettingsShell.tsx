@@ -16,6 +16,7 @@ const tabs = [
   { label: "Notifications", href: "/admin/settings/notifications", icon: Mail, desc: "SMS & Email" },
   { label: "Lead Capture", href: "/admin/settings/lead-capture", icon: Inbox, desc: "Website forms" },
   { label: "Financials", href: "/admin/settings/financials", icon: PoundSterling, desc: "Overheads & rates" },
+  { label: "Billing", href: "/admin/settings/billing", icon: Receipt, desc: "Subscription & plans" },
   { label: "Entitlements", href: "/admin/settings/entitlements", icon: BarChart3, desc: "Limits & usage" },
   { label: "Account", href: "/admin/settings/account", icon: User, desc: "User management" },
 ];

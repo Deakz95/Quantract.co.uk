@@ -3,11 +3,40 @@ import { getStripe } from "@/lib/server/stripe";
 import * as repo from "@/lib/server/repo";
 import { getPrisma } from "@/lib/server/prisma";
 import { logBusinessEvent, withRequestLogging } from "@/lib/server/observability";
+import {
+  syncSubscriptionToBilling,
+  handlePaymentFailed,
+  refreshAndSyncSubscription,
+} from "@/lib/server/billing/syncSubscription";
+import type Stripe from "stripe";
+
 export const runtime = "nodejs";
+
 function mapSubStatus(s: string) {
   const v = String(s || "");
   if (v === "active" || v === "trialing" || v === "past_due" || v === "canceled" || v === "unpaid" || v === "incomplete" || v === "incomplete_expired") return v;
   return "inactive";
+}
+
+/**
+ * Extract companyId from subscription or customer metadata.
+ */
+function getCompanyIdFromSubscription(sub: Stripe.Subscription): string | null {
+  // First check subscription metadata
+  const fromSub = sub.metadata?.companyId;
+  if (fromSub) return String(fromSub);
+
+  // Then check customer metadata if customer is expanded and not deleted
+  if (
+    typeof sub.customer === "object" &&
+    sub.customer &&
+    "metadata" in sub.customer &&
+    sub.customer.metadata?.companyId
+  ) {
+    return String(sub.customer.metadata.companyId);
+  }
+
+  return null;
 }
 export const POST = withRequestLogging(async function POST(req: Request) {
   const stripe = getStripe();
@@ -65,6 +94,8 @@ export const POST = withRequestLogging(async function POST(req: Request) {
     });
   }
   try {
+    const eventId = event.id;
+
     // ----- Invoice payment (existing) -----
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as any;
@@ -110,49 +141,120 @@ export const POST = withRequestLogging(async function POST(req: Request) {
       // ----- SaaS subscription checkout -----
       if (mode === "subscription") {
         const companyId = String(session?.metadata?.companyId || "");
-        const plan = String(session?.metadata?.plan || "");
         const subscriptionId = String(session?.subscription || "");
-        const customerId = String(session?.customer || "");
-        const client = getPrisma();
-        if (client && companyId) {
-          const sub = subscriptionId ? await stripe.subscriptions.retrieve(subscriptionId) : null;
-          await client.company.update({
-            where: {
-              id: companyId
-            },
-            data: {
-              plan: plan || undefined,
-              subscriptionStatus: mapSubStatus(sub?.status || "active"),
-              stripeCustomerId: customerId || undefined,
-              stripeSubscriptionId: subscriptionId || undefined,
-              currentPeriodEnd: sub?.current_period_end ? new Date(sub.current_period_end * 1000) : undefined,
-              trialEnd: sub?.trial_end ? new Date(sub.trial_end * 1000) : undefined
-            }
+
+        if (companyId && subscriptionId) {
+          // Use new sync logic
+          const result = await refreshAndSyncSubscription(stripe, subscriptionId, companyId, eventId);
+          if (result.success) {
+            logBusinessEvent({
+              name: "subscription.created",
+              companyId,
+              metadata: { subscriptionId, via: "checkout" }
+            });
+          }
+        }
+      }
+    }
+
+    // ----- Subscription created -----
+    if (event.type === "customer.subscription.created") {
+      const sub = event.data.object as Stripe.Subscription;
+      const companyId = getCompanyIdFromSubscription(sub);
+
+      if (companyId) {
+        const result = await syncSubscriptionToBilling(companyId, sub, eventId);
+        if (result.success && !result.skipped) {
+          logBusinessEvent({
+            name: "subscription.created",
+            companyId,
+            metadata: { subscriptionId: sub.id }
           });
         }
       }
     }
 
-    // Subscription lifecycle updates
-    if (event.type === "customer.subscription.updated" || event.type === "customer.subscription.deleted") {
-      const sub = event.data.object as any;
-      const companyId = String(sub?.metadata?.companyId || "");
-      const plan = String(sub?.metadata?.plan || "");
-      const client = getPrisma();
-      if (client && companyId) {
-        await client.company.update({
-          where: {
-            id: companyId
-          },
-          data: {
-            plan: plan || undefined,
-            subscriptionStatus: mapSubStatus(sub?.status),
-            stripeSubscriptionId: String(sub?.id || "") || undefined,
-            stripeCustomerId: String(sub?.customer || "") || undefined,
-            currentPeriodEnd: sub?.current_period_end ? new Date(sub.current_period_end * 1000) : undefined,
-            trialEnd: sub?.trial_end ? new Date(sub.trial_end * 1000) : undefined
+    // ----- Subscription updated -----
+    if (event.type === "customer.subscription.updated") {
+      const sub = event.data.object as Stripe.Subscription;
+      const companyId = getCompanyIdFromSubscription(sub);
+
+      if (companyId) {
+        const result = await syncSubscriptionToBilling(companyId, sub, eventId);
+        if (result.success && !result.skipped) {
+          logBusinessEvent({
+            name: "subscription.updated",
+            companyId,
+            metadata: { subscriptionId: sub.id, status: sub.status }
+          });
+        }
+      }
+    }
+
+    // ----- Subscription deleted -----
+    if (event.type === "customer.subscription.deleted") {
+      const sub = event.data.object as Stripe.Subscription;
+      const companyId = getCompanyIdFromSubscription(sub);
+
+      if (companyId) {
+        const result = await syncSubscriptionToBilling(companyId, sub, eventId);
+        if (result.success && !result.skipped) {
+          logBusinessEvent({
+            name: "subscription.deleted",
+            companyId,
+            metadata: { subscriptionId: sub.id }
+          });
+        }
+      }
+    }
+
+    // ----- Invoice paid (refresh subscription state) -----
+    if (event.type === "invoice.paid") {
+      const invoice = event.data.object as Stripe.Invoice;
+      const subscriptionId = typeof invoice.subscription === "string"
+        ? invoice.subscription
+        : invoice.subscription?.id;
+
+      // Only process subscription invoices
+      if (subscriptionId && invoice.billing_reason !== "manual") {
+        // Try to get companyId from subscription metadata or customer
+        const companyId = String(invoice.subscription_details?.metadata?.companyId || "")
+          || String((invoice.customer as any)?.metadata?.companyId || "");
+
+        if (companyId) {
+          const result = await refreshAndSyncSubscription(stripe, subscriptionId, companyId, eventId);
+          if (result.success && !result.skipped) {
+            logBusinessEvent({
+              name: "subscription.invoice_paid",
+              companyId,
+              metadata: { subscriptionId, invoiceId: invoice.id }
+            });
           }
-        });
+        }
+      }
+    }
+
+    // ----- Invoice payment failed -----
+    if (event.type === "invoice.payment_failed") {
+      const invoice = event.data.object as Stripe.Invoice;
+      const subscriptionId = typeof invoice.subscription === "string"
+        ? invoice.subscription
+        : invoice.subscription?.id;
+
+      if (subscriptionId) {
+        const companyId = String(invoice.subscription_details?.metadata?.companyId || "")
+          || String((invoice.customer as any)?.metadata?.companyId || "");
+
+        if (companyId) {
+          const result = await handlePaymentFailed(companyId, eventId);
+          if (result.success && !result.skipped) {
+            logBusinessEvent({
+              name: "subscription.payment_failed",
+              companyId,
+              metadata: { subscriptionId, invoiceId: invoice.id }
+            });
+          }
+        }
       }
     }
   } catch (err: any) {

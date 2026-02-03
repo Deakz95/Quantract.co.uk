@@ -36,26 +36,58 @@ export const GET = withRequestLogging(async function GET() {
         currentPeriodEnd: true,
         trialEnd: true,
         trialStartedAt: true,
+        billing: {
+          select: {
+            plan: true,
+            subscriptionStatus: true,
+            currentPeriodStart: true,
+            currentPeriodEnd: true,
+            cancelAtPeriodEnd: true,
+            trialStartedAt: true,
+            trialEnd: true,
+            enabledModules: true,
+            extraUsers: true,
+            extraEntities: true,
+            extraStorageMB: true,
+          },
+        },
       },
     });
     msDb = stopDb();
 
     if (!company) return { _status: 404, ok: false };
 
+    // Use billing table if exists, fallback to company fields
+    const billing = company.billing;
+    const effectivePlan = billing?.plan || company.plan;
+    const effectiveStatus = billing?.subscriptionStatus || company.subscriptionStatus;
+    const effectiveTrialStartedAt = billing?.trialStartedAt || company.trialStartedAt;
+    const effectiveTrialEnd = billing?.trialEnd || company.trialEnd;
+    const effectivePeriodEnd = billing?.currentPeriodEnd || company.currentPeriodEnd;
+
     const hasBypass = hasAdminBypass(userEmail);
-    const effectivePlan = hasBypass ? "pro" : company.plan;
-    const planDef = getPlanDefinition(effectivePlan);
-    const trialStatus = getTrialStatus(company.plan, company.trialStartedAt, userEmail);
+    const displayPlan = hasBypass ? "pro" : effectivePlan;
+    const planDef = getPlanDefinition(displayPlan);
+    const trialStatus = getTrialStatus(effectivePlan, effectiveTrialStartedAt, userEmail);
 
     return {
       ok: true,
-      plan: effectivePlan,
+      plan: displayPlan,
       planLabel: planDef.label,
-      subscriptionStatus: hasBypass ? "active" : company.subscriptionStatus,
-      currentPeriodEnd: company.currentPeriodEnd,
-      trialEnd: company.trialEnd,
+      subscriptionStatus: hasBypass ? "active" : effectiveStatus,
+      currentPeriodStart: billing?.currentPeriodStart || null,
+      currentPeriodEnd: effectivePeriodEnd,
+      trialEnd: effectiveTrialEnd,
+      cancelAtPeriodEnd: billing?.cancelAtPeriodEnd || false,
       hasBypass,
       trial: trialStatus,
+      // New fields from CompanyBilling
+      modules: billing?.enabledModules || [],
+      addOns: {
+        extraUsers: billing?.extraUsers || 0,
+        extraEntities: billing?.extraEntities || 0,
+        extraStorageMB: billing?.extraStorageMB || 0,
+      },
     };
   });
 

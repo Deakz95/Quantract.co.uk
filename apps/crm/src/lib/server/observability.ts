@@ -20,7 +20,18 @@ export type RequestLogEntry = {
 };
 
 export type BusinessEvent = {
-  name: "invoice.sent" | "invoice.paid" | "webhook.failure" | "mfa.enabled" | "mfa.disabled" | "notification.sent";
+  name:
+    | "invoice.sent"
+    | "invoice.paid"
+    | "webhook.failure"
+    | "mfa.enabled"
+    | "mfa.disabled"
+    | "notification.sent"
+    | "subscription.created"
+    | "subscription.updated"
+    | "subscription.deleted"
+    | "subscription.invoice_paid"
+    | "subscription.payment_failed";
   companyId?: string | null;
   userId?: string | null;
   invoiceId?: string | null;

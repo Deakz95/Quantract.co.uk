@@ -63,61 +63,90 @@ model AuditEvent {
 }
 
 model AuthSession {
-  id        String    @id
+  id        String     @id
   userId    String
-  createdAt DateTime  @default(now())
+  createdAt DateTime   @default(now())
   expiresAt DateTime
   revokedAt DateTime?
-  user      User      @relation(fields: [userId], references: [id])
+  user      User       @relation(fields: [userId], references: [id])
+  appTokens AppToken[]
 
   @@index([userId, expiresAt])
 }
 
+model AppToken {
+  id         String    @id @default(cuid())
+  sessionId  String
+  tokenHash  String    @unique
+  createdAt  DateTime  @default(now())
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  lastUsedAt DateTime?
+  deviceName String?
+  deviceId   String?
+
+  session AuthSession @relation(fields: [sessionId], references: [id])
+
+  @@index([sessionId])
+}
+
+model IdempotencyKey {
+  id           String   @id @default(cuid())
+  companyId    String
+  userId       String
+  key          String
+  responseJson Json
+  createdAt    DateTime @default(now())
+
+  @@unique([companyId, userId, key])
+  @@index([createdAt])
+}
+
 model Certificate {
-  id                      String                       @id
-  companyId               String
-  legalEntityId           String?
-  jobId                   String?
-  siteId                  String?
-  clientId                String?
-  type                    String
-  status                  String
-  certificateNumber       String?
-  issuedAt                DateTime?
-  inspectorName           String?
-  inspectorEmail          String?
-  dataVersion             Int                          @default(1)
-  data                    Json                         @default("{}")
-  completedAt             DateTime?
-  pdfKey                  String?
-  signedName              String?
-  signedAt                DateTime?
+  id                        String                       @id
+  companyId                 String
+  legalEntityId             String?
+  jobId                     String?
+  siteId                    String?
+  clientId                  String?
+  type                      String
+  status                    String
+  certificateNumber         String?
+  issuedAt                  DateTime?
+  inspectorName             String?
+  inspectorEmail            String?
+  dataVersion               Int                          @default(1)
+  data                      Json                         @default("{}")
+  completedAt               DateTime?
+  pdfKey                    String?
+  signedName                String?
+  signedAt                  DateTime?
   // v2 fields
-  verificationToken            String?                      @unique
-  verificationRevokedAt        DateTime?
-  verificationRevokedReason    String?
-  currentRevision              Int                          @default(0)
-  outcome                 String?
-  outcomeReason           String?
+  verificationToken         String?                      @unique
+  verificationRevokedAt     DateTime?
+  verificationRevokedReason String?
+  currentRevision           Int                          @default(0)
+  outcome                   String?
+  outcomeReason             String?
   // Amendment lineage
-  amendsCertificateId     String?
-  createdAt               DateTime                     @default(now())
-  updatedAt               DateTime
-  auditEvents             AuditEvent[]
-  client                  Client?                      @relation(fields: [clientId], references: [id])
-  company                 Company                      @relation(fields: [companyId], references: [id])
-  legalEntity             LegalEntity?                 @relation(fields: [legalEntityId], references: [id])
-  job                     Job?                         @relation(fields: [jobId], references: [id])
-  site                    Site?                        @relation(fields: [siteId], references: [id])
-  amendsCertificate       Certificate?                 @relation("CertificateAmendments", fields: [amendsCertificateId], references: [id])
-  amendments              Certificate[]                @relation("CertificateAmendments")
-  certificateTestResults  CertificateTestResult[]
-  revisions               CertificateRevision[]
-  observations            CertificateObservation[]
-  checklists              CertificateChecklist[]
-  signatureRecords        CertificateSignatureRecord[]
-  attachments             CertificateAttachment[]
-  invoiceCertificates     InvoiceCertificate[]
+  amendsCertificateId       String?
+  createdAt                 DateTime                     @default(now())
+  updatedAt                 DateTime
+  auditEvents               AuditEvent[]
+  client                    Client?                      @relation(fields: [clientId], references: [id])
+  company                   Company                      @relation(fields: [companyId], references: [id])
+  legalEntity               LegalEntity?                 @relation(fields: [legalEntityId], references: [id])
+  job                       Job?                         @relation(fields: [jobId], references: [id])
+  site                      Site?                        @relation(fields: [siteId], references: [id])
+  amendsCertificate         Certificate?                 @relation("CertificateAmendments", fields: [amendsCertificateId], references: [id])
+  amendments                Certificate[]                @relation("CertificateAmendments")
+  certificateTestResults    CertificateTestResult[]
+  revisions                 CertificateRevision[]
+  observations              CertificateObservation[]
+  checklists                CertificateChecklist[]
+  signatureRecords          CertificateSignatureRecord[]
+  attachments               CertificateAttachment[]
+  invoiceCertificates       InvoiceCertificate[]
 
   @@unique([legalEntityId, certificateNumber])
   @@index([clientId])
@@ -130,20 +159,20 @@ model Certificate {
 }
 
 model CertificateRevision {
-  id            String      @id @default(cuid())
-  companyId     String
-  certificateId String
-  revision      Int
-  signingHash   String
-  content       Json
-  pdfKey        String?
+  id             String      @id @default(cuid())
+  companyId      String
+  certificateId  String
+  revision       Int
+  signingHash    String
+  content        Json
+  pdfKey         String?
   pdfChecksum    String?
   pdfGeneratedAt DateTime?
   issuedAt       DateTime
   issuedBy       String?
-  createdAt     DateTime    @default(now())
-  certificate   Certificate @relation(fields: [certificateId], references: [id])
-  company       Company     @relation(fields: [companyId], references: [id])
+  createdAt      DateTime    @default(now())
+  certificate    Certificate @relation(fields: [certificateId], references: [id])
+  company        Company     @relation(fields: [companyId], references: [id])
 
   @@unique([certificateId, revision])
   @@index([companyId])
@@ -241,7 +270,7 @@ model CertificateTestResult {
 }
 
 model Client {
-  id                   String        @id
+  id                   String           @id
   companyId            String
   name                 String
   email                String
@@ -265,18 +294,18 @@ model Client {
   billingCounty        String?
   billingPostcode      String?
   billingCountry       String?
-  billingSameAsService Boolean       @default(true)
+  billingSameAsService Boolean          @default(true)
   paymentTermsDays     Int?
-  disableAutoChase     Boolean       @default(false)
+  disableAutoChase     Boolean          @default(false)
   xeroContactId        String?
   // SMS consent
-  smsOptIn             Boolean       @default(false)
+  smsOptIn             Boolean          @default(false)
   smsOptInAt           DateTime?
-  createdAt            DateTime      @default(now())
+  createdAt            DateTime         @default(now())
   updatedAt            DateTime
   deletedAt            DateTime?
   certificates         Certificate[]
-  company              Company       @relation(fields: [companyId], references: [id])
+  company              Company          @relation(fields: [companyId], references: [id])
   invoices             Invoice[]
   jobs                 Job[]
   quotes               Quote[]
@@ -296,132 +325,132 @@ model Client {
 }
 
 model Company {
-  id                      String                  @id
-  name                    String
-  slug                    String                  @unique
-  subdomain               String?                 @unique
-  dataTier                String                  @default("shared")
-  dedicatedDatabaseUrl    String?
-  dataRegion              String                  @default("eu-west-2")
-  brandName               String                  @default("Quantract")
-  brandTagline            String?
-  logoKey                 String?
-  themePrimary            String                  @default("#0f172a")
-  themeAccent             String                  @default("#16a34a")
-  themeBg                 String                  @default("#f8fafc")
-  themeText               String                  @default("#0f172a")
-  pdfFooterLine1          String?
-  pdfFooterLine2          String?
-  defaultVatRate          Float                   @default(0.2)
-  invoiceNumberPrefix     String                  @default("INV-")
-  nextInvoiceNumber       Int                     @default(1)
-  certificateNumberPrefix String                  @default("CERT-")
-  nextCertificateNumber   Int                     @default(1)
-  quoteNumberPrefix       String                  @default("QUO-")
-  nextQuoteNumber         Int                     @default(1)
-  onboardedAt             DateTime?
-  defaultPaymentTermsDays Int                     @default(14)
-  autoChaseEnabled        Boolean                 @default(false)
-  autoChaseFirstDays      Int                     @default(7)
-  autoChaseSecondDays     Int                     @default(14)
-  autoChaseThirdDays      Int                     @default(21)
-  quoteValidityDays       Int                     @default(30)
-  termsAndConditions      String?
-  plan                    String                  @default("trial")
-  subscriptionStatus      String                  @default("inactive")
-  stripeCustomerId        String?
-  stripeSubscriptionId    String?
-  currentPeriodEnd        DateTime?
-  trialEnd                DateTime?
-  trialStartedAt          DateTime?
-  quotesThisMonth         Int                     @default(0)
-  invoicesThisMonth       Int                     @default(0)
-  usageResetAt            DateTime?
-  xeroConnected           Boolean                 @default(false)
-  xeroTenantId            String?
-  xeroAccessToken         String?
-  xeroRefreshToken        String?
-  xeroTokenExpiresAt      DateTime?
-  defaultLegalEntityId    String?
-  defaultServiceLineId    String?
+  id                          String                       @id
+  name                        String
+  slug                        String                       @unique
+  subdomain                   String?                      @unique
+  dataTier                    String                       @default("shared")
+  dedicatedDatabaseUrl        String?
+  dataRegion                  String                       @default("eu-west-2")
+  brandName                   String                       @default("Quantract")
+  brandTagline                String?
+  logoKey                     String?
+  themePrimary                String                       @default("#0f172a")
+  themeAccent                 String                       @default("#16a34a")
+  themeBg                     String                       @default("#f8fafc")
+  themeText                   String                       @default("#0f172a")
+  pdfFooterLine1              String?
+  pdfFooterLine2              String?
+  defaultVatRate              Float                        @default(0.2)
+  invoiceNumberPrefix         String                       @default("INV-")
+  nextInvoiceNumber           Int                          @default(1)
+  certificateNumberPrefix     String                       @default("CERT-")
+  nextCertificateNumber       Int                          @default(1)
+  quoteNumberPrefix           String                       @default("QUO-")
+  nextQuoteNumber             Int                          @default(1)
+  onboardedAt                 DateTime?
+  defaultPaymentTermsDays     Int                          @default(14)
+  autoChaseEnabled            Boolean                      @default(false)
+  autoChaseFirstDays          Int                          @default(7)
+  autoChaseSecondDays         Int                          @default(14)
+  autoChaseThirdDays          Int                          @default(21)
+  quoteValidityDays           Int                          @default(30)
+  termsAndConditions          String?
+  plan                        String                       @default("trial")
+  subscriptionStatus          String                       @default("inactive")
+  stripeCustomerId            String?
+  stripeSubscriptionId        String?
+  currentPeriodEnd            DateTime?
+  trialEnd                    DateTime?
+  trialStartedAt              DateTime?
+  quotesThisMonth             Int                          @default(0)
+  invoicesThisMonth           Int                          @default(0)
+  usageResetAt                DateTime?
+  xeroConnected               Boolean                      @default(false)
+  xeroTenantId                String?
+  xeroAccessToken             String?
+  xeroRefreshToken            String?
+  xeroTokenExpiresAt          DateTime?
+  defaultLegalEntityId        String?
+  defaultServiceLineId        String?
   // SMS Notification Settings
-  smsEnabled              Boolean                 @default(false)
-  smsProvider             String? // "twilio" | "messagebird" | etc
-  smsSenderId             String? // Sender ID / From number
-  smsApiKey               String? // Encrypted API key
-  smsApiSecret            String? // Encrypted API secret
-  smsRequireConsent       Boolean                 @default(true)
-  smsQuietHoursEnabled    Boolean                 @default(false)
-  smsQuietFrom            String? // Time string "21:00"
-  smsQuietTo              String? // Time string "08:00"
-  smsMaxPerClientPerDay   Int                     @default(3)
-  smsMaxPerJobPerDay      Int                     @default(5)
-  smsCredits              Int                     @default(0)
+  smsEnabled                  Boolean                      @default(false)
+  smsProvider                 String? // "twilio" | "messagebird" | etc
+  smsSenderId                 String? // Sender ID / From number
+  smsApiKey                   String? // Encrypted API key
+  smsApiSecret                String? // Encrypted API secret
+  smsRequireConsent           Boolean                      @default(true)
+  smsQuietHoursEnabled        Boolean                      @default(false)
+  smsQuietFrom                String? // Time string "21:00"
+  smsQuietTo                  String? // Time string "08:00"
+  smsMaxPerClientPerDay       Int                          @default(3)
+  smsMaxPerJobPerDay          Int                          @default(5)
+  smsCredits                  Int                          @default(0)
   // Break-even settings
-  workingDaysPerMonth     Int                     @default(22)
-  workingDaysMask         Int                     @default(31) // bitmask: Mon=1 Tue=2 Wed=4 Thu=8 Fri=16 Sat=32 Sun=64
-  nextJobNumber           Int                     @default(1)
-  createdAt               DateTime                @default(now())
-  updatedAt               DateTime
-  agreements              Agreement[]
-  auditEvents             AuditEvent[]
-  certificates            Certificate[]
-  certificateTestResults  CertificateTestResult[]
-  clients                 Client[]
-  companyUsers            CompanyUser[]
-  costItems               CostItem[]
-  costItemAttachments     CostItemAttachment[]
-  engineers               Engineer[]
-  expenses                Expense[]
-  invites                 Invite[]
-  invoices                Invoice[]
-  invoiceAttachments      InvoiceAttachment[]
-  invoiceChases           InvoiceChase[]
-  invoicePayments         InvoicePayment[]
-  invoiceVariations       InvoiceVariation[]
-  jobs                    Job[]
-  jobBudgetLines          JobBudgetLine[]
-  jobStages               JobStage[]
-  legalEntities           LegalEntity[]
-  serviceLines            ServiceLine[]
-  quotes                  Quote[]
-  quoteRevisions          QuoteRevision[]
-  rateCards               RateCard[]
-  companyOverheads        CompanyOverhead[]
-  scheduleEntries         ScheduleEntry[]
-  sites                   Site[]
-  snagItems               SnagItem[]
-  subcontractors          Subcontractor[]
-  suppliers               Supplier[]
-  supplierBills           SupplierBill[]
-  supplierBillLines       SupplierBillLine[]
-  timeEntries             TimeEntry[]
-  timesheets              Timesheet[]
-  users                   User[]
-  variations              Variation[]
-  variationAttachments    VariationAttachment[]
-  impersonationLogs       impersonation_logs[]
-  checklistTemplates      ChecklistTemplate[]
-  jobChecklists           JobChecklist[]
-  tasks                   Task[]
-  comments                Comment[]
-  mentions                Mention[]
-  notificationRules       NotificationRule[]
-  notificationTemplates   NotificationTemplate[]
-  notificationLogs        NotificationLog[]
-  inboundIntegrationKeys  InboundIntegrationKey[]
-  allowedDomains          AllowedDomain[]
-  inboundFormConfigs      InboundFormConfig[]
+  workingDaysPerMonth         Int                          @default(22)
+  workingDaysMask             Int                          @default(31) // bitmask: Mon=1 Tue=2 Wed=4 Thu=8 Fri=16 Sat=32 Sun=64
+  nextJobNumber               Int                          @default(1)
+  createdAt                   DateTime                     @default(now())
+  updatedAt                   DateTime
+  agreements                  Agreement[]
+  auditEvents                 AuditEvent[]
+  certificates                Certificate[]
+  certificateTestResults      CertificateTestResult[]
+  clients                     Client[]
+  companyUsers                CompanyUser[]
+  costItems                   CostItem[]
+  costItemAttachments         CostItemAttachment[]
+  engineers                   Engineer[]
+  expenses                    Expense[]
+  invites                     Invite[]
+  invoices                    Invoice[]
+  invoiceAttachments          InvoiceAttachment[]
+  invoiceChases               InvoiceChase[]
+  invoicePayments             InvoicePayment[]
+  invoiceVariations           InvoiceVariation[]
+  jobs                        Job[]
+  jobBudgetLines              JobBudgetLine[]
+  jobStages                   JobStage[]
+  legalEntities               LegalEntity[]
+  serviceLines                ServiceLine[]
+  quotes                      Quote[]
+  quoteRevisions              QuoteRevision[]
+  rateCards                   RateCard[]
+  companyOverheads            CompanyOverhead[]
+  scheduleEntries             ScheduleEntry[]
+  sites                       Site[]
+  snagItems                   SnagItem[]
+  subcontractors              Subcontractor[]
+  suppliers                   Supplier[]
+  supplierBills               SupplierBill[]
+  supplierBillLines           SupplierBillLine[]
+  timeEntries                 TimeEntry[]
+  timesheets                  Timesheet[]
+  users                       User[]
+  variations                  Variation[]
+  variationAttachments        VariationAttachment[]
+  impersonationLogs           impersonation_logs[]
+  checklistTemplates          ChecklistTemplate[]
+  jobChecklists               JobChecklist[]
+  tasks                       Task[]
+  comments                    Comment[]
+  mentions                    Mention[]
+  notificationRules           NotificationRule[]
+  notificationTemplates       NotificationTemplate[]
+  notificationLogs            NotificationLog[]
+  inboundIntegrationKeys      InboundIntegrationKey[]
+  allowedDomains              AllowedDomain[]
+  inboundFormConfigs          InboundFormConfig[]
   // CRM modules
-  contacts                Contact[]
-  dealStages              DealStage[]
-  deals                   Deal[]
-  activities              Activity[]
-  savedViews              SavedView[]
-  importJobs              ImportJob[]
-  toolPresets             ToolPreset[]
-  ramsDocuments           RamsDocument[]
-  markJobCompletedOnCertIssue Boolean                 @default(false)
+  contacts                    Contact[]
+  dealStages                  DealStage[]
+  deals                       Deal[]
+  activities                  Activity[]
+  savedViews                  SavedView[]
+  importJobs                  ImportJob[]
+  toolPresets                 ToolPreset[]
+  ramsDocuments               RamsDocument[]
+  markJobCompletedOnCertIssue Boolean                      @default(false)
   // Certificates v2
   certificateRevisions        CertificateRevision[]
   certificateObservations     CertificateObservation[]
@@ -433,27 +462,28 @@ model Company {
   enquiryKeywordHits          EnquiryKeywordHit[]
   leadScoringConfig           LeadScoringConfig?
   // Maintenance
-  installedAssets              InstalledAsset[]
-  maintenanceRules             MaintenanceRule[]
-  maintenanceAlerts            MaintenanceAlert[]
-  truckStocks                  TruckStock[]
-  remoteAssistSessions         RemoteAssistSession[]
-  aiEstimates                  AiEstimate[]
-  stockAlerts                  StockAlert[]
+  installedAssets             InstalledAsset[]
+  maintenanceRules            MaintenanceRule[]
+  maintenanceAlerts           MaintenanceAlert[]
+  truckStocks                 TruckStock[]
+  remoteAssistSessions        RemoteAssistSession[]
+  aiEstimates                 AiEstimate[]
+  stockAlerts                 StockAlert[]
+  billing                     CompanyBilling?
 }
 
 model CompanyUser {
   id        String   @id
   companyId String
-  userId    String?  // FK to User - nullable during migration, will be backfilled
-  email     String   // Kept for backwards compatibility and invite flows
-  role      String   // Authoritative role for company-scoped permissions
+  userId    String? // FK to User - nullable during migration, will be backfilled
+  email     String // Kept for backwards compatibility and invite flows
+  role      String // Authoritative role for company-scoped permissions
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime
 
-  company   Company  @relation(fields: [companyId], references: [id])
-  user      User?    @relation("UserMemberships", fields: [userId], references: [id])
+  company Company @relation(fields: [companyId], references: [id])
+  user    User?   @relation("UserMemberships", fields: [userId], references: [id])
 
   @@unique([companyId, email])
   @@unique([companyId, userId]) // Unique membership per user per company (when userId is set)
@@ -600,39 +630,39 @@ model Engineer {
 }
 
 model Enquiry {
-  id            String             @id
-  companyId     String
-  stageId       String
-  ownerId       String? // Owner assignment (User.id)
-  formConfigId  String? // Reference to InboundFormConfig if from website
-  name          String?
-  email         String?
-  phone         String?
-  postcode      String?
-  message       String? // Message/enquiry text from website form
-  notes         String? // Internal notes
-  valueEstimate Int?
-  quoteId       String?
-  source        String             @default("manual") // manual | website | api
-  pageUrl       String? // URL where form was submitted
-  referrer      String? // HTTP referrer
-  utmSource     String?
-  utmMedium     String?
-  utmCampaign   String?
-  utmTerm       String?
-  utmContent    String?
-  metaJson      Json? // Any additional metadata
+  id              String              @id
+  companyId       String
+  stageId         String
+  ownerId         String? // Owner assignment (User.id)
+  formConfigId    String? // Reference to InboundFormConfig if from website
+  name            String?
+  email           String?
+  phone           String?
+  postcode        String?
+  message         String? // Message/enquiry text from website form
+  notes           String? // Internal notes
+  valueEstimate   Int?
+  quoteId         String?
+  source          String              @default("manual") // manual | website | api
+  pageUrl         String? // URL where form was submitted
+  referrer        String? // HTTP referrer
+  utmSource       String?
+  utmMedium       String?
+  utmCampaign     String?
+  utmTerm         String?
+  utmContent      String?
+  metaJson        Json? // Any additional metadata
   // Lead scoring
-  leadScore        Int?      @default(0)
-  leadPriority     String?   // low|normal|high|urgent
-  leadScoreReason  Json?     // { keywords: [...], rules: [...] }
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime
-  owner         User?              @relation("EnquiryOwner", fields: [ownerId], references: [id])
-  pipelineStage PipelineStage      @relation(fields: [stageId], references: [id])
-  formConfig    InboundFormConfig? @relation(fields: [formConfigId], references: [id])
-  enquiryEvents EnquiryEvent[]
-  keywordHits   EnquiryKeywordHit[]
+  leadScore       Int?                @default(0)
+  leadPriority    String? // low|normal|high|urgent
+  leadScoreReason Json? // { keywords: [...], rules: [...] }
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime
+  owner           User?               @relation("EnquiryOwner", fields: [ownerId], references: [id])
+  pipelineStage   PipelineStage       @relation(fields: [stageId], references: [id])
+  formConfig      InboundFormConfig?  @relation(fields: [formConfigId], references: [id])
+  enquiryEvents   EnquiryEvent[]
+  keywordHits     EnquiryKeywordHit[]
 
   @@index([companyId, stageId])
   @@index([companyId, leadPriority])
@@ -689,44 +719,44 @@ model Invite {
 }
 
 model Invoice {
-  id                 String              @id
-  companyId          String
-  legalEntityId      String?
-  token              String              @unique
-  invoiceNumber      String?
-  clientId           String?
-  quoteId            String?
-  jobId              String?
-  variationId        String?
-  type               String              @default("stage")
-  stageName          String?
-  clientName         String
-  clientEmail        String
-  subtotal           Float
-  vat                Float
-  total              Float
-  currency           String              @default("gbp")
-  status             String
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime
-  sentAt             DateTime?
-  dueAt              DateTime?
-  paidAt             DateTime?
-  xeroInvoiceId      String?
-  xeroSyncStatus     String              @default("not_synced")
-  xeroLastSyncAt     DateTime?
-  xeroLastError      String?
-  paymentProvider    String?
-  paymentUrl         String?
-  paymentRef         String?
-  deletedAt          DateTime?
-  auditEvents        AuditEvent[]
-  client             Client?             @relation(fields: [clientId], references: [id])
-  company            Company             @relation(fields: [companyId], references: [id])
-  legalEntity        LegalEntity?        @relation(fields: [legalEntityId], references: [id])
-  job                Job?                @relation(fields: [jobId], references: [id])
-  quote              Quote?              @relation(fields: [quoteId], references: [id])
-  variation          Variation?          @relation(fields: [variationId], references: [id])
+  id                  String               @id
+  companyId           String
+  legalEntityId       String?
+  token               String               @unique
+  invoiceNumber       String?
+  clientId            String?
+  quoteId             String?
+  jobId               String?
+  variationId         String?
+  type                String               @default("stage")
+  stageName           String?
+  clientName          String
+  clientEmail         String
+  subtotal            Float
+  vat                 Float
+  total               Float
+  currency            String               @default("gbp")
+  status              String
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime
+  sentAt              DateTime?
+  dueAt               DateTime?
+  paidAt              DateTime?
+  xeroInvoiceId       String?
+  xeroSyncStatus      String               @default("not_synced")
+  xeroLastSyncAt      DateTime?
+  xeroLastError       String?
+  paymentProvider     String?
+  paymentUrl          String?
+  paymentRef          String?
+  deletedAt           DateTime?
+  auditEvents         AuditEvent[]
+  client              Client?              @relation(fields: [clientId], references: [id])
+  company             Company              @relation(fields: [companyId], references: [id])
+  legalEntity         LegalEntity?         @relation(fields: [legalEntityId], references: [id])
+  job                 Job?                 @relation(fields: [jobId], references: [id])
+  quote               Quote?               @relation(fields: [quoteId], references: [id])
+  variation           Variation?           @relation(fields: [variationId], references: [id])
   invoiceAttachments  InvoiceAttachment[]
   invoiceChases       InvoiceChase[]
   invoicePayments     InvoicePayment[]
@@ -804,7 +834,7 @@ model InvoiceVariation {
 }
 
 model Job {
-  id                      String          @id
+  id                      String           @id
   companyId               String
   jobNumber               Int?
   serviceLineId           String?
@@ -817,23 +847,23 @@ model Job {
   status                  String
   scheduledAt             DateTime?
   notes                   String?
-  createdAt               DateTime        @default(now())
+  createdAt               DateTime         @default(now())
   updatedAt               DateTime
-  budgetSubtotal          Float           @default(0)
-  budgetVat               Float           @default(0)
-  budgetTotal             Float           @default(0)
+  budgetSubtotal          Float            @default(0)
+  budgetVat               Float            @default(0)
+  budgetTotal             Float            @default(0)
   deletedAt               DateTime?
   auditEvents             AuditEvent[]
   certificates            Certificate[]
   costItems               CostItem[]
   invoices                Invoice[]
-  client                  Client?         @relation(fields: [clientId], references: [id])
-  company                 Company         @relation(fields: [companyId], references: [id])
-  serviceLine             ServiceLine?    @relation(fields: [serviceLineId], references: [id])
-  performingLegalEntity   LegalEntity?    @relation("JobPerformingEntity", fields: [performingLegalEntityId], references: [id])
-  engineer                Engineer?       @relation(fields: [engineerId], references: [id])
-  quote                   Quote?          @relation(fields: [quoteId], references: [id])
-  site                    Site            @relation(fields: [siteId], references: [id])
+  client                  Client?          @relation(fields: [clientId], references: [id])
+  company                 Company          @relation(fields: [companyId], references: [id])
+  serviceLine             ServiceLine?     @relation(fields: [serviceLineId], references: [id])
+  performingLegalEntity   LegalEntity?     @relation("JobPerformingEntity", fields: [performingLegalEntityId], references: [id])
+  engineer                Engineer?        @relation(fields: [engineerId], references: [id])
+  quote                   Quote?           @relation(fields: [quoteId], references: [id])
+  site                    Site             @relation(fields: [siteId], references: [id])
   jobBudgetLines          JobBudgetLine[]
   jobStages               JobStage[]
   scheduleEntries         ScheduleEntry[]
@@ -841,7 +871,7 @@ model Job {
   supplierBills           SupplierBill[]
   timeEntries             TimeEntry[]
   variations              Variation[]
-  timesheets              Timesheet[]     @relation("JobTimesheets")
+  timesheets              Timesheet[]      @relation("JobTimesheets")
   jobChecklists           JobChecklist[]
   tasks                   Task[]
   comments                Comment[]
@@ -1277,15 +1307,15 @@ model SnagItem {
 }
 
 model StockItem {
-  id           String   @id
+  id           String       @id
   companyId    String
   sku          String?
   name         String
   unit         String
   defaultCost  Int?
   reorderLevel Int?
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
+  isActive     Boolean      @default(true)
+  createdAt    DateTime     @default(now())
   updatedAt    DateTime
   truckStocks  TruckStock[]
 
@@ -1340,8 +1370,8 @@ model TruckStockLog {
 model StockAlert {
   id        String   @id @default(cuid())
   companyId String
-  type      String   // "truck_stock_low"
-  entityId  String   // TruckStock.id
+  type      String // "truck_stock_low"
+  entityId  String // TruckStock.id
   status    String   @default("open") // "open" | "resolved"
   message   String
   meta      Json?
@@ -1548,7 +1578,7 @@ model User {
   // Company memberships (authoritative for company-scoped permissions)
   memberships               CompanyUser[]            @relation("UserMemberships")
   toolPresets               ToolPreset[]             @relation("UserToolPresets")
-  ramsDocuments             RamsDocument[]            @relation("UserRamsDocs")
+  ramsDocuments             RamsDocument[]           @relation("UserRamsDocs")
   truckStocks               TruckStock[]
 
   @@unique([role, email])
@@ -2027,14 +2057,14 @@ model ImportJob {
 }
 
 model ToolPreset {
-  id        String   @id @default(cuid())
-  companyId String
-  userId    String
-  toolSlug  String
-  name      String
+  id         String   @id @default(cuid())
+  companyId  String
+  userId     String
+  toolSlug   String
+  name       String
   inputsJson Json
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   company Company @relation(fields: [companyId], references: [id])
   user    User    @relation("UserToolPresets", fields: [userId], references: [id])
@@ -2044,30 +2074,30 @@ model ToolPreset {
 }
 
 model RamsDocument {
-  id          String   @id @default(cuid())
-  companyId   String
-  createdById String
-  type        String   // "rams" | "safety-assessment"
-  title       String
-  status      String   @default("draft") // "draft" | "issued" | "superseded"
-  version     Int      @default(1)
-  parentId    String?  // Links to previous version when superseded
-  contentJson Json     // Full document content
-  jobId       String?  // Optional link to job
-  clientId    String?  // Optional link to client
-  preparedBy  String?
-  reviewedBy  String?
-  clientSignedBy   String?
-  clientSignedAt   DateTime?
-  pdfKey      String?  // S3/storage key for generated PDF
-  issuedAt    DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id             String    @id @default(cuid())
+  companyId      String
+  createdById    String
+  type           String // "rams" | "safety-assessment"
+  title          String
+  status         String    @default("draft") // "draft" | "issued" | "superseded"
+  version        Int       @default(1)
+  parentId       String? // Links to previous version when superseded
+  contentJson    Json // Full document content
+  jobId          String? // Optional link to job
+  clientId       String? // Optional link to client
+  preparedBy     String?
+  reviewedBy     String?
+  clientSignedBy String?
+  clientSignedAt DateTime?
+  pdfKey         String? // S3/storage key for generated PDF
+  issuedAt       DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
-  company   Company  @relation(fields: [companyId], references: [id])
-  createdBy User     @relation("UserRamsDocs", fields: [createdById], references: [id])
-  job       Job?     @relation(fields: [jobId], references: [id])
-  client    Client?  @relation(fields: [clientId], references: [id])
+  company   Company        @relation(fields: [companyId], references: [id])
+  createdBy User           @relation("UserRamsDocs", fields: [createdById], references: [id])
+  job       Job?           @relation(fields: [jobId], references: [id])
+  client    Client?        @relation(fields: [clientId], references: [id])
   parent    RamsDocument?  @relation("RamsVersions", fields: [parentId], references: [id])
   children  RamsDocument[] @relation("RamsVersions")
 
@@ -2097,7 +2127,7 @@ model EnquiryKeywordHit {
 model LeadScoringConfig {
   id        String   @id @default(cuid())
   companyId String   @unique
-  config    Json     // { keywords: [{ keyword, points }], priorityThresholds: { high, urgent }, boostRules: [...] }
+  config    Json // { keywords: [{ keyword, points }], priorityThresholds: { high, urgent }, boostRules: [...] }
   updatedAt DateTime @updatedAt
 
   company Company @relation(fields: [companyId], references: [id])
@@ -2122,10 +2152,10 @@ model InstalledAsset {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  company  Company @relation(fields: [companyId], references: [id])
-  client   Client? @relation(fields: [clientId], references: [id])
-  job      Job?    @relation(fields: [jobId], references: [id])
-  alerts   MaintenanceAlert[]
+  company Company            @relation(fields: [companyId], references: [id])
+  client  Client?            @relation(fields: [clientId], references: [id])
+  job     Job?               @relation(fields: [jobId], references: [id])
+  alerts  MaintenanceAlert[]
 
   @@index([companyId, clientId])
   @@index([companyId, jobId])
@@ -2140,7 +2170,7 @@ model MaintenanceRule {
   assetType    String?
   intervalDays Int?
   condition    Json?
-  action       Json?    // { createAlert:true, notifyEmail:true, notifySms:false }
+  action       Json? // { createAlert:true, notifyEmail:true, notifySms:false }
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -2188,4 +2218,46 @@ model AiEstimate {
 
   @@index([companyId, tradeCategory])
   @@index([companyId, createdAt])
+}
+
+// ============================================================================
+// BILLING
+// ============================================================================
+
+model CompanyBilling {
+  id                   String    @id @default(cuid())
+  companyId            String    @unique
+
+  // Stripe identifiers
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+
+  // Subscription state
+  plan                 String    @default("trial")
+  subscriptionStatus   String    @default("inactive")
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean   @default(false)
+
+  // Trial tracking
+  trialStartedAt       DateTime?
+  trialEnd             DateTime?
+
+  // Modules & Add-ons
+  enabledModules       String[]  @default([])
+  extraUsers           Int       @default(0)
+  extraEntities        Int       @default(0)
+  extraStorageMB       Int       @default(0)
+
+  // Webhook tracking (idempotency)
+  lastWebhookEventId   String?
+  lastWebhookAt        DateTime?
+
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  company              Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([stripeCustomerId])
+  @@index([stripeSubscriptionId])
 }
