@@ -1,6 +1,6 @@
 # 16 — Stage H1: AI Maintenance Ops API
 
-**Status:** PENDING
+**Status:** DONE
 
 ## Intent
 AI maintenance: Ops API + controlled actions + audit log (read-only first).
@@ -27,7 +27,7 @@ AI maintenance: Ops API + controlled actions + audit log (read-only first).
 - New Prisma model: `OpsAuditLog`
 
 ## Acceptance Criteria
-- [ ] AI can query status; actions require explicit approval token; every action logged
+- [x] AI can query status; actions require explicit approval token; every action logged
 
 ## Commands
 ```bash
