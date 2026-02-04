@@ -1,6 +1,6 @@
 # 05 — Stage B2: Storage Metering + Plan Caps
 
-**Status:** PENDING
+**Status:** DONE
 
 ## Intent
 Storage metering + plan caps + enforcement (paid storage foundation).
@@ -27,8 +27,8 @@ Storage metering + plan caps + enforcement (paid storage foundation).
 - New Prisma model: `CompanyStorageUsage`
 
 ## Acceptance Criteria
-- [ ] Uploads blocked when cap exceeded (with friendly error)
-- [ ] Reconcile job corrects drift
+- [x] Uploads blocked when cap exceeded (with friendly error)
+- [x] Reconcile job corrects drift
 
 ## Commands
 ```bash
