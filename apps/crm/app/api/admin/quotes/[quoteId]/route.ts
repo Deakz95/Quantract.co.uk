@@ -7,6 +7,7 @@ import * as repo from "@/lib/server/repo";
 import { getRouteParams } from "@/lib/server/routeParams";
 import { getPrisma } from "@/lib/server/prisma";
 import { createUndoToken } from "@/lib/server/undoToken";
+import { addBusinessBreadcrumb } from "@/lib/server/observability";
 
 export async function GET(_: Request, ctx: { params: Promise<{ quoteId: string }> }) {
   const session = await requireRoles("admin");
@@ -53,9 +54,11 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ quoteId: stri
   if (typeof body?.clientId === "string" && body.clientId.trim().length) {
     next = await repo.updateQuoteClient(quoteId, body.clientId.trim());
     if (!next) return NextResponse.json({ ok: false, error: "Client not found" }, { status: 404 });
+    addBusinessBreadcrumb("quote.client_updated", { quoteId });
   } else if (body?.status === "sent") {
     next = await repo.updateQuoteStatusSent(quoteId);
     if (!next) return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });
+    addBusinessBreadcrumb("quote.status_sent", { quoteId });
   } else if (Array.isArray(body?.items)) {
     // Replace line items (stored as JSON on quote)
     const prisma = getPrisma();
@@ -122,6 +125,7 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ quoteId: st
     if (!quote) return NextResponse.json({ ok: false, error: "not_found" }, { status: 404 });
 
     await prisma.quote.update({ where: { id: quoteId }, data: { deletedAt: new Date() } });
+    addBusinessBreadcrumb("quote.deleted", { quoteId });
 
     const undo = createUndoToken(authCtx.companyId, authCtx.userId, "quote", quoteId);
 

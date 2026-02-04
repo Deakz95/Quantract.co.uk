@@ -10,9 +10,17 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 import { useToast } from "@/components/ui/useToast";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/DropdownMenu";
 import { apiRequest, getApiErrorMessage } from "@/lib/apiClient";
 import { getPlanDefinition, isEngineerLimitReached } from "@/lib/billing/plans";
 import { toTitleCase } from "@/lib/cn";
+import { Ellipsis, SquarePen, Eye, UserCog, Activity, Clock, Award, Briefcase } from "lucide-react";
 
 type Engineer = {
   id: string;
@@ -69,6 +77,12 @@ export default function EngineersPageClient() {
   const [rateCost, setRateCost] = useState("");
   const [rateCharge, setRateCharge] = useState("");
   const [rateDefault, setRateDefault] = useState(false);
+
+  // Activity feed state
+  type ActivityItem = { id: string; type: string; entityType: string; action: string; description: string; linkedEntity?: { type: string; id: string; label: string | null } | null; timestamp: string };
+  const [activityItems, setActivityItems] = useState<ActivityItem[]>([]);
+  const [activityFilter, setActivityFilter] = useState("all");
+  const [activityLoading, setActivityLoading] = useState(false);
 
   const { status: billingStatus } = useBillingStatus();
   const planDefinition = getPlanDefinition(billingStatus?.plan);
@@ -135,6 +149,17 @@ export default function EngineersPageClient() {
       }
     };
   }, [load]);
+
+  // Load activity feed when selected engineer changes
+  useEffect(() => {
+    if (!selectedId) return;
+    setActivityLoading(true);
+    fetch(`/api/admin/staff/${selectedId}/activity?type=${activityFilter}&limit=20`)
+      .then(r => r.json())
+      .then(json => { if (json.ok) setActivityItems(json.items || []); })
+      .catch(() => {})
+      .finally(() => setActivityLoading(false));
+  }, [selectedId, activityFilter]);
 
   const toggleActive = useCallback(
     async (engineer: Engineer) => {
@@ -428,19 +453,34 @@ export default function EngineersPageClient() {
                           )}
                         </td>
                         <td className="py-3">
-                          <Badge>{e.isActive === false ? "Inactive" : "Active"}</Badge>
+                          <Badge variant={e.isActive === false ? "secondary" : "success"}>
+                            {e.isActive === false ? "Inactive" : "Active"}
+                          </Badge>
                         </td>
                         <td className="py-3 text-xs text-[var(--muted-foreground)]">{new Date(e.updatedAtISO).toLocaleDateString("en-GB")}</td>
-                        <td className="py-3 text-right space-x-2">
-                          <Button variant="secondary" type="button" onClick={() => toggleActive(e)}>
-                            {e.isActive === false ? "Activate" : "Deactivate"}
-                          </Button>
-                          <Button variant="ghost" type="button" onClick={() => handleImpersonate(e)}>
-                            Impersonate
-                          </Button>
-                          <Button variant="secondary" type="button" onClick={() => setSelectedId(e.id)}>
-                            Details
-                          </Button>
+                        <td className="py-3 text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" type="button" className="h-8 w-8">
+                                <Ellipsis className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => setSelectedId(e.id)}>
+                                <Eye className="w-4 h-4 mr-2" />
+                                Details
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => toggleActive(e)}>
+                                <SquarePen className="w-4 h-4 mr-2" />
+                                {e.isActive === false ? "Activate" : "Deactivate"}
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => handleImpersonate(e)}>
+                                <UserCog className="w-4 h-4 mr-2" />
+                                Impersonate
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </td>
                       </tr>
                     ))}
@@ -563,7 +603,9 @@ export default function EngineersPageClient() {
 
                 <div>
                   <div className="text-xs font-semibold text-[var(--muted-foreground)]">Status</div>
-                  <Badge>{selected.isActive === false ? "Inactive" : "Active"}</Badge>
+                  <Badge variant={selected.isActive === false ? "secondary" : "success"}>
+                    {selected.isActive === false ? "Inactive" : "Active"}
+                  </Badge>
                 </div>
 
                 <div className="text-xs text-[var(--muted-foreground)]">Created {new Date(selected.createdAtISO).toLocaleDateString("en-GB")}</div>
@@ -666,6 +708,73 @@ export default function EngineersPageClient() {
                 </div>
               )}
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Activity Feed */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Activity className="w-4 h-4 text-[var(--primary)]" />
+                <CardTitle>Activity</CardTitle>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {[
+                { key: "all", label: "All", icon: Activity },
+                { key: "jobs", label: "Jobs", icon: Briefcase },
+                { key: "certs", label: "Certs", icon: Award },
+                { key: "timesheets", label: "Time", icon: Clock },
+              ].map(f => (
+                <button
+                  key={f.key}
+                  onClick={() => setActivityFilter(f.key)}
+                  className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                    activityFilter === f.key
+                      ? "bg-[var(--primary)] text-white"
+                      : "bg-[var(--muted)] text-[var(--muted-foreground)] hover:bg-[var(--border)]"
+                  }`}
+                >
+                  <f.icon className="w-3 h-3" />
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          </CardHeader>
+          <CardContent>
+            {!selected ? (
+              <div className="text-xs text-[var(--muted-foreground)]">Select an engineer to see activity.</div>
+            ) : activityLoading ? (
+              <div className="space-y-2">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="h-10 rounded-lg bg-[var(--muted)] animate-pulse" />
+                ))}
+              </div>
+            ) : activityItems.length === 0 ? (
+              <div className="text-xs text-[var(--muted-foreground)]">No activity found for this filter.</div>
+            ) : (
+              <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                {activityItems.map(item => (
+                  <div key={item.id} className="flex items-start gap-2 p-2 rounded-lg border border-[var(--border)] bg-[var(--background)]">
+                    <div className={`mt-0.5 w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
+                      item.type === "timesheet" ? "bg-blue-100 text-blue-600" : "bg-emerald-100 text-emerald-600"
+                    }`}>
+                      {item.type === "timesheet" ? <Clock className="w-3 h-3" /> : <Briefcase className="w-3 h-3" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-[var(--foreground)] truncate">{item.description}</p>
+                      {item.linkedEntity?.label && (
+                        <p className="text-[10px] text-[var(--primary)] truncate">{item.linkedEntity.label}</p>
+                      )}
+                      <p className="text-[10px] text-[var(--muted-foreground)]">
+                        {new Date(item.timestamp).toLocaleDateString("en-GB")} {new Date(item.timestamp).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

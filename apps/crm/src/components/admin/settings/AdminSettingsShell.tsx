@@ -6,11 +6,12 @@ import { usePathname } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
 import { Breadcrumbs, type BreadcrumbItem } from "@/components/ui/Breadcrumbs";
 import { cn } from "@/lib/cn";
-import { Palette, FileText, User, Settings, Briefcase, Receipt, BarChart3, Mail, Inbox, PoundSterling } from "lucide-react";
+import { Palette, FileText, LayoutTemplate, User, Settings, Briefcase, Receipt, BarChart3, Mail, Inbox, PoundSterling } from "lucide-react";
 
 const tabs = [
   { label: "Appearance", href: "/admin/settings/appearance", icon: Palette, desc: "Colors & branding" },
-  { label: "PDF Settings", href: "/admin/settings/pdf", icon: FileText, desc: "Document templates" },
+  { label: "PDF Settings", href: "/admin/settings/pdf", icon: FileText, desc: "Footer & headers" },
+  { label: "PDF Templates", href: "/admin/settings/pdf-templates", icon: LayoutTemplate, desc: "Layout editor" },
   { label: "Legal Entities", href: "/admin/settings/legal-entities", icon: Briefcase, desc: "Billing entities" },
   { label: "Service Lines", href: "/admin/settings/service-lines", icon: Receipt, desc: "Service categories" },
   { label: "Notifications", href: "/admin/settings/notifications", icon: Mail, desc: "SMS & Email" },

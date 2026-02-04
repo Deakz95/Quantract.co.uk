@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/useToast";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
+import { useLoadingTimeout } from "@/hooks/useLoadingTimeout";
 
 type Variation = {
   id: string;
@@ -77,6 +78,8 @@ export default function ClientVariationView({ token }: { token: string }) {
     }
   }
 
+  const loadingTimedOut = useLoadingTimeout(busy && !variation);
+
   if (!variation) {
     return (
       <Card>
@@ -84,8 +87,17 @@ export default function ClientVariationView({ token }: { token: string }) {
           <CardTitle>{busy ? "Loading…" : "Variation not found"}</CardTitle>
         </CardHeader>
         <CardContent>
+          {loadingTimedOut ? (
+            <div className="space-y-2">
+              <p className="text-sm text-[var(--foreground)]">This is taking longer than expected.</p>
+              <p className="text-xs text-[var(--muted-foreground)]">Try refreshing the page or contact support if the problem persists.</p>
+            </div>
+          ) : null}
+          {!busy && !variation ? (
+            <p className="mb-2 text-sm text-[var(--muted-foreground)]">This variation may have been removed or the link may be invalid. Please contact support if you continue to experience issues.</p>
+          ) : null}
           <Button type="button" variant="secondary" onClick={load} disabled={busy}>
-            Retry
+            {busy ? "Loading…" : "Retry"}
           </Button>
         </CardContent>
       </Card>

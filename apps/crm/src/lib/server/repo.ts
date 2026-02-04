@@ -53,7 +53,7 @@ async function getBrandContextForCompanyId(companyId: string): Promise<BrandCont
     return { name: process.env.QT_BRAND_NAME || "Quantract", tagline: process.env.QT_BRAND_TAGLINE || null, logoPngBytes: null };
   }
   const company = await client.company
-    .findUnique({ where: { id: companyId }, select: { brandName: true, brandTagline: true, logoKey: true } })
+    .findUnique({ where: { id: companyId }, select: { brandName: true, brandTagline: true, logoKey: true, themePrimary: true, themeAccent: true, pdfFooterLine1: true, pdfFooterLine2: true, pdfContactDetails: true } })
     .catch(() => null);
   const logoKey = company?.logoKey || null;
   let logoPngBytes: Uint8Array | null = null;
@@ -61,7 +61,16 @@ async function getBrandContextForCompanyId(companyId: string): Promise<BrandCont
     const buf = readUploadBytes(logoKey);
     if (buf) logoPngBytes = new Uint8Array(buf);
   }
-  return { name: company?.brandName || "Quantract", tagline: company?.brandTagline || null, logoPngBytes };
+  return {
+    name: company?.brandName || "Quantract",
+    tagline: company?.brandTagline || null,
+    logoPngBytes,
+    primaryColor: company?.themePrimary || null,
+    accentColor: company?.themeAccent || null,
+    footerLine1: company?.pdfFooterLine1 || null,
+    footerLine2: company?.pdfFooterLine2 || null,
+    contactDetails: company?.pdfContactDetails || null,
+  };
 }
 
 export async function getBrandContextForCurrentCompany(): Promise<BrandContext> {
@@ -3752,7 +3761,10 @@ export async function voidCertificate(id: string): Promise<Certificate | null> {
     .update({ where: { id }, data: { status: "void" } })
     .catch(() => null);
   if (!row) return null;
-  await addAudit({ entityType: "certificate", entityId: id, action: "certificate.voided" as any, actorRole: "admin" });
+  const isAmendment = !!(row as any).amendsCertificateId;
+  const action = isAmendment ? "certificate.amendment_voided" : "certificate.voided";
+  const meta = isAmendment ? { amendsCertificateId: (row as any).amendsCertificateId } : undefined;
+  await addAudit({ entityType: "certificate", entityId: id, action: action as any, actorRole: "admin", meta });
   return toCertificate(row);
 }
 

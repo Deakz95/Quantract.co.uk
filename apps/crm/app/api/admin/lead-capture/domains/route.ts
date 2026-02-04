@@ -4,6 +4,7 @@ import { requireCompanyContext, getEffectiveRole } from "@/lib/serverAuth";
 import { getPrisma } from "@/lib/server/prisma";
 import { withRequestLogging, logError } from "@/lib/server/observability";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
+import { requireEntitlement, EntitlementError } from "@/lib/server/requireEntitlement";
 
 export const runtime = "nodejs";
 
@@ -55,6 +56,9 @@ export const POST = withRequestLogging(async function POST(req: Request) {
     if (effectiveRole !== "admin" && effectiveRole !== "office") {
       return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
     }
+
+    // Entitlement check — custom domains require feature_custom_domain
+    await requireEntitlement("feature_custom_domain");
 
     const client = getPrisma();
     if (!client) {

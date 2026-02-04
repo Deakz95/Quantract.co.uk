@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireCompanyContext, getEffectiveRole } from "@/lib/serverAuth";
 import { getPrisma } from "@/lib/server/prisma";
 import { getRouteParams } from "@/lib/server/routeParams";
+import { randomUUID } from "crypto";
 
 export const runtime = "nodejs";
 
@@ -141,6 +142,19 @@ export async function PUT(
     if (result.count !== 1) {
       return NextResponse.json({ ok: false, error: "Document not found" }, { status: 404 });
     }
+
+    // Audit trail
+    await prisma.auditEvent.create({
+      data: {
+        id: randomUUID(),
+        companyId: authCtx.companyId,
+        entityType: "rams",
+        entityId: id,
+        action: "rams.updated",
+        actorRole: role,
+        meta: { updatedFields: Object.keys(update).filter((k) => k !== "updatedAt") },
+      },
+    }).catch(() => {});
 
     const document = await prisma.ramsDocument.findUnique({ where: { id } });
     return NextResponse.json({ ok: true, data: document });

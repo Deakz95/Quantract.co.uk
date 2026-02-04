@@ -77,6 +77,50 @@ export async function apiFetch(
 }
 
 /**
+ * Authenticated multipart/form-data fetch (for file uploads).
+ * Does NOT set content-type — fetch auto-sets it with the boundary for FormData.
+ */
+export async function apiFetchMultipart(
+  path: string,
+  body: FormData,
+): Promise<Response> {
+  const normalPath = path.startsWith("/") ? path : `/${path}`;
+  const url = `${BASE_URL}${normalPath}`;
+  const token = await getStoredToken();
+
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers["authorization"] = `Bearer ${token}`;
+  }
+
+  const res = await fetch(url, { method: "POST", headers, body });
+
+  if (res.status === 401 && token) {
+    const rotateRes = await fetch(`${BASE_URL}/api/engineer/auth/rotate`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${token}`,
+      },
+    }).catch(() => null);
+
+    if (rotateRes && rotateRes.ok) {
+      const data = await rotateRes.json();
+      if (data?.token) {
+        await setStoredToken(data.token);
+        headers["authorization"] = `Bearer ${data.token}`;
+        return fetch(url, { method: "POST", headers, body });
+      }
+    }
+
+    await clearStoredToken();
+    _onForceLogout?.();
+  }
+
+  return res;
+}
+
+/**
  * Unauthenticated fetch (for health check, login).
  */
 export async function apiPublicFetch(

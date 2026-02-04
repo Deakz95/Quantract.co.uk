@@ -23,6 +23,7 @@
 import { randomBytes } from "node:crypto";
 import { getPrisma } from "@/lib/server/prisma";
 import { writeUploadBytes } from "@/lib/server/storage";
+import { createDocumentForExistingFile } from "@/lib/server/documents";
 import { computeOutcome, explainOutcome } from "./index";
 import {
   buildCanonicalCertSnapshot,
@@ -31,6 +32,7 @@ import {
   type FullCertificateAggregate,
 } from "./canonical";
 import { renderCertificatePdfFromSnapshot } from "@/lib/server/pdf";
+import { addBusinessBreadcrumb } from "@/lib/server/observability";
 
 // ── Types ──
 
@@ -119,6 +121,8 @@ export async function issueCertificate(input: IssueCertificateInput): Promise<Is
 
   const issuedAt = new Date();
 
+  addBusinessBreadcrumb("certificate.issuing", { certificateId, revision: nextRevision, signingHash: signingHash.slice(0, 12) });
+
   // ─── 10. Transaction: create revision + update certificate ───
   await prisma.$transaction(async (tx: any) => {
     // Create immutable revision
@@ -151,16 +155,22 @@ export async function issueCertificate(input: IssueCertificateInput): Promise<Is
       },
     });
 
-    // Audit event
+    // Audit event — distinguish amendment issuance from standard issuance
+    const isAmendment = !!certAny.amendsCertificateId;
     await tx.auditEvent.create({
       data: {
         id: randomBytes(16).toString("hex"),
         companyId,
         entityType: "certificate",
         entityId: certificateId,
-        action: "certificate.issued",
+        action: isAmendment ? "certificate.amendment_issued" : "certificate.issued",
         actorRole: "admin",
-        meta: { revision: nextRevision, signingHash, pdfKey },
+        meta: {
+          revision: nextRevision,
+          signingHash,
+          pdfKey,
+          ...(isAmendment ? { amendsCertificateId: certAny.amendsCertificateId } : {}),
+        },
       },
     });
 
@@ -210,6 +220,25 @@ export async function issueCertificate(input: IssueCertificateInput): Promise<Is
   } catch {
     // non-fatal
   }
+
+  // ─── 12. Create Document row for the certificate PDF ───
+  try {
+    await createDocumentForExistingFile({
+      companyId,
+      type: "certificate_pdf",
+      mimeType: "application/pdf",
+      bytes: pdfBytes,
+      storageKey: pdfKey,
+      originalFilename: `certificate-${certificateId}-rev${nextRevision}.pdf`,
+      createdByUserId: issuedByUserId,
+      skipStorageCap: true, // Certificate is already issued — don't block on storage cap
+    });
+  } catch (err) {
+    // Non-fatal — the certificate is already issued, Document row is a bonus
+    console.error(`[issueCertificate] Document row creation failed for ${pdfKey}:`, err);
+  }
+
+  addBusinessBreadcrumb("certificate.issued", { certificateId, revision: nextRevision, pdfKey });
 
   return { revision: nextRevision, signingHash, pdfKey, pdfChecksum };
 }

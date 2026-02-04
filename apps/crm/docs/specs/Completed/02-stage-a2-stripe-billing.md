@@ -1,6 +1,6 @@
 # 02 — Stage A2: Stripe Billing Wiring
 
-**Status:** PENDING
+**Status:** COMPLETED
 
 ## Intent
 Stripe billing wiring for plans + add-ons (company subscription state).
@@ -21,18 +21,19 @@ Stripe billing wiring for plans + add-ons (company subscription state).
 - No PDF template editor yet
 
 ## API Routes
-- `POST /api/billing/checkout`
-- `POST /api/billing/portal`
+> **Note:** Actual routes use the `/api/admin/billing/*` prefix (not `/api/billing/*`) to align with the CRM's admin route convention.
+- `POST /api/admin/billing/checkout` (spec: `/api/billing/checkout`)
+- `POST /api/admin/billing/portal` (spec: `/api/billing/portal`)
 - `POST /api/webhooks/stripe`
-- `GET /api/billing/me`
+- `GET /api/admin/billing/status` (spec: `/api/billing/me`)
 
 ## Data Model
 - New Prisma model: `CompanyBilling` (1:1 Company)
 
 ## Acceptance Criteria
-- [ ] Company can start a subscription and billing status updates via webhook
-- [ ] Entitlements reflect plan tier automatically
-- [ ] Web + mobile show locked features when plan insufficient
+- [x] Company can start a subscription and billing status updates via webhook
+- [x] Entitlements reflect plan tier automatically
+- [x] Web + mobile show locked features when plan insufficient
 
 ## Commands
 ```bash

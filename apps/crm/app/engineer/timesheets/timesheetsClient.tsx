@@ -45,6 +45,55 @@ export function TimesheetsClient() {
   const weekStartISO = useMemo(() => new Date(weekStart + "T00:00:00.000Z").toISOString(), [weekStart]);
   const locked = timesheet?.status === "approved";
 
+  // Today's date in YYYY-MM-DD for quick presets
+  const todayStr = useMemo(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }, []);
+
+  function applyPreset(preset: "full" | "half") {
+    if (preset === "full") {
+      setStartedAtISO(`${todayStr}T08:00`);
+      setEndedAtISO(`${todayStr}T16:30`);
+      setBreakMinutes("30");
+    } else {
+      setStartedAtISO(`${todayStr}T08:00`);
+      setEndedAtISO(`${todayStr}T12:00`);
+      setBreakMinutes("0");
+    }
+  }
+
+  function copyYesterday() {
+    const yesterday = entries
+      .filter(e => {
+        const d = new Date(e.startedAtISO);
+        const yest = new Date();
+        yest.setDate(yest.getDate() - 1);
+        return d.toDateString() === yest.toDateString();
+      })
+      .sort((a, b) => new Date(b.startedAtISO).getTime() - new Date(a.startedAtISO).getTime());
+
+    if (yesterday.length === 0) {
+      toast({ title: "No entries", description: "No entries found from yesterday to copy." });
+      return;
+    }
+
+    const last = yesterday[0];
+    const start = new Date(last.startedAtISO);
+    const end = last.endedAtISO ? new Date(last.endedAtISO) : null;
+
+    // Shift to today
+    const startH = `${String(start.getHours()).padStart(2, "0")}:${String(start.getMinutes()).padStart(2, "0")}`;
+    setStartedAtISO(`${todayStr}T${startH}`);
+    if (end) {
+      const endH = `${String(end.getHours()).padStart(2, "0")}:${String(end.getMinutes()).padStart(2, "0")}`;
+      setEndedAtISO(`${todayStr}T${endH}`);
+    }
+    setBreakMinutes(String(last.breakMinutes));
+    if (last.jobId) setJobId(last.jobId);
+    if (last.notes) setNotes(last.notes);
+  }
+
   function renderStatusBadge(status?: string) {
     const label = status || "draft";
     const styles: Record<string, string> = {
@@ -60,7 +109,10 @@ export function TimesheetsClient() {
     setLoading(true);
     try {
       const j = await fetch("/api/engineer/jobs").then((r) => r.json());
-      setJobs(j.jobs || j.items || []);
+      const jobList = j.jobs || j.items || [];
+      setJobs(jobList);
+      // Auto-select first job if none selected
+      if (!jobId && jobList.length > 0) setJobId(jobList[0].id);
       const t = await fetch(`/api/engineer/timesheets?weekStart=${encodeURIComponent(weekStartISO)}`).then((r) => r.json());
       setTimesheet(t.timesheet || null);
       setEntries(t.entries || []);
@@ -154,7 +206,22 @@ export function TimesheetsClient() {
       ) : null}
 
       <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4 shadow-sm">
-        <div className="text-sm font-bold text-[var(--foreground)]">Add time entry</div>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="text-sm font-bold text-[var(--foreground)]">Add time entry</div>
+          {!locked && (
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" variant="secondary" size="sm" onClick={() => applyPreset("full")} disabled={loading}>
+                Full Day (08:00–16:30)
+              </Button>
+              <Button type="button" variant="secondary" size="sm" onClick={() => applyPreset("half")} disabled={loading}>
+                Half Day (08:00–12:00)
+              </Button>
+              <Button type="button" variant="secondary" size="sm" onClick={copyYesterday} disabled={loading}>
+                Copy Yesterday
+              </Button>
+            </div>
+          )}
+        </div>
         <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
             <div className="text-xs font-semibold text-[var(--muted-foreground)]">Job</div>
@@ -208,6 +275,7 @@ export function TimesheetsClient() {
                 <TableHead>Start</TableHead>
                 <TableHead>End</TableHead>
                 <TableHead>Break</TableHead>
+                <TableHead>Hours</TableHead>
                 <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
@@ -218,6 +286,11 @@ export function TimesheetsClient() {
                   <TableCell>{e.startedAtISO && !isNaN(new Date(e.startedAtISO).getTime()) ? new Date(e.startedAtISO).toLocaleString() : "—"}</TableCell>
                   <TableCell>{e.endedAtISO && !isNaN(new Date(e.endedAtISO).getTime()) ? new Date(e.endedAtISO).toLocaleString() : "—"}</TableCell>
                   <TableCell>{e.breakMinutes}</TableCell>
+                  <TableCell>
+                    {e.endedAtISO && !isNaN(new Date(e.endedAtISO).getTime())
+                      ? ((new Date(e.endedAtISO).getTime() - new Date(e.startedAtISO).getTime()) / 3600000 - e.breakMinutes / 60).toFixed(1) + "h"
+                      : "—"}
+                  </TableCell>
                   <TableCell>{renderStatusBadge(e.status)}</TableCell>
                 </TableRow>
               ))}

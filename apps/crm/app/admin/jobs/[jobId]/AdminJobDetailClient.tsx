@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/useToast";
 import { Breadcrumbs, type BreadcrumbItem } from "@/components/ui/Breadcrumbs";
 import CompactTimeline from "@/components/admin/CompactTimeline";
+import NextActionPanel from "@/components/admin/NextActionPanel";
 
 function cleanJobTitle(raw?: string | null, jobNumber?: number | null): string {
   const jNum = jobNumber ? `J-${String(jobNumber).padStart(4, "0")}` : null;
@@ -673,6 +674,76 @@ export default function AdminJobDetail({ jobId }: Props) {
               <CompactTimeline jobId={jobId} />
             </CardContent>
           </Card>
+
+          {(() => {
+            const hasInvoices = invoices.length > 0;
+            const hasCerts = certs.length > 0;
+            const allPaid = hasInvoices && invoices.every((i) => i.status === "paid");
+            switch (job.status) {
+              case "new":
+                return (
+                  <NextActionPanel
+                    headline="Next step: schedule this job"
+                    body="Assign an engineer and set a start date to move this job forward."
+                  />
+                );
+              case "scheduled":
+                return (
+                  <NextActionPanel
+                    headline="Job is scheduled"
+                    body={`Waiting for work to begin.${job.engineerEmail ? ` Assigned to ${job.engineerEmail}.` : ""}`}
+                  />
+                );
+              case "in_progress":
+                return (
+                  <NextActionPanel
+                    headline="Work in progress"
+                    body="Mark the job as complete when all work is finished, or raise a variation for scope changes."
+                  />
+                );
+              case "completed":
+                if (!hasCerts && !hasInvoices) {
+                  return (
+                    <NextActionPanel
+                      headline="Job complete — issue certificate or invoice"
+                      body="This job is finished. Create a compliance certificate or a final invoice."
+                    />
+                  );
+                }
+                if (!hasCerts) {
+                  return (
+                    <NextActionPanel
+                      headline="Job complete — certificate needed"
+                      body="An invoice exists but no certificate has been issued yet."
+                    />
+                  );
+                }
+                if (!hasInvoices) {
+                  return (
+                    <NextActionPanel
+                      headline="Job complete — invoice needed"
+                      body="A certificate has been issued. Create a final invoice to bill the client."
+                    />
+                  );
+                }
+                if (!allPaid) {
+                  return (
+                    <NextActionPanel
+                      headline="Awaiting payment"
+                      body="Job is complete and invoiced. Follow up with the client if payment is overdue."
+                    />
+                  );
+                }
+                return (
+                  <NextActionPanel
+                    headline="All done"
+                    body="Job complete, certificate issued, and all invoices paid."
+                  />
+                );
+              default:
+                return null;
+            }
+          })()}
 
           <Card>
             <CardHeader>

@@ -10,6 +10,7 @@ interface CacheEntry<T> {
 
 export interface TtlCache<T> {
   getOrSet(key: string, ttlMs: number, fn: () => Promise<T>): Promise<T>;
+  delete(key: string): void;
   clear(): void;
 }
 
@@ -23,6 +24,9 @@ export function createTtlCache<T>(): TtlCache<T> {
       const value = await fn();
       map.set(key, { value, expiresAt: Date.now() + ttlMs });
       return value;
+    },
+    delete(key: string) {
+      map.delete(key);
     },
     clear() {
       map.clear();

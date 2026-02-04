@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAuthContext, getCompanyId } from "@/lib/serverAuth";
+import { requireAuth } from "@/lib/serverAuth";
 import { getPrisma } from "@/lib/server/prisma";
 import { withRequestLogging } from "@/lib/server/observability";
 import { computeEntitlements, type Entitlements } from "@/lib/entitlements";
@@ -12,16 +12,14 @@ export const runtime = "nodejs";
  *
  * Returns entitlements for the current user's company.
  * Available to any authenticated user (admin, office, engineer, client).
+ * Supports both cookie-based auth (CRM web) and Bearer token auth (mobile apps).
  * This is THE canonical endpoint for all apps to fetch entitlements.
  */
 export const GET = withRequestLogging(async function GET() {
   try {
-    const authCtx = await getAuthContext();
-    if (!authCtx) {
-      return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
-    }
+    const authCtx = await requireAuth();
 
-    const companyId = await getCompanyId();
+    const companyId = authCtx.companyId;
     if (!companyId) {
       // User exists but has no company — return trial entitlements
       const entitlements = computeEntitlements("trial");
@@ -66,6 +64,19 @@ export const GET = withRequestLogging(async function GET() {
       return NextResponse.json({ ok: false, error: "company_not_found" }, { status: 404 });
     }
 
+    // Fetch active entitlement overrides for this company
+    const activeOverrides = await prisma.entitlementOverride.findMany({
+      where: {
+        companyId,
+        revokedAt: null,
+        OR: [
+          { expiresAt: null },
+          { expiresAt: { gt: new Date() } },
+        ],
+      },
+      select: { key: true, value: true },
+    }).catch(() => [] as { key: string; value: string }[]);
+
     // Use billing table if exists, fallback to company fields
     const billing = company.billing;
     const entitlements = computeEntitlements(billing?.plan || company.plan, {
@@ -75,6 +86,7 @@ export const GET = withRequestLogging(async function GET() {
       extraEntities: billing?.extraEntities || 0,
       extraStorageMB: billing?.extraStorageMB || 0,
       trialStartedAt: billing?.trialStartedAt || company.trialStartedAt,
+      adminOverrides: activeOverrides,
     });
 
     return NextResponse.json({

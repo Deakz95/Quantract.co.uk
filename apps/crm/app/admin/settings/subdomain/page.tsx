@@ -38,17 +38,24 @@ export default function SubdomainSettingsPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
+      const payload: Record<string, string> = {};
+      if (canUseSubdomain) payload.subdomain = subdomain;
+      if (canUseCustomDomain) payload.customDomain = customDomain;
+
       const res = await fetch('/api/admin/settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subdomain, customDomain }),
+        body: JSON.stringify(payload),
       });
 
       if (res.ok) {
         toast({ title: 'Settings saved', description: 'Your domain settings have been updated.' });
       } else {
         const data = await res.json();
-        toast({ title: 'Error', description: data.error || 'Failed to save settings', variant: 'destructive' });
+        const msg = data.error === 'upgrade_required'
+          ? `Upgrade to ${data.requiredPlan} to use this feature`
+          : data.error || 'Failed to save settings';
+        toast({ title: 'Error', description: msg, variant: 'destructive' });
       }
     } catch {
       toast({ title: 'Error', description: 'Failed to save settings', variant: 'destructive' });

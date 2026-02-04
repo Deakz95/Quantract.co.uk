@@ -31,7 +31,8 @@ export type BusinessEvent = {
     | "subscription.updated"
     | "subscription.deleted"
     | "subscription.invoice_paid"
-    | "subscription.payment_failed";
+    | "subscription.payment_failed"
+    | "qr_tags.purchased";
   companyId?: string | null;
   userId?: string | null;
   invoiceId?: string | null;
@@ -47,7 +48,12 @@ export type CriticalActionEvent = {
     | "user.invited"
     | "user.deleted"
     | "impersonation.started"
-    | "impersonation.ended";
+    | "impersonation.ended"
+    | "entitlement.override.created"
+    | "entitlement.override.revoked"
+    | "ops.health_check"
+    | "ops.queue_query"
+    | "ops.job_retry";
   companyId?: string | null;
   userId?: string | null;
   actorId?: string | null;
@@ -177,6 +183,25 @@ export function logSecurityEvent(event: SecurityEvent) {
       extra: payload,
     });
   }
+}
+
+/**
+ * Add a Sentry breadcrumb for a business-critical flow step.
+ *
+ * Breadcrumbs are lightweight trail markers that appear in Sentry error/issue
+ * views, making it easy to see what happened before a crash.
+ */
+export function addBusinessBreadcrumb(
+  message: string,
+  data?: Record<string, unknown>,
+  level: "info" | "warning" | "error" = "info",
+) {
+  Sentry.addBreadcrumb({
+    category: "business",
+    message,
+    level,
+    data,
+  });
 }
 
 /**

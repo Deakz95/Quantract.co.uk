@@ -4,11 +4,18 @@ import type { Agreement, Quote, Invoice, Certificate, CertificateTestResult, Cli
 import { quoteTotals } from "@/lib/server/db";
 import { normalizeCertificateData, signatureIsPresent } from "@/lib/certificates";
 import QRCode from "qrcode";
+import { renderFromTemplate, type TemplateLayout } from "@/lib/server/pdfTemplateRenderer";
+import { getPrisma } from "@/lib/server/prisma";
 
 export type BrandContext = {
   name: string;
   tagline?: string | null;
   logoPngBytes?: Uint8Array | null;
+  primaryColor?: string | null;
+  accentColor?: string | null;
+  footerLine1?: string | null;
+  footerLine2?: string | null;
+  contactDetails?: string | null;
 };
 
 type PdfPage = PDFPage;
@@ -21,6 +28,15 @@ export const DEFAULT_BRAND: BrandContext = {
   tagline: process.env.QT_BRAND_TAGLINE || null,
   logoPngBytes: null,
 };
+
+function hexToRgb(hex: string): any {
+  const h = hex.replace("#", "");
+  const r = parseInt(h.substring(0, 2), 16) / 255;
+  const g = parseInt(h.substring(2, 4), 16) / 255;
+  const b = parseInt(h.substring(4, 6), 16) / 255;
+  if (isNaN(r) || isNaN(g) || isNaN(b)) return undefined;
+  return { type: "RGB", red: r, green: g, blue: b };
+}
 
 function pounds(n: number) {
   return `£${n.toFixed(2)}`;
@@ -59,13 +75,61 @@ export async function drawBrandHeader(args: {
     // ignore logo embed failures
   }
 
-  page.drawText(String(b.name || "").toUpperCase(), { x: left, y, size: 18, font: bold });
+  const nameColor = b.primaryColor ? hexToRgb(b.primaryColor) : undefined;
+  page.drawText(String(b.name || "").toUpperCase(), { x: left, y, size: 18, font: bold, ...(nameColor ? { color: nameColor } : {}) });
   y -= 24;
   if (b.tagline) {
     page.drawText(String(b.tagline), { x: left, y, size: 10, font });
     y -= 18;
   }
+
+  // Accent separator line
+  const accentRgb = b.accentColor ? hexToRgb(b.accentColor) : undefined;
+  if (accentRgb) {
+    const pageWidth = page.getWidth();
+    page.drawLine({ start: { x: left, y: y + 4 }, end: { x: pageWidth - left, y: y + 4 }, thickness: 0.75, color: accentRgb });
+    y -= 6;
+  }
+
   return y;
+}
+
+export function drawBrandFooter(args: {
+  page: PdfPage;
+  font: PdfFont;
+  brand?: BrandContext;
+}) {
+  const { page, font, brand } = args;
+  const b = brand ?? DEFAULT_BRAND;
+  const pageWidth = page.getWidth();
+  const centerX = pageWidth / 2;
+  const textColor = b.primaryColor ? hexToRgb(b.primaryColor) : undefined;
+  let footerY = 45;
+
+  const lines: string[] = [];
+  if (b.footerLine1) lines.push(String(b.footerLine1));
+  if (b.footerLine2) lines.push(String(b.footerLine2));
+  if (b.contactDetails) {
+    // contactDetails can be multi-line — split and add each
+    for (const seg of String(b.contactDetails).split("\n")) {
+      const trimmed = seg.trim();
+      if (trimmed) lines.push(trimmed);
+    }
+  }
+
+  if (lines.length === 0) return;
+
+  // Draw from bottom up
+  const fontSize = 7;
+  const lineHeight = fontSize + 4;
+  footerY = 20 + lines.length * lineHeight;
+
+  for (const text of lines) {
+    const approxWidth = text.length * (fontSize * 0.5);
+    const x = Math.max(20, centerX - approxWidth / 2);
+    page.drawText(text, { x, y: footerY, size: fontSize, font, ...(textColor ? { color: textColor } : {}) });
+    footerY -= lineHeight;
+  }
 }
 
 export async function renderQuotePdf(q: Quote, brand?: BrandContext) {
@@ -130,6 +194,8 @@ export async function renderQuotePdf(q: Quote, brand?: BrandContext) {
   page.drawText(`VAT (${Math.round(q.vatRate * 100)}%): ${pounds(vat)}`, { x: col3 - 40, y, size: 10, font: bold });
   y -= 16;
   page.drawText(`Total: ${pounds(total)}`, { x: col3 - 40, y, size: 12, font: bold });
+
+  drawBrandFooter({ page, font, brand });
 
   const bytes = await doc.save();
   return Buffer.from(bytes);
@@ -212,6 +278,8 @@ export async function renderClientAgreementPdf(a: Agreement, brand?: BrandContex
 
   // Footer: page number
   page.drawText("Page 1 of 1", { x: 270, y: 30, size: 8, font });
+
+  drawBrandFooter({ page, font, brand });
 
   const bytes = await doc.save();
   return Buffer.from(bytes);
@@ -339,6 +407,8 @@ export async function renderInvoicePdf(
   y -= 10;
   line(`Status: ${inv.status.toUpperCase()}`, { size: 10, bold: true });
 
+  drawBrandFooter({ page, font, brand });
+
   const bytes = await doc.save();
   return Buffer.from(bytes);
 }
@@ -389,6 +459,8 @@ export async function renderReceiptPdf(input: {
   y -= 10;
   line("Invoice Summary", { bold: true });
   line(`Invoice total: ${pounds(inv.total)}`, { size: 10 });
+
+  drawBrandFooter({ page, font, brand: input.brand });
 
   const bytes = await doc.save();
   return Buffer.from(bytes);
@@ -529,6 +601,8 @@ export async function renderCertificatePdf(input: {
   } else {
     line("Customer: not signed.", { size: 10 });
   }
+
+  drawBrandFooter({ page, font, brand: input.brand });
 
   const bytes = await doc.save();
   return Buffer.from(bytes);
@@ -702,6 +776,8 @@ export async function renderCertificatePdfFromSnapshot(snapshot: {
   // ── Footer ──
   page.drawText("Page 1 of 1", { x: 270, y: 30, size: 8, font });
 
+  drawBrandFooter({ page, font });
+
   const bytes = await doc.save();
   return Buffer.from(bytes);
 }
@@ -793,6 +869,148 @@ export async function renderVariationPdf(input: {
   y -= 16;
   page.drawText(`Total: ${pounds(v.total)}`, { x: col3 - 40, y, size: 12, font: bold });
 
+  drawBrandFooter({ page, font, brand });
+
   const bytes = await doc.save();
   return Buffer.from(bytes);
+}
+
+// ── Check PDF ──
+
+export async function renderCheckPdf(input: {
+  title: string;
+  asset?: { type: string; name: string; identifier?: string | null } | null;
+  items: Array<{
+    title: string;
+    isRequired: boolean;
+    status: string;
+    notes?: string | null;
+    completedBy?: string | null;
+    completedAt?: string | null;
+  }>;
+  notes?: string | null;
+  completedAt?: string | null;
+  brand?: BrandContext;
+}): Promise<Buffer> {
+  const { doc, font, bold } = await newDoc();
+  const page = doc.addPage([595.28, 841.89]); // A4
+  let y = 800;
+  const left = 50;
+
+  const line = (text: string, opts?: { size?: number; bold?: boolean }) => {
+    const size = opts?.size ?? 11;
+    const used = opts?.bold ? bold : font;
+    if (y < 60) return;
+    page.drawText(String(text || "").slice(0, 100), { x: left, y, size, font: used });
+    y -= size + 6;
+  };
+
+  y = await drawBrandHeader({ doc, page, font, bold, brand: input.brand, left, y });
+  line("Vehicle / Asset Check", { size: 14, bold: true });
+  y -= 6;
+
+  line(`Check: ${input.title}`, { size: 11, bold: true });
+  if (input.completedAt) {
+    line(`Completed: ${new Date(input.completedAt).toLocaleString("en-GB")}`, { size: 10 });
+  }
+  y -= 8;
+
+  if (input.asset) {
+    line("Asset", { bold: true });
+    line(`Type: ${input.asset.type.charAt(0).toUpperCase() + input.asset.type.slice(1)}`, { size: 10 });
+    line(`Name: ${input.asset.name}`, { size: 10 });
+    if (input.asset.identifier) {
+      line(`Identifier: ${input.asset.identifier}`, { size: 10 });
+    }
+    y -= 8;
+  }
+
+  line("Check Items", { bold: true });
+  y -= 4;
+
+  const colTitle = left;
+  const colReq = 300;
+  const colStatus = 370;
+  const colNotes = 440;
+
+  page.drawText("Item", { x: colTitle, y, size: 9, font: bold });
+  page.drawText("Required", { x: colReq, y, size: 9, font: bold });
+  page.drawText("Status", { x: colStatus, y, size: 9, font: bold });
+  page.drawText("Notes", { x: colNotes, y, size: 9, font: bold });
+  y -= 16;
+
+  for (const item of input.items) {
+    if (y < 80) break;
+    page.drawText(item.title.slice(0, 50), { x: colTitle, y, size: 9, font });
+    page.drawText(item.isRequired ? "Yes" : "No", { x: colReq, y, size: 9, font });
+    const statusLabel = item.status === "completed" ? "Pass" : item.status === "na" ? "N/A" : "Pending";
+    page.drawText(statusLabel, { x: colStatus, y, size: 9, font });
+    if (item.notes) {
+      page.drawText(item.notes.slice(0, 20), { x: colNotes, y, size: 8, font });
+    }
+    y -= 14;
+  }
+
+  y -= 6;
+  const passCount = input.items.filter((i) => i.status === "completed").length;
+  const naCount = input.items.filter((i) => i.status === "na").length;
+  const pendCount = input.items.filter((i) => i.status === "pending").length;
+  line(`Summary: ${passCount} passed, ${naCount} N/A, ${pendCount} pending (${input.items.length} total)`, { size: 10 });
+
+  if (input.notes) {
+    y -= 6;
+    line("Notes", { bold: true });
+    line(input.notes.slice(0, 200), { size: 10 });
+  }
+
+  drawBrandFooter({ page, font, brand: input.brand });
+
+  const bytes = await doc.save();
+  return Buffer.from(bytes);
+}
+
+// ── Template Integration ──
+
+/**
+ * Resolve the active template version layout for a given company + docType.
+ * Returns null if no default template exists (fallback to hardcoded rendering).
+ */
+export async function getActiveTemplateLayout(
+  companyId: string,
+  docType: string,
+): Promise<{ layout: TemplateLayout; versionId: string } | null> {
+  const client = getPrisma();
+  if (!client) return null;
+
+  const template = await client.pdfTemplate
+    .findFirst({
+      where: { companyId, docType, isDefault: true },
+      include: { versions: { orderBy: { version: "desc" }, take: 1 } },
+    })
+    .catch(() => null);
+
+  if (!template || template.versions.length === 0) return null;
+
+  const latest = template.versions[0];
+  return { layout: latest.layout as unknown as TemplateLayout, versionId: latest.id };
+}
+
+/**
+ * Try to render a PDF using the company's custom template.
+ * Returns the PDF buffer on success, or null on failure (caller should fallback to hardcoded).
+ */
+export async function tryRenderWithTemplate(
+  companyId: string,
+  docType: string,
+  data: Record<string, unknown>,
+  brand?: BrandContext,
+): Promise<Buffer | null> {
+  try {
+    const result = await getActiveTemplateLayout(companyId, docType);
+    if (!result) return null;
+    return await renderFromTemplate(result.layout, data, brand);
+  } catch (e) {
+    console.warn(`[pdf] Template render failed for ${docType}, falling back to hardcoded:`, e);
+    return null;
+  }
 }

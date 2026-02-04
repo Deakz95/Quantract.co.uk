@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { OnboardingChecklist } from "@/components/admin/OnboardingChecklist";
 import JobsMap from "@/components/admin/JobsMap";
 import NeedsAttention from "@/components/admin/NeedsAttention";
+import { SystemHealthWidget } from "@/components/admin/dashboard/SystemHealthWidget";
 import {
   FileText,
   Receipt,
@@ -37,7 +38,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { getCached, setCached } from "@/lib/client/swrCache";
 import { toTitleCase } from "@/lib/cn";
 
-type WidgetType = 'stats' | 'quickActions' | 'recentActivity' | 'teamOverview' | 'performance' | 'calendar' | 'invoiceChart' | 'jobsMap' | 'revenue' | 'breakEven' | 'needsAttention' | 'lowStock' | 'maintenanceAlerts' | 'recentStockChanges';
+type WidgetType = 'stats' | 'quickActions' | 'recentActivity' | 'teamOverview' | 'performance' | 'calendar' | 'invoiceChart' | 'jobsMap' | 'revenue' | 'breakEven' | 'needsAttention' | 'lowStock' | 'maintenanceAlerts' | 'recentStockChanges' | 'systemHealth';
 
 type Widget = {
   id: string;
@@ -176,6 +177,7 @@ const AVAILABLE_WIDGETS: Widget[] = [
   { id: 'lowStock', type: 'lowStock', title: 'Low Stock', description: 'Truck stock items below minimum', size: 'small' },
   { id: 'maintenanceAlerts', type: 'maintenanceAlerts', title: 'Maintenance Alerts', description: 'Open maintenance alerts', size: 'small' },
   { id: 'recentStockChanges', type: 'recentStockChanges', title: 'Recent Stock Changes', description: 'Latest truck stock movements', size: 'medium' },
+  { id: 'systemHealth', type: 'systemHealth', title: 'System Health', description: 'Error rates, webhook and cron status', size: 'small' },
 ];
 
 const quickActions = [
@@ -1970,6 +1972,8 @@ export default function DashboardPage() {
         return <MaintenanceAlertsWidget data={dashboardState.widgetsData} loading={secLoading} />;
       case 'recentStockChanges':
         return <RecentStockChangesWidget data={dashboardState.widgetsData} loading={secLoading} />;
+      case 'systemHealth':
+        return <SystemHealthWidget />;
       default:
         return null;
     }

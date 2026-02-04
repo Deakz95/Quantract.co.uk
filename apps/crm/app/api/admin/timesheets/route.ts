@@ -30,6 +30,7 @@ export const GET = withRequestLogging(async function GET(req: Request) {
       orderBy: { weekStart: "desc" },
       include: {
         engineer: { select: { id: true, name: true, email: true } },
+        timeEntries: { select: { startedAt: true, endedAt: true, breakMinutes: true } },
       },
     });
 

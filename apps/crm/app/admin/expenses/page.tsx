@@ -5,6 +5,7 @@ import { AppShell } from "@/components/AppShell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { getStatusBadgeProps } from "@/lib/statusConfig";
 import { Receipt, ArrowUpRight, FileText, Clock, Briefcase, CheckCircle2 } from "lucide-react";
 
 type ArrowUpRightResult = { storageKey: string; filename: string; mimeType?: string; sizeBytes?: number };
@@ -188,12 +189,8 @@ function ExpenseCard({
   }, [e.id, e.updatedAt]);
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, "success" | "warning" | "secondary"> = {
-      confirmed: "success",
-      parsed: "warning",
-      pending: "secondary",
-    };
-    return <Badge variant={variants[status?.toLowerCase()] || "secondary"}>{status || 'Pending'}</Badge>;
+    const { label, variant } = getStatusBadgeProps("expense", status);
+    return <Badge variant={variant}>{label}</Badge>;
   };
 
   return (

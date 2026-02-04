@@ -83,10 +83,31 @@ declare module "lucide-react" {
   export const Lock: LucideIcon;
   export const HelpCircle: LucideIcon;
 
+  // Storage metering
+  export const Database: LucideIcon;
+  export const ArrowUpRight: LucideIcon;
+
   // Icons for skeleton loading and DataTable
   export const SquarePen: LucideIcon;
   export const Copy: LucideIcon;
   export const Ellipsis: LucideIcon;
   export const UserCog: LucideIcon;
   export const KeyRound: LucideIcon;
+  export const Printer: LucideIcon;
+  export const QrCode: LucideIcon;
+  export const ShoppingCart: LucideIcon;
+  export const ClipboardCheck: LucideIcon;
+  export const Truck: LucideIcon;
+
+  // PDF template editor
+  export const LayoutTemplate: LucideIcon;
+  export const Save: LucideIcon;
+  export const Minus: LucideIcon;
+  export const Square: LucideIcon;
+  export const Table: LucideIcon;
+  export const Image: LucideIcon;
+  export const Type: LucideIcon;
+  export const Loader2: LucideIcon;
+  export const Star: LucideIcon;
+  export const BarChart3: LucideIcon;
 }

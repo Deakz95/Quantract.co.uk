@@ -3,6 +3,7 @@ import { requireRoles } from "@/lib/serverAuth";
 import { quoteTotals } from "@/lib/server/db";
 import * as repo from "@/lib/server/repo";
 import { getRouteParams } from "@/lib/server/routeParams";
+import { addBusinessBreadcrumb } from "@/lib/server/observability";
 
 export async function POST(_: Request, ctx: { params: Promise<{ quoteId: string }> }) {
   const session = await requireRoles("admin");
@@ -31,6 +32,7 @@ export async function POST(_: Request, ctx: { params: Promise<{ quoteId: string 
   }
 
   // Accept via the token-based function (reuses all side-effects: agreement, invoice, job)
+  addBusinessBreadcrumb("quote.accepted", { quoteId: q.id });
   const accepted = await repo.acceptQuoteByToken(q.token);
   if (!accepted) {
     return NextResponse.json({ ok: false, error: "accept_failed" }, { status: 500 });

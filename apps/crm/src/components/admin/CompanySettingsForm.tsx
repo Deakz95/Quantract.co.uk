@@ -21,6 +21,7 @@ type CompanySettings = {
   themeText: string;
   pdfFooterLine1?: string | null;
   pdfFooterLine2?: string | null;
+  pdfContactDetails?: string | null;
   defaultVatRate: number;
   defaultPaymentTermsDays?: number;
   autoChaseEnabled?: boolean;
@@ -158,6 +159,7 @@ export function CompanySettingsForm(props: { mode: "settings" | "onboarding" }) 
           themeText: form.themeText,
           pdfFooterLine1: form.pdfFooterLine1,
           pdfFooterLine2: form.pdfFooterLine2,
+          pdfContactDetails: form.pdfContactDetails,
           defaultPaymentTermsDays: form.defaultPaymentTermsDays ?? 14,
           autoChaseEnabled: Boolean(form.autoChaseEnabled),
           markJobCompletedOnCertIssue: Boolean(form.markJobCompletedOnCertIssue),
@@ -545,6 +547,17 @@ export function CompanySettingsForm(props: { mode: "settings" | "onboarding" }) 
                 placeholder="e.g. Address • Phone • Email"
               />
             </div>
+          </div>
+          <div className="mt-4 space-y-2">
+            <label className="text-sm font-medium text-[var(--foreground)]">Contact Details</label>
+            <textarea
+              rows={3}
+              value={form.pdfContactDetails ?? ""}
+              onChange={(e) => setForm({ ...form, pdfContactDetails: e.target.value || null })}
+              placeholder={"e.g. 123 Main Street, London\nPhone: 020 1234 5678\nEmail: info@example.com"}
+              className="w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)] resize-y"
+            />
+            <p className="text-xs text-[var(--muted-foreground)]">Multi-line contact details shown at the bottom of generated PDFs</p>
           </div>
         </CardContent>
       </Card>

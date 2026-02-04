@@ -10,11 +10,13 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 import { useToast } from "@/components/ui/useToast";
 import { apiRequest, getApiErrorMessage, requireOk } from "@/lib/apiClient";
+import { getStatusBadgeProps } from "@/lib/statusConfig";
 import { BadgeCheck, Plus, ExternalLink, FileText, Briefcase, Download, BarChart3, AlertTriangle } from "lucide-react";
 import { CERTIFICATE_TYPES } from "@/lib/certificates";
 
 type Job = {
   id: string;
+  jobNumber?: string;
   clientName: string;
   status: string;
   siteAddress?: string;
@@ -476,10 +478,10 @@ export default function CertificatesPageClient() {
                     {jobs.map((j) => {
                       const label = j.client?.name || j.clientName || "Unnamed";
                       const site = j.site?.name || j.siteAddress || "";
-                      const shortId = j.id.slice(0, 8);
+                      const ref = j.jobNumber || `J-${j.id.slice(0, 8)}`;
                       return (
                         <option key={j.id} value={j.id}>
-                          {label}{site ? ` — ${site}` : ""} — {j.status} (#{shortId})
+                          {ref} — {label}{site ? ` — ${site}` : ""} — {j.status}
                         </option>
                       );
                     })}
@@ -536,8 +538,8 @@ export default function CertificatesPageClient() {
                         <div>
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-semibold text-[var(--foreground)]">{cert.type}</span>
-                            <Badge variant={cert.status === "issued" ? "success" : cert.status === "completed" ? "secondary" : "outline"}>
-                              {cert.status}
+                            <Badge variant={getStatusBadgeProps("certificate", cert.status).variant}>
+                              {getStatusBadgeProps("certificate", cert.status).label}
                             </Badge>
                           </div>
                           <div className="mt-1 text-xs text-[var(--muted-foreground)]">

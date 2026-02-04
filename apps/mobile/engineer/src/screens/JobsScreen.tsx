@@ -21,6 +21,7 @@ export default function JobsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [query, setQuery] = useState("");
+  const [offline, setOffline] = useState(false);
 
   const fetchJobs = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true); else setLoading(true);
@@ -30,11 +31,15 @@ export default function JobsScreen() {
       if (data?.ok && Array.isArray(data.jobs)) {
         setJobs(data.jobs);
         setCachedJobs(data.jobs);
+        setOffline(false);
       }
     } catch {
       if (!isRefresh) {
         const cached = await getCachedJobs();
-        if (cached) setJobs(cached);
+        if (cached) {
+          setJobs(cached);
+          setOffline(true);
+        }
       }
     } finally {
       setLoading(false);
@@ -104,6 +109,12 @@ export default function JobsScreen() {
 
   return (
     <View style={styles.container}>
+      {offline ? (
+        <View style={styles.offlineBanner}>
+          <Text style={styles.offlineBannerText}>Offline — showing cached data</Text>
+        </View>
+      ) : null}
+
       <View style={styles.searchWrap}>
         <TextInput
           style={styles.searchInput}
@@ -178,4 +189,15 @@ const styles = StyleSheet.create({
   badgeText: { fontSize: 11, fontWeight: "600", color: "#334155", textTransform: "capitalize" },
   sub: { fontSize: 13, color: "#64748b", marginTop: 3 },
   emptyText: { fontSize: 15, color: "#94a3b8" },
+  offlineBanner: {
+    backgroundColor: "#fef3c7",
+    marginHorizontal: 12,
+    marginTop: 12,
+    borderRadius: 10,
+    padding: 10,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#fcd34d",
+  },
+  offlineBannerText: { fontSize: 12, fontWeight: "600", color: "#92400e" },
 });

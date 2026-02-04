@@ -4,6 +4,7 @@ import { withRequestLogging } from "@/lib/server/observability";
 import { getRouteParams } from "@/lib/server/routeParams";
 import bcrypt from "bcryptjs";
 import { upsertUserByRoleEmail } from "@/lib/server/authDb";
+import { getClientIp, rateLimit } from "@/lib/server/rateLimit";
 
 export const runtime = "nodejs";
 
@@ -12,7 +13,19 @@ function normEmail(email: string) {
 }
 
 export const POST = withRequestLogging(async function POST(req: Request, ctx: { params: Promise<{ token: string }> }) {
+  // Rate limit invite acceptance per-IP + per-token to prevent brute-force
+  const ip = getClientIp(req);
+  const ipRl = rateLimit({ key: `invite:accept:ip:${ip}`, limit: 5, windowMs: 15 * 60 * 1000 });
+  if (!ipRl.ok) {
+    return NextResponse.json({ ok: false, error: "Too many requests" }, { status: 429 });
+  }
+
   const { token } = await getRouteParams(ctx);
+
+  const tokenRl = rateLimit({ key: `invite:accept:token:${token}`, limit: 5, windowMs: 15 * 60 * 1000 });
+  if (!tokenRl.ok) {
+    return NextResponse.json({ ok: false, error: "Too many attempts for this invite" }, { status: 429 });
+  }
   const invite = await prisma.invite.findUnique({ where: { token } });
   if (!invite) return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });
   if (invite.usedAt) return NextResponse.json({ ok: false, error: "Already used" }, { status: 410 });

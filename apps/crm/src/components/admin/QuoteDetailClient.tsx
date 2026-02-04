@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Breadcrumbs, type BreadcrumbItem } from "@/components/ui/Breadcrumbs";
+import NextActionPanel from "@/components/admin/NextActionPanel";
 
 const AUDIT_LABELS: Record<string, string> = {
   "quote.created": "Quote created",
@@ -403,6 +404,35 @@ export default function QuoteDetailClient({ quoteId }: { quoteId: string }) {
   return (
     <div className="grid gap-4">
       <Breadcrumbs items={breadcrumbItems} />
+
+      {quote.status === "draft" ? (
+        <NextActionPanel
+          headline="Next step: review and send"
+          body="This quote is in draft. Review the line items and send it to the client when ready."
+          actions={[{ label: "Send email", onClick: sendEmail }]}
+        />
+      ) : quote.status === "sent" ? (
+        <NextActionPanel
+          headline="Awaiting client response"
+          body="The quote has been sent. The client can accept or decline via the share link."
+        />
+      ) : quote.status === "accepted" ? (
+        <NextActionPanel
+          headline="Quote accepted — create a job"
+          body="The client accepted this quote. Convert it to a job to begin scheduling work."
+          actions={[
+            { label: "Convert to job", onClick: convertToJob },
+            { label: "Convert to invoice", onClick: convertToInvoice },
+          ]}
+        />
+      ) : quote.status === "rejected" ? (
+        <NextActionPanel
+          headline="Quote rejected"
+          body="The client declined this quote. You can duplicate and revise it, or archive it."
+          actions={[{ label: "Duplicate quote", onClick: duplicateQuote }]}
+        />
+      ) : null}
+
       <Card>
         <CardHeader className="flex items-start justify-between gap-3 sm:flex-row">
           <div>
@@ -721,7 +751,7 @@ export default function QuoteDetailClient({ quoteId }: { quoteId: string }) {
         title="Reject this quote?"
         description={
           <div className="space-y-3">
-            <p>The quote will be marked as rejected. This action cannot be undone.</p>
+            <p>The quote will be marked as rejected. You can duplicate and revise it later if needed.</p>
             <div>
               <label className="text-xs font-semibold text-[var(--muted-foreground)]">Rejection reason (optional)</label>
               <textarea

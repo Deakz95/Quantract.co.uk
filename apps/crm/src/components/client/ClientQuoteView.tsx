@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/useToast";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
+import { useLoadingTimeout } from "@/hooks/useLoadingTimeout";
 
 type Quote = {
   id: string;
@@ -87,6 +88,7 @@ export default function ClientQuoteView({ token }: { token: string }) {
   }
 
   const canAccept = quote && quote.status !== "accepted";
+  const loadingTimedOut = useLoadingTimeout(loading);
 
   if (loading) {
     return (
@@ -95,11 +97,19 @@ export default function ClientQuoteView({ token }: { token: string }) {
           <CardTitle>Loading Quote...</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3 animate-pulse">
-            <div className="h-4 bg-[var(--muted)] rounded w-3/4"></div>
-            <div className="h-4 bg-[var(--muted)] rounded w-1/2"></div>
-            <div className="h-32 bg-[var(--muted)] rounded"></div>
-          </div>
+          {loadingTimedOut ? (
+            <div className="text-center py-4">
+              <p className="text-sm text-[var(--foreground)]">This is taking longer than expected.</p>
+              <p className="mt-1 text-xs text-[var(--muted-foreground)]">Try refreshing the page or contact support if the problem persists.</p>
+              <button type="button" onClick={() => window.location.reload()} className="mt-3 text-xs font-medium text-[var(--primary)] hover:underline">Refresh page</button>
+            </div>
+          ) : (
+            <div className="space-y-3 animate-pulse">
+              <div className="h-4 bg-[var(--muted)] rounded w-3/4"></div>
+              <div className="h-4 bg-[var(--muted)] rounded w-1/2"></div>
+              <div className="h-32 bg-[var(--muted)] rounded"></div>
+            </div>
+          )}
         </CardContent>
       </Card>
     );

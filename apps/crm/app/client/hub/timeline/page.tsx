@@ -9,7 +9,7 @@ import Link from "next/link";
 type TimelineItem = {
   id: string;
   ts: string;
-  type: "job" | "invoice" | "certificate";
+  type: "job" | "job_completed" | "invoice" | "invoice_paid" | "certificate" | "quote";
   title: string;
   subtitle?: string;
   status: string;
@@ -18,30 +18,36 @@ type TimelineItem = {
   pdfHref?: string;
 };
 
-type FilterKey = "all" | "job" | "invoice" | "certificate";
+type FilterKey = "all" | "job" | "invoice" | "certificate" | "quote";
 
 const FILTER_PILLS: { key: FilterKey; label: string }[] = [
   { key: "all", label: "All" },
   { key: "job", label: "Work" },
   { key: "certificate", label: "Certificates" },
   { key: "invoice", label: "Invoices" },
+  { key: "quote", label: "Quotes" },
 ];
 
 const TYPE_CONFIG: Record<string, { color: string; label: string; icon: string }> = {
   job: { color: "#f97316", label: "Job", icon: "🔧" },
+  job_completed: { color: "#16a34a", label: "Work Completed", icon: "🏁" },
   invoice: { color: "#8b5cf6", label: "Invoice", icon: "📄" },
+  invoice_paid: { color: "#16a34a", label: "Payment", icon: "💷" },
   certificate: { color: "#10b981", label: "Certificate", icon: "✅" },
+  quote: { color: "#9333ea", label: "Quote", icon: "📋" },
 };
 
 const STATUS_COLORS: Record<string, string> = {
   completed: "#16a34a",
   issued: "#16a34a",
   paid: "#16a34a",
+  accepted: "#16a34a",
   sent: "#2563eb",
   in_progress: "#ea580c",
   scheduled: "#2563eb",
   quoted: "#9333ea",
   overdue: "#dc2626",
+  closed: "#6b7280",
 };
 
 function formatDate(iso: string) {
@@ -110,7 +116,13 @@ export default function TimelinePage() {
   useEffect(() => { load(); }, [load]);
 
   const filtered = useMemo(
-    () => filter === "all" ? items : items.filter((i) => i.type === filter),
+    () => {
+      if (filter === "all") return items;
+      // Group sub-types with their parent filter
+      if (filter === "job") return items.filter((i) => i.type === "job" || i.type === "job_completed");
+      if (filter === "invoice") return items.filter((i) => i.type === "invoice" || i.type === "invoice_paid");
+      return items.filter((i) => i.type === filter);
+    },
     [items, filter],
   );
 
@@ -132,8 +144,13 @@ export default function TimelinePage() {
 
   // Counts for pills
   const counts = useMemo(() => {
-    const c: Record<string, number> = { all: items.length, job: 0, invoice: 0, certificate: 0 };
-    for (const i of items) c[i.type] = (c[i.type] || 0) + 1;
+    const c: Record<string, number> = { all: items.length, job: 0, invoice: 0, certificate: 0, quote: 0 };
+    for (const i of items) {
+      // Group sub-types under their parent filter key
+      if (i.type === "job_completed") c.job = (c.job || 0) + 1;
+      else if (i.type === "invoice_paid") c.invoice = (c.invoice || 0) + 1;
+      else c[i.type] = (c[i.type] || 0) + 1;
+    }
     return c;
   }, [items]);
 

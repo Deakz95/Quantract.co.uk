@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { ChevronDown, ChevronUp, Download, Shield, CheckCircle2 } from "lucide-react";
+import { useLoadingTimeout } from "@/hooks/useLoadingTimeout";
 
 type Invoice = {
   id: string;
@@ -192,6 +193,8 @@ export default function ClientInvoiceView({ token }: { token: string }) {
     );
   }
 
+  const loadingTimedOut = useLoadingTimeout(!inv && !fetchError);
+
   if (!inv) {
     return (
       <Card>
@@ -199,7 +202,15 @@ export default function ClientInvoiceView({ token }: { token: string }) {
           <CardTitle>Invoice</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-sm text-[var(--muted-foreground)]">Loading...</div>
+          {loadingTimedOut ? (
+            <div className="text-center py-4">
+              <p className="text-sm text-[var(--foreground)]">This is taking longer than expected.</p>
+              <p className="mt-1 text-xs text-[var(--muted-foreground)]">Try refreshing the page or contact your contractor if the problem persists.</p>
+              <button type="button" onClick={() => window.location.reload()} className="mt-3 text-xs font-medium text-[var(--primary)] hover:underline">Refresh page</button>
+            </div>
+          ) : (
+            <div className="text-sm text-[var(--muted-foreground)]">Loading...</div>
+          )}
         </CardContent>
       </Card>
     );

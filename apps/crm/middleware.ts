@@ -86,11 +86,17 @@ function isPublicPath(pathname: string) {
   // Public certificate verification
   if (pathname.startsWith("/verify/")) return true;
 
+  // Public QR resolver
+  if (pathname.startsWith("/q/")) return true;
+
   // Remote assist join page (public, token-authenticated)
   if (pathname.startsWith("/assist/")) return true;
 
   // Cron endpoints (protected by CRON_SECRET header)
   if (pathname.startsWith("/api/cron/")) return true;
+
+  // Ops API endpoints (protected by OPS_SECRET Bearer token)
+  if (pathname.startsWith("/api/ops/")) return true;
 
   // Webhooks / health (if any)
   if (pathname === "/api/health" || pathname.startsWith("/api/health/")) return true;
@@ -175,6 +181,22 @@ export async function middleware(req: NextRequest) {
 
   const requestId = req.headers.get("x-request-id") ?? makeId();
 
+  // ── Rate limit + noindex for public /q/ paths (QR resolver) ──
+  if (pathname.startsWith("/q/")) {
+    rlCleanup();
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    const rl = edgeRateLimit(ip, "qr-resolve", 30, 60_000); // 30 per minute
+    if (!rl.ok) {
+      return new NextResponse(JSON.stringify({ ok: false, error: "Too many requests" }), {
+        status: 429,
+        headers: {
+          "content-type": "application/json",
+          "retry-after": String(rl.retryAfter),
+        },
+      });
+    }
+  }
+
   // ── Rate limit + noindex for public /verify/ paths ──
   if (pathname.startsWith("/verify/")) {
     rlCleanup();
@@ -208,8 +230,8 @@ export async function middleware(req: NextRequest) {
     res.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
   }
 
-  // Noindex for /verify/ pages
-  if (pathname.startsWith("/verify/")) {
+  // Noindex for /verify/ and /q/ pages
+  if (pathname.startsWith("/verify/") || pathname.startsWith("/q/")) {
     res.headers.set("x-robots-tag", "noindex, nofollow");
   }
 

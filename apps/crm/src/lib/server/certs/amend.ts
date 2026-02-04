@@ -10,6 +10,7 @@
 
 import { randomBytes } from "node:crypto";
 import { getPrisma } from "@/lib/server/prisma";
+import { addBusinessBreadcrumb } from "@/lib/server/observability";
 
 // ── Types ──
 
@@ -161,6 +162,12 @@ export async function createCertificateAmendment(
         },
       },
     });
+  });
+
+  addBusinessBreadcrumb("certificate.amendment_created", {
+    amendmentId,
+    originalCertificateId: certificateId,
+    originalCertificateNumber: original.certificateNumber,
   });
 
   return { amendmentId };

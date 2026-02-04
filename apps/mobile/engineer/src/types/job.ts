@@ -50,4 +50,18 @@ export type JobCert = {
   status: string;
   certificateNumber: string | null;
   completedAtISO: string | null;
+  updatedAtISO: string | null;
+  documentId: string | null;
+  externalUrl: string | null;
+};
+
+export type CostItem = {
+  id: string;
+  type: string;
+  description: string;
+  supplier: string | null;
+  quantity: number;
+  unitCost: number;
+  totalCost: number;
+  createdAtISO: string;
 };

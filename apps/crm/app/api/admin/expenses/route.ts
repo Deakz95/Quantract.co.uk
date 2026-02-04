@@ -12,7 +12,11 @@ export async function GET() {
 
     const items = await prisma.expense.findMany({
       where: { companyId: ctx.companyId },
-      include: { supplier: true },
+      include: {
+        supplier: true,
+        document: { select: { id: true, mimeType: true, originalFilename: true, sizeBytes: true } },
+        createdBy: { select: { id: true, name: true, email: true } },
+      },
       orderBy: { createdAt: "desc" }
     });
 
@@ -52,8 +56,17 @@ export async function POST(req: Request) {
         amount: body.amount || null,
         expenseDate: body.expenseDate ? new Date(body.expenseDate) : null,
         attachmentKey: body.attachmentKey || null,
+        supplierName: body.supplierName || null,
+        receiptDate: body.receiptDate ? new Date(body.receiptDate) : null,
+        subtotal: body.subtotal ?? null,
+        vat: body.vat ?? null,
+        total: body.total ?? null,
+        documentId: body.documentId || null,
       },
-      include: { supplier: true }
+      include: {
+        supplier: true,
+        document: { select: { id: true, mimeType: true, originalFilename: true, sizeBytes: true } },
+      }
     });
 
     return NextResponse.json({ ok: true, data: expense });

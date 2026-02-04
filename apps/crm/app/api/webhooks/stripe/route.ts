@@ -2,12 +2,14 @@ import { NextResponse } from "next/server";
 import { getStripe } from "@/lib/server/stripe";
 import * as repo from "@/lib/server/repo";
 import { getPrisma } from "@/lib/server/prisma";
-import { logBusinessEvent, withRequestLogging } from "@/lib/server/observability";
+import { logBusinessEvent, addBusinessBreadcrumb, withRequestLogging } from "@/lib/server/observability";
+import { getClientIp, rateLimit } from "@/lib/server/rateLimit";
 import {
   syncSubscriptionToBilling,
   handlePaymentFailed,
   refreshAndSyncSubscription,
 } from "@/lib/server/billing/syncSubscription";
+import { randomBytes } from "crypto";
 import type Stripe from "stripe";
 
 export const runtime = "nodejs";
@@ -39,6 +41,15 @@ function getCompanyIdFromSubscription(sub: Stripe.Subscription): string | null {
   return null;
 }
 export const POST = withRequestLogging(async function POST(req: Request) {
+  // Rate limit per-IP to guard against replay/flood. High burst tolerance
+  // (200/min) to avoid blocking legitimate Stripe webhook bursts.
+  // Signature verification still validates authenticity.
+  const ip = getClientIp(req);
+  const rl = rateLimit({ key: `webhook:stripe:ip:${ip}`, limit: 200, windowMs: 60 * 1000 });
+  if (!rl.ok) {
+    return NextResponse.json({ ok: false, error: "rate_limited" }, { status: 429 });
+  }
+
   const stripe = getStripe();
   if (!stripe) {
     logBusinessEvent({
@@ -95,6 +106,7 @@ export const POST = withRequestLogging(async function POST(req: Request) {
   }
   try {
     const eventId = event.id;
+    addBusinessBreadcrumb("stripe.webhook_received", { eventType: event.type, eventId });
 
     // ----- Invoice payment (existing) -----
     if (event.type === "checkout.session.completed") {
@@ -103,7 +115,64 @@ export const POST = withRequestLogging(async function POST(req: Request) {
       const mode = String(session?.mode || "");
       if (mode === "payment") {
         const paymentStatus = String(session?.payment_status || "");
-        if (sessionId && paymentStatus === "paid") {
+        const purchaseType = String(session?.metadata?.purchaseType || "");
+
+        if (sessionId && paymentStatus === "paid" && purchaseType === "qr_tags") {
+          // --- QR Tag purchase fulfillment ---
+          const prisma = getPrisma();
+          if (prisma) {
+            const companyId = String(session.metadata?.companyId || "");
+            const qty = Number(session.metadata?.qty || 0);
+            const paymentIntentId = String(session.payment_intent || "");
+
+            if (companyId && qty > 0) {
+              // Idempotency: check if order already fulfilled via DB-level unique stripeSessionId
+              const existingOrder = await prisma.qrOrder.findUnique({
+                where: { stripeSessionId: sessionId },
+              });
+
+              if (!existingOrder || existingOrder.status !== "paid") {
+                // Generate QR tags
+                const tags = Array.from({ length: qty }, () => ({
+                  companyId,
+                  code: randomBytes(16).toString("hex"),
+                  status: "available",
+                }));
+
+                await prisma.$transaction(async (tx: any) => {
+                  // Mark order as paid (upsert in case webhook arrives before checkout API creates the row)
+                  await tx.qrOrder.upsert({
+                    where: { stripeSessionId: sessionId },
+                    create: {
+                      companyId,
+                      qty,
+                      stripeSessionId: sessionId,
+                      stripePaymentIntentId: paymentIntentId || null,
+                      amountPence: Number(session.amount_total || 0),
+                      status: "paid",
+                      fulfilledAt: new Date(),
+                    },
+                    update: {
+                      status: "paid",
+                      stripePaymentIntentId: paymentIntentId || null,
+                      fulfilledAt: new Date(),
+                    },
+                  });
+
+                  // Create tags
+                  await tx.qrTag.createMany({ data: tags });
+                });
+
+                logBusinessEvent({
+                  name: "qr_tags.purchased",
+                  companyId,
+                  metadata: { qty, sessionId, paymentIntentId },
+                });
+              }
+            }
+          }
+        } else if (sessionId && paymentStatus === "paid" && purchaseType !== "qr_tags") {
+          // --- Invoice payment (existing) ---
           const invoiceId = String(session?.metadata?.invoiceId || "");
           const inv = invoiceId ? await repo.getInvoiceById(invoiceId) : await repo.findInvoiceByPaymentRef(sessionId);
           if (inv) {

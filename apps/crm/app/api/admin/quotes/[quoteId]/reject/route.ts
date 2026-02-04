@@ -4,6 +4,7 @@ import { quoteTotals } from "@/lib/server/db";
 import * as repo from "@/lib/server/repo";
 import { getPrisma } from "@/lib/server/prisma";
 import { getRouteParams } from "@/lib/server/routeParams";
+import { addBusinessBreadcrumb } from "@/lib/server/observability";
 
 export async function POST(req: Request, ctx: { params: Promise<{ quoteId: string }> }) {
   const session = await requireRoles("admin");
@@ -33,6 +34,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ quoteId: strin
     where: { id: quoteId },
     data: { status: "rejected", updatedAt: new Date() },
   });
+  addBusinessBreadcrumb("quote.rejected", { quoteId });
 
   await repo.recordAuditEvent({
     entityType: "quote",

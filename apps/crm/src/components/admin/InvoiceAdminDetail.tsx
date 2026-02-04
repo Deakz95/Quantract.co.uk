@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/useToast";
 import { Breadcrumbs, type BreadcrumbItem } from "@/components/ui/Breadcrumbs";
+import NextActionPanel from "@/components/admin/NextActionPanel";
 
 type Invoice = {
   id: string;
@@ -143,6 +144,30 @@ export default function InvoiceAdminDetail({ invoiceId }: { invoiceId: string })
   return (
     <div className="space-y-5">
       <Breadcrumbs items={breadcrumbItems} />
+
+      {inv.status === "draft" ? (
+        <NextActionPanel
+          headline="Next step: review and send"
+          body="This invoice is still in draft. Review the details and mark it as sent when ready."
+        />
+      ) : inv.status === "sent" ? (
+        <NextActionPanel
+          headline="Awaiting client payment"
+          body="This invoice has been sent. Share the client link or create a payment link to collect payment."
+        />
+      ) : inv.status === "unpaid" ? (
+        <NextActionPanel
+          headline="Payment overdue"
+          body="This invoice is unpaid. Follow up with the client or resend the payment link."
+        />
+      ) : inv.status === "paid" ? (
+        <NextActionPanel
+          headline="All done"
+          body="Payment received. No further action required."
+          actions={inv.quoteId ? [{ label: "View quote", href: `/admin/quotes/${inv.quoteId}` }] : undefined}
+        />
+      ) : null}
+
       <Card>
         <CardHeader>
           <div className="flex flex-wrap items-center justify-between gap-3">

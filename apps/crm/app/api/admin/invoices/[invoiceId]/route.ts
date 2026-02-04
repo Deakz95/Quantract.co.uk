@@ -4,6 +4,7 @@ import * as repo from "@/lib/server/repo";
 import { getRouteParams } from "@/lib/server/routeParams";
 import { getPrisma } from "@/lib/server/prisma";
 import { createUndoToken } from "@/lib/server/undoToken";
+import { addBusinessBreadcrumb } from "@/lib/server/observability";
 
 export async function GET(_req: Request, ctx: { params: Promise<{ invoiceId: string }> }) {
   const session = await requireRoles("admin");
@@ -50,6 +51,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ invoiceId: st
 
   const invoice = await repo.updateInvoiceStatus(invoiceId, status as any);
   if (!invoice) return NextResponse.json({ error: "not_found" }, { status: 404 });
+  addBusinessBreadcrumb("invoice.status_updated", { invoiceId, status });
   return NextResponse.json({ invoice });
 }
 
@@ -64,6 +66,7 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ invoiceId: 
     if (!invoice) return NextResponse.json({ ok: false, error: "not_found" }, { status: 404 });
 
     await prisma.invoice.update({ where: { id: invoiceId }, data: { deletedAt: new Date() } });
+    addBusinessBreadcrumb("invoice.deleted", { invoiceId });
 
     const undo = createUndoToken(authCtx.companyId, authCtx.userId, "invoice", invoiceId);
 

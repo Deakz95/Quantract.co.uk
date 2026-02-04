@@ -36,6 +36,9 @@ export type EntitlementKey =
   | "feature_lead_scoring"
   | "feature_portal_timeline"
   | "feature_portal_troubleshooter"
+  | "feature_byos_storage"
+  | "feature_pdf_templates"
+  | "feature_scheduled_checks"
   // Limits (usage-based)
   | "limit_users"
   | "limit_legal_entities"
@@ -43,6 +46,13 @@ export type EntitlementKey =
   | "limit_certificates_per_month"
   | "limit_quotes_per_month"
   | "limit_storage_mb";
+
+// ============ Admin Override ============
+
+export type EntitlementOverrideRecord = {
+  key: string;
+  value: string;
+};
 
 // ============ Entitlements Object ============
 
@@ -108,6 +118,8 @@ export function computeEntitlements(
     extraEntities?: number;
     extraStorageMB?: number;
     trialStartedAt?: Date | null;
+    /** Admin-created overrides — applied LAST, after all plan-based computation */
+    adminOverrides?: EntitlementOverrideRecord[];
   }
 ): Entitlements {
   const resolvedPlan = resolveCompanyPlan(plan, options?.overrideEmail);
@@ -153,6 +165,9 @@ export function computeEntitlements(
     feature_lead_scoring: enterprise || resolvedPlan !== "trial",
     feature_portal_timeline: true, // Available on all plans
     feature_portal_troubleshooter: true, // Available on all plans
+    feature_byos_storage: enterprise || resolvedPlan === "pro_plus", // Pro Plus + Enterprise
+    feature_pdf_templates: enterprise || isProOrHigher(resolvedPlan), // Pro + Enterprise
+    feature_scheduled_checks: enterprise || resolvedPlan !== "trial", // Core+ plans
 
     // Limits
     limit_users: enterprise ? Infinity : limits.includedUsers + (options?.extraUsers ?? 0),
@@ -162,6 +177,24 @@ export function computeEntitlements(
     limit_quotes_per_month: enterprise ? Infinity : limits.quotesPerMonth,
     limit_storage_mb: enterprise ? Infinity : limits.storageMB + (options?.extraStorageMB ?? 0),
   };
+
+  // Apply admin overrides LAST — they take precedence over plan-based computation
+  if (options?.adminOverrides?.length) {
+    for (const ov of options.adminOverrides) {
+      if (ov.value === "true") {
+        entitlements[ov.key] = true;
+      } else if (ov.value === "false") {
+        entitlements[ov.key] = false;
+      } else {
+        const num = Number(ov.value);
+        if (!Number.isNaN(num)) {
+          entitlements[ov.key] = num;
+        } else {
+          entitlements[ov.key] = ov.value;
+        }
+      }
+    }
+  }
 
   return entitlements;
 }
@@ -195,17 +228,22 @@ export function getEntitlementLimit(entitlements: Entitlements, key: Entitlement
  * Used for "Upgrade to X" messaging.
  */
 export function getUnlockingPlan(key: EntitlementKey): PlanTier {
+  const proPlusFeatures: EntitlementKey[] = [
+    "feature_byos_storage",
+  ];
   const proFeatures: EntitlementKey[] = [
     "feature_custom_domain",
     "feature_ai_estimator",
     "feature_remote_assist",
     "feature_truck_inventory",
+    "feature_pdf_templates",
   ];
   const enterpriseFeatures: EntitlementKey[] = [
     "feature_dedicated_db",
   ];
 
   if (enterpriseFeatures.includes(key)) return "enterprise";
+  if (proPlusFeatures.includes(key)) return "pro_plus";
   if (proFeatures.includes(key)) return "pro";
   return "core";
 }

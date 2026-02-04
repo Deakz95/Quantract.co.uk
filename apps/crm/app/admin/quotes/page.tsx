@@ -12,6 +12,8 @@ import { deleteWithMessage, bulkDeleteWithSummary } from "@/lib/http/deleteWithM
 import { undoDelete, bulkUndoAll } from "@/lib/http/undoDelete";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/useToast";
+import { getStatusBadgeProps } from "@/lib/statusConfig";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { FileText, Plus, SquarePen, Copy, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -192,15 +194,8 @@ export default function QuotesPage() {
   }, [items, searchTerm, filters, sortKey, sortDirection]);
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, "success" | "warning" | "destructive" | "secondary"> = {
-      accepted: "success",
-      sent: "warning",
-      pending: "warning",
-      draft: "secondary",
-      rejected: "destructive",
-      expired: "destructive",
-    };
-    return <Badge variant={variants[status?.toLowerCase()] || "secondary"}>{status || 'Draft'}</Badge>;
+    const { label, variant } = getStatusBadgeProps("quote", status);
+    return <Badge variant={variant}>{label}</Badge>;
   };
 
   const handleSort = (key: string, direction: SortDirection) => {
@@ -397,20 +392,19 @@ export default function QuotesPage() {
             {loading ? (
               <TableSkeletonInline columns={6} rows={8} />
             ) : items.length === 0 ? (
-              <div className="p-12 text-center">
-                <FileText className="w-12 h-12 text-[var(--muted-foreground)] mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-[var(--foreground)] mb-2">
-                  No quotes yet
-                </h3>
-                <p className="text-[var(--muted-foreground)] mb-4">
-                  Create your first quote to get started
-                </p>
-                <Link href="/admin/quotes/new">
-                  <Button variant="gradient">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create Quote
-                  </Button>
-                </Link>
+              <div className="p-6">
+                <EmptyState
+                  icon={FileText}
+                  title="No quotes yet"
+                  description="Quotes let you price work and send professional proposals to clients. Track revisions, acceptance, and convert to invoices."
+                  features={[
+                    "Build itemised quotes with labour and materials",
+                    "Send to clients via email with one-click accept/reject",
+                    "Convert accepted quotes into jobs and invoices"
+                  ]}
+                  primaryAction={{ label: "Create your first quote", href: "/admin/quotes/new" }}
+                  secondaryAction={{ label: "Learn more", href: "/admin/help/quotes" }}
+                />
               </div>
             ) : filteredItems.length === 0 ? (
               <div className="p-12 text-center">

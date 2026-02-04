@@ -528,6 +528,39 @@ export function getEffectiveRole(ctx: CompanyAuthContext): Role {
   return ctx.membershipRole ?? ctx.role;
 }
 
+/**
+ * Check if the current user is actively impersonating another user.
+ * Uses the DB-backed impersonation_logs table as source of truth.
+ * Returns the active impersonation record if found, null otherwise.
+ */
+export async function isImpersonating(ctx: CompanyAuthContext): Promise<{ id: string; targetUserId: string } | null> {
+  try {
+    const prisma = p();
+    const active = await prisma.impersonation_logs.findFirst({
+      where: { adminUserId: ctx.userId, endedAt: null, companyId: ctx.companyId },
+      select: { id: true, targetUserId: true },
+      orderBy: { startedAt: "desc" },
+    });
+    return active || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Guard for write-path API routes: rejects mutations during impersonation.
+ * Throws a 403 error with a clear message if the user is impersonating.
+ * Call this at the top of POST/PUT/PATCH/DELETE handlers that should be read-only during impersonation.
+ */
+export async function rejectIfImpersonating(ctx: CompanyAuthContext): Promise<void> {
+  const impersonation = await isImpersonating(ctx);
+  if (impersonation) {
+    const err: any = new Error("Write operations are not allowed during impersonation");
+    err.status = 403;
+    throw err;
+  }
+}
+
 /** ✅ used by engineer/client routes */
 export async function getUserEmail(): Promise<string | null> {
   const ctx = await getAuthContext();

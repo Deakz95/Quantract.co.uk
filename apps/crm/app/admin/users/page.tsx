@@ -6,7 +6,8 @@ import { AppShell } from "@/components/AppShell";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Users, Check, Mail } from "lucide-react";
+import { Users, Check, Mail, Shield } from "lucide-react";
+import { ROLE_PRESETS, CAPABILITY_LABELS, type Capability } from "@/lib/permissions";
 
 const CAPABILITIES = [
   { key: "billing.view", label: "View billing", description: "See billing and subscription info" },
@@ -19,6 +20,8 @@ const CAPABILITIES = [
   { key: "settings.manage", label: "Manage settings", description: "Company settings and branding" },
   { key: "users.manage", label: "Manage users", description: "User permissions and access" },
 ];
+
+const PRESET_KEYS = ["ADMIN", "OFFICE", "FINANCE", "ENGINEER"] as const;
 
 export default function UsersPage() {
   const [users, setUsers] = useState<any[]>([]);
@@ -147,6 +150,31 @@ export default function UsersPage() {
                   <div>
                     <p className="font-semibold text-[var(--foreground)]">{selected.name || 'No name'}</p>
                     <p className="text-sm text-[var(--muted-foreground)]">{selected.email}</p>
+                  </div>
+                </div>
+
+                {/* Role Presets */}
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Shield className="w-4 h-4 text-[var(--primary)]" />
+                    <p className="text-sm font-semibold text-[var(--foreground)]">Role Presets</p>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    {PRESET_KEYS.map(key => {
+                      const preset = ROLE_PRESETS[key];
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => setEnabled(new Set(preset.capabilities))}
+                          className="text-left p-3 rounded-xl border border-[var(--border)] hover:border-[var(--primary)] hover:bg-[var(--primary)]/5 transition-all"
+                        >
+                          <p className="text-sm font-semibold text-[var(--foreground)]">{preset.label}</p>
+                          <p className="text-[10px] text-[var(--muted-foreground)] mt-1 line-clamp-2">{preset.description}</p>
+                          <p className="text-[10px] text-[var(--primary)] mt-1.5 font-medium">{preset.capabilities.length} capabilities</p>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 

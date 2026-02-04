@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/Input";
 import { DialogContent } from "@/components/ui/Dialog";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { Plus, ArrowLeft, Settings, X } from "lucide-react";
 import Link from "next/link";
 
@@ -213,15 +214,12 @@ export default function MaterialsPage() {
             {loading ? (
               <div className="text-center py-8 text-[var(--muted-foreground)]">Loading stock items...</div>
             ) : displayItems.length === 0 ? (
-              <div className="empty-state">
-                <Settings className="empty-state-icon" />
-                <div className="empty-state-title">No stock items found</div>
-                <p className="empty-state-description">Get started by adding your first stock item.</p>
-                <Button size="sm" onClick={openAddModal}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Your First Item
-                </Button>
-              </div>
+              <EmptyState
+                icon={Settings}
+                title="No stock items found"
+                description="Get started by adding your first stock item."
+                primaryAction={{ label: "Add your first item", onClick: openAddModal }}
+              />
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">

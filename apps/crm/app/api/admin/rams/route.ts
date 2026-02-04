@@ -138,9 +138,10 @@ export async function POST(req: Request) {
       }
     }
 
+    const docId = randomUUID();
     const document = await prisma.ramsDocument.create({
       data: {
-        id: randomUUID(),
+        id: docId,
         companyId: authCtx.companyId,
         createdById: authCtx.userId,
         type,
@@ -154,6 +155,19 @@ export async function POST(req: Request) {
         reviewedBy: body.reviewedBy ? String(body.reviewedBy) : null,
       },
     });
+
+    // Audit trail
+    await prisma.auditEvent.create({
+      data: {
+        id: randomUUID(),
+        companyId: authCtx.companyId,
+        entityType: "rams",
+        entityId: docId,
+        action: "rams.created",
+        actorRole: role,
+        meta: { type, title, jobId, clientId },
+      },
+    }).catch(() => {});
 
     return NextResponse.json({ ok: true, data: document }, { status: 201 });
   } catch (error) {

@@ -83,14 +83,30 @@ export const GET = withRequestLogging(
             status: true,
             certificateNumber: true,
             completedAt: true,
+            updatedAt: true,
+            pdfKey: true,
           },
-        }).then((rows: any[]) => rows.map((c) => ({
-          id: c.id,
-          type: c.type,
-          status: c.status,
-          certificateNumber: c.certificateNumber ?? null,
-          completedAtISO: c.completedAt ? c.completedAt.toISOString() : null,
-        }))),
+        }).then(async (rows: any[]) => {
+          // Look up Document IDs for issued certificates with pdfKeys
+          const pdfKeys = rows.filter((c) => c.pdfKey).map((c) => c.pdfKey);
+          let docMap = new Map<string, string>();
+          if (pdfKeys.length > 0) {
+            const docs = await prisma.document.findMany({
+              where: { companyId: authCtx.companyId, storageKey: { in: pdfKeys } },
+              select: { id: true, storageKey: true },
+            });
+            docMap = new Map(docs.map((d: any) => [d.storageKey, d.id]));
+          }
+          return rows.map((c) => ({
+            id: c.id,
+            type: c.type,
+            status: c.status,
+            certificateNumber: c.certificateNumber ?? null,
+            completedAtISO: c.completedAt ? c.completedAt.toISOString() : null,
+            updatedAtISO: c.updatedAt ? c.updatedAt.toISOString() : null,
+            documentId: (c.pdfKey && docMap.get(c.pdfKey)) ?? null,
+          }));
+        }),
       ]);
 
       return NextResponse.json({

@@ -30,6 +30,8 @@ export const GET = withRequestLogging(
     if (!cl || String(cl.email || "").toLowerCase() !== email) return new Response("Forbidden", {
       status: 403
     });
+  } else {
+    return new Response("Forbidden", { status: 403 });
   }
   const client = c.clientId ? await repo.getClientById(c.clientId) : null;
   const site = c.siteId ? await repo.getSiteById(c.siteId) : null;

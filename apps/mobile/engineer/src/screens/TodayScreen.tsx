@@ -36,6 +36,7 @@ export default function TodayScreen() {
   const { activeTimer, isPending } = useTimer();
   const [elapsed, setElapsed] = useState("");
   const [jobs, setJobs] = useState<JobListItem[]>([]);
+  const [offline, setOffline] = useState(false);
 
   // Tick timer display
   useEffect(() => {
@@ -56,12 +57,16 @@ export default function TodayScreen() {
       if (data?.ok && Array.isArray(data.jobs)) {
         setJobs(data.jobs);
         setCachedJobs(data.jobs);
+        setOffline(false);
       }
     } catch {
       // On failure, try cache
       if (!isRefresh) {
         const cached = await getCachedJobs();
-        if (cached) setJobs(cached);
+        if (cached) {
+          setJobs(cached);
+          setOffline(true);
+        }
       }
     } finally {
       setLoading(false);
@@ -135,6 +140,13 @@ export default function TodayScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Offline indicator */}
+      {offline ? (
+        <View style={styles.offlineBanner}>
+          <Text style={styles.offlineBannerText}>Offline — showing cached data</Text>
+        </View>
+      ) : null}
+
       {/* Active timer banner */}
       {activeTimer ? (
         <TouchableOpacity
@@ -246,4 +258,15 @@ const styles = StyleSheet.create({
   },
   timerBannerText: { fontSize: 14, fontWeight: "700", color: "#166534" },
   timerBannerSub: { fontSize: 12, color: "#166534", marginTop: 2 },
+  offlineBanner: {
+    backgroundColor: "#fef3c7",
+    marginHorizontal: 12,
+    marginTop: 12,
+    borderRadius: 10,
+    padding: 10,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#fcd34d",
+  },
+  offlineBannerText: { fontSize: 12, fontWeight: "600", color: "#92400e" },
 });

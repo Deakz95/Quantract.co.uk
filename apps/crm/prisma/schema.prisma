@@ -147,6 +147,7 @@ model Certificate {
   signatureRecords          CertificateSignatureRecord[]
   attachments               CertificateAttachment[]
   invoiceCertificates       InvoiceCertificate[]
+  qrAssignments             QrAssignment[]
 
   @@unique([legalEntityId, certificateNumber])
   @@index([clientId])
@@ -329,6 +330,7 @@ model Company {
   name                        String
   slug                        String                       @unique
   subdomain                   String?                      @unique
+  customDomain                String?                      @unique
   dataTier                    String                       @default("shared")
   dedicatedDatabaseUrl        String?
   dataRegion                  String                       @default("eu-west-2")
@@ -341,6 +343,7 @@ model Company {
   themeText                   String                       @default("#0f172a")
   pdfFooterLine1              String?
   pdfFooterLine2              String?
+  pdfContactDetails           String?
   defaultVatRate              Float                        @default(0.2)
   invoiceNumberPrefix         String                       @default("INV-")
   nextInvoiceNumber           Int                          @default(1)
@@ -469,7 +472,18 @@ model Company {
   remoteAssistSessions        RemoteAssistSession[]
   aiEstimates                 AiEstimate[]
   stockAlerts                 StockAlert[]
+  entitlementOverrides        EntitlementOverride[]
   billing                     CompanyBilling?
+  storageUsage                CompanyStorageUsage?
+  storageSettings             CompanyStorageSettings?
+  documents                   Document[]
+  qrOrders                     QrOrder[]
+  qrTags                       QrTag[]
+  qrAssignments                QrAssignment[]
+  toolOutputs                  ToolOutput[]
+  scheduledChecks              ScheduledCheck[]
+  pdfTemplates                 PdfTemplate[]
+  assets                       Asset[]
 }
 
 model CompanyUser {
@@ -682,24 +696,35 @@ model EnquiryEvent {
 }
 
 model Expense {
-  id            String        @id
-  companyId     String
-  jobId         String?
-  supplierId    String?
-  amount        Int?
-  currency      String        @default("GBP")
-  expenseDate   DateTime?
-  status        ExpenseStatus @default(UPLOADED)
-  attachmentKey String?
-  parsedData    Json?
-  category      String?
-  notes         String?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime
-  company       Company       @relation(fields: [companyId], references: [id])
-  supplier      Supplier?     @relation(fields: [supplierId], references: [id])
+  id              String        @id
+  companyId       String
+  jobId           String?
+  supplierId      String?
+  amount          Int?
+  currency        String        @default("GBP")
+  expenseDate     DateTime?
+  status          ExpenseStatus @default(UPLOADED)
+  attachmentKey   String?
+  parsedData      Json?
+  category        String?
+  notes           String?
+  supplierName    String?
+  receiptDate     DateTime?
+  subtotal        Int?
+  vat             Int?
+  total           Int?
+  documentId      String?
+  createdByUserId String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime
+  company         Company       @relation(fields: [companyId], references: [id])
+  supplier        Supplier?     @relation(fields: [supplierId], references: [id])
+  document        Document?     @relation(fields: [documentId], references: [id])
+  createdBy       User?         @relation("ExpensesCreated", fields: [createdByUserId], references: [id])
 
   @@index([companyId, status])
+  @@index([documentId])
+  @@index([createdByUserId])
 }
 
 model Invite {
@@ -891,18 +916,22 @@ model Job {
 }
 
 model ChecklistTemplate {
-  id            String                  @id
-  companyId     String
-  title         String
-  description   String?
-  isActive      Boolean                 @default(true)
-  version       Int                     @default(1)
-  createdAt     DateTime                @default(now())
-  updatedAt     DateTime
-  createdBy     String?
-  company       Company                 @relation(fields: [companyId], references: [id])
-  items         ChecklistTemplateItem[]
-  jobChecklists JobChecklist[]
+  id              String                  @id
+  companyId       String
+  title           String
+  description     String?
+  isActive        Boolean                 @default(true)
+  version         Int                     @default(1)
+  recurrenceType  String?                 // "daily" | "weekly" | "monthly" | null (one-off)
+  recurrenceDay   Int?                    // 0-6 for weekly (Mon=0), 1-31 for monthly
+  assignToRole    String?                 // "engineer" | "admin" etc — default assignee role
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime
+  createdBy       String?
+  company         Company                 @relation(fields: [companyId], references: [id])
+  items           ChecklistTemplateItem[]
+  jobChecklists   JobChecklist[]
+  scheduledChecks ScheduledCheck[]
 
   @@index([companyId])
   @@index([isActive])
@@ -1580,6 +1609,9 @@ model User {
   toolPresets               ToolPreset[]             @relation("UserToolPresets")
   ramsDocuments             RamsDocument[]           @relation("UserRamsDocs")
   truckStocks               TruckStock[]
+  documentsCreated          Document[]               @relation("DocumentsCreated")
+  qrAssignments             QrAssignment[]           @relation("QrAssignedBy")
+  expensesCreated           Expense[]                @relation("ExpensesCreated")
 
   @@unique([role, email])
   @@index([companyId])
@@ -2221,8 +2253,79 @@ model AiEstimate {
 }
 
 // ============================================================================
+// DOCUMENTS PLATFORM
+// ============================================================================
+
+model Document {
+  id              String   @id @default(cuid())
+  companyId       String
+  type            String // e.g. "certificate_pdf", "invoice_pdf", "attachment"
+  mimeType        String
+  sizeBytes       Int
+  sha256          String
+  storageProvider String   @default("internal")
+  storageKey      String
+  externalUrl     String? // BYOS: external URL when storageProvider = "external_url"
+  originalFilename String?
+  createdByUserId String?
+  createdAt       DateTime @default(now())
+
+  company        Company        @relation(fields: [companyId], references: [id])
+  createdBy      User?          @relation("DocumentsCreated", fields: [createdByUserId], references: [id])
+  qrAssignments  QrAssignment[]
+  expenses       Expense[]
+
+  @@index([companyId])
+  @@index([createdByUserId])
+}
+
+// ============================================================================
+// ADMIN: ENTITLEMENT OVERRIDES
+// ============================================================================
+
+model EntitlementOverride {
+  id        String    @id @default(cuid())
+  companyId String
+  key       String    // EntitlementKey (e.g. "module_crm", "limit_users")
+  value     String    // Stringified value: "true", "false", "50", etc.
+  reason    String    // Required: why this override was granted
+  grantedBy String    // userId of admin who created the override
+  grantedAt DateTime  @default(now())
+  expiresAt DateTime? // Optional: auto-expire the override
+  revokedAt DateTime? // Soft-revoke timestamp
+  revokedBy String?   // userId of admin who revoked
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, key])
+  @@index([companyId, revokedAt])
+}
+
+// ============================================================================
 // BILLING
 // ============================================================================
+
+model CompanyStorageUsage {
+  id        String   @id @default(cuid())
+  companyId String   @unique
+  bytesUsed BigInt   @default(0)
+  updatedAt DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+}
+
+model CompanyStorageSettings {
+  id                    String   @id @default(cuid())
+  companyId             String   @unique
+  provider              String   @default("internal") // "internal" | "external_url"
+  externalBaseUrl       String? // e.g. "https://drive.google.com/drive/folders/abc"
+  externalNamingPattern String? // e.g. "{type}/{year}/{filename}"
+  notes                 String? // Admin notes about the provider configuration
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+}
 
 model CompanyBilling {
   id                   String    @id @default(cuid())
@@ -2260,4 +2363,201 @@ model CompanyBilling {
 
   @@index([stripeCustomerId])
   @@index([stripeSubscriptionId])
+}
+
+// ============================================================================
+// QR TAGS
+// ============================================================================
+
+model QrOrder {
+  id                     String    @id @default(cuid())
+  companyId              String
+  qty                    Int
+  stripeSessionId        String    @unique
+  stripePaymentIntentId  String?
+  status                 String    @default("pending") // "pending" | "paid" | "failed"
+  amountPence            Int
+  createdAt              DateTime  @default(now())
+  fulfilledAt            DateTime?
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+  @@index([companyId, status])
+}
+
+model QrTag {
+  id          String         @id @default(cuid())
+  companyId   String
+  code        String         @unique // 32 hex chars via crypto.randomBytes(16)
+  label       String?
+  status      String         @default("available") // "available" | "assigned" | "revoked"
+  createdAt   DateTime       @default(now())
+
+  company     Company        @relation(fields: [companyId], references: [id])
+  assignment  QrAssignment?
+
+  @@index([companyId])
+  @@index([companyId, status])
+}
+
+model QrAssignment {
+  id               String       @id @default(cuid())
+  companyId        String
+  qrTagId          String       @unique // One assignment per tag (prevents double-assign)
+  certificateId    String?
+  documentId       String?
+  assignedByUserId String
+  assignedAt       DateTime     @default(now())
+  note             String?
+
+  company     Company      @relation(fields: [companyId], references: [id])
+  qrTag       QrTag        @relation(fields: [qrTagId], references: [id])
+  certificate Certificate? @relation(fields: [certificateId], references: [id])
+  document    Document?    @relation(fields: [documentId], references: [id])
+  assignedBy  User         @relation("QrAssignedBy", fields: [assignedByUserId], references: [id])
+
+  @@index([companyId])
+  @@index([certificateId])
+  @@index([documentId])
+}
+
+// ============================================================================
+// TOOL OUTPUTS
+// ============================================================================
+
+model ToolOutput {
+  id              String       @id @default(cuid())
+  companyId       String
+  userId          String
+  toolSlug        String
+  name            String
+  inputsJson      Json
+  outputsJson     Json
+  jobId           String?
+  clientId        String?
+  certificateId   String?
+  createdAt       DateTime     @default(now())
+
+  company         Company      @relation(fields: [companyId], references: [id])
+
+  @@index([companyId, toolSlug])
+  @@index([companyId, jobId])
+  @@index([companyId, clientId])
+  @@index([companyId, certificateId])
+  @@index([companyId, createdAt])
+}
+
+// ============================================================================
+// SCHEDULED CHECKS
+// ============================================================================
+
+model Asset {
+  id              String           @id @default(cuid())
+  companyId       String
+  type            String           // "van" | "ladder" | "scaffold"
+  name            String
+  identifier      String?          // reg plate, serial number, etc.
+  status          String           @default("active") // "active" | "retired"
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  company         Company          @relation(fields: [companyId], references: [id])
+  scheduledChecks ScheduledCheck[]
+
+  @@index([companyId, type])
+  @@index([companyId, status])
+}
+
+model ScheduledCheck {
+  id              String              @id @default(cuid())
+  companyId       String
+  templateId      String?
+  assetId         String?
+  documentId      String?
+  idempotencyKey  String?
+  title           String
+  status          String              @default("pending") // "pending" | "completed" | "overdue"
+  dueAt           DateTime
+  completedAt     DateTime?
+  completedById   String?
+  engineerId      String?
+  notes           String?
+  createdAt       DateTime            @default(now())
+
+  company         Company             @relation(fields: [companyId], references: [id])
+  template        ChecklistTemplate?  @relation(fields: [templateId], references: [id])
+  asset           Asset?              @relation(fields: [assetId], references: [id])
+  items           ScheduledCheckItem[]
+
+  @@unique([companyId, idempotencyKey])
+  @@index([companyId, status])
+  @@index([companyId, dueAt])
+  @@index([companyId, engineerId])
+  @@index([templateId])
+  @@index([assetId])
+}
+
+model ScheduledCheckItem {
+  id              String         @id @default(cuid())
+  checkId         String
+  title           String
+  isRequired      Boolean        @default(true)
+  sortOrder       Int            @default(0)
+  status          String         @default("pending") // "pending" | "completed" | "na"
+  completedAt     DateTime?
+  completedBy     String?
+  notes           String?
+
+  check           ScheduledCheck @relation(fields: [checkId], references: [id], onDelete: Cascade)
+
+  @@index([checkId, sortOrder])
+}
+
+model PdfTemplate {
+  id        String               @id @default(cuid())
+  companyId String
+  docType   String // "invoice" | "quote" | "certificate" | "variation" | "receipt"
+  name      String
+  isDefault Boolean              @default(false)
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+
+  company  Company               @relation(fields: [companyId], references: [id])
+  versions PdfTemplateVersion[]
+
+  @@unique([companyId, docType, name])
+  @@index([companyId, docType])
+}
+
+model PdfTemplateVersion {
+  id         String      @id @default(cuid())
+  templateId String
+  version    Int
+  layout     Json // Array of element definitions: { type, x, y, w, h, binding, style }
+  createdAt  DateTime    @default(now())
+
+  template   PdfTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, version])
+  @@index([templateId])
+}
+
+// ============================================================================
+// OPS AUDIT LOG — AI Maintenance Ops API
+// ============================================================================
+
+model OpsAuditLog {
+  id            String   @id @default(cuid())
+  action        String
+  payload       Json?
+  result        Json?
+  ipAddress     String?
+  userAgent     String?
+  actorId       String?
+  approvalToken String?
+  createdAt     DateTime @default(now())
+
+  @@index([action])
+  @@index([createdAt])
 }

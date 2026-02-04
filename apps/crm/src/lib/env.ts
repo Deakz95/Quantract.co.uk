@@ -12,6 +12,8 @@ const REQUIRED: EnvSpec[] = [
   { key: "OPENAI_API_KEY", required: false },
   // Internal cron
   { key: "INTERNAL_CRON_SECRET", required: false },
+  // Ops API
+  { key: "OPS_SECRET", required: false },
 ];
 
 export function assertEnv() {

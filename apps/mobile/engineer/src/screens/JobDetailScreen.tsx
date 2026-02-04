@@ -6,13 +6,22 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  Alert,
   Linking,
   Platform,
+  TextInput,
 } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
-import { apiFetch } from "../api/client";
+import { apiFetch, apiFetchMultipart } from "../api/client";
+import { getCachedJobDetail, setCachedJobDetail } from "../api/jobDetailCache";
 import { useTimer } from "../timer/TimerContext";
-import type { JobDetail, JobStage, JobVariation, JobCert, JobListItem } from "../types/job";
+import { enqueue } from "../offline/outbox";
+import { useOutbox } from "../offline/OutboxContext";
+import { PhotoCapture, type PhotoResult } from "../components/PhotoCapture";
+import type { JobDetail, JobStage, JobVariation, JobCert, JobListItem, CostItem } from "../types/job";
+import { LockedFeature } from "../components/LockedFeature";
+import { useHasEntitlement } from "../entitlements/EntitlementsContext";
+import { openDocument } from "../utils/documentViewer";
 
 function pounds(v: number) {
   return `\u00A3${Number(v || 0).toFixed(2)}`;
@@ -52,8 +61,21 @@ export default function JobDetailScreen() {
   const [certs, setCerts] = useState<JobCert[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAgo, setCachedAgo] = useState("");
   const [timerBusy, setTimerBusy] = useState(false);
+  const hasTimesheets = useHasEntitlement("feature_timesheets");
+  const hasCertificates = useHasEntitlement("module_certificates");
   const [elapsed, setElapsed] = useState("");
+  const [showPhotoCapture, setShowPhotoCapture] = useState(false);
+  const [costItems, setCostItems] = useState<CostItem[]>([]);
+  const [showAddCost, setShowAddCost] = useState(false);
+  const [costDesc, setCostDesc] = useState("");
+  const [costType, setCostType] = useState("material");
+  const [costQty, setCostQty] = useState("1");
+  const [costUnit, setCostUnit] = useState("");
+  const [costSupplier, setCostSupplier] = useState("");
+  const { flush } = useOutbox();
 
   const isThisJobTimer = activeTimer?.jobId === jobId;
 
@@ -81,19 +103,57 @@ export default function JobDetailScreen() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      // Load from cache first for instant display
+      const cached = await getCachedJobDetail(jobId);
+      if (cached && !cancelled) {
+        const { data } = cached;
+        setDetail(data.job);
+        setStages(data.stages || []);
+        setVariations(data.variations || []);
+        setCerts(data.certs || []);
+        setLoading(false);
+      }
+
       try {
-        const res = await apiFetch(`/api/engineer/jobs/${jobId}`);
+        const [res, costRes] = await Promise.all([
+          apiFetch(`/api/engineer/jobs/${jobId}`),
+          apiFetch(`/api/engineer/jobs/${jobId}/cost-items`),
+        ]);
         const data = await res.json();
         if (!cancelled && data?.ok) {
           setDetail(data.job);
           setStages(data.stages || []);
           setVariations(data.variations || []);
           setCerts(data.certs || []);
+          setFromCache(false);
+          setCachedAgo("");
+          setCachedJobDetail(jobId, { job: data.job, stages: data.stages, variations: data.variations, certs: data.certs });
         } else if (!cancelled) {
-          setError("Could not load job");
+          if (!cached) setError("Could not load job");
+        }
+        const costData = await costRes.json().catch(() => null);
+        if (!cancelled && costData?.ok) {
+          setCostItems((costData.costItems || []).map((c: any) => ({
+            id: c.id,
+            type: c.type,
+            description: c.description,
+            supplier: c.supplier ?? null,
+            quantity: c.quantity ?? 1,
+            unitCost: c.unitCost ?? 0,
+            totalCost: c.totalCost ?? 0,
+            createdAtISO: c.createdAt ? new Date(c.createdAt).toISOString() : new Date().toISOString(),
+          })));
         }
       } catch {
-        if (!cancelled) setError("Network error");
+        if (!cancelled) {
+          if (cached) {
+            setFromCache(true);
+            const mins = Math.round((Date.now() - cached.cachedAt) / 60000);
+            setCachedAgo(mins < 60 ? `${mins}m ago` : `${Math.round(mins / 60)}h ago`);
+          } else {
+            setError("Network error");
+          }
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -110,6 +170,13 @@ export default function JobDetailScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      {/* Offline banner */}
+      {fromCache ? (
+        <View style={styles.offlineBanner}>
+          <Text style={styles.offlineBannerText}>Cached — last sync {cachedAgo}</Text>
+        </View>
+      ) : null}
+
       {/* Header */}
       <View style={styles.card}>
         <View style={styles.headerRow}>
@@ -170,11 +237,12 @@ export default function JobDetailScreen() {
           )}
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.actionBtn, styles.logBtn]}
-          onPress={() => nav.navigate("LogTime", { jobId, jobTitle: title })}
+          style={[styles.actionBtn, styles.logBtn, !hasTimesheets && styles.disabledBtn]}
+          onPress={() => hasTimesheets && nav.navigate("LogTime", { jobId, jobTitle: title })}
+          disabled={!hasTimesheets}
           activeOpacity={0.7}
         >
-          <Text style={styles.actionBtnText}>Log Time</Text>
+          <Text style={styles.actionBtnText}>{hasTimesheets ? "Log Time" : "Log Time (Pro)"}</Text>
         </TouchableOpacity>
       </View>
 
@@ -227,27 +295,221 @@ export default function JobDetailScreen() {
         </View>
       ) : null}
 
-      {/* Certificates */}
-      {certs.length > 0 ? (
+      {/* Photos */}
+      {detail ? (
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Certificates</Text>
-          {certs.map((c) => (
+          <View style={styles.headerRow}>
+            <Text style={styles.sectionTitle}>Photos</Text>
+            <TouchableOpacity
+              style={styles.addPhotoBtn}
+              onPress={() => setShowPhotoCapture(!showPhotoCapture)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.addPhotoBtnText}>{showPhotoCapture ? "Cancel" : "Add Photo"}</Text>
+            </TouchableOpacity>
+          </View>
+          {showPhotoCapture ? (
+            <PhotoCapture
+              onPhoto={async (photo: PhotoResult) => {
+                // Queue in outbox for offline-safe upload (file URI, not base64)
+                await enqueue({
+                  id: `photo_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+                  type: "photo_upload",
+                  jobId,
+                  payload: {
+                    targetType: "job",
+                    targetId: jobId,
+                    fileUri: photo.uri,
+                    mimeType: photo.mimeType,
+                    fileName: photo.fileName,
+                  },
+                });
+                setShowPhotoCapture(false);
+                Alert.alert("Photo Queued", "Your photo will be uploaded when connected.");
+                flush();
+              }}
+            />
+          ) : null}
+        </View>
+      ) : null}
+
+      {/* Cost Items */}
+      {detail ? (
+        <View style={styles.card}>
+          <View style={styles.headerRow}>
+            <Text style={styles.sectionTitle}>Cost Items</Text>
+            <TouchableOpacity
+              style={styles.addPhotoBtn}
+              onPress={() => setShowAddCost(!showAddCost)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.addPhotoBtnText}>{showAddCost ? "Cancel" : "Add Cost"}</Text>
+            </TouchableOpacity>
+          </View>
+          {costItems.map((c) => (
             <View key={c.id} style={styles.listRow}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.listLabel}>
-                  {c.type} {c.certificateNumber ? `\u2022 ${c.certificateNumber}` : ""}
+                <Text style={styles.listLabel}>{c.description}</Text>
+                <Text style={styles.sub}>
+                  {c.type}{c.supplier ? ` \u2022 ${c.supplier}` : ""} \u2022 {c.quantity} \u00D7 {pounds(c.unitCost)}
                 </Text>
-                {c.completedAtISO ? (
-                  <Text style={styles.sub}>
-                    Completed {new Date(c.completedAtISO).toLocaleString("en-GB")}
-                  </Text>
-                ) : null}
               </View>
-              <View style={styles.smallBadge}>
-                <Text style={styles.smallBadgeText}>{c.status}</Text>
-              </View>
+              <Text style={styles.listLabel}>{pounds(c.totalCost)}</Text>
             </View>
           ))}
+          {costItems.length === 0 && !showAddCost ? (
+            <Text style={styles.sub}>No cost items yet</Text>
+          ) : null}
+          {showAddCost ? (
+            <View style={styles.costForm}>
+              <TextInput
+                style={styles.input}
+                placeholder="Description *"
+                placeholderTextColor="#94a3b8"
+                value={costDesc}
+                onChangeText={setCostDesc}
+              />
+              <View style={styles.typeRow}>
+                {(["material", "labour", "subcontractor", "plant", "other"] as const).map((t) => (
+                  <TouchableOpacity
+                    key={t}
+                    style={[styles.typeChip, costType === t && styles.typeChipActive]}
+                    onPress={() => setCostType(t)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.typeChipText, costType === t && styles.typeChipTextActive]}>
+                      {t}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <View style={styles.costRowInputs}>
+                <TextInput
+                  style={[styles.input, { flex: 1 }]}
+                  placeholder="Qty"
+                  placeholderTextColor="#94a3b8"
+                  keyboardType="decimal-pad"
+                  value={costQty}
+                  onChangeText={setCostQty}
+                />
+                <TextInput
+                  style={[styles.input, { flex: 1, marginLeft: 8 }]}
+                  placeholder="Unit cost"
+                  placeholderTextColor="#94a3b8"
+                  keyboardType="decimal-pad"
+                  value={costUnit}
+                  onChangeText={setCostUnit}
+                />
+              </View>
+              <TextInput
+                style={styles.input}
+                placeholder="Supplier (optional)"
+                placeholderTextColor="#94a3b8"
+                value={costSupplier}
+                onChangeText={setCostSupplier}
+              />
+              <TouchableOpacity
+                style={[styles.actionBtn, styles.startBtn, !costDesc.trim() && styles.disabledBtn]}
+                disabled={!costDesc.trim()}
+                onPress={async () => {
+                  const qty = parseFloat(costQty) || 1;
+                  const unit = parseFloat(costUnit) || 0;
+                  const total = qty * unit;
+                  const idKey = `ci_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+                  const newItem: CostItem = {
+                    id: idKey,
+                    type: costType,
+                    description: costDesc.trim(),
+                    supplier: costSupplier.trim() || null,
+                    quantity: qty,
+                    unitCost: unit,
+                    totalCost: total,
+                    createdAtISO: new Date().toISOString(),
+                  };
+                  setCostItems((prev) => [newItem, ...prev]);
+                  await enqueue({
+                    id: idKey,
+                    type: "cost_item_create",
+                    jobId,
+                    idempotencyKey: idKey,
+                    payload: {
+                      description: costDesc.trim(),
+                      type: costType,
+                      quantity: qty,
+                      unitCost: unit,
+                      supplier: costSupplier.trim() || undefined,
+                    },
+                  });
+                  setCostDesc("");
+                  setCostType("material");
+                  setCostQty("1");
+                  setCostUnit("");
+                  setCostSupplier("");
+                  setShowAddCost(false);
+                  Alert.alert("Cost Queued", "Your cost item will sync when connected.");
+                  flush();
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.actionBtnText}>Save Cost</Text>
+              </TouchableOpacity>
+            </View>
+          ) : null}
+        </View>
+      ) : null}
+
+      {/* Certificates */}
+      {certs.length > 0 && hasCertificates ? (
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Certificates</Text>
+          {certs.map((c) => {
+            const isEditable = c.status !== "completed" && c.status !== "issued" && c.status !== "void";
+            const Row = isEditable ? TouchableOpacity : View;
+            return (
+              <Row
+                key={c.id}
+                style={styles.listRow}
+                {...(isEditable ? {
+                  activeOpacity: 0.7,
+                  onPress: () => nav.navigate("CertificateEdit", { certificateId: c.id, certType: c.type, jobId }),
+                } : {})}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.listLabel}>
+                    {c.type} {c.certificateNumber ? `\u2022 ${c.certificateNumber}` : ""}
+                  </Text>
+                  {c.completedAtISO ? (
+                    <Text style={styles.sub}>
+                      Completed {new Date(c.completedAtISO).toLocaleString("en-GB")}
+                    </Text>
+                  ) : isEditable ? (
+                    <Text style={styles.sub}>Tap to edit draft</Text>
+                  ) : null}
+                </View>
+                {c.documentId ? (
+                  <TouchableOpacity
+                    style={styles.viewPdfBtn}
+                    onPress={() => openDocument(c.documentId!)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.viewPdfText}>View PDF</Text>
+                  </TouchableOpacity>
+                ) : c.externalUrl ? (
+                  <TouchableOpacity
+                    style={styles.viewPdfBtn}
+                    onPress={() => Linking.openURL(c.externalUrl!)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.viewPdfText}>Open</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <View style={styles.smallBadge}>
+                    <Text style={styles.smallBadgeText}>{c.status}</Text>
+                  </View>
+                )}
+              </Row>
+            );
+          })}
         </View>
       ) : null}
     </ScrollView>
@@ -342,5 +604,54 @@ const styles = StyleSheet.create({
   startBtn: { backgroundColor: "#16a34a" },
   stopBtn: { backgroundColor: "#dc2626" },
   logBtn: { backgroundColor: "#0f172a" },
+  disabledBtn: { backgroundColor: "#94a3b8" },
   actionBtnText: { color: "#fff", fontSize: 15, fontWeight: "700" },
+  viewPdfBtn: {
+    backgroundColor: "#0f172a",
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  viewPdfText: { color: "#fff", fontSize: 11, fontWeight: "600" },
+  addPhotoBtn: {
+    backgroundColor: "#0f172a",
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  addPhotoBtnText: { color: "#fff", fontSize: 11, fontWeight: "600" },
+  offlineBanner: {
+    backgroundColor: "#fef3c7",
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 12,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#fcd34d",
+  },
+  offlineBannerText: { fontSize: 12, fontWeight: "600", color: "#92400e" },
+  costForm: { marginTop: 8, gap: 8 },
+  input: {
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: "#0f172a",
+    backgroundColor: "#f8fafc",
+  },
+  typeRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+  typeChip: {
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    backgroundColor: "#f8fafc",
+  },
+  typeChipActive: { backgroundColor: "#0f172a", borderColor: "#0f172a" },
+  typeChipText: { fontSize: 12, fontWeight: "600", color: "#64748b", textTransform: "capitalize" },
+  typeChipTextActive: { color: "#fff" },
+  costRowInputs: { flexDirection: "row" },
 });

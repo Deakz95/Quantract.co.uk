@@ -4,6 +4,7 @@ import * as repo from "@/lib/server/repo";
 import { getRouteParams } from "@/lib/server/routeParams";
 import { getPrisma } from "@/lib/server/prisma";
 import { createUndoToken } from "@/lib/server/undoToken";
+import { addBusinessBreadcrumb } from "@/lib/server/observability";
 
 export async function GET(_req: Request, ctx: { params: Promise<{ jobId: string }> }) {
   const session = await requireRoles("admin");
@@ -31,6 +32,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ jobId: string
 
   const job = await repo.updateJob(jobId, patch);
   if (!job) return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });
+  addBusinessBreadcrumb("job.updated", { jobId, fields: Object.keys(patch) });
   return NextResponse.json({ ok: true, job });
 }
 
@@ -45,6 +47,7 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ jobId: stri
     if (!job) return NextResponse.json({ ok: false, error: "not_found" }, { status: 404 });
 
     await prisma.job.update({ where: { id: jobId }, data: { deletedAt: new Date() } });
+    addBusinessBreadcrumb("job.deleted", { jobId });
 
     const undo = createUndoToken(authCtx.companyId, authCtx.userId, "job", jobId);
 

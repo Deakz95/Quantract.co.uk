@@ -13,6 +13,7 @@ import { undoDelete, bulkUndoAll } from "@/lib/http/undoDelete";
 import { CardGridSkeleton } from "@/components/ui/CardSkeleton";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/useToast";
+import { getStatusBadgeProps } from "@/lib/statusConfig";
 import { Briefcase, Plus, Clock, SquarePen, Copy, Trash2, AlertCircle } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import Link from "next/link";
@@ -232,16 +233,8 @@ export default function JobsPage() {
   }, [jobs, searchTerm, filters, sortKey, sortDirection]);
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, "success" | "warning" | "destructive" | "secondary"> = {
-      completed: "success",
-      in_progress: "warning",
-      active: "warning",
-      scheduled: "secondary",
-      pending: "secondary",
-      cancelled: "destructive",
-      on_hold: "destructive",
-    };
-    return <Badge variant={variants[status?.toLowerCase()] || "secondary"}>{status || 'Pending'}</Badge>;
+    const { label, variant } = getStatusBadgeProps("job", status);
+    return <Badge variant={variant}>{label}</Badge>;
   };
 
   const handleSort = (key: string, direction: SortDirection) => {

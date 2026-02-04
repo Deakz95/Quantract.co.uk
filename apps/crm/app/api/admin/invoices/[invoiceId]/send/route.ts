@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireRoles, getCompanyId } from "@/lib/serverAuth";
 import * as repo from "@/lib/server/repo";
 import { sendInvoiceEmail, absoluteUrl } from "@/lib/server/email";
-import { logCriticalAction } from "@/lib/server/observability";
+import { logCriticalAction, addBusinessBreadcrumb } from "@/lib/server/observability";
 import { getRouteParams } from "@/lib/server/routeParams";
 
 export async function POST(_req: Request, ctx: { params: Promise<{ invoiceId: string }> }) {
@@ -30,6 +30,7 @@ export async function POST(_req: Request, ctx: { params: Promise<{ invoiceId: st
   });
 
   await repo.markInvoiceSent(invoice.id);
+  addBusinessBreadcrumb("invoice.sent", { invoiceId: invoice.id, clientEmail: invoice.clientEmail });
 
   logCriticalAction({
     name: "invoice.sent",

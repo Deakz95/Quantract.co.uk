@@ -107,17 +107,15 @@ export async function overrideJobCompletionGating(
     data: {
       id: crypto.randomUUID(),
       companyId: job.companyId,
-      userId,
-      action: "job.completion.override",
       entityType: "job",
       entityId: jobId,
-      metadata: {
+      action: "job.completion.override",
+      actorRole: "admin",
+      actor: userId,
+      meta: {
         reason,
         overriddenAt: new Date().toISOString(),
       },
-      ipAddress: null,
-      userAgent: null,
-      createdAt: new Date(),
     },
   });
 

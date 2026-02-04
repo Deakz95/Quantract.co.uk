@@ -52,6 +52,18 @@ const RATE_LIMITS = {
 
   // Admin operations (more generous)
   API_ADMIN: { limit: 200, windowMs: 60 * 1000 }, // 200 per minute
+
+  // Public invite token lookup (prevent enumeration)
+  PUBLIC_INVITE_LOOKUP: { limit: 20, windowMs: 15 * 60 * 1000 }, // 20 per 15 minutes per IP
+
+  // Public invite accept (write operation)
+  PUBLIC_INVITE_ACCEPT: { limit: 5, windowMs: 15 * 60 * 1000 }, // 5 per 15 minutes per IP+token
+
+  // Webhook endpoints (high burst tolerance, keyed on route + IP)
+  WEBHOOK: { limit: 200, windowMs: 60 * 1000 }, // 200 per minute per IP — conservative to avoid blocking Stripe bursts
+
+  // Public QR resolver (prevent enumeration/scraping)
+  QR_RESOLVE: { limit: 30, windowMs: 60 * 1000 }, // 30 per minute per IP
 } as const;
 
 /**
@@ -233,6 +245,83 @@ export function rateLimitApiAdmin(userId: string) {
   }
 
   return { ok: true, remaining: check.remaining };
+}
+
+/**
+ * Apply rate limiting to public invite token lookup (GET).
+ * Per-IP to prevent token enumeration.
+ */
+export function rateLimitInviteLookup(req: NextRequest) {
+  const ipCheck = rateLimitByIp(req, RATE_LIMITS.PUBLIC_INVITE_LOOKUP, "invite:lookup:ip");
+  if (!ipCheck.ok) {
+    return {
+      ok: false,
+      error: "Too many requests. Please try again later.",
+      resetAt: ipCheck.resetAt,
+    };
+  }
+
+  return { ok: true, remaining: ipCheck.remaining };
+}
+
+/**
+ * Apply rate limiting to public invite accept (POST).
+ * Per-IP + per-token to prevent brute-force.
+ */
+export function rateLimitInviteAccept(req: NextRequest, token: string) {
+  const ipCheck = rateLimitByIp(req, RATE_LIMITS.PUBLIC_INVITE_ACCEPT, "invite:accept:ip");
+  if (!ipCheck.ok) {
+    return {
+      ok: false,
+      error: "Too many requests. Please try again later.",
+      resetAt: ipCheck.resetAt,
+    };
+  }
+
+  const tokenCheck = rateLimitCombined(req, token, RATE_LIMITS.PUBLIC_INVITE_ACCEPT, "invite:accept");
+  if (!tokenCheck.ok) {
+    return {
+      ok: false,
+      error: "Too many attempts for this invite. Please contact support.",
+      resetAt: tokenCheck.resetAt,
+    };
+  }
+
+  return { ok: true, remaining: Math.min(ipCheck.remaining, tokenCheck.remaining) };
+}
+
+/**
+ * Apply rate limiting to webhook endpoints.
+ * Per-IP with high burst tolerance. Returns 429 quickly without expensive work.
+ */
+export function rateLimitWebhook(req: NextRequest, route: string) {
+  const ipCheck = rateLimitByIp(req, RATE_LIMITS.WEBHOOK, `webhook:${route}:ip`);
+  if (!ipCheck.ok) {
+    return {
+      ok: false,
+      error: "Too many webhook requests.",
+      resetAt: ipCheck.resetAt,
+    };
+  }
+
+  return { ok: true, remaining: ipCheck.remaining };
+}
+
+/**
+ * Apply rate limiting to public QR resolver.
+ * Per-IP to prevent code enumeration and scraping.
+ */
+export function rateLimitQrResolve(req: NextRequest) {
+  const ipCheck = rateLimitByIp(req, RATE_LIMITS.QR_RESOLVE, "qr:resolve:ip");
+  if (!ipCheck.ok) {
+    return {
+      ok: false,
+      error: "Too many requests. Please try again later.",
+      resetAt: ipCheck.resetAt,
+    };
+  }
+
+  return { ok: true, remaining: ipCheck.remaining };
 }
 
 /**

@@ -59,6 +59,19 @@ export async function POST(
         return NextResponse.json({ ok: false, error: "Document not found" }, { status: 404 });
       }
 
+      // Audit trail — issued
+      await prisma.auditEvent.create({
+        data: {
+          id: randomUUID(),
+          companyId: authCtx.companyId,
+          entityType: "rams",
+          entityId: id,
+          action: "rams.issued",
+          actorRole: role,
+          meta: { version: existing.version, type: existing.type },
+        },
+      }).catch(() => {});
+
       const document = await prisma.ramsDocument.findUnique({ where: { id } });
       return NextResponse.json({ ok: true, data: document });
     }
@@ -96,6 +109,32 @@ export async function POST(
           updatedAt: now,
         },
       });
+
+      // Audit trail — superseded + new version
+      await Promise.all([
+        prisma.auditEvent.create({
+          data: {
+            id: randomUUID(),
+            companyId: authCtx.companyId,
+            entityType: "rams",
+            entityId: existing.id,
+            action: "rams.superseded",
+            actorRole: role,
+            meta: { version: existing.version, supersededBy: newDoc.id },
+          },
+        }),
+        prisma.auditEvent.create({
+          data: {
+            id: randomUUID(),
+            companyId: authCtx.companyId,
+            entityType: "rams",
+            entityId: newDoc.id,
+            action: "rams.created",
+            actorRole: role,
+            meta: { version: newDoc.version, parentId: existing.id, type: existing.type },
+          },
+        }),
+      ]).catch(() => {});
 
       return NextResponse.json({ ok: true, data: newDoc }, { status: 201 });
     }

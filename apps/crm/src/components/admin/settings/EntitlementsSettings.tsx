@@ -17,6 +17,9 @@ import {
   Sparkles,
   Clock,
   Settings,
+  Shield,
+  Plus,
+  Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 
@@ -371,6 +374,9 @@ export function EntitlementsSettings() {
         </div>
       </div>
 
+      {/* Entitlement Overrides (Admin) */}
+      <EntitlementOverrides />
+
       {/* Raw Limits (Debug) */}
       <details className="bg-[var(--muted)] rounded-xl p-4">
         <summary className="cursor-pointer text-sm font-medium text-[var(--muted-foreground)]">
@@ -428,6 +434,163 @@ function UsageMeter({
         </span>
         <span>{isUnlimited ? "Unlimited" : `${limit.toLocaleString()}${unit && ` ${unit}`}`}</span>
       </div>
+    </div>
+  );
+}
+
+// ============ Entitlement Overrides Sub-component ============
+
+type Override = {
+  id: string;
+  key: string;
+  value: string;
+  reason: string;
+  grantedBy: string;
+  grantedAt: string;
+  expiresAt: string | null;
+};
+
+const ENTITLEMENT_KEYS = [
+  "module_crm", "module_certificates", "module_portal", "module_tools",
+  "feature_schedule", "feature_timesheets", "feature_xero", "feature_subdomain",
+  "feature_custom_domain", "feature_dedicated_db", "feature_ai_estimator",
+  "feature_remote_assist", "feature_truck_inventory", "feature_maintenance_alerts",
+  "feature_lead_scoring", "feature_portal_timeline", "feature_portal_troubleshooter",
+  "feature_byos_storage",
+  "limit_users", "limit_legal_entities", "limit_invoices_per_month",
+  "limit_certificates_per_month", "limit_quotes_per_month", "limit_storage_mb",
+];
+
+function EntitlementOverrides() {
+  const [overrides, setOverrides] = useState<Override[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [formKey, setFormKey] = useState(ENTITLEMENT_KEYS[0]);
+  const [formValue, setFormValue] = useState("true");
+  const [formReason, setFormReason] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const fetchOverrides = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await fetch("/api/admin/entitlements/overrides");
+      const json = await res.json();
+      if (json.ok) setOverrides(json.overrides || []);
+    } catch { /* ignore */ } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchOverrides(); }, [fetchOverrides]);
+
+  const handleCreate = async () => {
+    if (!formReason.trim() || formReason.trim().length < 3) return;
+    setSaving(true);
+    try {
+      const res = await fetch("/api/admin/entitlements/overrides", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: formKey, value: formValue, reason: formReason.trim() }),
+      });
+      const json = await res.json();
+      if (json.ok) {
+        setShowForm(false);
+        setFormReason("");
+        setFormValue("true");
+        fetchOverrides();
+      }
+    } catch { /* ignore */ } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleRevoke = async (id: string) => {
+    try {
+      await fetch(`/api/admin/entitlements/overrides/${id}`, { method: "DELETE" });
+      fetchOverrides();
+    } catch { /* ignore */ }
+  };
+
+  return (
+    <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-6">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Shield className="w-5 h-5 text-[var(--primary)]" />
+          <h4 className="text-lg font-semibold text-[var(--foreground)]">Active Overrides</h4>
+        </div>
+        <Button variant="secondary" size="sm" onClick={() => setShowForm(!showForm)}>
+          <Plus className="w-4 h-4 mr-1" /> Add Override
+        </Button>
+      </div>
+
+      {showForm && (
+        <div className="mb-4 p-4 bg-[var(--muted)] rounded-lg space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-medium text-[var(--muted-foreground)] block mb-1">Entitlement Key</label>
+              <select
+                value={formKey}
+                onChange={(e) => setFormKey(e.target.value)}
+                className="w-full px-3 py-2 rounded-md border border-[var(--border)] bg-[var(--card)] text-sm text-[var(--foreground)]"
+              >
+                {ENTITLEMENT_KEYS.map((k) => <option key={k} value={k}>{k}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-[var(--muted-foreground)] block mb-1">Value</label>
+              <input
+                type="text"
+                value={formValue}
+                onChange={(e) => setFormValue(e.target.value)}
+                placeholder="true / false / number"
+                className="w-full px-3 py-2 rounded-md border border-[var(--border)] bg-[var(--card)] text-sm text-[var(--foreground)]"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-[var(--muted-foreground)] block mb-1">Reason (required)</label>
+            <input
+              type="text"
+              value={formReason}
+              onChange={(e) => setFormReason(e.target.value)}
+              placeholder="Why is this override needed?"
+              className="w-full px-3 py-2 rounded-md border border-[var(--border)] bg-[var(--card)] text-sm text-[var(--foreground)]"
+            />
+          </div>
+          <div className="flex gap-2">
+            <Button size="sm" onClick={handleCreate} disabled={saving || formReason.trim().length < 3}>
+              {saving ? "Saving..." : "Create Override"}
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setShowForm(false)}>Cancel</Button>
+          </div>
+        </div>
+      )}
+
+      {loading ? (
+        <p className="text-sm text-[var(--muted-foreground)]">Loading overrides...</p>
+      ) : overrides.length === 0 ? (
+        <p className="text-sm text-[var(--muted-foreground)]">No active overrides.</p>
+      ) : (
+        <div className="space-y-2">
+          {overrides.map((ov) => (
+            <div key={ov.id} className="flex items-center justify-between p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className="text-xs font-mono">{ov.key}</Badge>
+                  <span className="text-sm font-medium text-[var(--foreground)]">= {ov.value}</span>
+                </div>
+                <p className="text-xs text-[var(--muted-foreground)] mt-1 truncate">
+                  {ov.reason} &middot; {new Date(ov.grantedAt).toLocaleDateString()}
+                  {ov.expiresAt && ` &middot; Expires ${new Date(ov.expiresAt).toLocaleDateString()}`}
+                </p>
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => handleRevoke(ov.id)} className="text-red-500 hover:text-red-700 ml-2">
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

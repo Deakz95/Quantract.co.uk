@@ -35,6 +35,18 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ certificateId
     return NextResponse.json({ ok: false, error: "Issued certificates are immutable. Create an amendment." }, { status: 409 });
   }
   const body = (await req.json().catch(() => null)) as any;
+
+  // Conflict detection: if client sends expectedUpdatedAt, verify it matches
+  if (typeof body?.expectedUpdatedAt === "string") {
+    const serverUpdatedAt = existing.certificate.updatedAtISO;
+    if (serverUpdatedAt && body.expectedUpdatedAt !== serverUpdatedAt) {
+      return NextResponse.json(
+        { ok: false, error: "conflict", serverUpdatedAt, certificate: existing.certificate, testResults: existing.testResults },
+        { status: 409 },
+      );
+    }
+  }
+
   const nextType = typeof body?.type === "string" ? body.type : existing.certificate.type;
   const normalizedData = body?.data ? normalizeCertificateData(nextType, body.data) : existing.certificate.data;
   const cert = await repo.updateCertificate(certificateId, {

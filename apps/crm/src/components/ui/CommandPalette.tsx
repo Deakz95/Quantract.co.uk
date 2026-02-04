@@ -23,7 +23,15 @@ type SearchResult = {
 };
 
 const RECENT_SEARCHES_KEY = "qt_recent_searches";
+const RECENT_ITEMS_KEY = "qt_recent_items";
 const MAX_RECENT = 5;
+
+type RecentItem = {
+  type: string;
+  id: string;
+  title: string;
+  url: string;
+};
 
 function getRecentSearches(): string[] {
   if (typeof window === "undefined") return [];
@@ -44,6 +52,43 @@ function saveRecentSearch(query: string) {
   } catch {
     // Ignore storage errors
   }
+}
+
+function getRecentItems(): RecentItem[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const stored = localStorage.getItem(RECENT_ITEMS_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveRecentItem(result: SearchResult) {
+  if (typeof window === "undefined") return;
+  try {
+    const item: RecentItem = { type: result.type, id: result.id, title: result.title, url: result.url };
+    const recent = getRecentItems().filter((r) => r.id !== item.id);
+    recent.unshift(item);
+    localStorage.setItem(RECENT_ITEMS_KEY, JSON.stringify(recent.slice(0, MAX_RECENT)));
+  } catch {
+    // Ignore storage errors
+  }
+}
+
+function highlightMatch(text: string, query: string): React.ReactNode {
+  if (!query.trim()) return text;
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const regex = new RegExp(`(${escaped})`, "gi");
+  const parts = text.split(regex);
+  if (parts.length === 1) return text;
+  return parts.map((part, i) =>
+    regex.test(part) ? (
+      <mark key={i} className="bg-yellow-200/60 text-inherit rounded-sm px-0.5">{part}</mark>
+    ) : (
+      part
+    ),
+  );
 }
 
 const typeLabels: Record<string, string> = {
@@ -79,10 +124,12 @@ export function CommandPalette({
   const [loading, setLoading] = React.useState(false);
   const [selectedIndex, setSelectedIndex] = React.useState(0);
   const [recentSearches, setRecentSearches] = React.useState<string[]>([]);
+  const [recentItems, setRecentItems] = React.useState<RecentItem[]>([]);
 
-  // Load recent searches on mount
+  // Load recent searches and items on mount
   React.useEffect(() => {
     setRecentSearches(getRecentSearches());
+    setRecentItems(getRecentItems());
   }, [open]);
 
   // Focus input when opened
@@ -169,6 +216,7 @@ export function CommandPalette({
 
   function handleSelect(result: SearchResult) {
     saveRecentSearch(query);
+    saveRecentItem(result);
     onOpenChange(false);
     router.push(result.url);
   }
@@ -231,22 +279,51 @@ export function CommandPalette({
           {/* Results or Recent Searches */}
           <div className="max-h-[400px] overflow-y-auto">
             {query.trim() === "" ? (
-              // Show recent searches
-              recentSearches.length > 0 ? (
+              // Show recent searches and recent items
+              recentSearches.length > 0 || recentItems.length > 0 ? (
                 <div className="p-2">
-                  <div className="px-3 py-2 text-xs font-semibold text-[var(--muted-foreground)] uppercase tracking-wider">
-                    Recent Searches
-                  </div>
-                  {recentSearches.map((search, i) => (
-                    <button
-                      key={i}
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-[var(--muted)] transition-colors"
-                      onClick={() => handleRecentSearch(search)}
-                    >
-                      <Clock className="h-4 w-4 text-[var(--muted-foreground)]" />
-                      <span className="text-sm text-[var(--foreground)]">{search}</span>
-                    </button>
-                  ))}
+                  {recentSearches.length > 0 && (
+                    <>
+                      <div className="px-3 py-2 text-xs font-semibold text-[var(--muted-foreground)] uppercase tracking-wider">
+                        Recent Searches
+                      </div>
+                      {recentSearches.map((search, i) => (
+                        <button
+                          key={i}
+                          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-[var(--muted)] transition-colors"
+                          onClick={() => handleRecentSearch(search)}
+                        >
+                          <Clock className="h-4 w-4 text-[var(--muted-foreground)]" />
+                          <span className="text-sm text-[var(--foreground)]">{search}</span>
+                        </button>
+                      ))}
+                    </>
+                  )}
+                  {recentItems.length > 0 && (
+                    <>
+                      <div className="px-3 py-2 text-xs font-semibold text-[var(--muted-foreground)] uppercase tracking-wider">
+                        Recent Items
+                      </div>
+                      {recentItems.map((item) => {
+                        const IconComponent = typeIcons[item.type] || User;
+                        return (
+                          <button
+                            key={item.id}
+                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-[var(--muted)] transition-colors"
+                            onClick={() => { onOpenChange(false); router.push(item.url); }}
+                          >
+                            <div className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center bg-[var(--muted)] text-[var(--muted-foreground)]">
+                              <IconComponent className="h-4 w-4" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-medium text-[var(--foreground)] truncate">{item.title}</div>
+                              <div className="text-xs text-[var(--muted-foreground)]">{typeLabels[item.type] || item.type}</div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </>
+                  )}
                 </div>
               ) : (
                 <div className="p-6 text-center text-sm text-[var(--muted-foreground)]">
@@ -293,14 +370,14 @@ export function CommandPalette({
                               "font-medium truncate",
                               isSelected ? "text-[var(--primary-foreground)]" : "text-[var(--foreground)]"
                             )}>
-                              {result.title}
+                              {highlightMatch(result.title, query)}
                             </div>
                             {result.subtitle && (
                               <div className={cn(
                                 "text-sm truncate",
                                 isSelected ? "text-[var(--primary-foreground)]/70" : "text-[var(--muted-foreground)]"
                               )}>
-                                {result.subtitle}
+                                {highlightMatch(result.subtitle, query)}
                               </div>
                             )}
                           </div>

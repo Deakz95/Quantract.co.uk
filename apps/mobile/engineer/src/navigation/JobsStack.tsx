@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import JobsScreen from "../screens/JobsScreen";
 import JobDetailScreen from "../screens/JobDetailScreen";
 import LogTimeScreen from "../screens/LogTimeScreen";
+import CertificateEditScreen from "../screens/CertificateEditScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -25,6 +26,11 @@ export default function JobsStack() {
         name="LogTime"
         component={LogTimeScreen}
         options={{ title: "Log Time" }}
+      />
+      <Stack.Screen
+        name="CertificateEdit"
+        component={CertificateEditScreen}
+        options={{ title: "Certificate" }}
       />
     </Stack.Navigator>
   );

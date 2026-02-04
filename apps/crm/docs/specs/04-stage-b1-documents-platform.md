@@ -1,6 +1,6 @@
 # 04 — Stage B1: Documents Platform
 
-**Status:** PENDING
+**Status:** COMPLETED
 
 ## Intent
 Documents platform: canonical Document model + internal storage provider (base).
@@ -28,8 +28,8 @@ Documents platform: canonical Document model + internal storage provider (base).
 - New Prisma model: `Document`
 
 ## Acceptance Criteria
-- [ ] At least one flow (certificate PDF) writes a Document row and downloads via API
-- [ ] No raw storage keys leak to clients unless signed
+- [x] At least one flow (certificate PDF) writes a Document row and downloads via API
+- [x] No raw storage keys leak to clients unless signed
 
 ## Commands
 ```bash

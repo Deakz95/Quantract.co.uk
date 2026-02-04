@@ -3,7 +3,7 @@ import { requireRoles, getCompanyId } from "@/lib/serverAuth";
 import { quoteTotals } from "@/lib/server/db";
 import * as repo from "@/lib/server/repo";
 import { sendQuoteEmail } from "@/lib/server/email";
-import { logCriticalAction } from "@/lib/server/observability";
+import { logCriticalAction, addBusinessBreadcrumb } from "@/lib/server/observability";
 import { getRouteParams } from "@/lib/server/routeParams";
 
 export async function POST(_: Request, ctx: { params: Promise<{ quoteId: string }> }) {
@@ -31,6 +31,8 @@ export async function POST(_: Request, ctx: { params: Promise<{ quoteId: string 
     shareLink: absolute,
     totals,
   });
+
+  addBusinessBreadcrumb("quote.sent", { quoteId: q.id, clientEmail: q.clientEmail });
 
   // mark as sent (idempotent)
   if (q.status === "draft") await repo.updateQuoteStatusSent(q.id);

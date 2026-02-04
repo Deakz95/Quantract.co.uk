@@ -3,6 +3,7 @@ import { requireRole, requireCompanyId } from "@/lib/serverAuth";
 import { getPrisma } from "@/lib/server/prisma";
 import { withRequestLogging } from "@/lib/server/observability";
 import { getRouteParams } from "@/lib/server/routeParams";
+import { requireEntitlement, EntitlementError } from "@/lib/server/requireEntitlement";
 
 export const runtime = "nodejs";
 
@@ -50,6 +51,19 @@ export const PATCH = withRequestLogging(async function PATCH(
     await requireRole("admin");
   } catch {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+  }
+
+  // Entitlement check
+  try {
+    await requireEntitlement("feature_custom_domain");
+  } catch (err) {
+    if (err instanceof EntitlementError) {
+      return NextResponse.json(
+        { ok: false, error: "upgrade_required", feature: "feature_custom_domain", requiredPlan: err.requiredPlan },
+        { status: 403 }
+      );
+    }
+    throw err;
   }
 
   const companyId = await requireCompanyId();
@@ -115,6 +129,19 @@ export const DELETE = withRequestLogging(async function DELETE(
     await requireRole("admin");
   } catch {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+  }
+
+  // Entitlement check
+  try {
+    await requireEntitlement("feature_custom_domain");
+  } catch (err) {
+    if (err instanceof EntitlementError) {
+      return NextResponse.json(
+        { ok: false, error: "upgrade_required", feature: "feature_custom_domain", requiredPlan: err.requiredPlan },
+        { status: 403 }
+      );
+    }
+    throw err;
   }
 
   const companyId = await requireCompanyId();

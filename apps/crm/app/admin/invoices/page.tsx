@@ -12,6 +12,7 @@ import { TableSkeletonInline } from "@/components/ui/TableSkeleton";
 import { deleteWithMessage, bulkDeleteWithSummary } from "@/lib/http/deleteWithMessage";
 import { undoDelete, bulkUndoAll } from "@/lib/http/undoDelete";
 import { useToast } from "@/components/ui/useToast";
+import { getStatusBadgeProps } from "@/lib/statusConfig";
 import { Receipt, Plus, SquarePen, Copy, Trash2 } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import Link from "next/link";
@@ -212,15 +213,8 @@ export default function InvoicesPage() {
   }, [items, searchTerm, filters, sortKey, sortDirection]);
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, "success" | "warning" | "destructive" | "secondary"> = {
-      paid: "success",
-      sent: "warning",
-      pending: "warning",
-      draft: "secondary",
-      overdue: "destructive",
-      cancelled: "destructive",
-    };
-    return <Badge variant={variants[status?.toLowerCase()] || "secondary"}>{status || 'Draft'}</Badge>;
+    const { label, variant } = getStatusBadgeProps("invoice", status);
+    return <Badge variant={variant}>{label}</Badge>;
   };
 
   const formatDate = (date: string) => {

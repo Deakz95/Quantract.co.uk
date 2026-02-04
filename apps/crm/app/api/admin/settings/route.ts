@@ -4,6 +4,7 @@ import { getPrisma } from "@/lib/server/prisma";
 import { withRequestLogging } from "@/lib/server/observability";
 import { timeStart, logPerf } from "@/lib/perf/timing";
 import { createTtlCache } from "@/lib/perf/ttlCache";
+import { requireEntitlement, EntitlementError } from "@/lib/server/requireEntitlement";
 
 export const runtime = "nodejs";
 
@@ -57,6 +58,8 @@ export const GET = withRequestLogging(async function GET() {
         id: true,
         name: true,
         slug: true,
+        subdomain: true,
+        customDomain: true,
         brandName: true,
         brandTagline: true,
         logoKey: true,
@@ -69,6 +72,13 @@ export const GET = withRequestLogging(async function GET() {
         defaultPaymentTermsDays: true,
         autoChaseEnabled: true,
         markJobCompletedOnCertIssue: true,
+        themePrimary: true,
+        themeAccent: true,
+        themeBg: true,
+        themeText: true,
+        pdfFooterLine1: true,
+        pdfFooterLine2: true,
+        pdfContactDetails: true,
       },
     });
     msDb = stopDb();
@@ -175,7 +185,74 @@ export const PATCH = withRequestLogging(async function PATCH(req: Request) {
       typeof body.markJobCompletedOnCertIssue === "boolean"
         ? body.markJobCompletedOnCertIssue
         : undefined,
+
+    themePrimary:
+      typeof body.themePrimary === "string" ? body.themePrimary.trim() : undefined,
+
+    themeAccent:
+      typeof body.themeAccent === "string" ? body.themeAccent.trim() : undefined,
+
+    themeBg:
+      typeof body.themeBg === "string" ? body.themeBg.trim() : undefined,
+
+    themeText:
+      typeof body.themeText === "string" ? body.themeText.trim() : undefined,
+
+    pdfFooterLine1:
+      typeof body.pdfFooterLine1 === "string"
+        ? body.pdfFooterLine1.trim() || null
+        : body.pdfFooterLine1 === null ? null : undefined,
+
+    pdfFooterLine2:
+      typeof body.pdfFooterLine2 === "string"
+        ? body.pdfFooterLine2.trim() || null
+        : body.pdfFooterLine2 === null ? null : undefined,
+
+    pdfContactDetails:
+      typeof body.pdfContactDetails === "string"
+        ? body.pdfContactDetails.trim() || null
+        : body.pdfContactDetails === null ? null : undefined,
   };
+
+  // --- Subdomain (requires feature_subdomain entitlement) ---
+  if (typeof body.subdomain === "string") {
+    const val = body.subdomain.trim().toLowerCase().replace(/[^a-z0-9-]/g, "");
+    try {
+      await requireEntitlement("feature_subdomain");
+      data.subdomain = val || null;
+    } catch (err) {
+      if (err instanceof EntitlementError) {
+        return NextResponse.json(
+          { ok: false, error: "upgrade_required", feature: "feature_subdomain", requiredPlan: err.requiredPlan },
+          { status: 403 }
+        );
+      }
+      throw err;
+    }
+  }
+
+  // --- Custom domain (requires feature_custom_domain entitlement) ---
+  if (typeof body.customDomain === "string") {
+    const val = body.customDomain.trim().toLowerCase().replace(/\/$/, "");
+    if (val && !/^[a-z0-9]([a-z0-9.-]*[a-z0-9])?(\.[a-z]{2,})$/.test(val)) {
+      return NextResponse.json(
+        { ok: false, error: "invalid_custom_domain" },
+        { status: 400 }
+      );
+    }
+    try {
+      await requireEntitlement("feature_custom_domain");
+      data.customDomain = val || null;
+    } catch (err) {
+      if (err instanceof EntitlementError) {
+        return NextResponse.json(
+          { ok: false, error: "upgrade_required", feature: "feature_custom_domain", requiredPlan: err.requiredPlan },
+          { status: 403 }
+        );
+      }
+      throw err;
+    }
+  }
 
   // Optional onboarding flag
   if (body.markOnboarded === true) {
@@ -196,5 +273,11 @@ export const PATCH = withRequestLogging(async function PATCH(req: Request) {
     );
   }
 
+  // Invalidate settings cache for this company
+  settingsCache.delete(companyId);
+
   return NextResponse.json({ ok: true });
 });
+
+/** PUT is an alias for PATCH — the subdomain UI calls PUT */
+export const PUT = PATCH;
