@@ -110,4 +110,10 @@ declare module "lucide-react" {
   export const Loader2: LucideIcon;
   export const Star: LucideIcon;
   export const BarChart3: LucideIcon;
+
+  // Office spec: bulk actions, chase, categories
+  export const Bell: LucideIcon;
+  export const UserPlus: LucideIcon;
+  export const Tag: LucideIcon;
+  export const ArrowRightLeft: LucideIcon;
 }

@@ -6,7 +6,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getStatusBadgeProps } from "@/lib/statusConfig";
-import { Receipt, ArrowUpRight, FileText, Clock, Briefcase, CheckCircle2 } from "lucide-react";
+import { Receipt, ArrowUpRight, FileText, Clock, Briefcase, CheckCircle2, Tag } from "lucide-react";
+
+const EXPENSE_CATEGORIES = [
+  { value: "", label: "Uncategorised" },
+  { value: "materials", label: "Materials" },
+  { value: "tools", label: "Tools & Equipment" },
+  { value: "travel", label: "Travel" },
+  { value: "fuel", label: "Fuel" },
+  { value: "subcontractor", label: "Subcontractor" },
+  { value: "office", label: "Office" },
+  { value: "insurance", label: "Insurance" },
+  { value: "training", label: "Training" },
+  { value: "other", label: "Other" },
+];
 
 type ArrowUpRightResult = { storageKey: string; filename: string; mimeType?: string; sizeBytes?: number };
 
@@ -179,6 +192,7 @@ function ExpenseCard({
   const [vat, setVat] = useState(e.vat ?? "");
   const [subtotal, setSubtotal] = useState(e.subtotal ?? "");
   const [receiptDate, setReceiptDate] = useState(e.receiptDate ? new Date(e.receiptDate).toISOString().slice(0, 10) : "");
+  const [category, setCategory] = useState(e.category ?? "");
 
   useEffect(() => {
     setSupplierName(e.supplierName ?? "");
@@ -186,6 +200,7 @@ function ExpenseCard({
     setVat(e.vat ?? "");
     setSubtotal(e.subtotal ?? "");
     setReceiptDate(e.receiptDate ? new Date(e.receiptDate).toISOString().slice(0, 10) : "");
+    setCategory(e.category ?? "");
   }, [e.id, e.updatedAt]);
 
   const getStatusBadge = (status: string) => {
@@ -242,12 +257,19 @@ function ExpenseCard({
             <p className="text-xs text-[var(--muted-foreground)]">VAT</p>
             <p className="text-sm font-medium text-[var(--foreground)]">£{((e.vat ?? 0) / 100).toFixed(2)}</p>
           </div>
+          <div className="flex items-center gap-2">
+            <Tag className="w-4 h-4 text-[var(--muted-foreground)]" />
+            <div>
+              <p className="text-xs text-[var(--muted-foreground)]">Category</p>
+              <p className="text-sm font-medium text-[var(--foreground)]">{EXPENSE_CATEGORIES.find(c => c.value === (e.category ?? ""))?.label ?? "Uncategorised"}</p>
+            </div>
+          </div>
         </div>
 
         {edit && (
           <div className="mt-4 pt-4 border-t border-[var(--border)] space-y-4">
             <p className="font-medium text-[var(--foreground)]">Review & Confirm</p>
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
               <div className="space-y-1">
                 <label className="text-xs text-[var(--muted-foreground)]">Supplier</label>
                 <input className="w-full border border-[var(--border)] rounded-lg px-3 py-2 text-sm bg-[var(--card)]" value={supplierName} onChange={(ev) => setSupplierName(ev.target.value)} />
@@ -255,6 +277,14 @@ function ExpenseCard({
               <div className="space-y-1">
                 <label className="text-xs text-[var(--muted-foreground)]">Date</label>
                 <input className="w-full border border-[var(--border)] rounded-lg px-3 py-2 text-sm bg-[var(--card)]" type="date" value={receiptDate} onChange={(ev) => setReceiptDate(ev.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-[var(--muted-foreground)]">Category</label>
+                <select className="w-full border border-[var(--border)] rounded-lg px-3 py-2 text-sm bg-[var(--card)]" value={category} onChange={(ev) => setCategory(ev.target.value)}>
+                  {EXPENSE_CATEGORIES.map((c) => (
+                    <option key={c.value} value={c.value}>{c.label}</option>
+                  ))}
+                </select>
               </div>
               <div className="space-y-1">
                 <label className="text-xs text-[var(--muted-foreground)]">Subtotal (pence)</label>
@@ -280,6 +310,7 @@ function ExpenseCard({
                 onClick={() => onConfirm({
                   supplierName,
                   receiptDate,
+                  category: category || null,
                   subtotal: subtotal === "" ? null : Number(subtotal),
                   vat: vat === "" ? null : Number(vat),
                   total: total === "" ? null : Number(total)

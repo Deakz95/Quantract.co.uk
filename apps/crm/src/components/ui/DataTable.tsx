@@ -281,12 +281,19 @@ export function DataTable<T extends { id: string }>({
 }
 
 // Bulk action bar component
+export type BulkAction = {
+  label: string;
+  onClick: () => void;
+  variant?: "default" | "danger";
+};
+
 export type BulkActionBarProps = {
   selectedCount: number;
   onDelete?: () => void;
   onClearSelection: () => void;
   deleteLabel?: string;
   className?: string;
+  actions?: BulkAction[];
 };
 
 export function BulkActionBar({
@@ -295,6 +302,7 @@ export function BulkActionBar({
   onClearSelection,
   deleteLabel = "Delete selected",
   className,
+  actions,
 }: BulkActionBarProps) {
   if (selectedCount === 0) return null;
 
@@ -316,6 +324,21 @@ export function BulkActionBar({
         >
           Clear selection
         </button>
+        {actions?.map((action) => (
+          <button
+            key={action.label}
+            type="button"
+            onClick={action.onClick}
+            className={cn(
+              "px-3 py-1.5 text-sm rounded-lg transition-colors",
+              action.variant === "danger"
+                ? "bg-[var(--error)] text-white hover:bg-[var(--error)]/90"
+                : "bg-[var(--primary)] text-white hover:bg-[var(--primary)]/90"
+            )}
+          >
+            {action.label}
+          </button>
+        ))}
         {onDelete && (
           <button
             type="button"

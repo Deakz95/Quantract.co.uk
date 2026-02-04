@@ -14,7 +14,7 @@ import { CardGridSkeleton } from "@/components/ui/CardSkeleton";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/useToast";
 import { getStatusBadgeProps } from "@/lib/statusConfig";
-import { Briefcase, Plus, Clock, SquarePen, Copy, Trash2, AlertCircle } from "lucide-react";
+import { Briefcase, Plus, Clock, SquarePen, Copy, Trash2, AlertCircle, UserPlus, ArrowRightLeft } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -79,6 +79,9 @@ export default function JobsPage() {
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const [healthFlags, setHealthFlags] = useState<Record<string, { hasInvoice: boolean; hasOpenSnags: boolean; hasMissingTimesheet: boolean }>>({});
+  const [bulkStatusOpen, setBulkStatusOpen] = useState(false);
+  const [bulkAssignOpen, setBulkAssignOpen] = useState(false);
+  const [engineers, setEngineers] = useState<{ id: string; name: string; email: string }[]>([]);
 
   const loadJobs = useCallback(async () => {
     setLoading(true);
@@ -110,6 +113,10 @@ export default function JobsPage() {
     fetch('/api/admin/jobs/health-flags')
       .then(r => r.json())
       .then(json => { if (json.ok) setHealthFlags(json.flags); })
+      .catch(() => {});
+    fetch('/api/admin/engineers')
+      .then(r => r.json())
+      .then(json => { setEngineers(Array.isArray(json) ? json : json.data || []); })
       .catch(() => {});
   }, [loadJobs]);
 
@@ -313,6 +320,48 @@ export default function JobsPage() {
     }
   };
 
+  const handleBulkStatusChange = async (status: string) => {
+    try {
+      const res = await fetch('/api/admin/jobs/bulk-update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: selectedIds, status }),
+      });
+      const json = await res.json();
+      if (json.ok) {
+        toast({ title: "Updated", description: `${json.updated} job${json.updated === 1 ? '' : 's'} updated to ${status}`, variant: "success" });
+        setSelectedIds([]);
+        loadJobs();
+      } else {
+        toast({ title: "Error", description: json.error, variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Error", description: "Bulk update failed", variant: "destructive" });
+    }
+    setBulkStatusOpen(false);
+  };
+
+  const handleBulkAssign = async (engineerId: string) => {
+    try {
+      const res = await fetch('/api/admin/jobs/bulk-update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: selectedIds, engineerId }),
+      });
+      const json = await res.json();
+      if (json.ok) {
+        toast({ title: "Assigned", description: `${json.updated} job${json.updated === 1 ? '' : 's'} assigned`, variant: "success" });
+        setSelectedIds([]);
+        loadJobs();
+      } else {
+        toast({ title: "Error", description: json.error, variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Error", description: "Bulk assign failed", variant: "destructive" });
+    }
+    setBulkAssignOpen(false);
+  };
+
   const columns: Column<Job>[] = [
     {
       key: 'jobNumber',
@@ -465,6 +514,10 @@ export default function JobsPage() {
           onDelete={() => setBulkDeleteOpen(true)}
           onClearSelection={() => setSelectedIds([])}
           deleteLabel="Delete selected"
+          actions={[
+            { label: "Change Status", onClick: () => setBulkStatusOpen(true) },
+            { label: "Assign Engineer", onClick: () => setBulkAssignOpen(true) },
+          ]}
         />
 
         {/* Jobs Content */}
@@ -573,6 +626,61 @@ export default function JobsPage() {
         onConfirm={handleBulkDelete}
         busy={bulkDeleting}
       />
+
+      {/* Bulk Status Change */}
+      {bulkStatusOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setBulkStatusOpen(false)}>
+          <div className="bg-[var(--card)] rounded-xl p-6 shadow-xl max-w-sm w-full mx-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-[var(--foreground)] mb-1">Change Status</h3>
+            <p className="text-sm text-[var(--muted-foreground)] mb-4">Update {selectedIds.length} job{selectedIds.length === 1 ? '' : 's'}</p>
+            <div className="space-y-2">
+              {STATUS_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => handleBulkStatusChange(opt.value)}
+                  className="w-full text-left px-4 py-2 rounded-lg border border-[var(--border)] hover:bg-[var(--muted)] text-sm text-[var(--foreground)] transition-colors"
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <button type="button" onClick={() => setBulkStatusOpen(false)} className="mt-4 w-full text-center text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)]">
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Assign Engineer */}
+      {bulkAssignOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setBulkAssignOpen(false)}>
+          <div className="bg-[var(--card)] rounded-xl p-6 shadow-xl max-w-sm w-full mx-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-[var(--foreground)] mb-1">Assign Engineer</h3>
+            <p className="text-sm text-[var(--muted-foreground)] mb-4">Assign {selectedIds.length} job{selectedIds.length === 1 ? '' : 's'}</p>
+            {engineers.length === 0 ? (
+              <p className="text-sm text-[var(--muted-foreground)]">No engineers found</p>
+            ) : (
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {engineers.map((eng) => (
+                  <button
+                    key={eng.id}
+                    type="button"
+                    onClick={() => handleBulkAssign(eng.id)}
+                    className="w-full text-left px-4 py-2 rounded-lg border border-[var(--border)] hover:bg-[var(--muted)] text-sm text-[var(--foreground)] transition-colors"
+                  >
+                    <span className="font-medium">{eng.name}</span>
+                    <span className="text-[var(--muted-foreground)] ml-2">{eng.email}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+            <button type="button" onClick={() => setBulkAssignOpen(false)} className="mt-4 w-full text-center text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)]">
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </AppShell>
   );
 }

@@ -13,7 +13,7 @@ import { deleteWithMessage, bulkDeleteWithSummary } from "@/lib/http/deleteWithM
 import { undoDelete, bulkUndoAll } from "@/lib/http/undoDelete";
 import { useToast } from "@/components/ui/useToast";
 import { getStatusBadgeProps } from "@/lib/statusConfig";
-import { Receipt, Plus, SquarePen, Copy, Trash2 } from "lucide-react";
+import { Receipt, Plus, SquarePen, Copy, Trash2, Bell } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -59,6 +59,7 @@ export default function InvoicesPage() {
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [chasing, setChasing] = useState(false);
 
   const loadInvoices = useCallback(async () => {
     setLoading(true);
@@ -298,6 +299,28 @@ export default function InvoicesPage() {
     }
   };
 
+  const handleChaseOverdue = async () => {
+    setChasing(true);
+    try {
+      const res = await fetch('/api/admin/invoices/auto-chase/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dryRun: false }),
+      });
+      const json = await res.json();
+      if (json.ok !== false) {
+        const count = json.chased ?? json.sent ?? 0;
+        toast({ title: "Chase Complete", description: count > 0 ? `Sent ${count} reminder${count === 1 ? '' : 's'}` : "No overdue invoices to chase", variant: "success" });
+      } else {
+        toast({ title: "Error", description: json.error || "Chase failed", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Error", description: "Failed to run chase", variant: "destructive" });
+    } finally {
+      setChasing(false);
+    }
+  };
+
   const columns: Column<Invoice>[] = [
     {
       key: 'invoiceNumber',
@@ -415,12 +438,18 @@ export default function InvoicesPage() {
               filterConfigs={filterConfigs}
             />
           </div>
-          <Link href="/admin/invoices/new">
-            <Button variant="gradient">
-              <Plus className="w-4 h-4 mr-2" />
-              New Invoice
+          <div className="flex gap-2">
+            <Button variant="secondary" onClick={handleChaseOverdue} disabled={chasing}>
+              <Bell className="w-4 h-4 mr-2" />
+              {chasing ? "Chasing..." : "Chase Overdue"}
             </Button>
-          </Link>
+            <Link href="/admin/invoices/new">
+              <Button variant="gradient">
+                <Plus className="w-4 h-4 mr-2" />
+                New Invoice
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* Bulk Action Bar */}
