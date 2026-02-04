@@ -1,6 +1,6 @@
 # 11 — Stage D2: PDF Template Editor v2
 
-**Status:** PENDING
+**Status:** DONE
 
 ## Intent
 PDF template editor v2 (layout canvas) for invoices/quotes/certs (versioned).
@@ -26,7 +26,7 @@ PDF template editor v2 (layout canvas) for invoices/quotes/certs (versioned).
 - New Prisma models: `PdfTemplate`, `PdfTemplateVersion`
 
 ## Acceptance Criteria
-- [ ] Company can edit layout and have it applied to new PDFs; old PDFs unchanged (versioned)
+- [x] Company can edit layout and have it applied to new PDFs; old PDFs unchanged (versioned)
 
 ## Commands
 ```bash
