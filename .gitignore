@@ -63,3 +63,6 @@ venv/
 **/prisma/*.db
 **/prisma/*.db-journal
 nul
+
+# AILOOP specs (managed externally by orchestrator)
+apps/crm/docs/specs/
