@@ -8,7 +8,7 @@ services:
     runtime: node
     region: frankfurt
     rootDir: .
-    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @quantract/crm run build
+    buildCommand: pnpm install --frozen-lockfile && pnpm --filter @quantract/crm run build
     preDeployCommand: cd apps/crm && pnpm run prisma:generate && pnpm run prisma:migrate:deploy:safe
     startCommand: cd apps/crm && pnpm run start
     healthCheckPath: /api/health
@@ -53,7 +53,7 @@ services:
     runtime: node
     region: frankfurt
     rootDir: .
-    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @quantract/marketing run build
+    buildCommand: pnpm install --frozen-lockfile && pnpm --filter @quantract/marketing run build
     startCommand: cd apps/marketing && pnpm run start
     healthCheckPath: /api/health
     envVars:
@@ -68,7 +68,7 @@ services:
     runtime: node
     region: frankfurt
     rootDir: .
-    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @quantract/certificates run build
+    buildCommand: pnpm install --frozen-lockfile && pnpm --filter @quantract/certificates run build
     startCommand: cd apps/certificates && pnpm run start
     healthCheckPath: /api/health
     envVars:
@@ -83,7 +83,7 @@ services:
     runtime: node
     region: frankfurt
     rootDir: .
-    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @quantract/tools run build
+    buildCommand: pnpm install --frozen-lockfile && pnpm --filter @quantract/tools run build
     startCommand: cd apps/tools && pnpm run start
     healthCheckPath: /api/health
     envVars:
