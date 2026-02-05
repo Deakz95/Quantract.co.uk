@@ -53,6 +53,7 @@ export const GET = withRequestLogging(async function GET(req: Request) {
       where: {
         companyId: authCtx.companyId,
         engineerId: engineer.id,
+        deletedAt: null,
         startAt: { gte: from, lte: to },
       },
       orderBy: { startAt: "asc" },
@@ -68,6 +69,7 @@ export const GET = withRequestLogging(async function GET(req: Request) {
       jobId: e.jobId,
       jobTitle: e.job?.title,
       notes: e.notes,
+      status: e.status || "scheduled",
     }));
 
     const clashes: Array<{ aId: string; bId: string }> = [];

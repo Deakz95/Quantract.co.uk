@@ -7,10 +7,10 @@ services:
     name: quantract-crm
     runtime: node
     region: frankfurt
-    rootDir: apps/crm
-    buildCommand: npm ci && npm run build
-    preDeployCommand: npm run prisma:generate && npm run prisma:migrate:deploy:safe
-    startCommand: npm run start
+    rootDir: .
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @quantract/crm run build
+    preDeployCommand: cd apps/crm && pnpm run prisma:generate && pnpm run prisma:migrate:deploy:safe
+    startCommand: cd apps/crm && pnpm run start
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
@@ -52,9 +52,9 @@ services:
     name: quantract-marketing
     runtime: node
     region: frankfurt
-    rootDir: apps/marketing
-    buildCommand: npm ci && npm run build
-    startCommand: npm run start
+    rootDir: .
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @quantract/marketing run build
+    startCommand: cd apps/marketing && pnpm run start
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
@@ -67,9 +67,9 @@ services:
     name: quantract-certificates
     runtime: node
     region: frankfurt
-    rootDir: apps/certificates
-    buildCommand: npm ci && npm run build
-    startCommand: npm run start
+    rootDir: .
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @quantract/certificates run build
+    startCommand: cd apps/certificates && pnpm run start
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
@@ -82,9 +82,9 @@ services:
     name: quantract-tools
     runtime: node
     region: frankfurt
-    rootDir: apps/tools
-    buildCommand: npm ci && npm run build
-    startCommand: npm run start
+    rootDir: .
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @quantract/tools run build
+    startCommand: cd apps/tools && pnpm run start
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useBillingStatus } from "@/components/billing/useBillingStatus";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,7 +21,7 @@ import {
 import { apiRequest, getApiErrorMessage } from "@/lib/apiClient";
 import { getPlanDefinition, isEngineerLimitReached } from "@/lib/billing/plans";
 import { toTitleCase } from "@/lib/cn";
-import { Ellipsis, SquarePen, Eye, UserCog, Activity, Clock, Award, Briefcase } from "lucide-react";
+import { Ellipsis, SquarePen, Eye, User, UserCog, Activity, Clock, Award, Briefcase } from "lucide-react";
 
 type Engineer = {
   id: string;
@@ -50,6 +51,7 @@ type RateCard = {
 
 export default function EngineersPageClient() {
   const { toast } = useToast();
+  const router = useRouter();
   const loadedRef = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -466,6 +468,10 @@ export default function EngineersPageClient() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => router.push(`/admin/engineers/${e.id}`)}>
+                                <User className="w-4 h-4 mr-2" />
+                                View Profile
+                              </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => setSelectedId(e.id)}>
                                 <Eye className="w-4 h-4 mr-2" />
                                 Details

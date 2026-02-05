@@ -3,6 +3,7 @@ import { requireRole, getUserEmail, getAuthContext } from "@/lib/serverAuth";
 import { addTimeEntry, listTimeEntriesForEngineerWeek } from "@/lib/server/repo";
 import { getPrisma } from "@/lib/server/prisma";
 import { withRequestLogging } from "@/lib/server/observability";
+import { rateLimitEngineerWrite, createRateLimitResponse } from "@/lib/server/rateLimitMiddleware";
 
 export const runtime = "nodejs";
 
@@ -29,6 +30,10 @@ export const POST = withRequestLogging(async function POST(req: Request) {
     await requireRole("engineer");
     const email = await getUserEmail();
     if (!email) return NextResponse.json({ error: "Missing engineer email" }, { status: 401 });
+
+    // Rate limit by authenticated user
+    const rl = rateLimitEngineerWrite(email);
+    if (!rl.ok) return createRateLimitResponse({ error: rl.error!, resetAt: rl.resetAt! });
 
     const idempotencyKey = req.headers.get("idempotency-key")?.trim() || null;
 

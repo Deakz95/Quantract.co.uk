@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getPrisma } from "@/lib/server/prisma";
 import { getReminderQueue } from "@/lib/server/queue/queueConfig";
 import { withRequestLogging } from "@/lib/server/observability";
+import { trackCronRun } from "@/lib/server/cronTracker";
 
 /**
  * Invoice Reminder Cron Handler
@@ -28,70 +29,71 @@ export const GET = withRequestLogging(async function GET() {
       return jsonErr("Database not available", 503);
     }
 
-    const reminderQueue = getReminderQueue();
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const result = await trackCronRun("invoice-reminders", async () => {
+      const reminderQueue = getReminderQueue();
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
 
-    // Find overdue invoices
-    const overdueInvoices = await db.invoice.findMany({
-      where: {
-        status: { not: "paid" },
-        dueAt: { lt: today },
-      },
-      select: {
-        id: true,
-        companyId: true,
-        dueAt: true,
-        InvoiceChase: {
-          orderBy: { sentAt: "desc" },
-          take: 1,
+      // Find overdue invoices
+      const overdueInvoices = await db.invoice.findMany({
+        where: {
+          status: { not: "paid" },
+          dueAt: { lt: today },
         },
-      },
-    });
-
-    const jobsEnqueued: string[] = [];
-
-    for (const invoice of overdueInvoices) {
-      const daysOverdue = Math.floor(
-        (today.getTime() - new Date(invoice.dueAt).getTime()) / (1000 * 60 * 60 * 24)
-      );
-
-      let reminderType: "first" | "second" | "third" | null = null;
-
-      // Determine reminder type based on days overdue
-      // Assuming: 7 days = first, 14 days = second, 21 days = third
-      if (daysOverdue >= 7 && daysOverdue < 14 && invoice.InvoiceChase.length === 0) {
-        reminderType = "first";
-      } else if (daysOverdue >= 14 && daysOverdue < 21 && invoice.InvoiceChase.length === 1) {
-        reminderType = "second";
-      } else if (daysOverdue >= 21 && invoice.InvoiceChase.length === 2) {
-        reminderType = "third";
-      }
-
-      if (reminderType) {
-        // Enqueue job with idempotency key
-        const idempotencyKey = `invoice-reminder-${invoice.id}-${reminderType}-${today.toISOString().split("T")[0]}`;
-
-        await reminderQueue.add(
-          "send-reminder",
-          {
-            invoiceId: invoice.id,
-            companyId: invoice.companyId,
-            reminderType,
-            idempotencyKey,
+        select: {
+          id: true,
+          companyId: true,
+          dueAt: true,
+          InvoiceChase: {
+            orderBy: { sentAt: "desc" },
+            take: 1,
           },
-          { jobId: idempotencyKey }
+        },
+      });
+
+      const jobsEnqueued: string[] = [];
+
+      for (const invoice of overdueInvoices) {
+        const daysOverdue = Math.floor(
+          (today.getTime() - new Date(invoice.dueAt).getTime()) / (1000 * 60 * 60 * 24)
         );
 
-        jobsEnqueued.push(invoice.id);
-      }
-    }
+        let reminderType: "first" | "second" | "third" | null = null;
 
-    return jsonOk({
-      message: "Invoice reminder jobs enqueued",
-      count: jobsEnqueued.length,
-      invoiceIds: jobsEnqueued,
+        if (daysOverdue >= 7 && daysOverdue < 14 && invoice.InvoiceChase.length === 0) {
+          reminderType = "first";
+        } else if (daysOverdue >= 14 && daysOverdue < 21 && invoice.InvoiceChase.length === 1) {
+          reminderType = "second";
+        } else if (daysOverdue >= 21 && invoice.InvoiceChase.length === 2) {
+          reminderType = "third";
+        }
+
+        if (reminderType) {
+          const idempotencyKey = `invoice-reminder-${invoice.id}-${reminderType}-${today.toISOString().split("T")[0]}`;
+
+          await reminderQueue.add(
+            "send-reminder",
+            {
+              invoiceId: invoice.id,
+              companyId: invoice.companyId,
+              reminderType,
+              idempotencyKey,
+            },
+            { jobId: idempotencyKey }
+          );
+
+          jobsEnqueued.push(invoice.id);
+        }
+      }
+
+      return {
+        message: "Invoice reminder jobs enqueued",
+        count: jobsEnqueued.length,
+        invoiceIds: jobsEnqueued,
+      };
     });
+
+    return jsonOk(result);
   } catch (e: any) {
     console.error("[Cron: invoice-reminders] Error:", e);
     return jsonErr(e, 500);

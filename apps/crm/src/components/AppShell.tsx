@@ -35,6 +35,10 @@ import {
   HelpCircle,
   LogOut,
   Search,
+  Building2,
+  CheckCircle,
+  AlertTriangle,
+  Shield,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -52,7 +56,7 @@ import { useBillingStatus } from "@/components/billing/useBillingStatus";
 const BRAND_NAME = process.env.NEXT_PUBLIC_QT_BRAND_NAME || "Quantract";
 const BRAND_TAGLINE = process.env.NEXT_PUBLIC_QT_BRAND_TAGLINE || "Electrical & Building Services";
 
-export type Role = "admin" | "client" | "engineer";
+export type Role = "admin" | "client" | "engineer" | "office";
 
 type NavItem = {
   label: string;
@@ -81,6 +85,7 @@ const ADMIN_SECTIONS: NavSection[] = [
       { label: "Invoices", href: "/admin/invoices", icon: Receipt },
       { label: "Certificates", href: "/admin/certificates", icon: BadgeCheck },
       { label: "Schedule", href: "/admin/schedule", icon: CalendarDays },
+      { label: "Dispatch", href: "/admin/dispatch", icon: Activity },
     ],
   },
   {
@@ -138,10 +143,26 @@ const ADMIN_SECTIONS: NavSection[] = [
     ],
   },
   {
+    id: "office",
+    title: "Office",
+    dividerBefore: true,
+    items: [
+      { label: "Control Room", href: "/admin/office", icon: Building2 },
+      { label: "Approvals", href: "/admin/office/approvals", icon: CheckCircle },
+      { label: "Compliance", href: "/admin/office/compliance", icon: BadgeCheck },
+      { label: "Alerts", href: "/admin/office/alerts", icon: AlertTriangle },
+      { label: "Purchasing", href: "/admin/office/purchasing", icon: Receipt },
+    ],
+  },
+  {
     id: "admin",
     title: "Admin",
     dividerBefore: true,
     items: [
+      { label: "Roles", href: "/admin/roles", icon: Shield },
+      { label: "Entitlements", href: "/admin/entitlements", icon: CheckCircle },
+      { label: "Audit Log", href: "/admin/audit", icon: FileBarChart },
+      { label: "System Health", href: "/admin/ops", icon: Activity },
       { label: "Settings", href: "/admin/settings", icon: Settings },
       { label: "Import", href: "/admin/import", icon: Upload },
       { label: "Invites", href: "/admin/invites", icon: Mail },
@@ -149,7 +170,41 @@ const ADMIN_SECTIONS: NavSection[] = [
   },
 ];
 
-const DEFAULT_OPEN_SECTIONS = new Set(["core", "sales", "work", "money"]);
+const OFFICE_SECTIONS: NavSection[] = [
+  {
+    id: "control",
+    title: "Control Room",
+    items: [
+      { label: "Dashboard", href: "/office", icon: Building2 },
+      { label: "Dispatch", href: "/office/dispatch", icon: Activity },
+    ],
+  },
+  {
+    id: "approvals",
+    title: "Approvals",
+    items: [
+      { label: "Approvals", href: "/office/approvals", icon: CheckCircle },
+      { label: "Exports", href: "/office/exports", icon: FileBarChart },
+    ],
+  },
+  {
+    id: "compliance",
+    title: "Compliance",
+    items: [
+      { label: "Compliance", href: "/office/compliance", icon: BadgeCheck },
+      { label: "Alerts", href: "/office/alerts", icon: AlertTriangle },
+    ],
+  },
+  {
+    id: "purchasing",
+    title: "Purchasing",
+    items: [
+      { label: "Purchasing", href: "/office/purchasing", icon: Receipt },
+    ],
+  },
+];
+
+const DEFAULT_OPEN_SECTIONS = new Set(["core", "sales", "work", "money", "control", "approvals", "compliance", "purchasing"]);
 
 // Legacy flat array for client/engineer roles (no sections)
 const adminNav: NavItem[] = ADMIN_SECTIONS.flatMap((s) => s.items);
@@ -290,16 +345,18 @@ export function AppShell({
   const plan = billingStatus?.plan ?? "";
   const isFree = !plan || plan === "free" || plan === "trial";
   const nav = useMemo(() => {
-    return role === "engineer" ? engineerNav : clientNav;
+    if (role === "engineer") return engineerNav;
+    return clientNav;
   }, [role]);
 
   const adminSections = useMemo(() => {
+    if (role === "office") return OFFICE_SECTIONS;
     if (!isFree) return ADMIN_SECTIONS;
     return ADMIN_SECTIONS.map((s) => ({
       ...s,
       items: s.items.filter((item) => item.label !== "Deals"),
     })).filter((s) => s.items.length > 0);
-  }, [isFree]);
+  }, [isFree, role]);
   const pathname = usePathname();
   const [newOpen, setNewOpen] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
@@ -324,8 +381,9 @@ export function AppShell({
 
   // Auto-open the section containing the current route (never closes other sections)
   useEffect(() => {
-    if (role !== "admin") return;
-    const match = ADMIN_SECTIONS.find((s) =>
+    if (role !== "admin" && role !== "office") return;
+    const sections = role === "office" ? OFFICE_SECTIONS : ADMIN_SECTIONS;
+    const match = sections.find((s) =>
       s.items.some((item) => pathname === item.href || pathname.startsWith(item.href + "/"))
     );
     if (!match) return;
@@ -364,9 +422,9 @@ export function AppShell({
     void fetchUserEmail();
   }, []);
 
-  // Fetch notification count for admin
+  // Fetch notification count for admin/office
   useEffect(() => {
-    if (role !== "admin") return;
+    if (role !== "admin" && role !== "office") return;
     const fetchNotifs = async () => {
       try {
         const res = await fetch("/api/admin/notifications/recent", { cache: "no-store" });
@@ -398,7 +456,7 @@ export function AppShell({
   useEffect(() => {
     const apply = async () => {
       try {
-        if (role !== "admin") return;
+        if (role !== "admin" && role !== "office") return;
         const res = await fetch("/api/admin/settings", { cache: "no-store" });
         const data = await res.json().catch(() => null);
         const s = data?.settings;
@@ -458,15 +516,15 @@ export function AppShell({
 
           {/* Center: Role Badge */}
           <div className="hidden md:flex items-center gap-2">
-            <Badge variant={role === "admin" ? "gradient" : "secondary"}>
-              {role === "admin" ? "Admin" : role === "engineer" ? "Engineer" : "Client"} Portal
+            <Badge variant={role === "admin" || role === "office" ? "gradient" : "secondary"}>
+              {role === "admin" ? "Admin" : role === "office" ? "Office" : role === "engineer" ? "Engineer" : "Client"} Portal
             </Badge>
           </div>
 
           {/* Right: Actions */}
           <div className="flex items-center gap-2">
-            {/* Global Search Button - Admin Only */}
-            {role === "admin" && (
+            {/* Global Search Button - Admin/Office */}
+            {(role === "admin" || role === "office") && (
               <Button
                 variant="ghost"
                 size="sm"
@@ -480,7 +538,7 @@ export function AppShell({
                 </kbd>
               </Button>
             )}
-            {role === "admin" && (
+            {(role === "admin" || role === "office") && (
               <div className="relative">
                 <Button variant="ghost" size="sm" onClick={() => setNotifOpen(!notifOpen)}>
                   <Inbox className="w-4 h-4" />
@@ -715,8 +773,8 @@ export function AppShell({
         </div>
       )}
 
-      {/* Global Search Command Palette - Admin Only */}
-      {role === "admin" && (
+      {/* Global Search Command Palette - Admin/Office */}
+      {(role === "admin" || role === "office") && (
         <CommandPalette open={searchOpen} onOpenChange={setSearchOpen} />
       )}
 
@@ -724,11 +782,11 @@ export function AppShell({
       {mobileNavOpen && !hideNav && (
         <div className="lg:hidden fixed inset-0 z-30 bg-black/50 backdrop-blur-sm" onClick={() => setMobileNavOpen(false)}>
           <div 
-            className="w-72 h-full bg-[var(--card)] border-r border-[var(--border)] p-4 animate-fade-in"
+            className="w-72 h-full overflow-y-auto bg-[var(--card)] border-r border-[var(--border)] p-4 animate-fade-in"
             onClick={(e) => e.stopPropagation()}
           >
             <nav className="space-y-0.5">
-              {role === "admin"
+              {role === "admin" || role === "office"
                 ? renderAccordionNav(adminSections, isActive, openSections, toggleSection, () => setMobileNavOpen(false))
                 : renderFlatNav(nav, isActive, () => setMobileNavOpen(false))}
             </nav>
@@ -741,9 +799,9 @@ export function AppShell({
         {/* Desktop Sidebar */}
         {hideNav ? null : (
           <aside className="hidden lg:block lg:col-span-3">
-            <div className="sticky top-20">
+            <div className="sticky top-20 max-h-[calc(100vh-5rem)] overflow-y-auto">
               <nav className="space-y-0.5">
-                {role === "admin"
+                {role === "admin" || role === "office"
                   ? renderAccordionNav(adminSections, isActive, openSections, toggleSection)
                   : renderFlatNav(nav, isActive)}
               </nav>

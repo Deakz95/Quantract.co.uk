@@ -10,10 +10,10 @@ export const runtime = "nodejs";
  *
  * Returns system health signals for admin dashboard:
  * - Recent error count (AuditEvent errors in last 24h)
- * - Recent errors breakdown by action
  * - Last Stripe webhook timestamp
- * - Cron proxy signals (recent entity activity suggesting crons are running)
+ * - Real cron job status from CronRun table
  * - Active impersonation sessions count
+ * - Storage usage
  */
 export const GET = withRequestLogging(async function GET() {
   try {
@@ -32,11 +32,10 @@ export const GET = withRequestLogging(async function GET() {
       errorEvents,
       lastWebhook,
       activeImpersonations,
-      recentAlertCleanup,
-      recentSessionCleanup,
       storageUsage,
+      cronRuns,
     ] = await Promise.all([
-      // 1. Error events in last 24h (audit events with "error" or "failed" in action)
+      // 1. Error events in last 24h
       prisma.auditEvent.count({
         where: {
           companyId: ctx.companyId,
@@ -45,7 +44,7 @@ export const GET = withRequestLogging(async function GET() {
         },
       }).catch(() => 0),
 
-      // 2. Last Stripe webhook timestamp from CompanyBilling
+      // 2. Last Stripe webhook timestamp
       prisma.companyBilling.findUnique({
         where: { companyId: ctx.companyId },
         select: { lastWebhookAt: true, lastWebhookEventId: true },
@@ -56,42 +55,65 @@ export const GET = withRequestLogging(async function GET() {
         where: { companyId: ctx.companyId, endedAt: null },
       }).catch(() => 0),
 
-      // 4. Cron proxy: most recent resolved stock alert (cleanup cron indicator)
-      prisma.stockAlert.findFirst({
-        where: { companyId: ctx.companyId, status: "resolved" },
-        orderBy: { updatedAt: "desc" },
-        select: { updatedAt: true },
-      }).catch(() => null),
-
-      // 5. Cron proxy: most recent expired session cleanup (cleanup cron indicator)
-      prisma.authSession.findFirst({
-        where: { expiresAt: { lt: now } },
-        orderBy: { expiresAt: "desc" },
-        select: { expiresAt: true },
-      }).catch(() => null),
-
-      // 6. Storage usage
+      // 4. Storage usage
       prisma.companyStorageUsage.findUnique({
         where: { companyId: ctx.companyId },
         select: { bytesUsed: true, updatedAt: true },
       }).catch(() => null),
+
+      // 5. Real cron job status — latest run per job
+      (prisma.$queryRaw`
+        SELECT cr.id, cr."jobName", cr.status, cr."startedAt", cr."finishedAt", cr."durationMs", cr.error
+        FROM "CronRun" cr
+        INNER JOIN (
+          SELECT "jobName", MAX("startedAt") AS "maxStarted"
+          FROM "CronRun"
+          GROUP BY "jobName"
+        ) latest ON cr."jobName" = latest."jobName" AND cr."startedAt" = latest."maxStarted"
+        ORDER BY cr."jobName"
+      ` as Promise<Array<{
+        id: string;
+        jobName: string;
+        status: string;
+        startedAt: Date;
+        finishedAt: Date | null;
+        durationMs: number | null;
+        error: string | null;
+      }>>).catch(() => [] as Array<{
+        id: string;
+        jobName: string;
+        status: string;
+        startedAt: Date;
+        finishedAt: Date | null;
+        durationMs: number | null;
+        error: string | null;
+      }>),
     ]);
 
-    // Determine cron health based on proxy signals
-    const cronSignals = {
-      stockAlertReconcile: {
-        lastActivity: recentAlertCleanup?.updatedAt || null,
-        status: getCronStatus(recentAlertCleanup?.updatedAt, 25), // should run every 24h
-      },
-      sessionCleanup: {
-        lastActivity: recentSessionCleanup?.expiresAt || null,
-        status: "unknown" as const, // Can't reliably determine from session expiry
-      },
-      storageReconcile: {
-        lastActivity: storageUsage?.updatedAt || null,
-        status: getCronStatus(storageUsage?.updatedAt, 25), // should run daily
-      },
-    };
+    // Build cron status from real CronRun data
+    const cronJobs = cronRuns.map((run) => {
+      const hoursAgo = run.startedAt
+        ? (Date.now() - new Date(run.startedAt).getTime()) / (1000 * 60 * 60)
+        : null;
+
+      let indicator: "green" | "amber" | "red" | "unknown" = "unknown";
+      if (run.status === "failed") {
+        indicator = "red";
+      } else if (run.status === "running") {
+        indicator = "amber";
+      } else if (hoursAgo !== null) {
+        indicator = hoursAgo <= 25 ? "green" : hoursAgo <= 50 ? "amber" : "red";
+      }
+
+      return {
+        jobName: run.jobName,
+        lastRun: run.startedAt,
+        status: run.status,
+        durationMs: run.durationMs,
+        error: run.error ? run.error.slice(0, 200) : null,
+        indicator,
+      };
+    });
 
     // Webhook health
     const webhookHealth = {
@@ -109,7 +131,7 @@ export const GET = withRequestLogging(async function GET() {
         errorStatus: errorEvents === 0 ? "green" : errorEvents < 5 ? "amber" : "red",
         activeImpersonations,
         webhookHealth,
-        cronSignals,
+        cronJobs,
         storageBytes: storageUsage?.bytesUsed ? Number(storageUsage.bytesUsed) : 0,
         checkedAt: now.toISOString(),
       },
@@ -123,14 +145,6 @@ export const GET = withRequestLogging(async function GET() {
     return NextResponse.json({ ok: false, error: "health_check_failed" }, { status: 500 });
   }
 });
-
-function getCronStatus(lastActivity: Date | null | undefined, maxHours: number): "green" | "amber" | "red" | "no_data" {
-  if (!lastActivity) return "no_data";
-  const hoursAgo = (Date.now() - new Date(lastActivity).getTime()) / (1000 * 60 * 60);
-  if (hoursAgo <= maxHours) return "green";
-  if (hoursAgo <= maxHours * 2) return "amber";
-  return "red";
-}
 
 function getWebhookStatus(lastAt: Date): "green" | "amber" | "red" {
   const hoursAgo = (Date.now() - new Date(lastAt).getTime()) / (1000 * 60 * 60);

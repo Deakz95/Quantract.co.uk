@@ -2,8 +2,9 @@
  * Ops API tools for AI integration.
  *
  * Provides a limited toolset that lets the AI query system health,
- * inspect queue backlogs, and (with an explicit approval token)
- * retry failed jobs. All invocations are logged to OpsAuditLog.
+ * inspect queue backlogs, cron status, tenant diagnostics, and
+ * (with an explicit approval token) retry failed jobs.
+ * All invocations are logged to OpsAuditLog.
  */
 
 import { getPrisma } from "@/lib/server/prisma";
@@ -66,6 +67,33 @@ export const OPS_TOOL_DEFINITIONS = [
       },
     },
   },
+  {
+    type: "function" as const,
+    function: {
+      name: "ops_cron_status",
+      description:
+        "List all cron jobs with their last run timestamp, status (success/failed/running), duration, and error snippet.",
+      parameters: { type: "object", properties: {}, required: [] },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "ops_tenant_diagnostics",
+      description:
+        "Get diagnostics for a specific tenant/company: usage summary, recent errors, audit highlights. Returns only aggregate/non-sensitive data.",
+      parameters: {
+        type: "object",
+        properties: {
+          companyId: {
+            type: "string",
+            description: "The company ID to diagnose",
+          },
+        },
+        required: ["companyId"],
+      },
+    },
+  },
 ] as const;
 
 // ── Tool executor ──
@@ -88,6 +116,10 @@ export async function executeOpsTool(
       return executeRetryJob(prisma, args);
     case "ops_audit_log":
       return executeAuditLog(prisma, args);
+    case "ops_cron_status":
+      return executeCronStatus(prisma);
+    case "ops_tenant_diagnostics":
+      return executeTenantDiagnostics(prisma, args);
     default:
       return { ok: false, error: `unknown_tool: ${name}` };
   }
@@ -180,6 +212,101 @@ async function executeAuditLog(
     return { ok: true, data: { items, count: items.length } };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "audit_query_failed" };
+  }
+}
+
+async function executeCronStatus(prisma: any): Promise<OpsToolResult> {
+  try {
+    const latestRuns: Array<{
+      jobName: string;
+      status: string;
+      startedAt: Date;
+      finishedAt: Date | null;
+      durationMs: number | null;
+      error: string | null;
+    }> = await prisma.$queryRaw`
+      SELECT cr."jobName", cr.status, cr."startedAt", cr."finishedAt", cr."durationMs", cr.error
+      FROM "CronRun" cr
+      INNER JOIN (
+        SELECT "jobName", MAX("startedAt") AS "maxStarted"
+        FROM "CronRun"
+        GROUP BY "jobName"
+      ) latest ON cr."jobName" = latest."jobName" AND cr."startedAt" = latest."maxStarted"
+      ORDER BY cr."jobName"
+    `;
+
+    const jobs = latestRuns.map((run) => ({
+      jobName: run.jobName,
+      lastRun: run.startedAt,
+      status: run.status,
+      durationMs: run.durationMs,
+      error: run.error ? run.error.slice(0, 500) : null,
+    }));
+
+    const result = { timestamp: new Date().toISOString(), jobs };
+    await logAudit(prisma, "ai.cron_status", null, { jobCount: jobs.length });
+    return { ok: true, data: result };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "cron_query_failed" };
+  }
+}
+
+async function executeTenantDiagnostics(
+  prisma: any,
+  args: Record<string, unknown>,
+): Promise<OpsToolResult> {
+  const { companyId } = args as { companyId?: string };
+  if (!companyId) return { ok: false, error: "companyId required" };
+
+  try {
+    const company = await prisma.company.findUnique({
+      where: { id: companyId },
+      select: { id: true, name: true, plan: true, subscriptionStatus: true, onboardedAt: true },
+    });
+    if (!company) return { ok: false, error: "company_not_found" };
+
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+    const [storageUsage, userCount, jobCount, invoiceCount, recentErrorCount] =
+      await Promise.all([
+        prisma.companyStorageUsage
+          .findUnique({ where: { companyId }, select: { bytesUsed: true } })
+          .catch(() => null),
+        prisma.companyUser.count({ where: { companyId } }).catch(() => 0),
+        prisma.job.count({ where: { companyId } }).catch(() => 0),
+        prisma.invoice.count({ where: { companyId } }).catch(() => 0),
+        prisma.auditEvent
+          .count({
+            where: {
+              companyId,
+              createdAt: { gte: sevenDaysAgo },
+              action: { in: ["error", "failed", "send_failed", "payment_failed", "sync_error"] },
+            },
+          })
+          .catch(() => 0),
+      ]);
+
+    const result = {
+      tenant: {
+        id: company.id,
+        name: company.name,
+        plan: company.plan,
+        subscriptionStatus: company.subscriptionStatus,
+        onboardedAt: company.onboardedAt,
+      },
+      usage: {
+        storageBytes: storageUsage?.bytesUsed ? Number(storageUsage.bytesUsed) : 0,
+        userCount,
+        jobCount,
+        invoiceCount,
+      },
+      diagnostics: { recentErrors7d: recentErrorCount },
+    };
+
+    await logAudit(prisma, "ai.tenant_diagnostics", { companyId }, { plan: company.plan });
+    return { ok: true, data: result };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "tenant_query_failed" };
   }
 }
 

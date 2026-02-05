@@ -35,3 +35,37 @@ form, input, select, textarea, button {
   position: relative;
   z-index: 1;
 }
+
+/* ========================================
+   TABLET UX — Touch-friendly sizing
+   ======================================== */
+
+/* Min 44px tap targets for inputs, selects, buttons */
+input, select, textarea {
+  min-height: 44px;
+  font-size: 16px; /* prevents iOS zoom on focus */
+}
+
+button {
+  min-height: 44px;
+}
+
+/* Responsive form grids: single-column on portrait tablet, multi-col on landscape/desktop */
+@media (max-width: 768px) {
+  .grid.md\:grid-cols-2,
+  .grid.md\:grid-cols-3,
+  .grid.md\:grid-cols-4 {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Sticky bottom action bar spacing */
+main {
+  padding-bottom: 80px;
+}
+
+/* Checkbox touch targets */
+input[type="checkbox"] {
+  min-width: 24px;
+  min-height: 24px;
+}

@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { Save, Eye, Plus, Trash2, GripVertical, Type, Minus, Square, Table, Image, Loader2 } from "lucide-react";
+// @ts-ignore — Pen and FileImage exist at runtime but TS defs lag behind lucide-react version
+import { Save, Eye, Plus, Trash2, GripVertical, Type, Minus, Square, Table, Image, Loader2, SquarePen, Pen, FileImage } from "lucide-react";
 import { DOC_TYPE_BINDINGS } from "@/lib/pdfTemplateConstants";
 
 type LayoutElement = {
   id: string;
-  type: "text" | "line" | "rect" | "table" | "image";
+  type: "text" | "line" | "rect" | "table" | "image" | "signature" | "photo";
   x: number;
   y: number;
   w: number;
@@ -21,7 +22,8 @@ type LayoutElement = {
   fillColor?: string;
   strokeColor?: string;
   columns?: Array<{ header: string; binding: string; width: number }>;
-  imageSource?: "logo";
+  imageSource?: "logo" | "signature_engineer" | "signature_customer" | "photo";
+  signatureRole?: "engineer" | "customer";
 };
 
 type PdfTemplateVersion = { id: string; version: number; layout: any; createdAt: string };
@@ -58,6 +60,8 @@ const ELEMENT_ICONS: Record<string, any> = {
   rect: Square,
   table: Table,
   image: Image,
+  signature: Pen,
+  photo: FileImage,
 };
 
 const ELEMENT_DEFAULTS: Record<string, Partial<LayoutElement>> = {
@@ -73,6 +77,8 @@ const ELEMENT_DEFAULTS: Record<string, Partial<LayoutElement>> = {
     ],
   },
   image: { w: 40, h: 20, imageSource: "logo" as const },
+  signature: { w: 85, h: 35, signatureRole: "engineer" as const },
+  photo: { w: 60, h: 40, imageSource: "photo" as const },
 };
 
 export function PdfTemplateEditor({
@@ -236,7 +242,10 @@ export function PdfTemplateEditor({
         {/* Left: Add elements */}
         <div className="w-48 shrink-0 space-y-2">
           <h4 className="text-xs font-semibold uppercase tracking-wider text-[var(--muted-foreground)] mb-2">Add Element</h4>
-          {(["text", "line", "rect", "table", "image"] as const).map(type => {
+          {([
+            "text", "line", "rect", "table", "image",
+            ...(template.docType === "certificate" ? ["signature", "photo"] as const : []),
+          ] as const).map(type => {
             const Icon = ELEMENT_ICONS[type];
             return (
               <button
@@ -340,7 +349,24 @@ export function PdfTemplateEditor({
                       <span className="text-xs text-gray-400">[Table: {el.columns?.length || 0} cols]</span>
                     )}
                     {el.type === "image" && (
-                      <span className="text-xs text-gray-400">[Logo]</span>
+                      <span className="text-xs text-gray-400">
+                        {el.imageSource === "logo" ? "[Logo]" :
+                         el.imageSource === "signature_engineer" ? "[Eng Sig]" :
+                         el.imageSource === "signature_customer" ? "[Cust Sig]" :
+                         el.imageSource === "photo" ? "[Photo]" : "[Image]"}
+                      </span>
+                    )}
+                    {el.type === "signature" && (
+                      <div className="flex flex-col items-center justify-center w-full h-full border border-dashed border-gray-300 rounded bg-gray-50/50">
+                        <Pen className="w-3 h-3 text-gray-400" />
+                        <span className="text-[9px] text-gray-400 mt-0.5">{el.signatureRole === "customer" ? "Customer" : "Engineer"}</span>
+                      </div>
+                    )}
+                    {el.type === "photo" && (
+                      <div className="flex flex-col items-center justify-center w-full h-full border border-dashed border-gray-300 rounded bg-gray-50/50">
+                        <FileImage className="w-3 h-3 text-gray-400" />
+                        <span className="text-[9px] text-gray-400 mt-0.5">Photo</span>
+                      </div>
                     )}
                   </div>
 
@@ -616,6 +642,42 @@ export function PdfTemplateEditor({
                   >
                     <Plus className="w-3 h-3" /> Add column
                   </button>
+                </div>
+              )}
+
+              {/* Signature properties */}
+              {selected.type === "signature" && (
+                <div>
+                  <label className="block text-[10px] text-[var(--muted-foreground)]">Signature Role</label>
+                  <select
+                    value={selected.signatureRole || "engineer"}
+                    onChange={e => updateElement(selected.id, { signatureRole: e.target.value as "engineer" | "customer" })}
+                    className="w-full rounded border border-[var(--border)] bg-[var(--background)] px-2 py-1 text-xs"
+                  >
+                    <option value="engineer">Engineer</option>
+                    <option value="customer">Customer</option>
+                  </select>
+                </div>
+              )}
+
+              {/* Image source properties */}
+              {selected.type === "image" && (
+                <div>
+                  <label className="block text-[10px] text-[var(--muted-foreground)]">Image Source</label>
+                  <select
+                    value={selected.imageSource || "logo"}
+                    onChange={e => updateElement(selected.id, { imageSource: e.target.value as "logo" | "signature_engineer" | "signature_customer" | "photo" })}
+                    className="w-full rounded border border-[var(--border)] bg-[var(--background)] px-2 py-1 text-xs"
+                  >
+                    <option value="logo">Company Logo</option>
+                    {template.docType === "certificate" && (
+                      <>
+                        <option value="signature_engineer">Engineer Signature</option>
+                        <option value="signature_customer">Customer Signature</option>
+                        <option value="photo">Certificate Photo</option>
+                      </>
+                    )}
+                  </select>
                 </div>
               )}
             </div>

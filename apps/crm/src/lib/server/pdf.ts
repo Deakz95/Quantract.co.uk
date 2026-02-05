@@ -4,7 +4,7 @@ import type { Agreement, Quote, Invoice, Certificate, CertificateTestResult, Cli
 import { quoteTotals } from "@/lib/server/db";
 import { normalizeCertificateData, signatureIsPresent } from "@/lib/certificates";
 import QRCode from "qrcode";
-import { renderFromTemplate, type TemplateLayout } from "@/lib/server/pdfTemplateRenderer";
+import { renderFromTemplate, type TemplateLayout, type TemplateImageAttachments } from "@/lib/server/pdfTemplateRenderer";
 import { getPrisma } from "@/lib/server/prisma";
 
 export type BrandContext = {
@@ -969,6 +969,82 @@ export async function renderCheckPdf(input: {
   return Buffer.from(bytes);
 }
 
+// ── Certificate Template Data Dict ──
+
+/**
+ * Build a flat data dictionary from certificate data for template rendering.
+ * Maps all certificate bindings to their values.
+ */
+export function buildCertificateDataDict(
+  cert: {
+    id: string;
+    certificateNumber?: string | null;
+    type: string;
+    status: string;
+    issuedAtISO?: string | null;
+    inspectorName?: string | null;
+    inspectorEmail?: string | null;
+    outcome?: string | null;
+    outcomeReason?: string | null;
+    data?: Record<string, unknown>;
+  },
+  brand?: BrandContext | null,
+): Record<string, unknown> {
+  const data = (cert.data ?? {}) as any;
+  return {
+    // Header
+    companyName: brand?.name ?? "",
+    id: cert.id,
+    certificateNumber: cert.certificateNumber ?? "",
+    certType: cert.type,
+    status: cert.status?.toUpperCase() ?? "",
+    issuedAt: cert.issuedAtISO ? new Date(cert.issuedAtISO).toLocaleDateString("en-GB") : "",
+    // Overview
+    jobReference: data.overview?.jobReference ?? "",
+    siteName: data.overview?.siteName ?? "",
+    installationAddress: data.overview?.installationAddress ?? "",
+    clientName: data.overview?.clientName ?? "",
+    clientEmail: data.overview?.clientEmail ?? "",
+    jobDescription: data.overview?.jobDescription ?? "",
+    // Inspector
+    inspectorName: cert.inspectorName ?? "",
+    inspectorEmail: cert.inspectorEmail ?? "",
+    // Installation
+    descriptionOfWork: data.installation?.descriptionOfWork ?? "",
+    supplyType: data.installation?.supplyType ?? "",
+    earthingArrangement: data.installation?.earthingArrangement ?? "",
+    distributionType: data.installation?.distributionType ?? "",
+    maxDemand: data.installation?.maxDemand ?? "",
+    // Inspection
+    limitations: data.inspection?.limitations ?? "",
+    observations: data.inspection?.observations ?? "",
+    nextInspectionDate: data.inspection?.nextInspectionDate ?? "",
+    // Assessment
+    overallAssessment: data.assessment?.overallAssessment ?? "",
+    recommendations: data.assessment?.recommendations ?? "",
+    // Declarations
+    extentOfWork: data.declarations?.extentOfWork ?? "",
+    worksTested: data.declarations?.worksTested ?? "",
+    declarationComments: data.declarations?.comments ?? "",
+    // Outcome
+    outcome: cert.outcome ?? "",
+    outcomeReason: cert.outcomeReason ?? "",
+    // Signatures
+    engineerName: data.signatures?.engineer?.name ?? data.signatures?.engineer?.signatureText ?? "",
+    engineerSignedAt: data.signatures?.engineer?.signedAtISO
+      ? new Date(data.signatures.engineer.signedAtISO).toLocaleDateString("en-GB")
+      : "",
+    customerName: data.signatures?.customer?.name ?? data.signatures?.customer?.signatureText ?? "",
+    customerSignedAt: data.signatures?.customer?.signedAtISO
+      ? new Date(data.signatures.customer.signedAtISO).toLocaleDateString("en-GB")
+      : "",
+    // Footer
+    footerLine1: brand?.footerLine1 ?? "",
+    footerLine2: brand?.footerLine2 ?? "",
+    contactDetails: brand?.contactDetails ?? "",
+  };
+}
+
 // ── Template Integration ──
 
 /**
@@ -997,18 +1073,20 @@ export async function getActiveTemplateLayout(
 
 /**
  * Try to render a PDF using the company's custom template.
- * Returns the PDF buffer on success, or null on failure (caller should fallback to hardcoded).
+ * Returns the PDF buffer and versionId on success, or null on failure (caller should fallback to hardcoded).
  */
 export async function tryRenderWithTemplate(
   companyId: string,
   docType: string,
   data: Record<string, unknown>,
   brand?: BrandContext,
-): Promise<Buffer | null> {
+  attachments?: TemplateImageAttachments | null,
+): Promise<{ buffer: Buffer; versionId: string } | null> {
   try {
     const result = await getActiveTemplateLayout(companyId, docType);
     if (!result) return null;
-    return await renderFromTemplate(result.layout, data, brand);
+    const buffer = await renderFromTemplate(result.layout, data, brand, attachments);
+    return { buffer, versionId: result.versionId };
   } catch (e) {
     console.warn(`[pdf] Template render failed for ${docType}, falling back to hardcoded:`, e);
     return null;

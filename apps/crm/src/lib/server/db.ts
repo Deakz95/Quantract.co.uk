@@ -259,9 +259,11 @@ export type ScheduleEntry = {
   engineerId: string;
   engineerEmail?: string;
   engineerName?: string;
+  jobTitle?: string;
   startAtISO: string;
   endAtISO: string;
   notes?: string;
+  status?: string;
   createdAtISO: string;
   updatedAtISO: string;
 };

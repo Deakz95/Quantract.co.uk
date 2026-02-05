@@ -20,7 +20,7 @@ export type JobDetail = {
   notes: string | null;
   stockConsumedAtISO: string | null;
   budgetTotal: number;
-  client: { name: string } | null;
+  client: { name: string; email: string | null; phone: string | null } | null;
   site: {
     name: string;
     address1: string | null;

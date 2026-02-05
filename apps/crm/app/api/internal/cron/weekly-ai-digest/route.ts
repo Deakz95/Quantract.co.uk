@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { checkCronAuth, checkIdempotency, getIdempotencyKey } from "@/lib/server/cronAuth";
 import { runWeeklyCrmDigest } from "@/lib/ai/weeklyDigest";
+import { trackCronRun } from "@/lib/server/cronTracker";
 
 export async function POST(req: Request) {
   const auth = checkCronAuth(req);
@@ -17,7 +18,10 @@ export async function POST(req: Request) {
     );
   }
 
-  const result = await runWeeklyCrmDigest();
+  const result = await trackCronRun("weekly-ai-digest", async () => {
+    return runWeeklyCrmDigest();
+  });
+
   console.log("[cron] weekly-ai-digest", { idempotencyKey, ...result });
 
   return NextResponse.json({ ok: true, ...result });

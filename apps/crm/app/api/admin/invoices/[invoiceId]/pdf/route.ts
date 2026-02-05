@@ -34,7 +34,7 @@ export const GET = withRequestLogging(
     let pdf: Buffer | null = null;
     const companyId = await requireCompanyId().catch(() => null);
     if (companyId) {
-      pdf = await tryRenderWithTemplate(companyId, "invoice", {
+      const templateResult = await tryRenderWithTemplate(companyId, "invoice", {
         companyName: brand.name,
         id: inv.id,
         invoiceNumber: (inv as any).invoiceNumber || "",
@@ -57,6 +57,7 @@ export const GET = withRequestLogging(
           lineTotal: `\u00A3${(it.qty * it.unitPrice).toFixed(2)}`,
         })) || [],
       }, brand);
+      if (templateResult) pdf = templateResult.buffer;
     }
 
     if (!pdf) {

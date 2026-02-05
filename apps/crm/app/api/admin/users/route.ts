@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireCompanyContext, getEffectiveRole } from "@/lib/serverAuth";
 import { getPrisma } from "@/lib/server/prisma";
-import { withRequestLogging, logError } from "@/lib/server/observability";
+import { withRequestLogging, logCriticalAction, logError } from "@/lib/server/observability";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 
 export const runtime = "nodejs";
@@ -118,6 +118,14 @@ export const POST = withRequestLogging(async function POST(req: Request) {
         name,
         passwordHash,
       },
+    });
+
+    logCriticalAction({
+      name: "user.invited",
+      companyId: authCtx.companyId,
+      userId: authCtx.userId,
+      actorId: authCtx.userId,
+      metadata: { action: "user_created", targetUserId: user.id, email, role: user.role },
     });
 
     return NextResponse.json({

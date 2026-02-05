@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getPrisma } from "@/lib/server/prisma";
+import { trackCronRun } from "@/lib/server/cronTracker";
 
 export const runtime = "nodejs";
 
@@ -18,13 +19,15 @@ export async function GET(req: Request) {
   if (!prisma) return NextResponse.json({ ok: false, error: "service_unavailable" }, { status: 503 });
 
   try {
-    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
-
-    const result = await prisma.remoteAssistSession.deleteMany({
-      where: { expiresAt: { lt: cutoff } },
+    const result = await trackCronRun("cleanup-assist-sessions", async () => {
+      const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const r = await prisma.remoteAssistSession.deleteMany({
+        where: { expiresAt: { lt: cutoff } },
+      });
+      return { deleted: r.count };
     });
 
-    return NextResponse.json({ ok: true, deleted: result.count });
+    return NextResponse.json({ ok: true, ...result });
   } catch (e: any) {
     console.error("[cron/cleanup-assist-sessions]", e);
     return NextResponse.json({ ok: false, error: "cleanup_failed" }, { status: 500 });

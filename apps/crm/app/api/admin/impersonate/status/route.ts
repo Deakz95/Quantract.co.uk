@@ -5,6 +5,9 @@ import { logError } from "@/lib/server/observability";
 import { timeStart, logPerf } from "@/lib/perf/timing";
 import { createTtlCache } from "@/lib/perf/ttlCache";
 
+/** Max impersonation duration: 60 minutes (must match serverAuth.ts) */
+const IMPERSONATION_TTL_MS = 60 * 60 * 1000;
+
 export const dynamic = "force-dynamic";
 
 const impersonateCache = createTtlCache<object>();
@@ -46,7 +49,7 @@ export async function GET() {
       const stopDb = timeStart("impersonate_status_db");
       const prisma = getPrisma();
 
-      const [activeImpersonation, beingImpersonated] = await Promise.all([
+      let [activeImpersonation, beingImpersonated] = await Promise.all([
         prisma.impersonation_logs.findFirst({
           where: { adminUserId: ctx.userId, endedAt: null, companyId: ctx.companyId },
           include: { targetUser: { select: { id: true, name: true, email: true, role: true } } },
@@ -58,6 +61,17 @@ export async function GET() {
           orderBy: { startedAt: "desc" },
         }).catch(() => null),
       ]);
+
+      // Enforce TTL: auto-expire sessions older than 60 minutes
+      if (activeImpersonation && Date.now() - new Date(activeImpersonation.startedAt).getTime() > IMPERSONATION_TTL_MS) {
+        await prisma.impersonation_logs.update({ where: { id: activeImpersonation.id }, data: { endedAt: new Date() } }).catch(() => {});
+        await prisma.user.update({ where: { id: ctx.userId }, data: { currentImpersonationId: null } }).catch(() => {});
+        activeImpersonation = null;
+      }
+      if (beingImpersonated && Date.now() - new Date(beingImpersonated.startedAt).getTime() > IMPERSONATION_TTL_MS) {
+        await prisma.impersonation_logs.update({ where: { id: beingImpersonated.id }, data: { endedAt: new Date() } }).catch(() => {});
+        beingImpersonated = null;
+      }
       msDb = stopDb();
 
       return {

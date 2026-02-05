@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -105,9 +106,9 @@ export default function ClientDocuments() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge>{TYPE_LABELS[doc.type] || doc.type}</Badge>
-                  <a href={doc.downloadUrl} target="_blank" rel="noreferrer">
-                    <Button variant="secondary">Download</Button>
-                  </a>
+                  <Link href={`/client/documents/${doc.id}`}>
+                    <Button variant="secondary">View</Button>
+                  </Link>
                 </div>
               </div>
             ))}

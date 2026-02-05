@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { Shell } from "@/components/shell/Shell";
+import { PwaInstallPrompt } from "@/components/client/PwaInstallPrompt";
 
 export default function Layout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -15,6 +16,7 @@ export default function Layout({ children }: { children: ReactNode }) {
       title="Client Portal"
       subtitle="View quotes, sign agreements, download invoices and documents."
     >
+      <PwaInstallPrompt />
       {children}
     </Shell>
   );

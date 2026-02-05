@@ -17,7 +17,7 @@ import type { BrandContext } from "@/lib/server/pdf";
 
 // ── Types ──
 
-export type LayoutElementType = "text" | "line" | "rect" | "table" | "image";
+export type LayoutElementType = "text" | "line" | "rect" | "table" | "image" | "signature" | "photo";
 
 export interface LayoutElement {
   id: string;
@@ -41,7 +41,9 @@ export interface LayoutElement {
   // table
   columns?: Array<{ header: string; binding: string; width: number }>;
   // image
-  imageSource?: "logo"; // for now only "logo"
+  imageSource?: "logo" | "signature_engineer" | "signature_customer" | "photo";
+  // signature block
+  signatureRole?: "engineer" | "customer"; // which role this signature block shows
 }
 
 export type TemplateLayout = LayoutElement[];
@@ -49,7 +51,7 @@ export type TemplateLayout = LayoutElement[];
 // ── Validation ──
 
 const MAX_ELEMENTS = 100;
-const VALID_TYPES: LayoutElementType[] = ["text", "line", "rect", "table", "image"];
+const VALID_TYPES: LayoutElementType[] = ["text", "line", "rect", "table", "image", "signature", "photo"];
 
 export function validateLayout(layout: unknown): { valid: boolean; error?: string } {
   if (!Array.isArray(layout)) return { valid: false, error: "Layout must be an array" };
@@ -123,10 +125,40 @@ function pounds(n: number): string {
 
 // ── Render Engine ──
 
+/** Attachment images that can be embedded in template PDFs */
+export type TemplateImageAttachments = {
+  /** Engineer signature image bytes (PNG or JPG) */
+  signatureEngineer?: Uint8Array | null;
+  /** Customer signature image bytes (PNG or JPG) */
+  signatureCustomer?: Uint8Array | null;
+  /** Photo attachments (PNG or JPG), up to 5 */
+  photos?: Uint8Array[];
+};
+
+const MAX_PHOTO_BYTES = 2 * 1024 * 1024; // 2MB cap per photo
+
+async function embedImageSafe(
+  doc: Awaited<ReturnType<typeof PDFDocument.create>>,
+  bytes: Uint8Array,
+): Promise<Awaited<ReturnType<typeof doc.embedPng>> | null> {
+  if (!bytes || bytes.length === 0 || bytes.length > MAX_PHOTO_BYTES) return null;
+  try {
+    // Try PNG first, then JPG
+    return await doc.embedPng(bytes);
+  } catch {
+    try {
+      return await doc.embedJpg(bytes);
+    } catch {
+      return null;
+    }
+  }
+}
+
 export async function renderFromTemplate(
   layout: TemplateLayout,
   data: Record<string, unknown>,
   brand?: BrandContext | null,
+  attachments?: TemplateImageAttachments | null,
 ): Promise<Buffer> {
   const doc = await PDFDocument.create();
   const font = await doc.embedFont(StandardFonts.Helvetica);
@@ -140,6 +172,25 @@ export async function renderFromTemplate(
       logoImage = await doc.embedPng(brand.logoPngBytes);
     } catch {
       // ignore logo embed failures
+    }
+  }
+
+  // Pre-embed attachment images
+  const embeddedAttachments: {
+    signatureEngineer?: Awaited<ReturnType<typeof doc.embedPng>> | null;
+    signatureCustomer?: Awaited<ReturnType<typeof doc.embedPng>> | null;
+    photos: Array<Awaited<ReturnType<typeof doc.embedPng>>>;
+  } = { photos: [] };
+  if (attachments?.signatureEngineer) {
+    embeddedAttachments.signatureEngineer = await embedImageSafe(doc, attachments.signatureEngineer);
+  }
+  if (attachments?.signatureCustomer) {
+    embeddedAttachments.signatureCustomer = await embedImageSafe(doc, attachments.signatureCustomer);
+  }
+  if (attachments?.photos) {
+    for (const photo of attachments.photos.slice(0, 5)) {
+      const img = await embedImageSafe(doc, photo);
+      if (img) embeddedAttachments.photos.push(img);
     }
   }
 
@@ -240,11 +291,83 @@ export async function renderFromTemplate(
         break;
       }
       case "image": {
-        if (el.imageSource === "logo" && logoImage) {
-          const aspectRatio = logoImage.height / logoImage.width;
-          const drawW = Math.min(wPt, mmToPt(40)); // cap logo width
-          const drawH = drawW * aspectRatio;
-          page.drawImage(logoImage, { x: xPt, y: yPt + hPt - drawH, width: drawW, height: drawH });
+        let imgToDraw: Awaited<ReturnType<typeof doc.embedPng>> | null = null;
+        if (el.imageSource === "logo") {
+          imgToDraw = logoImage;
+        } else if (el.imageSource === "signature_engineer") {
+          imgToDraw = embeddedAttachments.signatureEngineer ?? null;
+        } else if (el.imageSource === "signature_customer") {
+          imgToDraw = embeddedAttachments.signatureCustomer ?? null;
+        } else if (el.imageSource === "photo") {
+          imgToDraw = embeddedAttachments.photos[0] ?? null;
+        }
+        if (imgToDraw) {
+          const aspectRatio = imgToDraw.height / imgToDraw.width;
+          const drawW = Math.min(wPt, mmToPt(el.imageSource === "logo" ? 40 : el.w));
+          const drawH = Math.min(drawW * aspectRatio, hPt);
+          page.drawImage(imgToDraw, { x: xPt, y: yPt + hPt - drawH, width: drawW, height: drawH });
+        }
+        break;
+      }
+      case "signature": {
+        // Render a signature block: name + date label within a positioned box
+        const role = el.signatureRole ?? "engineer";
+        const nameKey = role === "engineer" ? "engineerName" : "customerName";
+        const dateKey = role === "engineer" ? "engineerSignedAt" : "customerSignedAt";
+        const name = String(data[nameKey] ?? "");
+        const date = String(data[dateKey] ?? "");
+        const roleLabel = role === "engineer" ? "Engineer" : "Customer";
+
+        // Draw box outline
+        page.drawRectangle({
+          x: xPt,
+          y: yPt,
+          width: wPt,
+          height: hPt,
+          borderColor: BLACK,
+          borderWidth: 0.5,
+        });
+
+        // Role label
+        page.drawText(roleLabel, { x: xPt + 4, y: yPt + hPt - 12, size: 8, font: bold, color: BLACK });
+        // Name
+        if (name) {
+          page.drawText(name.slice(0, 60), { x: xPt + 4, y: yPt + hPt - 24, size: 10, font, color: BLACK });
+        }
+        // Signed date
+        if (date) {
+          page.drawText(`Signed: ${date}`, { x: xPt + 4, y: yPt + 4, size: 7, font, color: BLACK });
+        }
+
+        // Embed signature image if available
+        const sigImg = role === "engineer"
+          ? embeddedAttachments.signatureEngineer
+          : embeddedAttachments.signatureCustomer;
+        if (sigImg) {
+          const sigAspect = sigImg.height / sigImg.width;
+          const sigW = Math.min(wPt - 8, mmToPt(30));
+          const sigH = Math.min(sigW * sigAspect, hPt - 30);
+          if (sigH > 5) {
+            page.drawImage(sigImg, { x: xPt + 4, y: yPt + 14, width: sigW, height: sigH });
+          }
+        }
+        break;
+      }
+      case "photo": {
+        // Render first available photo attachment in the element box
+        const photoImg = embeddedAttachments.photos[0] ?? null;
+        if (photoImg) {
+          const photoAspect = photoImg.height / photoImg.width;
+          const drawW = Math.min(wPt, mmToPt(el.w));
+          const drawH = Math.min(drawW * photoAspect, hPt);
+          page.drawImage(photoImg, { x: xPt, y: yPt + hPt - drawH, width: drawW, height: drawH });
+        } else {
+          // Placeholder
+          page.drawRectangle({
+            x: xPt, y: yPt, width: wPt, height: hPt,
+            borderColor: BLACK, borderWidth: 0.5,
+          });
+          page.drawText("[Photo]", { x: xPt + 4, y: yPt + hPt / 2, size: 8, font, color: BLACK });
         }
         break;
       }
@@ -346,11 +469,31 @@ function getCertificateDefaultLayout(): TemplateLayout {
     { id: "certId", type: "text", x: 15, y: 61, w: 100, h: 6, binding: "Certificate ID: {{id}}", fontSize: 10 },
     { id: "status", type: "text", x: 15, y: 67, w: 60, h: 6, binding: "Status: {{status}}", fontSize: 10 },
     { id: "issued", type: "text", x: 15, y: 73, w: 100, h: 6, binding: "Issued: {{issuedAt}}", fontSize: 10 },
+    // Overview
     { id: "overview", type: "text", x: 15, y: 84, w: 60, h: 6, binding: "Overview", fontSize: 11, fontWeight: "bold" },
     { id: "site", type: "text", x: 15, y: 91, w: 100, h: 6, binding: "Site: {{siteName}}", fontSize: 10 },
-    { id: "client", type: "text", x: 15, y: 97, w: 100, h: 6, binding: "Client: {{clientName}}", fontSize: 10 },
-    { id: "inspector", type: "text", x: 15, y: 108, w: 60, h: 6, binding: "Inspector", fontSize: 11, fontWeight: "bold" },
-    { id: "inspectorName", type: "text", x: 15, y: 115, w: 100, h: 6, binding: "{{inspectorName}}", fontSize: 10 },
+    { id: "address", type: "text", x: 15, y: 97, w: 100, h: 6, binding: "Address: {{installationAddress}}", fontSize: 10 },
+    { id: "client", type: "text", x: 15, y: 103, w: 100, h: 6, binding: "Client: {{clientName}}", fontSize: 10 },
+    { id: "jobDesc", type: "text", x: 15, y: 109, w: 180, h: 6, binding: "{{jobDescription}}", fontSize: 10 },
+    // Inspector
+    { id: "inspector", type: "text", x: 15, y: 119, w: 60, h: 6, binding: "Inspector", fontSize: 11, fontWeight: "bold" },
+    { id: "inspectorName", type: "text", x: 15, y: 126, w: 100, h: 6, binding: "{{inspectorName}}", fontSize: 10 },
+    // Installation
+    { id: "instLabel", type: "text", x: 15, y: 136, w: 60, h: 6, binding: "Installation", fontSize: 11, fontWeight: "bold" },
+    { id: "descWork", type: "text", x: 15, y: 143, w: 180, h: 6, binding: "Work: {{descriptionOfWork}}", fontSize: 10 },
+    { id: "supply", type: "text", x: 15, y: 149, w: 100, h: 6, binding: "Supply: {{supplyType}}", fontSize: 10 },
+    { id: "earthing", type: "text", x: 15, y: 155, w: 100, h: 6, binding: "Earthing: {{earthingArrangement}}", fontSize: 10 },
+    // Assessment
+    { id: "assessLabel", type: "text", x: 15, y: 165, w: 60, h: 6, binding: "Assessment", fontSize: 11, fontWeight: "bold" },
+    { id: "assessment", type: "text", x: 15, y: 172, w: 180, h: 6, binding: "{{overallAssessment}}", fontSize: 10 },
+    // Outcome
+    { id: "outcomeLabel", type: "text", x: 15, y: 182, w: 60, h: 6, binding: "Outcome", fontSize: 11, fontWeight: "bold" },
+    { id: "outcome", type: "text", x: 15, y: 189, w: 80, h: 6, binding: "{{outcome}}", fontSize: 10, fontWeight: "bold" },
+    { id: "outcomeReason", type: "text", x: 95, y: 189, w: 100, h: 6, binding: "{{outcomeReason}}", fontSize: 9 },
+    // Signatures
+    { id: "engSig", type: "signature", x: 15, y: 200, w: 85, h: 35, signatureRole: "engineer" },
+    { id: "custSig", type: "signature", x: 110, y: 200, w: 85, h: 35, signatureRole: "customer" },
+    // Footer
     { id: "footer1", type: "text", x: 15, y: 278, w: 180, h: 5, binding: "{{footerLine1}}", fontSize: 7, align: "center" },
     { id: "footer2", type: "text", x: 15, y: 283, w: 180, h: 5, binding: "{{footerLine2}}", fontSize: 7, align: "center" },
   ];

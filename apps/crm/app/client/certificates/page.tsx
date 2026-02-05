@@ -64,9 +64,9 @@ export default function ClientCertificatesPage() {
                       <div className="mt-0.5 text-xs text-[var(--muted-foreground)]">Issued {new Date(c.issuedAtISO).toLocaleString("en-GB")}</div>
                     ) : null}
                   </div>
-                  <a href={`/api/client/certificates/${c.id}/pdf`} target="_blank" rel="noreferrer">
-                    <Button type="button" variant="secondary">View PDF</Button>
-                  </a>
+                  <Link href={`/client/certificates/${c.id}`}>
+                    <Button type="button" variant="secondary">View</Button>
+                  </Link>
                 </div>
               ))}
             </div>

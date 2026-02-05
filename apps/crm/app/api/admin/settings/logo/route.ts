@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireRole, requireCompanyId } from "@/lib/serverAuth";
 import { getPrisma } from "@/lib/server/prisma";
-import { writeUploadBytes } from "@/lib/server/storage";
+import { createDocument } from "@/lib/server/documents";
 import { withRequestLogging } from "@/lib/server/observability";
 export const runtime = "nodejs";
 export const PUT = withRequestLogging(async function PUT(req: Request) {
@@ -32,20 +32,24 @@ export const PUT = withRequestLogging(async function PUT(req: Request) {
       status: 400
     });
   }
-  const key = await writeUploadBytes(buf, {
-    ext: "png",
-    prefix: `logo/${companyId}`
+  const doc = await createDocument({
+    companyId,
+    type: "company_logo",
+    mimeType: "image/png",
+    bytes: buf,
+    originalFilename: "logo.png",
+    skipStorageCap: true,
   });
   await client.company.update({
     where: {
       id: companyId
     },
     data: {
-      logoKey: key
+      logoKey: doc.storageKey
     }
   }).catch(() => null);
   return NextResponse.json({
     ok: true,
-    logoKey: key
+    logoKey: doc.storageKey
   });
 });

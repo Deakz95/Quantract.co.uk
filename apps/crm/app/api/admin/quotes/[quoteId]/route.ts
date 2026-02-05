@@ -8,6 +8,7 @@ import { getRouteParams } from "@/lib/server/routeParams";
 import { getPrisma } from "@/lib/server/prisma";
 import { createUndoToken } from "@/lib/server/undoToken";
 import { addBusinessBreadcrumb } from "@/lib/server/observability";
+import { scopedKey, getIdempotentResponse, setIdempotentResponse } from "@/lib/server/idempotency";
 
 export async function GET(_: Request, ctx: { params: Promise<{ quoteId: string }> }) {
   const session = await requireRoles("admin");
@@ -47,6 +48,18 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ quoteId: stri
   }
 
   const { quoteId } = await getRouteParams(ctx);
+
+  // --- Idempotency-Key support ---
+  const rawIdemKey = req.headers.get("idempotency-key");
+  let idemKey: string | null = null;
+  if (rawIdemKey && session.companyId && session.userId) {
+    idemKey = scopedKey(rawIdemKey, session.companyId, session.userId, `PATCH:/api/admin/quotes/${quoteId}`);
+    const cached = await getIdempotentResponse(idemKey);
+    if (cached) {
+      return NextResponse.json(cached);
+    }
+  }
+
   const body = (await req.json().catch(() => null)) as any;
 
   let next = null as any;
@@ -97,7 +110,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ quoteId: stri
   const quoteAudit = await repo.listAuditForEntity("quote", next.id);
   const agreementAudit = agreement ? await repo.listAuditForEntity("agreement", agreement.id) : [];
 
-  return NextResponse.json({
+  const responseBody = {
     ok: true,
     quote: {
       ...next,
@@ -111,7 +124,14 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ quoteId: stri
         agreement: agreementAudit,
       },
     },
-  });
+  };
+
+  // Store response for idempotency dedup
+  if (idemKey) {
+    await setIdempotentResponse(idemKey, responseBody).catch(() => {});
+  }
+
+  return NextResponse.json(responseBody);
 }
 
 export async function DELETE(_req: Request, ctx: { params: Promise<{ quoteId: string }> }) {

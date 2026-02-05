@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Breadcrumbs, type BreadcrumbItem } from "@/components/ui/Breadcrumbs";
 import NextActionPanel from "@/components/admin/NextActionPanel";
+import { Phone, Navigation, ExternalLink } from "lucide-react";
 
 const AUDIT_LABELS: Record<string, string> = {
   "quote.created": "Quote created",
@@ -60,7 +61,7 @@ export default function QuoteDetailClient({ quoteId }: { quoteId: string }) {
   const { toast } = useToast();
   const [busy, setBusy] = useState(false);
   const [quote, setQuote] = useState<Quote | null>(null);
-  const [clients, setClients] = useState<Array<{ id: string; name: string; email: string }>>([]);
+  const [clients, setClients] = useState<Array<{ id: string; name: string; email: string; phone?: string }>>([]);
   const [confirmRevoke, setConfirmRevoke] = useState(false);
   const [confirmReject, setConfirmReject] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
@@ -101,7 +102,34 @@ export default function QuoteDetailClient({ quoteId }: { quoteId: string }) {
     return `${window.location.origin}${quote.shareUrl}`;
   }, [quote]);
 
+  const clientPhone = useMemo(() => {
+    if (!quote?.clientId) return null;
+    const c = clients.find((cl) => cl.id === quote.clientId);
+    return c?.phone || null;
+  }, [quote, clients]);
 
+  const mapsUrl = useMemo(() => {
+    if (!quote?.siteAddress) return null;
+    return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(quote.siteAddress)}`;
+  }, [quote]);
+
+  async function shareQuoteLink() {
+    if (!shareLink) return;
+    const shareData = {
+      title: `Quote for ${quote?.clientName || "client"}`,
+      text: `View your quote from Quantract`,
+      url: shareLink,
+    };
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch {
+        // User cancelled or API unavailable — fall through to clipboard
+      }
+    }
+    await copyLink();
+  }
 
   async function attachClient(clientId: string) {
     if (!quote) return;
@@ -441,41 +469,41 @@ export default function QuoteDetailClient({ quoteId }: { quoteId: string }) {
               Status: <span className="font-semibold text-[var(--foreground)]">{quote.status}</span>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-3">
             <a href={`/api/client/quotes/${quote.token}/pdf`} target="_blank" rel="noreferrer">
-              <Button type="button" variant="secondary">Quote PDF</Button>
+              <Button type="button" variant="secondary" className="min-h-12 px-4 touch-manipulation">Quote PDF</Button>
             </a>
-            <Button type="button" variant="secondary" onClick={duplicateQuote} disabled={busy}>
+            <Button type="button" variant="secondary" className="min-h-12 px-4 touch-manipulation" onClick={duplicateQuote} disabled={busy}>
               Duplicate
             </Button>
-            <Button type="button" variant="secondary" onClick={load} disabled={busy}>
+            <Button type="button" variant="secondary" className="min-h-12 px-4 touch-manipulation" onClick={load} disabled={busy}>
               Refresh
             </Button>
-            <Button type="button" variant="secondary" onClick={sendEmail} disabled={busy}>
+            <Button type="button" variant="secondary" className="min-h-12 px-4 touch-manipulation" onClick={sendEmail} disabled={busy}>
               Send email
             </Button>
-            <Button type="button" variant="secondary" onClick={() => setConfirmRevoke(true)} disabled={busy}>
+            <Button type="button" variant="secondary" className="min-h-12 px-4 touch-manipulation" onClick={() => setConfirmRevoke(true)} disabled={busy}>
               Revoke link
             </Button>
-            <Button type="button" onClick={markSent} disabled={busy || quote.status === "accepted"}>
+            <Button type="button" className="min-h-12 px-4 touch-manipulation" onClick={markSent} disabled={busy || quote.status === "accepted"}>
               Mark sent
             </Button>
             {quote.status !== "accepted" && quote.status !== "rejected" && (
-              <Button type="button" onClick={acceptQuote} disabled={busy} className="bg-green-600 hover:bg-green-700">
+              <Button type="button" onClick={acceptQuote} disabled={busy} className="min-h-12 px-4 touch-manipulation bg-green-600 hover:bg-green-700">
                 ✓ Accept Quote
               </Button>
             )}
             {quote.status !== "accepted" && quote.status !== "rejected" && (
-              <Button type="button" variant="destructive" onClick={() => setConfirmReject(true)} disabled={busy}>
+              <Button type="button" variant="destructive" className="min-h-12 px-4 touch-manipulation" onClick={() => setConfirmReject(true)} disabled={busy}>
                 ✗ Reject Quote
               </Button>
             )}
             {quote.status === "accepted" && (
               <>
-                <Button type="button" onClick={convertToJob} disabled={busy} className="bg-blue-600 hover:bg-blue-700">
+                <Button type="button" onClick={convertToJob} disabled={busy} className="min-h-12 px-4 touch-manipulation bg-blue-600 hover:bg-blue-700">
                   → Convert to Job
                 </Button>
-                <Button type="button" onClick={convertToInvoice} disabled={busy} className="bg-emerald-600 hover:bg-emerald-700">
+                <Button type="button" onClick={convertToInvoice} disabled={busy} className="min-h-12 px-4 touch-manipulation bg-emerald-600 hover:bg-emerald-700">
                   → Convert to Invoice
                 </Button>
               </>
@@ -492,7 +520,7 @@ export default function QuoteDetailClient({ quoteId }: { quoteId: string }) {
               <div className="mt-3">
                 <div className="text-xs font-semibold text-[var(--muted-foreground)]">Attach existing client</div>
                 <select
-                  className="mt-1 w-full rounded-2xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
+                  className="mt-1 w-full rounded-2xl border border-[var(--border)] bg-[var(--background)] px-3 py-3 text-sm min-h-12 touch-manipulation"
                   value={quote.clientId ?? ""}
                   onChange={(e) => e.target.value && attachClient(e.target.value)}
                   disabled={busy}
@@ -507,6 +535,26 @@ export default function QuoteDetailClient({ quoteId }: { quoteId: string }) {
                 <div className="mt-1 text-xs text-[var(--muted-foreground)]">Selecting a client will overwrite name/email and site address from the client record.</div>
               </div>
               {quote.siteAddress ? <div className="mt-2 text-xs text-[var(--muted-foreground)]">{quote.siteAddress}</div> : null}
+
+              {/* Quick actions: call, navigate, share */}
+              <div className="mt-3 flex flex-wrap gap-2">
+                {clientPhone && (
+                  <a href={`tel:${encodeURIComponent(clientPhone)}`} className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border)] bg-[var(--muted)] px-3 py-2 text-xs font-semibold text-[var(--foreground)] hover:bg-[var(--primary)]/10 transition-colors min-h-10 touch-manipulation">
+                    <Phone size={14} />
+                    Call client
+                  </a>
+                )}
+                {mapsUrl && (
+                  <a href={mapsUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border)] bg-[var(--muted)] px-3 py-2 text-xs font-semibold text-[var(--foreground)] hover:bg-[var(--primary)]/10 transition-colors min-h-10 touch-manipulation">
+                    <Navigation size={14} />
+                    Navigate to site
+                  </a>
+                )}
+                <button onClick={shareQuoteLink} className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border)] bg-[var(--muted)] px-3 py-2 text-xs font-semibold text-[var(--foreground)] hover:bg-[var(--primary)]/10 transition-colors min-h-10 touch-manipulation">
+                  <ExternalLink size={14} />
+                  Share quote
+                </button>
+              </div>
             </div>
 
             <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3">
@@ -624,7 +672,7 @@ export default function QuoteDetailClient({ quoteId }: { quoteId: string }) {
             <div className="flex items-center justify-between">
               <div className="text-xs font-semibold text-[var(--muted-foreground)]">Line items</div>
               {(quote.status === "draft" || quote.status === "sent") && !editingItems && (
-                <Button type="button" variant="secondary" onClick={startEditItems} disabled={busy}>
+                <Button type="button" variant="secondary" className="min-h-12 px-4 touch-manipulation" onClick={startEditItems} disabled={busy}>
                   Edit Line Items
                 </Button>
               )}
@@ -632,40 +680,40 @@ export default function QuoteDetailClient({ quoteId }: { quoteId: string }) {
             {editingItems ? (
               <div className="mt-2 space-y-2">
                 {editItems.map((it, idx) => (
-                  <div key={it.id} className="flex gap-2 items-start">
+                  <div key={it.id} className="flex flex-wrap gap-2 items-start">
                     <input
-                      className="flex-1 rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
+                      className="flex-1 min-w-[200px] rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-3 text-sm min-h-12 touch-manipulation"
                       placeholder="Description"
                       value={it.description}
                       onChange={(e) => updateItem(idx, "description", e.target.value)}
                     />
                     <input
-                      className="w-20 rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
+                      className="w-24 rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-3 text-sm min-h-12 touch-manipulation"
                       type="number"
                       placeholder="Qty"
                       value={it.qty}
                       onChange={(e) => updateItem(idx, "qty", Number(e.target.value))}
                     />
                     <input
-                      className="w-28 rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
+                      className="w-32 rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-3 text-sm min-h-12 touch-manipulation"
                       type="number"
                       step="0.01"
                       placeholder="Unit price"
                       value={it.unitPrice}
                       onChange={(e) => updateItem(idx, "unitPrice", Number(e.target.value))}
                     />
-                    <div className="w-20 py-2 text-sm text-right text-[var(--foreground)]">
+                    <div className="w-24 py-3 text-sm text-right text-[var(--foreground)]">
                       £{(it.qty * it.unitPrice).toFixed(2)}
                     </div>
-                    <Button type="button" variant="ghost" onClick={() => removeItem(idx)} className="text-red-500 px-2">
+                    <Button type="button" variant="ghost" onClick={() => removeItem(idx)} className="text-red-500 px-2 min-h-12 min-w-12 touch-manipulation">
                       ✕
                     </Button>
                   </div>
                 ))}
-                <div className="flex items-center gap-2 pt-2">
-                  <Button type="button" variant="secondary" onClick={addItem}>+ Add item</Button>
-                  <Button type="button" onClick={saveItems} disabled={busy}>Save items</Button>
-                  <Button type="button" variant="ghost" onClick={() => setEditingItems(false)} disabled={busy}>Cancel</Button>
+                <div className="flex flex-wrap items-center gap-3 pt-2">
+                  <Button type="button" variant="secondary" className="min-h-12 px-4 touch-manipulation" onClick={addItem}>+ Add item</Button>
+                  <Button type="button" className="min-h-12 px-4 touch-manipulation" onClick={saveItems} disabled={busy}>Save items</Button>
+                  <Button type="button" variant="ghost" className="min-h-12 px-4 touch-manipulation" onClick={() => setEditingItems(false)} disabled={busy}>Cancel</Button>
                 </div>
               </div>
             ) : (

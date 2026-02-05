@@ -31,8 +31,10 @@ import {
   computeChecksum,
   type FullCertificateAggregate,
 } from "./canonical";
-import { renderCertificatePdfFromSnapshot } from "@/lib/server/pdf";
+import { renderCertificatePdfFromSnapshot, getActiveTemplateLayout, buildCertificateDataDict } from "@/lib/server/pdf";
+import { renderFromTemplate, type TemplateImageAttachments } from "@/lib/server/pdfTemplateRenderer";
 import { addBusinessBreadcrumb } from "@/lib/server/observability";
+import { readUploadBytes } from "@/lib/server/storage";
 
 // ── Types ──
 
@@ -108,18 +110,49 @@ export async function issueCertificate(input: IssueCertificateInput): Promise<Is
   // ─── 7. Generate verification token if not set ───
   const verificationToken = certAny.verificationToken ?? randomBytes(24).toString("hex");
 
-  // ─── 8. Generate PDF from snapshot (with QR code) ───
+  // ─── 8. Resolve template + generate PDF ───
+  const issuedAt = new Date();
   const publicBase = process.env.PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_APP_URL || "";
   const verifyUrl = publicBase && verificationToken ? `${publicBase.replace(/\/$/, "")}/verify/${verificationToken}` : undefined;
-  const pdfBytes = await renderCertificatePdfFromSnapshot(snapshot, {
-    verifyUrl,
-    signingHashShort: signingHash.slice(0, 12),
-  });
+
+  // Try template-based rendering first
+  let pdfBytes: Buffer;
+  let templateVersionId: string | null = null;
+  const templateResult = await getActiveTemplateLayout(companyId, "certificate");
+  if (templateResult) {
+    try {
+      const dataDict = buildCertificateDataDict({
+        id: cert.id,
+        certificateNumber: cert.certificateNumber ?? null,
+        type: cert.type,
+        status: "issued",
+        issuedAtISO: issuedAt.toISOString(),
+        inspectorName: cert.inspectorName ?? null,
+        inspectorEmail: cert.inspectorEmail ?? null,
+        outcome: agg.certificate.outcome ?? null,
+        outcomeReason: agg.certificate.outcomeReason ?? null,
+        data: agg.certificate.data as Record<string, unknown>,
+      });
+      // Build image attachments from company-scoped certificate attachments
+      const imageAttachments = buildImageAttachments(agg.attachments);
+      pdfBytes = await renderFromTemplate(templateResult.layout, dataDict, null, imageAttachments);
+      templateVersionId = templateResult.versionId;
+    } catch (e) {
+      console.warn("[issueCertificate] Template render failed, falling back to hardcoded:", e);
+      pdfBytes = await renderCertificatePdfFromSnapshot(snapshot, {
+        verifyUrl,
+        signingHashShort: signingHash.slice(0, 12),
+      });
+    }
+  } else {
+    pdfBytes = await renderCertificatePdfFromSnapshot(snapshot, {
+      verifyUrl,
+      signingHashShort: signingHash.slice(0, 12),
+    });
+  }
 
   // ─── 9. Compute PDF checksum ───
   const pdfChecksum = computeChecksum(pdfBytes);
-
-  const issuedAt = new Date();
 
   addBusinessBreadcrumb("certificate.issuing", { certificateId, revision: nextRevision, signingHash: signingHash.slice(0, 12) });
 
@@ -138,6 +171,7 @@ export async function issueCertificate(input: IssueCertificateInput): Promise<Is
         pdfGeneratedAt: new Date(),
         issuedAt,
         issuedBy: issuedByUserId ?? null,
+        templateVersionId,
       },
     });
 
@@ -169,6 +203,7 @@ export async function issueCertificate(input: IssueCertificateInput): Promise<Is
           revision: nextRevision,
           signingHash,
           pdfKey,
+          ...(templateVersionId ? { templateVersionId } : {}),
           ...(isAmendment ? { amendsCertificateId: certAny.amendsCertificateId } : {}),
         },
       },
@@ -241,6 +276,37 @@ export async function issueCertificate(input: IssueCertificateInput): Promise<Is
   addBusinessBreadcrumb("certificate.issued", { certificateId, revision: nextRevision, pdfKey });
 
   return { revision: nextRevision, signingHash, pdfKey, pdfChecksum };
+}
+
+// ── Attachment image loader ──
+
+const MAX_ATTACHMENT_BYTES = 2 * 1024 * 1024; // 2MB per image
+
+/**
+ * Build TemplateImageAttachments from certificate attachment records.
+ * Reads image bytes from storage for signature and photo attachments.
+ * Skips files that are missing, too large, or non-image.
+ */
+function buildImageAttachments(
+  attachments: Array<{ fileKey: string; mimeType: string | null; category?: string | null }>,
+): TemplateImageAttachments {
+  const result: TemplateImageAttachments = { photos: [] };
+  for (const att of attachments) {
+    if (!att.mimeType?.startsWith("image/")) continue;
+    const bytes = readUploadBytes(att.fileKey);
+    if (!bytes || bytes.length > MAX_ATTACHMENT_BYTES) continue;
+    const u8 = new Uint8Array(bytes);
+    if (att.category === "signature_engineer" && !result.signatureEngineer) {
+      result.signatureEngineer = u8;
+    } else if (att.category === "signature_customer" && !result.signatureCustomer) {
+      result.signatureCustomer = u8;
+    } else if (att.category === "photo" || !att.category) {
+      if (result.photos!.length < 5) {
+        result.photos!.push(u8);
+      }
+    }
+  }
+  return result;
 }
 
 // ── Aggregate fetcher ──

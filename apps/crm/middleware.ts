@@ -65,7 +65,7 @@ function isPublicPath(pathname: string) {
   if (pathname.startsWith("/auth/")) return true;
 
   // Portal login pages
-  if (pathname === "/admin/login" || pathname === "/client/login" || pathname === "/engineer/login" || pathname === "/ops/login") return true;
+  if (pathname === "/admin/login" || pathname === "/client/login" || pathname === "/engineer/login" || pathname === "/ops/login" || pathname === "/office/login") return true;
 
   // Public invite acceptance pages
   if (pathname.startsWith("/invite/")) return true;
@@ -105,7 +105,8 @@ function isPublicPath(pathname: string) {
   return false;
 }
 
-function requiredRoleForPath(pathname: string): "admin" | "client" | "engineer" | null {
+function requiredRoleForPath(pathname: string): "admin" | "client" | "engineer" | "office" | null {
+  if (pathname.startsWith("/office")) return "office";
   if (pathname.startsWith("/admin")) return "admin";
   if (pathname.startsWith("/client")) return "client";
   if (pathname.startsWith("/engineer")) return "engineer";
@@ -121,17 +122,31 @@ function requiredRoleForPath(pathname: string): "admin" | "client" | "engineer" 
 
 
 function isOnboardingPath(pathname: string) {
-  return pathname === "/client/onboarding" || pathname === "/engineer/onboarding" || pathname === "/admin/onboarding";
+  return pathname === "/client/onboarding" || pathname === "/engineer/onboarding" || pathname === "/admin/onboarding" || pathname === "/office/onboarding";
 }
 
 function isProfileApi(pathname: string) {
   return pathname.startsWith("/api/profile/");
 }
 
-function loginUrlForRole(role: "admin" | "client" | "engineer") {
+function loginUrlForRole(role: "admin" | "client" | "engineer" | "office") {
   if (role === "admin") return "/admin/login";
+  if (role === "office") return "/office/login";
   if (role === "client") return "/client/login";
   return "/engineer/login";
+}
+
+/**
+ * Specific admin API subtrees that office role is allowed to access.
+ * These APIs already check for admin|office role internally via requireCompanyContext + getEffectiveRole.
+ */
+function isOfficeAllowedAdminApi(pathname: string): boolean {
+  return (
+    pathname.startsWith("/api/admin/office/") ||
+    pathname.startsWith("/api/admin/schedule") ||
+    pathname.startsWith("/api/admin/dispatch/") ||
+    pathname.startsWith("/api/admin/engineers")
+  );
 }
 
 // ── Simple in-memory rate limiter for Edge runtime ──
@@ -272,24 +287,47 @@ export async function middleware(req: NextRequest) {
     return res;
   }
 
-  // Non-admin roles are restricted to their portals
-  if (needed === "admin" && role !== "admin") {
-    const url = req.nextUrl.clone();
-    url.pathname = loginUrlForRole("admin");
-    url.searchParams.set("next", pathname);
-    return NextResponse.redirect(url);
+  // Office role can access /office/* pages and specific /api/admin/* subtrees
+  if (role === "office") {
+    if (needed === "office") {
+      // Office pages — allow through
+    } else if (needed === "admin" && isOfficeAllowedAdminApi(pathname)) {
+      // Office can call specific admin API subtrees that already authorize office role
+    } else {
+      const url = req.nextUrl.clone();
+      url.pathname = loginUrlForRole("office");
+      url.searchParams.set("next", pathname);
+      return NextResponse.redirect(url);
+    }
+    // Fall through to company/profile gating below
   }
-  if (needed === "client" && role !== "client") {
-    const url = req.nextUrl.clone();
-    url.pathname = loginUrlForRole("client");
-    url.searchParams.set("next", pathname);
-    return NextResponse.redirect(url);
-  }
-  if (needed === "engineer" && role !== "engineer") {
-    const url = req.nextUrl.clone();
-    url.pathname = loginUrlForRole("engineer");
-    url.searchParams.set("next", pathname);
-    return NextResponse.redirect(url);
+
+  // Non-admin, non-office roles are restricted to their portals
+  if (role !== "office") {
+    if (needed === "admin" && role !== "admin") {
+      const url = req.nextUrl.clone();
+      url.pathname = loginUrlForRole("admin");
+      url.searchParams.set("next", pathname);
+      return NextResponse.redirect(url);
+    }
+    if (needed === "office" && role !== "office") {
+      const url = req.nextUrl.clone();
+      url.pathname = loginUrlForRole("office");
+      url.searchParams.set("next", pathname);
+      return NextResponse.redirect(url);
+    }
+    if (needed === "client" && role !== "client") {
+      const url = req.nextUrl.clone();
+      url.pathname = loginUrlForRole("client");
+      url.searchParams.set("next", pathname);
+      return NextResponse.redirect(url);
+    }
+    if (needed === "engineer" && role !== "engineer") {
+      const url = req.nextUrl.clone();
+      url.pathname = loginUrlForRole("engineer");
+      url.searchParams.set("next", pathname);
+      return NextResponse.redirect(url);
+    }
   }
 
 
@@ -297,7 +335,7 @@ export async function middleware(req: NextRequest) {
   // Check both prefixed and non-prefixed cookies for migration compatibility
   const companyId = req.cookies.get(COMPANY_COOKIE_PREFIXED)?.value
     || req.cookies.get(COMPANY_COOKIE)?.value || "";
-  if ((role === "client" || role === "engineer") && !companyId) {
+  if ((role === "client" || role === "engineer" || role === "office") && !companyId) {
     const url = req.nextUrl.clone();
     url.pathname = loginUrlForRole(role);
     url.searchParams.set("next", pathname);
@@ -312,6 +350,7 @@ export async function middleware(req: NextRequest) {
   if (!isComplete && !isOnboardingPath(pathname) && !isProfileApi(pathname)) {
     const url = req.nextUrl.clone();
     if (role === "admin") url.pathname = "/admin/onboarding";
+    else if (role === "office") url.pathname = "/office/onboarding";
     else if (role === "client") url.pathname = "/client/onboarding";
     else url.pathname = "/engineer/onboarding";
     url.searchParams.set("next", pathname);

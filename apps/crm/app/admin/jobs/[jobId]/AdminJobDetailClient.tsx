@@ -10,6 +10,7 @@ import { useToast } from "@/components/ui/useToast";
 import { Breadcrumbs, type BreadcrumbItem } from "@/components/ui/Breadcrumbs";
 import CompactTimeline from "@/components/admin/CompactTimeline";
 import NextActionPanel from "@/components/admin/NextActionPanel";
+import { Navigation } from "lucide-react";
 
 function cleanJobTitle(raw?: string | null, jobNumber?: number | null): string {
   const jNum = jobNumber ? `J-${String(jobNumber).padStart(4, "0")}` : null;
@@ -652,10 +653,27 @@ export default function AdminJobDetail({ jobId }: Props) {
                   📍 {job.siteAddress || [job.site?.address1, job.site?.city, job.site?.postcode].filter(Boolean).join(", ") || job.site?.name}
                 </div>
               )}
+              {/* Quick action: navigate to site */}
+              {(() => {
+                const addr = job.siteAddress || [job.site?.address1, job.site?.city, job.site?.postcode].filter(Boolean).join(", ");
+                return addr ? (
+                  <div className="mt-2">
+                    <a
+                      href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(addr)}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border)] bg-[var(--muted)] px-3 py-2 text-xs font-semibold text-[var(--foreground)] hover:bg-[var(--primary)]/10 transition-colors min-h-10 touch-manipulation"
+                    >
+                      <Navigation size={14} />
+                      Navigate to site
+                    </a>
+                  </div>
+                ) : null;
+              })()}
             </div>
           ) : null}
         </div>
-        <Button type="button" variant="secondary" onClick={refresh} disabled={busy}>
+        <Button type="button" variant="secondary" className="min-h-12 px-4 touch-manipulation" onClick={refresh} disabled={busy}>
           Refresh
         </Button>
       </div>
@@ -792,11 +810,11 @@ export default function AdminJobDetail({ jobId }: Props) {
             <CardHeader>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <CardTitle>Budget lines</CardTitle>
-                <div className="flex flex-wrap gap-2">
-                  <Button type="button" variant="secondary" disabled={budgetBusy} onClick={resetBudgetLines}>
+                <div className="flex flex-wrap gap-3">
+                  <Button type="button" variant="secondary" className="min-h-12 px-4 touch-manipulation" disabled={budgetBusy} onClick={resetBudgetLines}>
                     Reset to quote
                   </Button>
-                  <Button type="button" disabled={budgetBusy} onClick={saveBudgetLines}>
+                  <Button type="button" className="min-h-12 px-4 touch-manipulation" disabled={budgetBusy} onClick={saveBudgetLines}>
                     Save overrides
                   </Button>
                 </div>
@@ -822,7 +840,7 @@ export default function AdminJobDetail({ jobId }: Props) {
                         <tr key={line.id} className="border-t border-[var(--border)]">
                           <td className="py-2 pr-2">
                             <input
-                              className="w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
+                              className="w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-3 text-sm min-h-12 touch-manipulation"
                               value={line.description}
                               onChange={(event) => {
                                 const next = [...budgetLines];
@@ -835,7 +853,7 @@ export default function AdminJobDetail({ jobId }: Props) {
                             <input
                               type="number"
                               step="0.01"
-                              className="w-24 rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
+                              className="w-24 rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-3 text-sm min-h-12 touch-manipulation"
                               value={line.quantity}
                               onChange={(event) => {
                                 const quantity = Number(event.target.value || 0);
@@ -849,7 +867,7 @@ export default function AdminJobDetail({ jobId }: Props) {
                             <input
                               type="number"
                               step="0.01"
-                              className="w-28 rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
+                              className="w-32 rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-3 text-sm min-h-12 touch-manipulation"
                               value={line.unitPrice}
                               onChange={(event) => {
                                 const unitPrice = Number(event.target.value || 0);
@@ -896,15 +914,15 @@ export default function AdminJobDetail({ jobId }: Props) {
               >
                 <label className="grid gap-1">
                   <span className="text-xs font-semibold text-[var(--muted-foreground)]">Engineer email</span>
-                  <input name="engineerEmail" className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm placeholder:text-[var(--muted-foreground)]" placeholder="engineer@example.com" />
+                  <input name="engineerEmail" className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-3 text-sm min-h-12 touch-manipulation placeholder:text-[var(--muted-foreground)]" placeholder="engineer@example.com" />
                 </label>
                 <label className="grid gap-1">
                   <span className="text-xs font-semibold text-[var(--muted-foreground)]">Start</span>
-                  <input name="startedAt" type="datetime-local" className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm" />
+                  <input name="startedAt" type="datetime-local" className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-3 text-sm min-h-12 touch-manipulation" />
                 </label>
                 <label className="grid gap-1">
                   <span className="text-xs font-semibold text-[var(--muted-foreground)]">End</span>
-                  <input name="endedAt" type="datetime-local" className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm" />
+                  <input name="endedAt" type="datetime-local" className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-3 text-sm min-h-12 touch-manipulation" />
                 </label>
                 <Button type="submit" disabled={busy}>
                   Add
@@ -945,7 +963,7 @@ export default function AdminJobDetail({ jobId }: Props) {
               >
                 <label className="grid gap-1">
                   <span className="text-xs font-semibold text-[var(--muted-foreground)]">Type</span>
-                  <select name="type" className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm">
+                  <select name="type" className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-3 text-sm min-h-12 touch-manipulation">
                     <option value="material">Material</option>
                     <option value="subcontractor">Subcontractor</option>
                     <option value="plant">Plant</option>
@@ -954,23 +972,23 @@ export default function AdminJobDetail({ jobId }: Props) {
                 </label>
                 <label className="grid gap-1">
                   <span className="text-xs font-semibold text-[var(--muted-foreground)]">Description</span>
-                  <input name="description" className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm placeholder:text-[var(--muted-foreground)]" placeholder="e.g. Cable, fittings" />
+                  <input name="description" className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-3 text-sm min-h-12 touch-manipulation placeholder:text-[var(--muted-foreground)]" placeholder="e.g. Cable, fittings" />
                 </label>
                 <label className="grid gap-1">
                   <span className="text-xs font-semibold text-[var(--muted-foreground)]">Supplier</span>
-                  <input name="supplier" className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm placeholder:text-[var(--muted-foreground)]" placeholder="Optional" />
+                  <input name="supplier" className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-3 text-sm min-h-12 touch-manipulation placeholder:text-[var(--muted-foreground)]" placeholder="Optional" />
                 </label>
                 <label className="grid gap-1">
                   <span className="text-xs font-semibold text-[var(--muted-foreground)]">Quantity</span>
-                  <input name="quantity" type="number" step="0.01" defaultValue="1" className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm" />
+                  <input name="quantity" type="number" step="0.01" defaultValue="1" className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-3 text-sm min-h-12 touch-manipulation" />
                 </label>
                 <label className="grid gap-1">
                   <span className="text-xs font-semibold text-[var(--muted-foreground)]">Unit cost (ex VAT)</span>
-                  <input name="unitCost" type="number" step="0.01" className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm" />
+                  <input name="unitCost" type="number" step="0.01" className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-3 text-sm min-h-12 touch-manipulation" />
                 </label>
                 <label className="grid gap-1">
                   <span className="text-xs font-semibold text-[var(--muted-foreground)]">Stage</span>
-                  <select name="stageId" className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm">
+                  <select name="stageId" className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-3 text-sm min-h-12 touch-manipulation">
                     <option value="">Unassigned</option>
                     {stages.map((stage) => (
                       <option key={stage.id} value={stage.id}>
@@ -981,9 +999,9 @@ export default function AdminJobDetail({ jobId }: Props) {
                 </label>
                 <label className="grid gap-1">
                   <span className="text-xs font-semibold text-[var(--muted-foreground)]">Incurred date</span>
-                  <input name="incurredAt" type="date" className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm" />
+                  <input name="incurredAt" type="date" className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-3 text-sm min-h-12 touch-manipulation" />
                 </label>
-                <Button type="submit" disabled={busy}>
+                <Button type="submit" className="min-h-12 px-4 touch-manipulation" disabled={busy}>
                   Add
                 </Button>
               </form>

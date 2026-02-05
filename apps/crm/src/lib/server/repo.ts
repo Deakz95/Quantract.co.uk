@@ -36,6 +36,7 @@ import { getCompanyId } from "@/lib/serverAuth";
 import { getPrisma } from "@/lib/server/prisma";
 import { renderCertificatePdf, renderQuotePdf, renderAuditAgreementPdf, renderClientAgreementPdf, renderInvoicePdf, renderVariationPdf, type BrandContext } from "@/lib/server/pdf";
 import { writeUploadBytes, readUploadBytes } from "@/lib/server/storage";
+import { createDocumentForExistingFile } from "@/lib/server/documents";
 import { sendInvoiceReminder, absoluteUrl } from "@/lib/server/email";
 import { certificateIsReadyForCompletion, getCertificateTemplate, normalizeCertificateData } from "@/lib/certificates";
 import { validateCertificateForCompletion, isCertificateReadyForCompletion } from "@/lib/certificateValidation";
@@ -563,9 +564,11 @@ function toScheduleEntry(row: any): ScheduleEntry {
     engineerId: row.engineerId,
     engineerEmail: row.engineer?.email ?? undefined,
     engineerName: row.engineer?.name ?? undefined,
+    jobTitle: row.job?.title ?? undefined,
     startAtISO: new Date(row.startAt).toISOString(),
     endAtISO: new Date(row.endAt).toISOString(),
     notes: row.notes ?? undefined,
+    status: row.status ?? "scheduled",
     createdAtISO: new Date(row.createdAt).toISOString(),
     updatedAtISO: new Date(row.updatedAt).toISOString(),
   };
@@ -1231,6 +1234,30 @@ export async function signAgreementByToken(
     writeUploadBytes(clientPdfKey, clientPdf);
     writeUploadBytes(auditPdfKey, auditPdf);
     await setAgreementPdfKeys(row.id, { clientPdfKey, auditPdfKey });
+
+    // Register PDFs in Document table for storage metering (skipStorageCap — system-generated)
+    try {
+      await createDocumentForExistingFile({
+        companyId: row.companyId,
+        type: "agreement_pdf",
+        mimeType: "application/pdf",
+        bytes: clientPdf,
+        storageKey: clientPdfKey,
+        originalFilename: `agreement-${row.id}-client.pdf`,
+        skipStorageCap: true,
+      });
+      await createDocumentForExistingFile({
+        companyId: row.companyId,
+        type: "agreement_pdf",
+        mimeType: "application/pdf",
+        bytes: auditPdf,
+        storageKey: auditPdfKey,
+        originalFilename: `agreement-${row.id}-audit.pdf`,
+        skipStorageCap: true,
+      });
+    } catch {
+      // Non-fatal — agreement signing succeeds even if metering fails
+    }
   } catch {
     // PDF generation failures should not block signing
   }
@@ -2432,21 +2459,19 @@ export async function getJobForEngineer(jobId: string, engineerEmail: string): P
 
 // ------------------ Schedule ------------------
 
-export async function listScheduleEntries(fromISO: string, toISO: string): Promise<ScheduleEntry[]> {
+export async function listScheduleEntries(fromISO: string, toISO: string, companyId?: string): Promise<ScheduleEntry[]> {
   const client = p();
   if (!client) return fileDb.listScheduleEntries(fromISO, toISO) as any;
+  const cid = companyId ?? await requireCompanyIdForPrisma();
   const from = new Date(fromISO);
   const to = new Date(toISO);
   if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) return [];
   const rows = await client.scheduleEntry.findMany({
-    where: { OR: [{ startAt: { lt: to } }, { endAt: { gt: from } }] },
+    where: { companyId: cid, deletedAt: null, startAt: { lt: to }, endAt: { gt: from } },
     orderBy: { startAt: "asc" },
-    include: { engineer: true },
+    include: { engineer: true, job: { select: { id: true, title: true } } },
   });
-  // filter overlap correctly (Prisma OR above is broad)
-  return rows
-    .filter((r: any) => new Date(r.endAt).getTime() > from.getTime() && new Date(r.startAt).getTime() < to.getTime())
-    .map(toScheduleEntry);
+  return rows.map(toScheduleEntry);
 }
 
 export async function listScheduleEntriesForEngineer(engineerEmail: string, fromISO: string, toISO: string): Promise<ScheduleEntry[]> {
@@ -2458,9 +2483,9 @@ export async function listScheduleEntriesForEngineer(engineerEmail: string, from
   const to = new Date(toISO);
   if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) return [];
   const rows = await client.scheduleEntry.findMany({
-    where: { engineerId: eng.id, startAt: { lt: to }, endAt: { gt: from } },
+    where: { engineerId: eng.id, deletedAt: null, startAt: { lt: to }, endAt: { gt: from } },
     orderBy: { startAt: "asc" },
-    include: { engineer: true },
+    include: { engineer: true, job: { select: { id: true, title: true } } },
   });
   return rows.map(toScheduleEntry);
 }
@@ -2483,6 +2508,7 @@ export async function createScheduleEntry(input: {
       notes: input.notes,
     }) as any;
   }
+  const companyId = await requireCompanyIdForPrisma();
   const eng = await ensureEngineerByEmail(input.engineerEmail);
   if (!eng) return null;
   const startAt = new Date(input.startAtISO);
@@ -2490,13 +2516,15 @@ export async function createScheduleEntry(input: {
   if (Number.isNaN(startAt.getTime()) || Number.isNaN(endAt.getTime()) || endAt <= startAt) return null;
   const row = await client.scheduleEntry
     .create({
-      data: { jobId: input.jobId,
+      data: {
+        companyId,
+        jobId: input.jobId,
         engineerId: eng.id,
         startAt,
         endAt,
         notes: input.notes ?? null,
-      } as any as any,
-      include: { engineer: true },
+      } as any,
+      include: { engineer: true, job: { select: { id: true, title: true } } },
     })
     .catch(() => null);
   // also update job convenience fields
@@ -2504,6 +2532,46 @@ export async function createScheduleEntry(input: {
     await client.job.update({ where: { id: input.jobId }, data: { scheduledAt: startAt, status: "scheduled", engineerId: eng.id } }).catch(() => null);
   }
   return row ? toScheduleEntry(row) : null;
+}
+
+export async function updateScheduleEntry(
+  entryId: string,
+  companyId: string,
+  patch: { startAtISO?: string; endAtISO?: string; engineerId?: string; notes?: string },
+): Promise<ScheduleEntry | null> {
+  const client = p();
+  if (!client) return null;
+  const data: Record<string, unknown> = {};
+  if (patch.startAtISO) {
+    const d = new Date(patch.startAtISO);
+    if (Number.isNaN(d.getTime())) return null;
+    data.startAt = d;
+  }
+  if (patch.endAtISO) {
+    const d = new Date(patch.endAtISO);
+    if (Number.isNaN(d.getTime())) return null;
+    data.endAt = d;
+  }
+  if (patch.engineerId) data.engineerId = patch.engineerId;
+  if (patch.notes !== undefined) data.notes = patch.notes || null;
+  if (Object.keys(data).length === 0) return null;
+  const row = await client.scheduleEntry
+    .update({
+      where: { id: entryId, companyId, deletedAt: null },
+      data: data as any,
+      include: { engineer: true, job: { select: { id: true, title: true } } },
+    })
+    .catch(() => null);
+  return row ? toScheduleEntry(row) : null;
+}
+
+export async function softDeleteScheduleEntry(entryId: string, companyId: string): Promise<boolean> {
+  const client = p();
+  if (!client) return false;
+  const row = await client.scheduleEntry
+    .update({ where: { id: entryId, companyId, deletedAt: null }, data: { deletedAt: new Date() } })
+    .catch(() => null);
+  return !!row;
 }
 
 export async function ensureJobForQuote(quoteId: string): Promise<Job | null> {
@@ -3736,6 +3804,21 @@ export async function issueCertificate(id: string): Promise<Certificate | null> 
 
   const pdfKey = `certificates/${id}.pdf`;
   writeUploadBytes(pdfKey, pdf);
+
+  // Register PDF in Document table for storage metering (skipStorageCap — system-generated)
+  try {
+    await createDocumentForExistingFile({
+      companyId: cert.companyId,
+      type: "certificate_pdf",
+      mimeType: "application/pdf",
+      bytes: pdf,
+      storageKey: pdfKey,
+      originalFilename: `certificate-${id}.pdf`,
+      skipStorageCap: true,
+    });
+  } catch {
+    // Non-fatal — certificate issuance succeeds even if metering fails
+  }
 
   const row = await client.certificate
     .update({

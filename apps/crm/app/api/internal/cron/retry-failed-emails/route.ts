@@ -3,6 +3,7 @@ import { getPrisma } from "@/lib/server/prisma";
 import { checkCronAuth, checkIdempotency, getCompanyHeader, getIdempotencyKey } from "@/lib/server/cronAuth";
 import { listFailedEmailAttempts } from "@/lib/server/repo";
 import { sendCertificateIssuedEmail, sendInvoiceEmail, sendInvoiceReminder, sendQuoteEmail, sendVariationEmail } from "@/lib/server/email";
+import { trackCronRun } from "@/lib/server/cronTracker";
 
 type FailedEmailMeta = {
   kind?: "quote" | "variation" | "invoice" | "invoice_reminder" | "certificate";
@@ -33,44 +34,47 @@ export async function POST(req: Request) {
   const limitParam = Number(url.searchParams.get("limit") ?? "100");
   const limit = Number.isFinite(limitParam) ? Math.max(1, Math.min(500, limitParam)) : 100;
 
-  const failures = await listFailedEmailAttempts({ companyId: companyId ?? undefined, limit });
-  let attempted = 0;
-  let sent = 0;
-  let skipped = 0;
+  const result = await trackCronRun("retry-failed-emails", async () => {
+    const failures = await listFailedEmailAttempts({ companyId: companyId ?? undefined, limit });
+    let attempted = 0;
+    let sent = 0;
+    let skipped = 0;
 
-  for (const failure of failures) {
-    const meta = (failure.meta || {}) as FailedEmailMeta;
-    const payload = meta.payload || {};
-    const kind = meta.kind;
-    if (!kind || !payload) {
-      skipped++;
-      continue;
-    }
-
-    const scopedCompanyId = payload.companyId ?? companyId ?? undefined;
-    attempted++;
-    try {
-      if (kind === "quote") {
-        await sendQuoteEmail({ ...(payload as any), companyId: scopedCompanyId });
-      } else if (kind === "variation") {
-        await sendVariationEmail({ ...(payload as any), companyId: scopedCompanyId });
-      } else if (kind === "invoice") {
-        await sendInvoiceEmail({ ...(payload as any), companyId: scopedCompanyId });
-      } else if (kind === "invoice_reminder") {
-        await sendInvoiceReminder({ ...(payload as any), companyId: scopedCompanyId });
-      } else if (kind === "certificate") {
-        await sendCertificateIssuedEmail({ ...(payload as any), companyId: scopedCompanyId });
-      } else {
+    for (const failure of failures) {
+      const meta = (failure.meta || {}) as FailedEmailMeta;
+      const payload = meta.payload || {};
+      const kind = meta.kind;
+      if (!kind || !payload) {
         skipped++;
         continue;
       }
-      sent++;
-    } catch {
-      // failure already recorded by email sender
-    }
-  }
 
-  const result = { ok: true, attempted, sent, skipped, found: failures.length };
+      const scopedCompanyId = payload.companyId ?? companyId ?? undefined;
+      attempted++;
+      try {
+        if (kind === "quote") {
+          await sendQuoteEmail({ ...(payload as any), companyId: scopedCompanyId });
+        } else if (kind === "variation") {
+          await sendVariationEmail({ ...(payload as any), companyId: scopedCompanyId });
+        } else if (kind === "invoice") {
+          await sendInvoiceEmail({ ...(payload as any), companyId: scopedCompanyId });
+        } else if (kind === "invoice_reminder") {
+          await sendInvoiceReminder({ ...(payload as any), companyId: scopedCompanyId });
+        } else if (kind === "certificate") {
+          await sendCertificateIssuedEmail({ ...(payload as any), companyId: scopedCompanyId });
+        } else {
+          skipped++;
+          continue;
+        }
+        sent++;
+      } catch {
+        // failure already recorded by email sender
+      }
+    }
+
+    return { ok: true, attempted, sent, skipped, found: failures.length };
+  });
+
   console.log("[cron] retry-failed-emails", {
     companyId: companyId ?? null,
     idempotencyKey,

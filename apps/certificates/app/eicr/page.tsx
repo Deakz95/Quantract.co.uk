@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Button, Card, CardHeader, CardTitle, CardContent, CardDescription, Input, Label, NativeSelect, Textarea } from "@quantract/ui";
@@ -13,6 +13,7 @@ import {
   createNewCertificate,
   generateCertificateNumber,
 } from "../../lib/certificateStore";
+import { StickyActionBar } from "../../components/StickyActionBar";
 
 // Example board data - in production this would come from form input
 const EXAMPLE_BOARD: BoardData = {
@@ -158,6 +159,28 @@ function EICRPageContent() {
     }));
     setSaveStatus("idle");
   };
+
+  // Auto-save: debounce 2s after any state change
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dataRef = useRef(data);
+  dataRef.current = data;
+
+  const doAutoSave = useCallback(() => {
+    if (!currentCertId) return;
+    updateCertificate(currentCertId, {
+      client_name: dataRef.current.overview.clientName,
+      installation_address: dataRef.current.overview.installationAddress,
+      data: dataRef.current as unknown as Record<string, unknown>,
+    });
+    setLastSaved(new Date());
+  }, [currentCertId, updateCertificate]);
+
+  useEffect(() => {
+    if (!currentCertId || saveStatus !== "idle") return;
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(doAutoSave, 2000);
+    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
+  }, [data, currentCertId, saveStatus, doAutoSave]);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -681,25 +704,18 @@ function EICRPageContent() {
               </CardContent>
             </Card>
 
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row justify-between gap-4 pt-4 border-t border-[var(--border)]">
-              <div className="flex gap-2">
-                <Link href="/dashboard">
-                  <Button variant="ghost">View All Certificates</Button>
-                </Link>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="secondary" onClick={handleSave} disabled={isSaving}>
-                  {saveStatus === "saving" ? "Saving..." : "Save"}
-                </Button>
-                <Button onClick={handleDownload} disabled={isGenerating} size="lg">
-                  {isGenerating ? "Generating PDF..." : "Download Report"}
-                </Button>
-              </div>
-            </div>
           </div>
         )}
       </div>
+
+      <StickyActionBar
+        onSave={handleSave}
+        onDownload={handleDownload}
+        isSaving={isSaving}
+        isGenerating={isGenerating}
+        saveStatus={saveStatus}
+        downloadLabel="Download Report"
+      />
     </main>
   );
 }

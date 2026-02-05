@@ -124,6 +124,23 @@ export const POST = withRequestLogging(async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "engineer_not_found" }, { status: 404 });
     }
 
+    // Check if timesheet already exists and is locked (approved)
+    const existing = await client.timesheet.findFirst({
+      where: {
+        companyId: authCtx.companyId,
+        engineerId: engineer.id,
+        weekStart,
+      },
+      select: { status: true },
+    });
+
+    if (existing?.status === "approved") {
+      return NextResponse.json(
+        { ok: false, error: "Timesheet already approved and locked" },
+        { status: 409 },
+      );
+    }
+
     // Find or create timesheet and submit it
     const timesheet = await client.timesheet.upsert({
       where: {

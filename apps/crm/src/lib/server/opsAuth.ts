@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { rateLimit } from "@/lib/rateLimit";
 
 type OpsAuthResult =
   | { ok: true }
@@ -81,6 +82,45 @@ export function getApprovalToken(req: Request): string | null {
 /**
  * Redact sensitive fields from payloads before persisting to OpsAuditLog.
  */
+// ---------------------------------------------------------------------------
+// Ops rate limiting — keyed on client IP + route
+// ---------------------------------------------------------------------------
+
+const OPS_READ_LIMIT = { limit: 30, windowMs: 60 * 1000 }; // 30/min
+const OPS_WRITE_LIMIT = { limit: 5, windowMs: 60 * 1000 }; // 5/min
+
+/**
+ * Rate-limit an ops read request by client IP.
+ * Returns null if allowed, or a JSON 429 Response if exceeded.
+ */
+export function opsRateLimitRead(req: Request, route: string): Response | null {
+  const ip = getClientIp(req) ?? "unknown";
+  const result = rateLimit({ key: `ops:read:${route}:${ip}`, ...OPS_READ_LIMIT });
+  if (!result.ok) {
+    return new Response(
+      JSON.stringify({ ok: false, error: "rate_limit_exceeded", retryAfter: Math.ceil((result.resetAt - Date.now()) / 1000) }),
+      { status: 429, headers: { "Content-Type": "application/json", "Retry-After": String(Math.ceil((result.resetAt - Date.now()) / 1000)) } },
+    );
+  }
+  return null;
+}
+
+/**
+ * Rate-limit an ops write request by client IP (stricter).
+ * Returns null if allowed, or a JSON 429 Response if exceeded.
+ */
+export function opsRateLimitWrite(req: Request, route: string): Response | null {
+  const ip = getClientIp(req) ?? "unknown";
+  const result = rateLimit({ key: `ops:write:${route}:${ip}`, ...OPS_WRITE_LIMIT });
+  if (!result.ok) {
+    return new Response(
+      JSON.stringify({ ok: false, error: "rate_limit_exceeded", retryAfter: Math.ceil((result.resetAt - Date.now()) / 1000) }),
+      { status: 429, headers: { "Content-Type": "application/json", "Retry-After": String(Math.ceil((result.resetAt - Date.now()) / 1000)) } },
+    );
+  }
+  return null;
+}
+
 export function redactSensitive(obj: Record<string, unknown> | null | undefined): Record<string, unknown> | null {
   if (!obj) return null;
   const REDACTED_KEYS = ["authorization", "x-approval-token", "ops_secret", "password", "secret", "token"];

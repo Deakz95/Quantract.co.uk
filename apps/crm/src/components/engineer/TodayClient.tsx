@@ -9,6 +9,8 @@ import dynamic from "next/dynamic";
 
 const JobsMap = dynamic(() => import("@/components/admin/JobsMap"), { ssr: false });
 
+type DispatchStatus = "scheduled" | "en_route" | "on_site" | "in_progress" | "completed";
+
 type ScheduleEntry = {
   id: string;
   jobId: string;
@@ -16,6 +18,7 @@ type ScheduleEntry = {
   endAtISO: string;
   title?: string;
   address?: string;
+  status?: DispatchStatus;
 };
 
 type Job = {
@@ -32,6 +35,30 @@ type TimeEntry = {
   startedAtISO: string;
   endedAtISO?: string;
   notes?: string;
+};
+
+const NEXT_STATUS: Record<DispatchStatus, { next: DispatchStatus; label: string } | null> = {
+  scheduled: { next: "en_route", label: "En Route" },
+  en_route: { next: "on_site", label: "On Site" },
+  on_site: { next: "in_progress", label: "Start Work" },
+  in_progress: { next: "completed", label: "Complete" },
+  completed: null,
+};
+
+const STATUS_LABELS: Record<DispatchStatus, string> = {
+  scheduled: "Scheduled",
+  en_route: "En Route",
+  on_site: "On Site",
+  in_progress: "In Progress",
+  completed: "Completed",
+};
+
+const STATUS_COLOURS_MAP: Record<DispatchStatus, string> = {
+  scheduled: "bg-slate-100 text-slate-700",
+  en_route: "bg-blue-100 text-blue-700",
+  on_site: "bg-amber-100 text-amber-700",
+  in_progress: "bg-violet-100 text-violet-700",
+  completed: "bg-emerald-100 text-emerald-700",
 };
 
 function todayRange() {
@@ -126,6 +153,15 @@ export default function TodayClient() {
     return () => clearInterval(id);
   }, [active]);
 
+  // Map schedule entries to jobs with dispatch status
+  const entryByJobId = useMemo(() => {
+    const map = new Map<string, ScheduleEntry>();
+    for (const e of entries) {
+      map.set(e.jobId, e);
+    }
+    return map;
+  }, [entries]);
+
   const todaysJobs = useMemo(() => {
     const byId = new Map(jobs.map((j) => [j.id, j]));
     const ordered: Job[] = [];
@@ -164,6 +200,28 @@ export default function TodayClient() {
       setActive(json.active || null);
     } catch (e: any) {
       setError(e?.message || "Could not start timer");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function updateDispatchStatus(entryId: string, newStatus: DispatchStatus) {
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/engineer/dispatch/status", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ entryId, status: newStatus }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json?.ok) throw new Error(json?.error || "Status update failed");
+      // Update local state
+      setEntries((prev) =>
+        prev.map((e) => e.id === entryId ? { ...e, status: newStatus } : e),
+      );
+    } catch (e: any) {
+      setError(e?.message || "Could not update status");
     } finally {
       setBusy(false);
     }
@@ -320,37 +378,59 @@ export default function TodayClient() {
             {todaysJobs.length === 0 ? (
               <div className="text-sm text-[var(--muted-foreground)]">No jobs scheduled for today.</div>
             ) : null}
-            {todaysJobs.map((j) => (
-              <div key={j.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--border)] bg-[var(--background)] p-4">
-                <div className="flex items-center gap-3 min-w-0">
-                  <span
-                    className="shrink-0 w-2.5 h-2.5 rounded-full"
-                    style={{
-                      backgroundColor:
-                        active?.jobId === j.id ? "#22c55e" :
-                        j.status === "completed" ? "#6b7280" :
-                        "#f59e0b",
-                    }}
-                  />
-                  <div className="min-w-0">
-                    <div className="text-sm font-semibold text-[var(--foreground)] truncate">{j.title || "Job"}</div>
-                    <div className="text-xs text-[var(--muted-foreground)] truncate">
-                      {j.clientName ? `${j.clientName} \u2022 ` : ""}{j.siteAddress || ""}
+            {todaysJobs.map((j) => {
+              const entry = entryByJobId.get(j.id);
+              const dispatchStatus = (entry?.status || "scheduled") as DispatchStatus;
+              const nextAction = NEXT_STATUS[dispatchStatus];
+              return (
+                <div key={j.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--border)] bg-[var(--background)] p-4">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span
+                      className="shrink-0 w-2.5 h-2.5 rounded-full"
+                      style={{
+                        backgroundColor:
+                          active?.jobId === j.id ? "#22c55e" :
+                          dispatchStatus === "completed" ? "#6b7280" :
+                          dispatchStatus === "in_progress" ? "#8b5cf6" :
+                          dispatchStatus === "on_site" ? "#f59e0b" :
+                          dispatchStatus === "en_route" ? "#3b82f6" :
+                          "#94a3b8",
+                      }}
+                    />
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold text-[var(--foreground)] truncate">{j.title || "Job"}</div>
+                      <div className="text-xs text-[var(--muted-foreground)] truncate">
+                        {j.clientName ? `${j.clientName} \u2022 ` : ""}{j.siteAddress || ""}
+                      </div>
+                      <span className={`inline-block mt-1 px-1.5 py-0.5 rounded text-[10px] font-medium ${STATUS_COLOURS_MAP[dispatchStatus]}`}>
+                        {STATUS_LABELS[dispatchStatus]}
+                      </span>
                     </div>
                   </div>
+                  <div className="flex items-center gap-2">
+                    {entry && nextAction && (
+                      <Button
+                        variant="secondary"
+                        type="button"
+                        onClick={() => updateDispatchStatus(entry.id, nextAction.next)}
+                        disabled={busy}
+                        className="min-h-[44px] text-xs"
+                      >
+                        {nextAction.label}
+                      </Button>
+                    )}
+                    <Link href={`/engineer/jobs/${j.id}`}>
+                      <Button variant="secondary" type="button" className="min-h-[44px]">Open</Button>
+                    </Link>
+                    {active?.jobId !== j.id && (
+                      <Button type="button" onClick={() => start(j.id)} disabled={busy || Boolean(active)} className="min-h-[44px]">
+                        Start
+                      </Button>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Link href={`/engineer/jobs/${j.id}`}>
-                    <Button variant="secondary" type="button" className="min-h-[44px]">Open</Button>
-                  </Link>
-                  {active?.jobId !== j.id && (
-                    <Button type="button" onClick={() => start(j.id)} disabled={busy || Boolean(active)} className="min-h-[44px]">
-                      Start
-                    </Button>
-                  )}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </CardContent>
       </Card>

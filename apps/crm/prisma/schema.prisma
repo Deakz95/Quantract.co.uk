@@ -160,20 +160,22 @@ model Certificate {
 }
 
 model CertificateRevision {
-  id             String      @id @default(cuid())
-  companyId      String
-  certificateId  String
-  revision       Int
-  signingHash    String
-  content        Json
-  pdfKey         String?
-  pdfChecksum    String?
-  pdfGeneratedAt DateTime?
-  issuedAt       DateTime
-  issuedBy       String?
-  createdAt      DateTime    @default(now())
-  certificate    Certificate @relation(fields: [certificateId], references: [id])
-  company        Company     @relation(fields: [companyId], references: [id])
+  id                String              @id @default(cuid())
+  companyId         String
+  certificateId     String
+  revision          Int
+  signingHash       String
+  content           Json
+  pdfKey            String?
+  pdfChecksum       String?
+  pdfGeneratedAt    DateTime?
+  issuedAt          DateTime
+  issuedBy          String?
+  templateVersionId String?
+  createdAt         DateTime            @default(now())
+  certificate       Certificate         @relation(fields: [certificateId], references: [id])
+  company           Company             @relation(fields: [companyId], references: [id])
+  templateVersion   PdfTemplateVersion? @relation(fields: [templateVersionId], references: [id])
 
   @@unique([certificateId, revision])
   @@index([companyId])
@@ -484,6 +486,7 @@ model Company {
   scheduledChecks              ScheduledCheck[]
   pdfTemplates                 PdfTemplate[]
   assets                       Asset[]
+  engineerQualifications       EngineerQualification[]
 }
 
 model CompanyUser {
@@ -631,13 +634,21 @@ model Engineer {
   emergencyName         String?
   emergencyPhone        String?
   emergencyRelationship String?
+  workStartHour         Int             @default(8)
+  workEndHour           Int             @default(17)
+  breakMinutes          Int             @default(30)
+  maxJobsPerDay         Int?
+  travelBufferMinutes   Int             @default(0)
+  avatarDocumentId      String?
   company               Company         @relation(fields: [companyId], references: [id])
   rateCard              RateCard?       @relation(fields: [rateCardId], references: [id])
+  avatarDocument        Document?       @relation("EngineerAvatar", fields: [avatarDocumentId], references: [id])
   jobs                  Job[]
   scheduleEntries       ScheduleEntry[]
   timeEntries           TimeEntry[]
   timesheets            Timesheet[]
   users                 User[]
+  qualifications        EngineerQualification[]
 
   @@unique([companyId, email])
   @@index([companyId])
@@ -1270,22 +1281,42 @@ model CompanyOverhead {
 }
 
 model ScheduleEntry {
-  id         String   @id
+  id         String    @id
   companyId  String
   jobId      String
   engineerId String
   startAt    DateTime
   endAt      DateTime
   notes      String?
-  createdAt  DateTime @default(now())
+  status     String    @default("scheduled")
+  deletedAt  DateTime?
+  createdAt  DateTime  @default(now())
   updatedAt  DateTime
-  company    Company  @relation(fields: [companyId], references: [id])
-  engineer   Engineer @relation(fields: [engineerId], references: [id])
-  job        Job      @relation(fields: [jobId], references: [id])
+  company    Company   @relation(fields: [companyId], references: [id])
+  engineer   Engineer  @relation(fields: [engineerId], references: [id])
+  job        Job       @relation(fields: [jobId], references: [id])
 
   @@index([companyId])
   @@index([engineerId, startAt])
   @@index([jobId])
+}
+
+model RecurringSchedule {
+  id              String    @id
+  companyId       String
+  jobId           String?
+  engineerId      String
+  pattern         String
+  startTime       String
+  durationMinutes Int       @default(120)
+  validFrom       DateTime
+  validUntil      DateTime?
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime
+
+  @@index([companyId])
+  @@index([engineerId])
 }
 
 model Site {
@@ -2269,14 +2300,18 @@ model Document {
   originalFilename String?
   createdByUserId String?
   createdAt       DateTime @default(now())
+  deletedAt       DateTime? // Soft-delete timestamp; non-null = archived
 
-  company        Company        @relation(fields: [companyId], references: [id])
-  createdBy      User?          @relation("DocumentsCreated", fields: [createdByUserId], references: [id])
-  qrAssignments  QrAssignment[]
-  expenses       Expense[]
+  company                 Company                 @relation(fields: [companyId], references: [id])
+  createdBy               User?                   @relation("DocumentsCreated", fields: [createdByUserId], references: [id])
+  qrAssignments           QrAssignment[]
+  expenses                Expense[]
+  engineerAvatars         Engineer[]              @relation("EngineerAvatar")
+  engineerQualifications  EngineerQualification[] @relation("QualificationDocument")
 
   @@index([companyId])
   @@index([createdByUserId])
+  @@index([companyId, deletedAt]) // Fast filtering for active/deleted docs
 }
 
 // ============================================================================
@@ -2537,7 +2572,8 @@ model PdfTemplateVersion {
   layout     Json // Array of element definitions: { type, x, y, w, h, binding, style }
   createdAt  DateTime    @default(now())
 
-  template   PdfTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  template              PdfTemplate           @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  certificateRevisions  CertificateRevision[]
 
   @@unique([templateId, version])
   @@index([templateId])
@@ -2560,4 +2596,51 @@ model OpsAuditLog {
 
   @@index([action])
   @@index([createdAt])
+}
+
+// ============================================================================
+// CRON RUN TRACKING — Ops API (Spec 07)
+// ============================================================================
+
+model CronRun {
+  id         String   @id @default(cuid())
+  jobName    String
+  status     String   // running | success | failed
+  startedAt  DateTime @default(now())
+  finishedAt DateTime?
+  durationMs Int?
+  error      String?
+  metadata   Json?
+
+  @@index([jobName, startedAt])
+  @@index([startedAt])
+}
+
+// ============================================================================
+// ENGINEER QUALIFICATIONS / CERTIFICATES
+// ============================================================================
+
+model EngineerQualification {
+  id                String    @id @default(cuid())
+  companyId         String
+  engineerId        String
+  name              String    // e.g. "18th Edition", "Part P"
+  type              String?   // e.g. "electrical", "gas", "general"
+  issuer            String?   // e.g. "City & Guilds", "NICEIC"
+  certificateNumber String?
+  issueDate         DateTime?
+  expiryDate        DateTime?
+  documentId        String?   // FK → Document (uploaded cert file)
+  notes             String?
+  deletedAt         DateTime? // Soft-delete for auditability
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  company           Company   @relation(fields: [companyId], references: [id])
+  engineer          Engineer  @relation(fields: [engineerId], references: [id])
+  document          Document? @relation("QualificationDocument", fields: [documentId], references: [id])
+
+  @@index([companyId])
+  @@index([engineerId])
+  @@index([expiryDate])
 }

@@ -24,7 +24,8 @@ export type OutboxItemType =
   | "photo_upload"
   | "receipt_upload"
   | "check_complete"
-  | "cost_item_create";
+  | "cost_item_create"
+  | "dispatch_status_update";
 
 export type OutboxItem = {
   id: string;
@@ -219,6 +220,7 @@ async function processItem(item: OutboxItem): Promise<boolean> {
       } as any);
       if (item.payload.name) formData.append("name", item.payload.name);
       if (item.payload.category) formData.append("category", item.payload.category);
+      if (item.idempotencyKey) formData.append("idempotencyKey", item.idempotencyKey);
 
       const path = targetType === "certificate"
         ? `/api/engineer/certificates/${targetId}/attachments`
@@ -240,6 +242,7 @@ async function processItem(item: OutboxItem): Promise<boolean> {
       if (item.payload.supplierName) fd.append("supplierName", item.payload.supplierName);
       if (item.payload.notes) fd.append("notes", item.payload.notes);
       if (item.payload.jobId) fd.append("jobId", item.payload.jobId);
+      if (item.idempotencyKey) fd.append("idempotencyKey", item.idempotencyKey);
       res = await apiFetchMultipart("/api/engineer/receipts", fd);
       break;
     }
@@ -266,6 +269,18 @@ async function processItem(item: OutboxItem): Promise<boolean> {
         method: "POST",
         headers,
         body: JSON.stringify(item.payload),
+      });
+      break;
+    }
+
+    case "dispatch_status_update": {
+      res = await apiFetch("/api/engineer/dispatch/status", {
+        method: "POST",
+        body: JSON.stringify({
+          entryId: item.payload.entryId,
+          status: item.payload.status,
+          idempotencyKey: item.idempotencyKey,
+        }),
       });
       break;
     }

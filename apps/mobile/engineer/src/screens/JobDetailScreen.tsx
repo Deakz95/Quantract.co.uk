@@ -23,6 +23,37 @@ import { LockedFeature } from "../components/LockedFeature";
 import { useHasEntitlement } from "../entitlements/EntitlementsContext";
 import { openDocument } from "../utils/documentViewer";
 
+// Dispatch status workflow
+type DispatchStatus = "scheduled" | "en_route" | "on_site" | "in_progress" | "completed";
+const DISPATCH_TRANSITIONS: Record<string, { next: DispatchStatus; label: string; color: string }[]> = {
+  scheduled: [
+    { next: "en_route", label: "En Route", color: "#2563eb" },
+  ],
+  en_route: [
+    { next: "on_site", label: "Arrived", color: "#7c3aed" },
+  ],
+  on_site: [
+    { next: "in_progress", label: "Start Work", color: "#16a34a" },
+  ],
+  in_progress: [
+    { next: "completed", label: "Complete", color: "#0f172a" },
+  ],
+};
+const DISPATCH_STATUS_LABEL: Record<string, string> = {
+  scheduled: "Scheduled",
+  en_route: "En Route",
+  on_site: "On Site",
+  in_progress: "In Progress",
+  completed: "Completed",
+};
+const DISPATCH_STATUS_BG: Record<string, string> = {
+  scheduled: "#fef9c3",
+  en_route: "#dbeafe",
+  on_site: "#e0e7ff",
+  in_progress: "#dcfce7",
+  completed: "#e2e8f0",
+};
+
 function pounds(v: number) {
   return `\u00A3${Number(v || 0).toFixed(2)}`;
 }
@@ -53,9 +84,17 @@ function formatElapsed(startISO: string) {
 export default function JobDetailScreen() {
   const route = useRoute<any>();
   const nav = useNavigation<any>();
-  const { jobId, job: listItem } = route.params as { jobId: string; job?: JobListItem };
+  const { jobId, job: listItem, entryId: paramEntryId, dispatchStatus: paramDispatchStatus } = route.params as {
+    jobId: string;
+    job?: JobListItem;
+    entryId?: string;
+    dispatchStatus?: string;
+  };
   const { activeTimer, isPending, startTimer, stopTimer } = useTimer();
   const [detail, setDetail] = useState<JobDetail | null>(null);
+  const [dispatchStatus, setDispatchStatus] = useState<string | null>(paramDispatchStatus || null);
+  const [dispatchBusy, setDispatchBusy] = useState(false);
+  const entryId = paramEntryId || null;
   const [stages, setStages] = useState<JobStage[]>([]);
   const [variations, setVariations] = useState<JobVariation[]>([]);
   const [certs, setCerts] = useState<JobCert[]>([]);
@@ -244,13 +283,100 @@ export default function JobDetailScreen() {
         >
           <Text style={styles.actionBtnText}>{hasTimesheets ? "Log Time" : "Log Time (Pro)"}</Text>
         </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.actionBtn, styles.toolsBtn]}
+          onPress={() => {
+            const toolsUrl = `https://apps.quantract.co.uk?jobId=${jobId}`;
+            Linking.openURL(toolsUrl);
+          }}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.actionBtnText}>Tools</Text>
+        </TouchableOpacity>
       </View>
+
+      {/* Dispatch status workflow */}
+      {entryId && dispatchStatus && dispatchStatus !== "completed" ? (
+        <View style={styles.dispatchCard}>
+          <View style={styles.dispatchRow}>
+            <Text style={styles.dispatchLabel}>Status:</Text>
+            <View style={[styles.dispatchBadge, { backgroundColor: DISPATCH_STATUS_BG[dispatchStatus] || "#e2e8f0" }]}>
+              <Text style={styles.dispatchBadgeText}>
+                {DISPATCH_STATUS_LABEL[dispatchStatus] || dispatchStatus}
+              </Text>
+            </View>
+          </View>
+          {DISPATCH_TRANSITIONS[dispatchStatus]?.map((t) => (
+            <TouchableOpacity
+              key={t.next}
+              style={[styles.dispatchBtn, { backgroundColor: t.color }]}
+              disabled={dispatchBusy}
+              activeOpacity={0.7}
+              onPress={async () => {
+                setDispatchBusy(true);
+                try {
+                  const idKey = `ds_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+                  await enqueue({
+                    id: idKey,
+                    type: "dispatch_status_update",
+                    jobId,
+                    idempotencyKey: idKey,
+                    payload: { entryId, status: t.next },
+                  });
+                  setDispatchStatus(t.next);
+                  flush();
+                } finally {
+                  setDispatchBusy(false);
+                }
+              }}
+            >
+              {dispatchBusy ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text style={styles.dispatchBtnText}>{t.label}</Text>
+              )}
+            </TouchableOpacity>
+          ))}
+        </View>
+      ) : entryId && dispatchStatus === "completed" ? (
+        <View style={styles.dispatchCard}>
+          <View style={styles.dispatchRow}>
+            <Text style={styles.dispatchLabel}>Status:</Text>
+            <View style={[styles.dispatchBadge, { backgroundColor: DISPATCH_STATUS_BG.completed }]}>
+              <Text style={styles.dispatchBadgeText}>Completed</Text>
+            </View>
+          </View>
+        </View>
+      ) : null}
 
       {/* Loading / Error for detail */}
       {loading && !detail ? (
         <ActivityIndicator size="small" color="#0f172a" style={{ marginTop: 16 }} />
       ) : null}
       {error ? <Text style={styles.error}>{error}</Text> : null}
+
+      {/* Job Pack: site + client contact info */}
+      {detail?.site ? (
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Site Info</Text>
+          {detail.site.name ? (
+            <Text style={styles.sub}>Name: {detail.site.name}</Text>
+          ) : null}
+          {detail.site.address1 ? (
+            <Text style={styles.sub}>Address: {[detail.site.address1, detail.site.city, detail.site.postcode].filter(Boolean).join(", ")}</Text>
+          ) : null}
+          {detail.client?.phone ? (
+            <TouchableOpacity onPress={() => Linking.openURL(`tel:${detail.client!.phone}`)}>
+              <Text style={[styles.sub, styles.link]}>Phone: {detail.client.phone}</Text>
+            </TouchableOpacity>
+          ) : null}
+          {detail.client?.email ? (
+            <TouchableOpacity onPress={() => Linking.openURL(`mailto:${detail.client!.email}`)}>
+              <Text style={[styles.sub, styles.link]}>Email: {detail.client.email}</Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
+      ) : null}
 
       {/* Budget */}
       {detail && detail.budgetTotal > 0 ? (
@@ -312,10 +438,12 @@ export default function JobDetailScreen() {
             <PhotoCapture
               onPhoto={async (photo: PhotoResult) => {
                 // Queue in outbox for offline-safe upload (file URI, not base64)
+                const photoIdKey = `photo_${Date.now()}_${Math.random().toString(36).slice(2)}`;
                 await enqueue({
-                  id: `photo_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+                  id: photoIdKey,
                   type: "photo_upload",
                   jobId,
+                  idempotencyKey: photoIdKey,
                   payload: {
                     targetType: "job",
                     targetId: jobId,
@@ -604,6 +732,7 @@ const styles = StyleSheet.create({
   startBtn: { backgroundColor: "#16a34a" },
   stopBtn: { backgroundColor: "#dc2626" },
   logBtn: { backgroundColor: "#0f172a" },
+  toolsBtn: { backgroundColor: "#3b82f6" },
   disabledBtn: { backgroundColor: "#94a3b8" },
   actionBtnText: { color: "#fff", fontSize: 15, fontWeight: "700" },
   viewPdfBtn: {
@@ -654,4 +783,32 @@ const styles = StyleSheet.create({
   typeChipText: { fontSize: 12, fontWeight: "600", color: "#64748b", textTransform: "capitalize" },
   typeChipTextActive: { color: "#fff" },
   costRowInputs: { flexDirection: "row" },
+  link: { color: "#2563eb", textDecorationLine: "underline" },
+  dispatchCard: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+  },
+  dispatchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  dispatchLabel: { fontSize: 14, fontWeight: "600", color: "#0f172a", marginRight: 8 },
+  dispatchBadge: {
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  dispatchBadgeText: { fontSize: 12, fontWeight: "700", color: "#334155" },
+  dispatchBtn: {
+    borderRadius: 10,
+    paddingVertical: 14,
+    alignItems: "center",
+    marginTop: 4,
+  },
+  dispatchBtnText: { color: "#fff", fontSize: 16, fontWeight: "700" },
 });

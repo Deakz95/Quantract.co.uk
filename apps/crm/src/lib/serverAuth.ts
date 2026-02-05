@@ -5,16 +5,10 @@ import { neonAuth } from "@neondatabase/auth/next/server";
 import { cookies } from "next/headers";
 import { randomUUID } from "crypto";
 import { timeStart, logPerf } from "@/lib/perf/timing";
+import { type Role, ALL_ROLES } from "@quantract/shared";
 
-/**
- * Supported roles in the system.
- * - admin: Full access to company data and settings
- * - office: Back-office staff with limited permissions
- * - finance: Finance team with billing/invoice access
- * - engineer: Field engineers with job-specific access
- * - client: External clients with portal access
- */
-export type Role = "admin" | "office" | "finance" | "engineer" | "client";
+export type { Role };
+
 
 // ============================================================================
 // COOKIE CONFIGURATION - Centralized security settings
@@ -72,8 +66,7 @@ function getClearCookieOptions() {
 
 export { getSession }; // ✅ fixes imports like: import { getSession } from "@/lib/serverAuth"
 
-/** All valid roles for iteration */
-export const ALL_ROLES: Role[] = ["admin", "office", "finance", "engineer", "client"];
+export { ALL_ROLES };
 
 /**
  * Alias for requireRoles - allows any authenticated user
@@ -528,20 +521,42 @@ export function getEffectiveRole(ctx: CompanyAuthContext): Role {
   return ctx.membershipRole ?? ctx.role;
 }
 
+/** Max impersonation duration: 60 minutes */
+const IMPERSONATION_TTL_MS = 60 * 60 * 1000;
+
 /**
  * Check if the current user is actively impersonating another user.
  * Uses the DB-backed impersonation_logs table as source of truth.
  * Returns the active impersonation record if found, null otherwise.
+ *
+ * Enforces a server-side TTL: sessions older than 60 minutes are
+ * auto-expired on every call so that stale impersonation tokens
+ * cannot be reused without polling the status endpoint.
  */
 export async function isImpersonating(ctx: CompanyAuthContext): Promise<{ id: string; targetUserId: string } | null> {
   try {
     const prisma = p();
     const active = await prisma.impersonation_logs.findFirst({
       where: { adminUserId: ctx.userId, endedAt: null, companyId: ctx.companyId },
-      select: { id: true, targetUserId: true },
+      select: { id: true, targetUserId: true, startedAt: true },
       orderBy: { startedAt: "desc" },
     });
-    return active || null;
+    if (!active) return null;
+
+    // Enforce TTL — auto-expire sessions older than 60 minutes
+    if (Date.now() - new Date(active.startedAt).getTime() > IMPERSONATION_TTL_MS) {
+      await prisma.impersonation_logs.update({
+        where: { id: active.id },
+        data: { endedAt: new Date() },
+      }).catch(() => {});
+      await prisma.user.update({
+        where: { id: ctx.userId },
+        data: { currentImpersonationId: null },
+      }).catch(() => {});
+      return null;
+    }
+
+    return { id: active.id, targetUserId: active.targetUserId };
   } catch {
     return null;
   }

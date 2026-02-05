@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getPrisma } from "@/lib/server/prisma";
-import { checkOpsAuth } from "@/lib/server/opsAuth";
+import { checkOpsAuth, opsRateLimitRead } from "@/lib/server/opsAuth";
 
 export const runtime = "nodejs";
 
@@ -9,6 +9,8 @@ export async function GET(req: Request) {
   if (!auth.ok) {
     return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
   }
+  const rl = opsRateLimitRead(req, "audit-log");
+  if (rl) return rl;
 
   const url = new URL(req.url);
   const limit = Math.min(Number(url.searchParams.get("limit")) || 50, 200);

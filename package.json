@@ -1,24 +1,22 @@
 {
   "name": "quantract",
   "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
   "scripts": {
-    "install:all": "npm install",
-    "build:all": "npm run build --workspaces --if-present",
-    "lint:all": "npm run lint --workspaces --if-present",
-    "typecheck:all": "npm run typecheck --workspaces --if-present",
-    "dev:crm": "npm run dev --workspace @quantract/crm",
-    "dev:marketing": "npm run dev --workspace @quantract/marketing",
-    "dev:certificates": "npm run dev --workspace @quantract/certificates",
-    "dev:tools": "npm run dev --workspace @quantract/tools",
-    "build:crm": "npm run build --workspace @quantract/crm",
-    "build:marketing": "npm run build --workspace @quantract/marketing",
-    "build:certificates": "npm run build --workspace @quantract/certificates",
-    "build:tools": "npm run build --workspace @quantract/tools"
+    "install:all": "pnpm install",
+    "build:all": "turbo run build",
+    "lint:all": "turbo run lint",
+    "typecheck:all": "turbo run typecheck",
+    "dev:crm": "pnpm --filter @quantract/crm run dev",
+    "dev:marketing": "pnpm --filter @quantract/marketing run dev",
+    "dev:certificates": "pnpm --filter @quantract/certificates run dev",
+    "dev:tools": "pnpm --filter @quantract/tools run dev",
+    "dev:engineer": "pnpm --filter engineer run start",
+    "build:crm": "pnpm --filter @quantract/crm run build",
+    "build:marketing": "pnpm --filter @quantract/marketing run build",
+    "build:certificates": "pnpm --filter @quantract/certificates run build",
+    "build:tools": "pnpm --filter @quantract/tools run build"
   },
+  "packageManager": "pnpm@10.28.0",
   "engines": {
     "node": ">=18.0.0"
   },
@@ -28,9 +26,23 @@
   },
   "devDependencies": {
     "dotenv": "^17.2.3",
+    "turbo": "^2.8.3",
     "typescript": "^5.9.3"
   },
-  "overrides": {
-    "lucide-react": "0.562.0"
+  "pnpm": {
+    "overrides": {
+      "lucide-react": "0.562.0",
+      "tailwind-merge": "^3.4.0",
+      "zod": "^3.24.1"
+    },
+    "onlyBuiltDependencies": [
+      "@prisma/client",
+      "@prisma/engines",
+      "@sentry/cli",
+      "esbuild",
+      "prisma",
+      "sharp",
+      "unrs-resolver"
+    ]
   }
 }

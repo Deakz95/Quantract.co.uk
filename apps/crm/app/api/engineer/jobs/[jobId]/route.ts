@@ -47,7 +47,7 @@ export const GET = withRequestLogging(
           engineerId: engineer.id,
         },
         include: {
-          client: { select: { id: true, name: true } },
+          client: { select: { id: true, name: true, email: true, phone: true } },
           site: { select: { id: true, name: true, address1: true, city: true, postcode: true } },
         },
       });
@@ -124,7 +124,7 @@ export const GET = withRequestLogging(
             ? new Date((job as any).stockConsumedAt).toISOString()
             : null,
           budgetTotal: (job as any).budgetTotal ?? 0,
-          client: job.client ? { name: job.client.name } : null,
+          client: job.client ? { name: job.client.name, email: (job.client as any).email ?? null, phone: (job.client as any).phone ?? null } : null,
           site: job.site
             ? {
                 name: job.site.name,

@@ -17,12 +17,20 @@ function formatBytes(bytes: number): string {
   return `${value.toFixed(i > 1 ? 1 : 0)} ${units[i]}`;
 }
 
+type BreakdownItem = {
+  type: string;
+  count: number;
+  totalBytes: number;
+};
+
 type UsageData = {
   bytesUsed: number;
   bytesLimit: number | null;
   percentUsed: number;
+  warningLevel: string | null;
   plan: string;
   canUpgrade: boolean;
+  breakdown: BreakdownItem[];
 };
 
 type StorageSettings = {
@@ -158,13 +166,23 @@ export default function StorageSettingsPage() {
                   )}
                 </div>
 
-                {/* Warning message */}
-                {usage.bytesLimit && usage.percentUsed >= 90 && (
-                  <div className="p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
-                    <p className="text-sm font-medium text-red-700 dark:text-red-400">
+                {/* Warning messages */}
+                {usage.bytesLimit && usage.percentUsed >= 80 && (
+                  <div className={`p-4 rounded-lg border ${
+                    usage.percentUsed >= 90
+                      ? "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800"
+                      : "bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800"
+                  }`}>
+                    <p className={`text-sm font-medium ${
+                      usage.percentUsed >= 90
+                        ? "text-red-700 dark:text-red-400"
+                        : "text-amber-700 dark:text-amber-400"
+                    }`}>
                       {usage.percentUsed >= 100
                         ? "Storage full — uploads are blocked until you upgrade or free up space."
-                        : "Storage almost full — consider upgrading your plan to avoid upload interruptions."
+                        : usage.percentUsed >= 90
+                          ? "Storage almost full — consider upgrading your plan to avoid upload interruptions."
+                          : "Storage usage is approaching your limit — consider upgrading or cleaning up unused files."
                       }
                     </p>
                   </div>
@@ -206,6 +224,50 @@ export default function StorageSettingsPage() {
                     <dd className="font-medium text-[var(--foreground)]">{formatBytes(usage.bytesUsed)}</dd>
                   </div>
                 </dl>
+              </CardContent>
+            </Card>
+
+            {/* Storage breakdown by type */}
+            {usage.breakdown && usage.breakdown.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Usage by Type</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {usage.breakdown.map((item) => (
+                      <div key={item.type} className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[var(--foreground)] font-medium capitalize">
+                            {item.type.replace(/_/g, ' ')}
+                          </span>
+                          <span className="text-[var(--muted-foreground)]">
+                            ({item.count} {item.count === 1 ? 'file' : 'files'})
+                          </span>
+                        </div>
+                        <span className="font-medium text-[var(--foreground)]">{formatBytes(item.totalBytes)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Link to insights/cleanup */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-[var(--foreground)]">Storage Insights</p>
+                    <p className="text-sm text-[var(--muted-foreground)]">View largest files, identify unused storage, and clean up</p>
+                  </div>
+                  <Link href="/admin/settings/storage/insights">
+                    <Button variant="outline" size="sm" className="gap-2">
+                      View Insights
+                      <ArrowUpRight className="w-4 h-4" />
+                    </Button>
+                  </Link>
+                </div>
               </CardContent>
             </Card>
           </>

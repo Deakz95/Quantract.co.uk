@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireRole, getUserEmail } from "@/lib/serverAuth";
 import * as repo from "@/lib/server/repo";
 import { withRequestLogging } from "@/lib/server/observability";
+import { rateLimitEngineerWrite, createRateLimitResponse } from "@/lib/server/rateLimitMiddleware";
 export const POST = withRequestLogging(async function POST(req: Request) {
   try {
     await requireRole("engineer");
@@ -12,6 +13,9 @@ export const POST = withRequestLogging(async function POST(req: Request) {
     }, {
       status: 401
     });
+    // Rate limit by authenticated user
+    const rl = rateLimitEngineerWrite(email);
+    if (!rl.ok) return createRateLimitResponse({ error: rl.error!, resetAt: rl.resetAt! });
     const body = (await req.json().catch(() => ({}))) as any;
     const jobId = String(body?.jobId || "").trim();
     const notes = body?.notes ? String(body.notes) : undefined;

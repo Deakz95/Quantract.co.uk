@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import Link from "next/link";
+import { saveOutput } from "../../lib/savedOutputs";
 
 // CRM base URL
 const CRM_URL = process.env.NEXT_PUBLIC_CRM_URL || "https://quantract.co.uk";
@@ -529,6 +530,22 @@ export default function PointCounterPage() {
     }
   };
 
+  // Save result
+  const [savedPointResult, setSavedPointResult] = useState(false);
+  const savePointResult = () => {
+    const counts = pointCounts.filter((p) => p.count > 0);
+    if (counts.length === 0) return;
+    const label = fileName || "Drawing";
+    saveOutput(
+      "point-counter",
+      `${label} — ${points.length} points`,
+      { fileName, totalPoints: points.length },
+      Object.fromEntries(counts.map((c) => [c.name, c.count]))
+    );
+    setSavedPointResult(true);
+    setTimeout(() => setSavedPointResult(false), 2000);
+  };
+
   // Create Quote - send to CRM
   const [showQuoteModal, setShowQuoteModal] = useState(false);
   const [quoteSending, setQuoteSending] = useState(false);
@@ -613,7 +630,7 @@ export default function PointCounterPage() {
           </div>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        <div className="point-counter-header-actions" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           {points.length > 0 && (
             <>
               <button
@@ -663,6 +680,22 @@ export default function PointCounterPage() {
                 }}
               >
                 Export CSV
+              </button>
+              <button
+                onClick={savePointResult}
+                style={{
+                  padding: "6px 12px",
+                  fontSize: "13px",
+                  fontWeight: 500,
+                  background: savedPointResult ? "var(--success)" : "transparent",
+                  border: savedPointResult ? "none" : "1px solid var(--border)",
+                  borderRadius: "6px",
+                  color: savedPointResult ? "#fff" : "var(--foreground)",
+                  cursor: "pointer",
+                  transition: "all 0.2s",
+                }}
+              >
+                {savedPointResult ? "Saved!" : "Save"}
               </button>
               <button
                 onClick={() => setShowQuoteModal(true)}
@@ -918,9 +951,10 @@ export default function PointCounterPage() {
         </div>
       )}
 
-      <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+      <div className="point-counter-layout" style={{ flex: 1, display: "flex", overflow: "hidden" }}>
         {/* Sidebar */}
         <aside
+          className="point-counter-sidebar"
           style={{
             width: "280px",
             borderRight: "1px solid var(--border)",
@@ -1227,6 +1261,7 @@ export default function PointCounterPage() {
         {/* Canvas Area */}
         <div
           ref={containerRef}
+          className="point-counter-canvas"
           style={{
             flex: 1,
             position: "relative",

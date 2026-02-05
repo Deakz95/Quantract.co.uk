@@ -125,3 +125,19 @@ declare module "tailwindcss" {
   const tailwindcss: any;
   export default tailwindcss;
 }
+
+declare module "@neondatabase/auth/next/server" {
+  export const neonAuth: () => Promise<{ user: any }>;
+  export const createNeonAuth: (config: any) => any;
+  export const createAuthServer: (config?: any) => any;
+  export const authApiHandler: (config: any) => any;
+  export type NeonAuth = any;
+}
+
+declare module "ioredis" {
+  class IORedis {
+    constructor(url?: string, options?: any);
+    [key: string]: any;
+  }
+  export default IORedis;
+}

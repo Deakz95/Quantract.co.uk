@@ -1,11 +1,13 @@
 {
-  "name": "Quantract",
+  "name": "Quantract Client Portal",
   "short_name": "Quantract",
-  "start_url": "/",
-  "scope": "/",
+  "description": "View jobs, certificates, documents, and invoices from your contractor.",
+  "start_url": "/client",
+  "scope": "/client",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#0f172a",
+  "categories": ["business", "productivity"],
   "icons": [
     { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
     { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }

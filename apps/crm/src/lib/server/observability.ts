@@ -45,15 +45,25 @@ export type CriticalActionEvent = {
     | "invoice.sent"
     | "timesheet.approved"
     | "schedule.entry.created"
+    | "schedule.entry.updated"
+    | "schedule.entry.soft_deleted"
     | "user.invited"
     | "user.deleted"
+    | "user.role.changed"
     | "impersonation.started"
     | "impersonation.ended"
     | "entitlement.override.created"
     | "entitlement.override.revoked"
+    | "dispatch.copy_week"
+    | "dispatch.recurring.created"
+    | "dispatch.recurring.updated"
+    | "dispatch.recurring.deleted"
+    | "dispatch.status.updated"
     | "ops.health_check"
     | "ops.queue_query"
-    | "ops.job_retry";
+    | "ops.job_retry"
+    | "ops.cron_status_query"
+    | "ops.tenant_diagnostics";
   companyId?: string | null;
   userId?: string | null;
   actorId?: string | null;

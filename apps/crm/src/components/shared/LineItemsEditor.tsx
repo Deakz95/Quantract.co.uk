@@ -80,7 +80,7 @@ export default function LineItemsEditor(props: {
               <div className="relative flex-1">
                 <button
                   type="button"
-                  className="w-full h-10 px-3 text-left text-sm bg-[var(--muted)] hover:bg-[var(--muted)]/80 border border-[var(--border)] rounded-xl flex items-center justify-between text-[var(--foreground)]"
+                  className="w-full min-h-12 px-3 text-left text-sm bg-[var(--muted)] hover:bg-[var(--muted)]/80 border border-[var(--border)] rounded-xl flex items-center justify-between text-[var(--foreground)] touch-manipulation"
                   onClick={() => setOpenDropdown(openDropdown === i ? null : i)}
                   disabled={disabled}
                 >
@@ -93,7 +93,7 @@ export default function LineItemsEditor(props: {
                       <button
                         key={pi}
                         type="button"
-                        className="w-full text-left px-4 py-2.5 text-sm text-[var(--foreground)] hover:bg-[var(--primary)]/10 border-b border-[var(--border)] last:border-0"
+                        className="w-full text-left px-4 py-3.5 text-sm text-[var(--foreground)] hover:bg-[var(--primary)]/10 border-b border-[var(--border)] last:border-0 touch-manipulation"
                         onClick={() => applyPreset(i, preset)}
                       >
                         {preset}
@@ -107,7 +107,7 @@ export default function LineItemsEditor(props: {
             <div className="flex items-start gap-2">
               <span className="text-xs font-semibold text-[var(--muted-foreground)] w-20 pt-2">Description</span>
               <textarea
-                className="flex-1 min-h-[80px] rounded-xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm text-[var(--foreground)] resize-y placeholder:text-[var(--muted-foreground)]"
+                className="flex-1 min-h-[100px] rounded-xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm text-[var(--foreground)] resize-y placeholder:text-[var(--muted-foreground)] touch-manipulation"
                 value={it.description}
                 onChange={(e) => setItem(i, { description: e.target.value })}
                 placeholder="Enter full description of work..."
@@ -122,7 +122,7 @@ export default function LineItemsEditor(props: {
               <span className="text-xs font-semibold text-[var(--muted-foreground)]">Qty</span>
               <input
                 type="number"
-                className="w-20 h-10 rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 text-sm text-center text-[var(--foreground)]"
+                className="w-24 min-h-12 rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 text-sm text-center text-[var(--foreground)] touch-manipulation"
                 value={it.qty || ""}
                 onChange={(e) => setItem(i, { qty: e.target.value === "" ? 0 : Number(e.target.value) })}
                 onFocus={(e) => e.target.select()}
@@ -137,7 +137,7 @@ export default function LineItemsEditor(props: {
               <span className="text-xs font-semibold text-[var(--muted-foreground)]">Unit £</span>
               <input
                 type="number"
-                className="w-28 h-10 rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 text-sm text-[var(--foreground)]"
+                className="w-32 min-h-12 rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 text-sm text-[var(--foreground)] touch-manipulation"
                 value={it.unitPrice || ""}
                 onChange={(e) => setItem(i, { unitPrice: e.target.value === "" ? 0 : Number(e.target.value) })}
                 onFocus={(e) => e.target.select()}
@@ -161,7 +161,7 @@ export default function LineItemsEditor(props: {
                 variant="ghost"
                 onClick={() => removeItem(i)}
                 disabled={disabled || items.length === 1}
-                className="text-red-500 hover:text-red-700 hover:bg-red-500/10"
+                className="text-red-500 hover:text-red-700 hover:bg-red-500/10 min-h-12 min-w-12 touch-manipulation"
               >
                 Remove
               </Button>
@@ -229,7 +229,7 @@ export default function LineItemsEditor(props: {
       )}
 
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <Button type="button" variant="secondary" onClick={addItem} disabled={disabled}>
+        <Button type="button" variant="secondary" className="min-h-12 px-5 touch-manipulation" onClick={addItem} disabled={disabled}>
           Add item
         </Button>
         {props.showTotals && (

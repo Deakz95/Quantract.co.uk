@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Button, Card, CardHeader, CardTitle, CardContent, CardDescription, Input, Label, NativeSelect, Textarea } from "@quantract/ui";
@@ -11,6 +11,7 @@ import {
   createNewCertificate,
   generateCertificateNumber,
 } from "../../lib/certificateStore";
+import { StickyActionBar } from "../../components/StickyActionBar";
 
 function EmergencyLightingPageContent() {
   const searchParams = useSearchParams();
@@ -87,6 +88,28 @@ function EmergencyLightingPageContent() {
     }));
     setSaveStatus("idle");
   };
+
+  // Auto-save: debounce 2s after any state change
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dataRef = useRef(data);
+  dataRef.current = data;
+
+  const doAutoSave = useCallback(() => {
+    if (!currentCertId) return;
+    updateCertificate(currentCertId, {
+      client_name: dataRef.current.overview.clientName,
+      installation_address: dataRef.current.overview.installationAddress,
+      data: dataRef.current as unknown as Record<string, unknown>,
+    });
+    setLastSaved(new Date());
+  }, [currentCertId, updateCertificate]);
+
+  useEffect(() => {
+    if (!currentCertId || saveStatus !== "idle") return;
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(doAutoSave, 2000);
+    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
+  }, [data, currentCertId, saveStatus, doAutoSave]);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -641,13 +664,6 @@ function EmergencyLightingPageContent() {
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <Button variant="secondary" onClick={handleSave} disabled={isSaving} className="w-full">
-              {saveStatus === "saving" ? "Saving..." : "Save Certificate"}
-            </Button>
-            <Button onClick={handleDownload} disabled={isGenerating} size="lg" className="w-full">
-              {isGenerating ? "Generating..." : "Download Certificate"}
-            </Button>
             <Link href="/dashboard" className="w-full">
               <Button variant="ghost" className="w-full">
                 View All Certificates
@@ -656,6 +672,14 @@ function EmergencyLightingPageContent() {
           </div>
         </div>
       </div>
+      <StickyActionBar
+        onSave={handleSave}
+        onDownload={handleDownload}
+        isSaving={isSaving}
+        isGenerating={isGenerating}
+        saveStatus={saveStatus}
+        downloadLabel="Download Certificate"
+      />
     </main>
   );
 }

@@ -1,13 +1,9 @@
+import { redirect } from "next/navigation";
 
-export default function ClientPortal(){
-  return (
-    <div>
-      <h1>Client Portal</h1>
-      <ul>
-        <li><a href="/portal/quotes">Quotes</a></li>
-        <li><a href="/portal/invoices">Invoices</a></li>
-        <li><a href="/portal/agreements">Agreements</a></li>
-      </ul>
-    </div>
-  );
+/**
+ * Legacy /portal route — redirects to the canonical /client portal.
+ * Kept as a server component redirect to avoid breaking existing bookmarks/links.
+ */
+export default function PortalRedirect() {
+  redirect("/client");
 }

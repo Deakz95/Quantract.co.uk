@@ -50,9 +50,11 @@ export default function AddReceiptScreen() {
       const amountPence = amount ? Math.round(parseFloat(amount) * 100) : undefined;
       const vatPence = vatAmount ? Math.round(parseFloat(vatAmount) * 100) : undefined;
 
+      const receiptIdKey = `receipt_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
       await enqueue({
-        id: `receipt_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        id: receiptIdKey,
         type: "receipt_upload",
+        idempotencyKey: receiptIdKey,
         payload: {
           fileUri: photo.uri,
           mimeType: photo.mimeType,

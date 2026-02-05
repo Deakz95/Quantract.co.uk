@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
+import { saveOutput } from "../../lib/savedOutputs";
 
 // BS 7671 Cable data - mV/A/m values at 70°C conductor temperature
 // Reference: BS 7671 Appendix 4, Table 4Ab (voltage drop)
@@ -109,6 +110,7 @@ export default function CableCalculatorPage() {
   const [ambientTemp, setAmbientTemp] = useState<string>("30");
   const [grouping, setGrouping] = useState<string>("1");
   const [insulation, setInsulation] = useState<string>("none");
+  const [saved, setSaved] = useState(false);
 
   const supplyVoltage = phaseType === "single" ? 230 : 400;
   const maxVoltageDrop = circuitType === "lighting" ? 3 : 5; // Percentage
@@ -260,7 +262,7 @@ export default function CableCalculatorPage() {
       </header>
 
       <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "24px 20px" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
+        <div className="cable-calc-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
           {/* Input Section */}
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             {/* Basic Parameters */}
@@ -494,7 +496,7 @@ export default function CableCalculatorPage() {
                   <div style={cardHeaderStyle}>
                     <h2 style={{ fontSize: "14px", fontWeight: 600, margin: 0 }}>All Cable Options</h2>
                   </div>
-                  <div style={{ ...cardContentStyle, padding: 0 }}>
+                  <div className="cable-table-wrap" style={{ ...cardContentStyle, padding: 0 }}>
                     <table style={{ width: "100%", fontSize: "12px", borderCollapse: "collapse" }}>
                       <thead>
                         <tr style={{ background: "var(--muted)" }}>
@@ -561,6 +563,41 @@ export default function CableCalculatorPage() {
               </div>
             )}
 
+            {/* Save Result */}
+            {results && !("error" in results) && results.recommended && (
+              <button
+                onClick={() => {
+                  saveOutput(
+                    "cable-calculator",
+                    `${results.recommended!.size}mm² ${CABLE_DATA[cableType].name} — ${current}A × ${length}m`,
+                    { current, length, cableType, phaseType, circuitType, ambientTemp, grouping, insulation },
+                    {
+                      recommendedSize: results.recommended!.size,
+                      voltageDrop: results.recommended!.voltageDrop,
+                      voltageDropPercent: results.recommended!.voltageDropPercent,
+                      correctionFactor: results.correctionFactor,
+                    }
+                  );
+                  setSaved(true);
+                  setTimeout(() => setSaved(false), 2000);
+                }}
+                style={{
+                  width: "100%",
+                  padding: "10px 16px",
+                  fontSize: "13px",
+                  fontWeight: 500,
+                  background: saved ? "var(--success)" : "var(--primary)",
+                  border: "none",
+                  borderRadius: "6px",
+                  color: "#fff",
+                  cursor: "pointer",
+                  transition: "all 0.2s",
+                }}
+              >
+                {saved ? "Saved!" : "Save Result"}
+              </button>
+            )}
+
             {/* Reference Info */}
             <div style={{ ...cardStyle, background: "var(--muted)" }}>
               <div style={cardContentStyle}>
@@ -575,14 +612,6 @@ export default function CableCalculatorPage() {
         </div>
       </div>
 
-      {/* Responsive grid fix */}
-      <style>{`
-        @media (max-width: 768px) {
-          main > div > div {
-            grid-template-columns: 1fr !important;
-          }
-        }
-      `}</style>
     </main>
   );
 }

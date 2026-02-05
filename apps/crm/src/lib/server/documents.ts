@@ -96,6 +96,51 @@ async function incrementStorageUsage(tx: any, companyId: string, bytes: number):
   });
 }
 
+/**
+ * Atomically decrement storage usage via update (clamped to 0).
+ * Used when soft-deleting documents so usage stays accurate between reconciliation runs.
+ */
+export async function decrementStorageUsage(tx: any, companyId: string, bytes: number): Promise<void> {
+  const current = await tx.companyStorageUsage.findUnique({
+    where: { companyId },
+    select: { bytesUsed: true },
+  });
+  const currentBytes = Number(current?.bytesUsed ?? 0);
+  const newBytes = Math.max(0, currentBytes - bytes);
+  await tx.companyStorageUsage.upsert({
+    where: { companyId },
+    create: { companyId, bytesUsed: BigInt(newBytes) },
+    update: { bytesUsed: BigInt(newBytes) },
+  });
+}
+
+/**
+ * Soft-delete a document: set deletedAt and decrement storage usage.
+ * Returns the updated document or null if not found / already deleted.
+ */
+export async function softDeleteDocument(
+  documentId: string,
+  companyId: string,
+): Promise<DocumentRecord | null> {
+  const prisma = getPrisma();
+  if (!prisma) throw new Error("Database unavailable");
+
+  return prisma.$transaction(async (tx: any) => {
+    const doc = await tx.document.findFirst({
+      where: { id: documentId, companyId, deletedAt: null },
+    });
+    if (!doc) return null;
+
+    const updated = await tx.document.update({
+      where: { id: documentId },
+      data: { deletedAt: new Date() },
+    });
+
+    await decrementStorageUsage(tx, companyId, doc.sizeBytes);
+    return updated as DocumentRecord;
+  });
+}
+
 // ── Types ──
 
 export type CreateDocumentInput = {

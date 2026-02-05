@@ -354,6 +354,7 @@ export default function QuoteCreateForm() {
           <Button
             type="button"
             variant={mode === "new" ? "default" : "secondary"}
+            className="min-h-12 px-5 touch-manipulation"
             onClick={() => { setMode("new"); setSelectedQuoteId(""); }}
           >
             New Quote
@@ -361,6 +362,7 @@ export default function QuoteCreateForm() {
           <Button
             type="button"
             variant={mode === "edit" ? "default" : "secondary"}
+            className="min-h-12 px-5 touch-manipulation"
             onClick={() => setMode("edit")}
           >
             Edit Existing
@@ -393,7 +395,7 @@ export default function QuoteCreateForm() {
                 <label className="grid gap-1">
                   <span className="text-xs font-semibold text-[var(--muted-foreground)]">Select quote to edit</span>
                   <select
-                    className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm text-[var(--foreground)]"
+                    className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm text-[var(--foreground)] min-h-12 touch-manipulation"
                     value={selectedQuoteId}
                     onChange={(e) => setSelectedQuoteId(e.target.value)}
                   >
@@ -413,7 +415,7 @@ export default function QuoteCreateForm() {
                     Use template (optional)
                   </span>
                   <select
-                    className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm text-[var(--foreground)]"
+                    className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm text-[var(--foreground)] min-h-12 touch-manipulation"
                     value={selectedTemplateId}
                     onChange={(e) => setSelectedTemplateId(e.target.value)}
                   >
@@ -433,7 +435,7 @@ export default function QuoteCreateForm() {
                     Select existing client (autofills details below)
                   </span>
                   <select
-                    className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm font-medium text-[var(--foreground)]"
+                    className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm font-medium text-[var(--foreground)] min-h-12 touch-manipulation"
                     value={clientId}
                     onChange={(e) => setClientId(e.target.value)}
                   >
@@ -451,7 +453,7 @@ export default function QuoteCreateForm() {
                 <label className="grid gap-1">
                   <span className="text-xs font-semibold text-[var(--muted-foreground)]">Select site (optional)</span>
                   <select
-                    className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm text-[var(--foreground)]"
+                    className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm text-[var(--foreground)] min-h-12 touch-manipulation"
                     value={siteId}
                     onChange={(e) => setSiteId(e.target.value)}
                   >
@@ -548,11 +550,11 @@ export default function QuoteCreateForm() {
                 />
               </FormField>
 
-              <div className="flex justify-end gap-2">
-                <Button type="button" variant="secondary" onClick={() => router.push("/admin/quotes")}>
+              <div className="flex flex-wrap justify-end gap-3">
+                <Button type="button" variant="secondary" className="min-h-12 px-5 touch-manipulation" onClick={() => router.push("/admin/quotes")}>
                   Back
                 </Button>
-                <Button type="button" onClick={create} disabled={busy || !canSubmit}>
+                <Button type="button" className="min-h-12 px-5 touch-manipulation" onClick={create} disabled={busy || !canSubmit}>
                   {busy ? (
                     <>
                       <LoadingSpinner className="mr-2" />

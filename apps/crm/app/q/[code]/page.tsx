@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { getPrisma } from "@/lib/server/prisma";
 import { createSignedUrl } from "@/lib/server/documents";
+import { readUploadBytes } from "@/lib/server/storage";
 
 export const dynamic = "force-dynamic";
 
@@ -36,6 +37,9 @@ export default async function QrResolvePage({ params, searchParams }: Props) {
       company: {
         select: {
           brandName: true,
+          logoKey: true,
+          themePrimary: true,
+          themeAccent: true,
         },
       },
       assignment: {
@@ -49,6 +53,7 @@ export default async function QrResolvePage({ params, searchParams }: Props) {
               type: true,
               issuedAt: true,
               outcome: true,
+              inspectorName: true,
             },
           },
         },
@@ -126,13 +131,47 @@ export default async function QrResolvePage({ params, searchParams }: Props) {
   // Branded landing page
   const cert = tag.assignment.certificate;
   const brandName = tag.company.brandName;
+  const brandPrimary = tag.company.themePrimary || "#0f172a";
+  const brandAccent = tag.company.themeAccent || "#16a34a";
+
+  // Resolve company logo as base64 data URI for inline rendering
+  let logoDataUri: string | null = null;
+  if (tag.company.logoKey) {
+    try {
+      const logoBytes = readUploadBytes(tag.company.logoKey);
+      if (logoBytes) {
+        const ext = tag.company.logoKey.toLowerCase().endsWith(".svg") ? "svg+xml" : "png";
+        logoDataUri = `data:image/${ext};base64,${logoBytes.toString("base64")}`;
+      }
+    } catch {
+      // non-fatal — no logo shown
+    }
+  }
 
   return (
     <div className="flex items-center justify-center min-h-screen px-4 bg-gray-50">
       <div className="max-w-md w-full rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
+        {/* Branded header with logo and company colors */}
         <div className="text-center mb-6">
-          <h1 className="text-xl font-bold text-gray-900">{brandName}</h1>
+          {logoDataUri && (
+            <div className="mb-4 flex justify-center">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={logoDataUri}
+                alt={brandName}
+                className="max-h-16 max-w-[200px] object-contain"
+              />
+            </div>
+          )}
+          <h1 className="text-xl font-bold" style={{ color: brandPrimary }}>
+            {brandName}
+          </h1>
           <p className="mt-1 text-sm text-gray-500">Certificate Verification</p>
+          {/* Accent bar */}
+          <div
+            className="mt-3 mx-auto h-0.5 w-16 rounded-full"
+            style={{ backgroundColor: brandAccent }}
+          />
         </div>
 
         {cert && (
@@ -165,15 +204,32 @@ export default async function QrResolvePage({ params, searchParams }: Props) {
                 <span className="font-medium text-gray-900">{cert.outcome}</span>
               </div>
             )}
+            {cert.inspectorName && (
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Inspector</span>
+                <span className="font-medium text-gray-900">{cert.inspectorName}</span>
+              </div>
+            )}
           </div>
         )}
 
         <a
           href={signedUrl}
-          className="block w-full text-center py-3 px-4 rounded-lg bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 transition-colors"
+          className="block w-full text-center py-3 px-4 rounded-lg text-white text-sm font-semibold hover:opacity-90 transition-colors"
+          style={{ backgroundColor: brandPrimary }}
         >
           View Certificate PDF
         </a>
+
+        {cert && (
+          <a
+            href={`/client/certificates/${cert.id}`}
+            className="mt-2 block w-full text-center py-3 px-4 rounded-lg border text-sm font-semibold hover:bg-gray-50 transition-colors"
+            style={{ borderColor: brandPrimary, color: brandPrimary }}
+          >
+            View in Portal
+          </a>
+        )}
 
         <p className="mt-4 text-xs text-gray-400 text-center">
           This link expires in 5 minutes for security.

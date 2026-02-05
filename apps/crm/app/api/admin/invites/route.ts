@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireCompanyContext, getEffectiveRole } from "@/lib/serverAuth";
 import { getPrisma } from "@/lib/server/prisma";
-import { withRequestLogging, logError } from "@/lib/server/observability";
+import { withRequestLogging, logCriticalAction, logError } from "@/lib/server/observability";
 import { sendInviteEmail, absoluteUrl } from "@/lib/server/email";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import crypto from "crypto";
@@ -116,6 +116,14 @@ export const POST = withRequestLogging(async function POST(req: Request) {
         // Don't fail the request, just note email wasn't sent
       }
     }
+
+    logCriticalAction({
+      name: "user.invited",
+      companyId,
+      userId: authCtx.userId,
+      actorId: authCtx.userId,
+      metadata: { inviteId: invite.id, email, role, emailSent },
+    });
 
     return NextResponse.json({
       ok: true,

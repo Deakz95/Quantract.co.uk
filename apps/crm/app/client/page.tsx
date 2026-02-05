@@ -9,6 +9,7 @@ import {
   Shield,
   Activity,
   HelpCircle,
+  Briefcase,
 } from "lucide-react";
 import { useToast } from "@/components/ui/useToast";
 
@@ -27,6 +28,14 @@ const NAV_CARDS: {
     Icon: Activity,
     bg: "rgba(37,99,235,0.08)",
     fg: "#2563eb",
+  },
+  {
+    href: "/client/jobs",
+    label: "Jobs",
+    desc: "View your scheduled and completed jobs.",
+    Icon: Briefcase,
+    bg: "rgba(245,158,11,0.08)",
+    fg: "#d97706",
   },
   {
     href: "/client/quotes",
@@ -51,6 +60,14 @@ const NAV_CARDS: {
     Icon: Shield,
     bg: "rgba(16,185,129,0.08)",
     fg: "#059669",
+  },
+  {
+    href: "/client/documents",
+    label: "Documents",
+    desc: "View and download your project documents.",
+    Icon: FileText,
+    bg: "rgba(100,116,139,0.08)",
+    fg: "#475569",
   },
   {
     href: "/client/troubleshoot",

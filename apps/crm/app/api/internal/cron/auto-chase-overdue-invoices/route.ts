@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getPrisma } from "@/lib/server/prisma";
 import { checkCronAuth, checkIdempotency, getCompanyHeader, getIdempotencyKey } from "@/lib/server/cronAuth";
 import { runInvoiceAutoChase } from "@/lib/server/repo";
+import { trackCronRun } from "@/lib/server/cronTracker";
 
 export async function POST(req: Request) {
   const auth = checkCronAuth(req);
@@ -25,7 +26,10 @@ export async function POST(req: Request) {
   const url = new URL(req.url);
   const dryRun = url.searchParams.get("dryRun") === "1" || url.searchParams.get("dryRun") === "true";
 
-  const result = await runInvoiceAutoChase({ dryRun, companyId: companyId ?? undefined });
+  const result = await trackCronRun("auto-chase-overdue-invoices", async () => {
+    return runInvoiceAutoChase({ dryRun, companyId: companyId ?? undefined });
+  });
+
   console.log("[cron] auto-chase-overdue-invoices", {
     companyId: companyId ?? null,
     dryRun,

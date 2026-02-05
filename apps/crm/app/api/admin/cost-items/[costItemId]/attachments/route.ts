@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { requireRoles } from "@/lib/serverAuth";
+import { requireRoles, requireCompanyId } from "@/lib/serverAuth";
 import * as repo from "@/lib/server/repo";
-import { writeUploadBytes } from "@/lib/server/storage";
+import { createDocument, StorageLimitError } from "@/lib/server/documents";
 import { getRouteParams } from "@/lib/server/routeParams";
 
 export const runtime = "nodejs";
@@ -21,6 +21,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ costItemId: st
   if (!session) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
+  const companyId = await requireCompanyId();
   const { costItemId } = await getRouteParams(ctx);
   const form = await req.formData().catch(() => null);
   if (!form) return NextResponse.json({ ok: false, error: "bad_form" }, { status: 400 });
@@ -29,15 +30,31 @@ export async function POST(req: Request, ctx: { params: Promise<{ costItemId: st
   const attachments: NonNullable<Awaited<ReturnType<typeof repo.addCostItemAttachment>>>[] = [];
   for (const [idx, file] of files.entries()) {
     const buf = Buffer.from(await file.arrayBuffer());
-    const extRaw = file.name?.split(".").pop() || file.type?.split("/")[1] || "bin";
-    const ext = extRaw.replace(/[^a-z0-9]/gi, "").toLowerCase() || "bin";
-    const key = writeUploadBytes(buf, { ext, prefix: "cost_item_attachments" });
-    const name = file.name || `attachment-${idx + 1}.${ext}`;
+    const mimeType = file.type || "application/octet-stream";
+    const name = file.name || `attachment-${idx + 1}.bin`;
+
+    let doc;
+    try {
+      doc = await createDocument({
+        companyId,
+        type: "cost_item_attachment",
+        mimeType,
+        bytes: buf,
+        originalFilename: name,
+        storageKey: undefined,
+      });
+    } catch (err) {
+      if (err instanceof StorageLimitError) {
+        return NextResponse.json({ ok: false, error: "storage_limit_exceeded" }, { status: 413 });
+      }
+      throw err;
+    }
+
     const att = await repo.addCostItemAttachment({
       costItemId,
       name,
-      fileKey: key,
-      mimeType: file.type || "application/octet-stream",
+      fileKey: doc.storageKey,
+      mimeType,
     });
     if (att) attachments.push(att);
   }

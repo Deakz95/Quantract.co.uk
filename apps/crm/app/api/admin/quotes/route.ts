@@ -6,6 +6,7 @@ import { withRequestLogging, logError } from "@/lib/server/observability";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { randomBytes, randomUUID } from "crypto";
 import { resolveLegalEntity, allocateQuoteNumberForEntity } from "@/lib/server/multiEntity";
+import { scopedKey, getIdempotentResponse, setIdempotentResponse } from "@/lib/server/idempotency";
 
 export const runtime = "nodejs";
 
@@ -58,6 +59,17 @@ export const POST = withRequestLogging(async function POST(req: Request) {
     const effectiveRole = getEffectiveRole(authCtx);
     if (effectiveRole !== "admin" && effectiveRole !== "office") {
       return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
+    }
+
+    // --- Idempotency-Key support ---
+    const rawIdemKey = req.headers.get("idempotency-key");
+    let idemKey: string | null = null;
+    if (rawIdemKey) {
+      idemKey = scopedKey(rawIdemKey, authCtx.companyId, authCtx.userId, "POST:/api/admin/quotes");
+      const cached = await getIdempotentResponse(idemKey);
+      if (cached) {
+        return NextResponse.json(cached);
+      }
     }
 
     const client = getPrisma();
@@ -144,14 +156,21 @@ export const POST = withRequestLogging(async function POST(req: Request) {
       },
     });
 
-    return NextResponse.json({
+    const responseBody = {
       ok: true,
       quote: {
         ...quote,
         totals: quoteTotals(quote),
         shareUrl: `/client/quotes/${quote.token}`,
       },
-    });
+    };
+
+    // Store response for idempotency dedup
+    if (idemKey) {
+      await setIdempotentResponse(idemKey, responseBody).catch(() => {});
+    }
+
+    return NextResponse.json(responseBody);
   } catch (error) {
     if (error instanceof PrismaClientKnownRequestError) {
       logError(error, { route: "/api/admin/quotes", action: "create" });

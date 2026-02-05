@@ -64,6 +64,9 @@ const RATE_LIMITS = {
 
   // Public QR resolver (prevent enumeration/scraping)
   QR_RESOLVE: { limit: 30, windowMs: 60 * 1000 }, // 30 per minute per IP
+
+  // Engineer mobile app writes (generous — must tolerate offline sync bursts)
+  ENGINEER_WRITE: { limit: 60, windowMs: 60 * 1000 }, // 60 per minute per user
 } as const;
 
 /**
@@ -322,6 +325,23 @@ export function rateLimitQrResolve(req: NextRequest) {
   }
 
   return { ok: true, remaining: ipCheck.remaining };
+}
+
+/**
+ * Apply rate limiting to engineer mobile app write endpoints.
+ * Keyed by user email (not IP) to avoid blocking engineers behind shared NATs
+ * and to tolerate offline sync bursts gracefully.
+ */
+export function rateLimitEngineerWrite(userEmail: string) {
+  const check = rateLimitByIdentifier(userEmail, RATE_LIMITS.ENGINEER_WRITE, "eng:write");
+  if (!check.ok) {
+    return {
+      ok: false,
+      error: "Too many requests. Please wait a moment and try again.",
+      resetAt: check.resetAt,
+    };
+  }
+  return { ok: true, remaining: check.remaining };
 }
 
 /**

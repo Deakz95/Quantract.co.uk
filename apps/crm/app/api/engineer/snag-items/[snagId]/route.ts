@@ -3,6 +3,7 @@ import { requireRole, getUserEmail } from "@/lib/serverAuth";
 import * as repo from "@/lib/server/repo";
 import { withRequestLogging } from "@/lib/server/observability";
 import { getRouteParams } from "@/lib/server/routeParams";
+import { rateLimitEngineerWrite, createRateLimitResponse } from "@/lib/server/rateLimitMiddleware";
 
 const STATUSES = new Set(["open", "in_progress", "resolved"]);
 
@@ -14,6 +15,9 @@ export const PATCH = withRequestLogging(
     if (!email) {
       return NextResponse.json({ ok: false, error: "Missing engineer email" }, { status: 401 });
     }
+    // Rate limit by authenticated user
+    const rl = rateLimitEngineerWrite(email);
+    if (!rl.ok) return createRateLimitResponse({ error: rl.error!, resetAt: rl.resetAt! });
     const { snagId } = await getRouteParams(ctx);
     const snagItem = await repo.getSnagItemById(snagId);
     if (!snagItem) {

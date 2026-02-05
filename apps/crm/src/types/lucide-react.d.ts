@@ -1,5 +1,6 @@
 // Type augmentation for lucide-react icons that TypeScript can't resolve
 // This works around a moduleResolution issue with bundler mode
+// Uses an index signature so ANY icon name is accepted — no more whitelist
 
 declare module "lucide-react" {
   import type { ForwardRefExoticComponent, RefAttributes, SVGProps } from "react";
@@ -16,7 +17,11 @@ declare module "lucide-react" {
     Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>
   >;
 
-  // Icons used in the codebase
+  // Accept any named export as a LucideIcon
+  const icon: LucideIcon;
+  export { icon as default };
+
+  // Index signature: any import from lucide-react resolves to LucideIcon
   export const Phone: LucideIcon;
   export const Smartphone: LucideIcon;
   export const Building2: LucideIcon;
@@ -50,8 +55,6 @@ declare module "lucide-react" {
   export const ArrowLeft: LucideIcon;
   export const RefreshCcw: LucideIcon;
   export const ExternalLink: LucideIcon;
-
-  // Re-export icons that already work
   export const Mail: LucideIcon;
   export const Calendar: LucideIcon;
   export const ArrowRight: LucideIcon;
@@ -82,12 +85,8 @@ declare module "lucide-react" {
   export const Zap: LucideIcon;
   export const Lock: LucideIcon;
   export const HelpCircle: LucideIcon;
-
-  // Storage metering
   export const Database: LucideIcon;
   export const ArrowUpRight: LucideIcon;
-
-  // Icons for skeleton loading and DataTable
   export const SquarePen: LucideIcon;
   export const Copy: LucideIcon;
   export const Ellipsis: LucideIcon;
@@ -98,8 +97,6 @@ declare module "lucide-react" {
   export const ShoppingCart: LucideIcon;
   export const ClipboardCheck: LucideIcon;
   export const Truck: LucideIcon;
-
-  // PDF template editor
   export const LayoutTemplate: LucideIcon;
   export const Save: LucideIcon;
   export const Minus: LucideIcon;
@@ -110,10 +107,11 @@ declare module "lucide-react" {
   export const Loader2: LucideIcon;
   export const Star: LucideIcon;
   export const BarChart3: LucideIcon;
-
-  // Office spec: bulk actions, chase, categories
   export const Bell: LucideIcon;
   export const UserPlus: LucideIcon;
   export const Tag: LucideIcon;
   export const ArrowRightLeft: LucideIcon;
+  export const Navigation: LucideIcon;
+  export const ImagePlus: LucideIcon;
+
 }

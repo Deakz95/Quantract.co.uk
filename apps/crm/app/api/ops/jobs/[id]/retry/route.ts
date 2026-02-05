@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getPrisma } from "@/lib/server/prisma";
-import { checkOpsAuth, getApprovalToken, getOpsClientIp, redactSensitive } from "@/lib/server/opsAuth";
+import { checkOpsAuth, getApprovalToken, getOpsClientIp, opsRateLimitWrite, redactSensitive } from "@/lib/server/opsAuth";
 import { logCriticalAction } from "@/lib/server/observability";
 
 export const runtime = "nodejs";
@@ -13,6 +13,8 @@ export async function POST(
   if (!auth.ok) {
     return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
   }
+  const rl = opsRateLimitWrite(req, "job-retry");
+  if (rl) return rl;
 
   // Write actions require an explicit approval token
   const approvalToken = getApprovalToken(req);

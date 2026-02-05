@@ -1,1 +1,64 @@
 @import "@quantract/ui/globals.css";
+
+/* ── Responsive overrides for Tools app ── */
+
+/* Touch-friendly inputs: min 44px tap target */
+@media (max-width: 768px) {
+  input,
+  select,
+  button {
+    min-height: 44px;
+  }
+
+  /* Cable Calculator: stack 2-col grid to single column */
+  .cable-calc-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Cable Calculator: horizontal scroll for results table */
+  .cable-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Point Counter: collapse sidebar to horizontal strip at bottom */
+  .point-counter-layout {
+    flex-direction: column-reverse !important;
+  }
+
+  .point-counter-sidebar {
+    width: 100% !important;
+    max-height: 45vh;
+    border-right: none !important;
+    border-top: 1px solid var(--border);
+    flex-direction: row !important;
+    flex-wrap: wrap;
+    gap: 8px !important;
+    padding: 12px !important;
+    overflow-y: auto;
+  }
+
+  .point-counter-sidebar > div {
+    min-width: 0;
+  }
+
+  /* Point counter canvas area needs min height on mobile */
+  .point-counter-canvas {
+    min-height: 50vh;
+  }
+
+  /* Header buttons: collapse to icons on small screens */
+  .point-counter-header-actions {
+    gap: 4px !important;
+  }
+
+  .point-counter-header-actions button {
+    padding: 6px 8px !important;
+    font-size: 12px !important;
+  }
+
+  /* Landing page: reduce padding on small screens */
+  .tools-landing {
+    padding: 24px 16px !important;
+  }
+}

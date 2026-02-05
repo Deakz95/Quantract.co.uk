@@ -3,6 +3,7 @@ import { getUserEmail, requireRoles } from "@/lib/serverAuth";
 import * as repo from "@/lib/server/repo";
 import { normalizeCertificateData } from "@/lib/certificates";
 import { getRouteParams } from "@/lib/server/routeParams";
+import { rateLimitEngineerWrite, createRateLimitResponse } from "@/lib/server/rateLimitMiddleware";
 
 export async function GET(_req: Request, ctx: { params: Promise<{ certificateId: string }> }) {
   const session = await requireRoles("engineer");
@@ -28,6 +29,9 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ certificateId
   if (!email) {
     return NextResponse.json({ ok: false, error: "Missing engineer context" }, { status: 401 });
   }
+  // Rate limit by authenticated user
+  const rl = rateLimitEngineerWrite(email);
+  if (!rl.ok) return createRateLimitResponse({ error: rl.error!, resetAt: rl.resetAt! });
   const { certificateId } = await getRouteParams(ctx);
   const existing = await repo.getCertificateForEngineer(certificateId, email);
   if (!existing) return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });

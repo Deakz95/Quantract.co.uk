@@ -20,13 +20,15 @@ export const GET = withRequestLogging(async function GET() {
       return NextResponse.json({ ok: false, error: "service_unavailable" }, { status: 503 });
     }
 
-    const [usage, company] = await Promise.all([
+    const cid = authCtx.companyId;
+
+    const [usage, company, breakdown] = await Promise.all([
       prisma.companyStorageUsage.findUnique({
-        where: { companyId: authCtx.companyId },
+        where: { companyId: cid },
         select: { bytesUsed: true },
       }),
       prisma.company.findUnique({
-        where: { id: authCtx.companyId },
+        where: { id: cid },
         select: {
           plan: true,
           billing: {
@@ -38,6 +40,14 @@ export const GET = withRequestLogging(async function GET() {
           },
         },
       }),
+      // Per-type breakdown (only active documents)
+      prisma.$queryRaw<Array<{ type: string; count: bigint; totalBytes: bigint }>>`
+        SELECT "type", COUNT(*)::BIGINT AS "count", COALESCE(SUM("sizeBytes"), 0)::BIGINT AS "totalBytes"
+        FROM "Document"
+        WHERE "companyId" = ${cid} AND "deletedAt" IS NULL
+        GROUP BY "type"
+        ORDER BY "totalBytes" DESC
+      `,
     ]);
 
     if (!company) {
@@ -55,13 +65,27 @@ export const GET = withRequestLogging(async function GET() {
     const bytesLimit = limitMb === Infinity ? Infinity : limitMb * 1024 * 1024;
     const percentUsed = bytesLimit === Infinity ? 0 : Math.min(100, Math.round((bytesUsed / bytesLimit) * 100));
 
+    // Compute warning level for client-side messaging
+    let warningLevel: string | null = null;
+    if (bytesLimit !== Infinity) {
+      if (percentUsed >= 100) warningLevel = "blocked_100";
+      else if (percentUsed >= 90) warningLevel = "warning_90";
+      else if (percentUsed >= 80) warningLevel = "warning_80";
+    }
+
     return NextResponse.json({
       ok: true,
       bytesUsed,
       bytesLimit: bytesLimit === Infinity ? null : bytesLimit,
       percentUsed,
+      warningLevel,
       plan: billing?.plan || company.plan,
       canUpgrade: (billing?.plan || company.plan) !== "enterprise",
+      breakdown: breakdown.map((r: { type: string; count: bigint; totalBytes: bigint }) => ({
+        type: r.type,
+        count: Number(r.count),
+        totalBytes: Number(r.totalBytes),
+      })),
     });
   } catch (error: any) {
     if (error?.status === 401) {

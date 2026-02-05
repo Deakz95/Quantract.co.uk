@@ -76,6 +76,8 @@ const nextConfig = {
       { source: "/register", destination: "/auth/sign-up", permanent: true },
       { source: "/signup", destination: "/auth/sign-up", permanent: true },
       { source: "/admin/register", destination: "/auth/sign-up", permanent: true },
+      { source: "/portal", destination: "/client", permanent: true },
+      { source: "/portal/:path*", destination: "/client/:path*", permanent: true },
     ];
   },
 
@@ -94,6 +96,20 @@ const nextConfig = {
       },
       {
         source: "/manifest-ops.webmanifest",
+        headers: [
+          { key: "Content-Type", value: "application/manifest+json" },
+          ...securityHeaders,
+        ],
+      },
+      {
+        source: "/manifest-office.webmanifest",
+        headers: [
+          { key: "Content-Type", value: "application/manifest+json" },
+          ...securityHeaders,
+        ],
+      },
+      {
+        source: "/manifest-admin.webmanifest",
         headers: [
           { key: "Content-Type", value: "application/manifest+json" },
           ...securityHeaders,

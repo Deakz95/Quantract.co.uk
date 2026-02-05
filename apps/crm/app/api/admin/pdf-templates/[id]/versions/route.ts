@@ -3,6 +3,7 @@ import { requireRoles, requireCompanyId } from "@/lib/serverAuth";
 import { getPrisma } from "@/lib/server/prisma";
 import { withRequestLogging } from "@/lib/server/observability";
 import { validateLayout } from "@/lib/server/pdfTemplateRenderer";
+import { validateTemplateForCertType } from "@/lib/pdfTemplateConstants";
 import crypto from "node:crypto";
 
 export const runtime = "nodejs";
@@ -55,6 +56,16 @@ export const POST = withRequestLogging(async function POST(
     return NextResponse.json({ ok: false, error: "invalid_layout", details: validation.error }, { status: 400 });
   }
 
+  // Validate required bindings for certificate templates
+  let certTypeWarnings: string[] | undefined;
+  if (template.docType === "certificate" && body.certType) {
+    const certValidation = validateTemplateForCertType(layout, body.certType);
+    if (!certValidation.valid) {
+      // Return as warnings, not blocking — allows saving with missing bindings
+      certTypeWarnings = certValidation.missing;
+    }
+  }
+
   const nextVersion = (template.versions[0]?.version ?? 0) + 1;
 
   const version = await client.pdfTemplateVersion.create({
@@ -66,5 +77,30 @@ export const POST = withRequestLogging(async function POST(
     },
   });
 
-  return NextResponse.json({ ok: true, version }, { status: 201 });
+  // Audit event for template version creation
+  try {
+    await client.auditEvent.create({
+      data: {
+        id: crypto.randomUUID(),
+        companyId,
+        entityType: "pdf_template",
+        entityId: id,
+        action: "pdf_template.version_created",
+        actorRole: "admin",
+        meta: {
+          version: nextVersion,
+          versionId: version.id,
+          docType: template.docType,
+        },
+      },
+    });
+  } catch {
+    // Non-fatal — audit logging should not block template saves
+  }
+
+  return NextResponse.json({
+    ok: true,
+    version,
+    ...(certTypeWarnings ? { warnings: { missingBindings: certTypeWarnings } } : {}),
+  }, { status: 201 });
 });

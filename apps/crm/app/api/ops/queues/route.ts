@@ -1,15 +1,22 @@
 import { NextResponse } from "next/server";
 import { getPrisma } from "@/lib/server/prisma";
-import { checkOpsAuth, getOpsClientIp } from "@/lib/server/opsAuth";
+import { checkOpsAuth, getOpsClientIp, opsRateLimitRead } from "@/lib/server/opsAuth";
 import { logCriticalAction } from "@/lib/server/observability";
 
 export const runtime = "nodejs";
+
+/** Wrap a promise with a timeout so a Redis outage doesn't stall the endpoint. */
+function withTimeout<T>(p: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return Promise.race([p, new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms))]);
+}
 
 export async function GET(req: Request) {
   const auth = checkOpsAuth(req);
   if (!auth.ok) {
     return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
   }
+  const rl = opsRateLimitRead(req, "queues");
+  if (rl) return rl;
 
   const prisma = getPrisma();
 
@@ -27,6 +34,15 @@ export async function GET(req: Request) {
     prisma.scheduledCheck.count({ where: { status: "overdue" } }),
   ]);
 
+  // BullMQ queue metrics — isolated with timeout so Redis outage doesn't fail the endpoint
+  let bullmq: { healthy: boolean; queues: Record<string, unknown> } | null = null;
+  try {
+    const { checkQueueHealth } = await import("@/lib/server/queue/queueConfig");
+    bullmq = await withTimeout(checkQueueHealth(), 3000, { healthy: false, queues: {} });
+  } catch {
+    bullmq = { healthy: false, queues: {} };
+  }
+
   const result = {
     ok: true,
     timestamp: new Date().toISOString(),
@@ -35,6 +51,7 @@ export async function GET(req: Request) {
       notifications: { failed: notificationsFailed },
       scheduledChecks: { pending: scheduledChecksPending, overdue: scheduledChecksOverdue },
     },
+    bullmq,
   };
 
   // Log to OpsAuditLog

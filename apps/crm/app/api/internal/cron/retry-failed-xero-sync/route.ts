@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getPrisma } from "@/lib/server/prisma";
 import { checkCronAuth, checkIdempotency, getCompanyHeader, getIdempotencyKey } from "@/lib/server/cronAuth";
 import { retryFailedXeroSync } from "@/lib/server/repo";
+import { trackCronRun } from "@/lib/server/cronTracker";
 
 export async function POST(req: Request) {
   const auth = checkCronAuth(req);
@@ -27,7 +28,10 @@ export async function POST(req: Request) {
   const limitParam = Number(url.searchParams.get("limit") ?? "200");
   const limit = Number.isFinite(limitParam) ? Math.max(1, Math.min(500, limitParam)) : 200;
 
-  const result = await retryFailedXeroSync({ companyId: companyId ?? undefined, dryRun, limit });
+  const result = await trackCronRun("retry-failed-xero-sync", async () => {
+    return retryFailedXeroSync({ companyId: companyId ?? undefined, dryRun, limit });
+  });
+
   console.log("[cron] retry-failed-xero-sync", {
     companyId: companyId ?? null,
     dryRun,

@@ -65,7 +65,8 @@
       "Bash(1 <<'SQL'\nCREATE TABLE IF NOT EXISTS \"StockAlert\" \\(\n  \"id\" TEXT NOT NULL,\n  \"companyId\" TEXT NOT NULL,\n  \"type\" TEXT NOT NULL,\n  \"entityId\" TEXT NOT NULL,\n  \"status\" TEXT NOT NULL DEFAULT 'open',\n  \"message\" TEXT NOT NULL,\n  \"meta\" JSONB,\n  \"createdAt\" TIMESTAMP\\(3\\) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  \"updatedAt\" TIMESTAMP\\(3\\) NOT NULL,\n  CONSTRAINT \"StockAlert_pkey\" PRIMARY KEY \\(\"id\"\\)\n\\);\nCREATE UNIQUE INDEX IF NOT EXISTS \"StockAlert_companyId_type_entityId_key\" ON \"StockAlert\"\\(\"companyId\", \"type\", \"entityId\"\\);\nCREATE INDEX IF NOT EXISTS \"StockAlert_companyId_status_idx\" ON \"StockAlert\"\\(\"companyId\", \"status\"\\);\nDO $ BEGIN\n  ALTER TABLE \"StockAlert\" ADD CONSTRAINT \"StockAlert_companyId_fkey\" FOREIGN KEY \\(\"companyId\"\\) REFERENCES \"Company\"\\(\"id\"\\) ON DELETE RESTRICT ON UPDATE CASCADE;\nEXCEPTION WHEN duplicate_object THEN NULL;\nEND $;\nSQL)",
       "Bash(npm test)",
       "Bash(pnpm tsc:*)",
-      "Bash(git fetch:*)"
+      "Bash(git fetch:*)",
+      "Bash(\"C:\\\\Users\\\\user\\\\Documents\\\\GitHub\\\\AILOOP\\\\tools\\\\desktop\\\\build.bat\")"
     ]
   }
 }
