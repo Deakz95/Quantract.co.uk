@@ -19,6 +19,23 @@ const eslintConfig = defineConfig([
       "@typescript-eslint/no-explicit-any": "off",
     },
   },
+  // Import boundary enforcement — prevent cross-app imports
+  {
+    files: ["**/*.{ts,tsx,js,jsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            { group: ["@quantract/crm", "@quantract/crm/*"], message: "Cross-app imports are forbidden. Use @quantract/shared for shared code." },
+            { group: ["@quantract/certificates", "@quantract/certificates/*"], message: "Cross-app imports are forbidden. Use @quantract/shared for shared code." },
+            { group: ["@quantract/tools", "@quantract/tools/*"], message: "Cross-app imports are forbidden. Use @quantract/shared for shared code." },
+            { group: ["**/apps/*"], message: "Relative cross-app imports are forbidden. Use workspace packages." },
+          ],
+        },
+      ],
+    },
+  },
 ]);
 
 export default eslintConfig;

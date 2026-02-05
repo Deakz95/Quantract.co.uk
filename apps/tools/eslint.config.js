@@ -5,34 +5,12 @@ import nextTs from "eslint-config-next/typescript";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
-  // Override default ignores of eslint-config-next.
   globalIgnores([
-    // Default ignores of eslint-config-next:
     ".next/**",
     "out/**",
     "build/**",
     "next-env.d.ts",
-    "public/sw.js",
-    "public/workbox-*.js",
   ]),
-  {
-    files: [
-      "app/api/**/*.ts",
-      "app/**/*.tsx",
-      "src/components/**/*.tsx",
-      "src/lib/**/*.ts",
-      "src/types/shims.d.ts",
-    ],
-    rules: {
-      "@typescript-eslint/no-explicit-any": "off",
-    },
-  },
-  {
-    files: ["src/types/shims.d.ts"],
-    rules: {
-      "@typescript-eslint/no-unused-vars": "off",
-    },
-  },
   // Import boundary enforcement — prevent cross-app imports
   {
     files: ["**/*.{ts,tsx,js,jsx}"],
@@ -41,9 +19,9 @@ const eslintConfig = defineConfig([
         "error",
         {
           patterns: [
-            { group: ["@quantract/certificates", "@quantract/certificates/*"], message: "Cross-app imports are forbidden. Use @quantract/shared for shared code." },
-            { group: ["@quantract/tools", "@quantract/tools/*"], message: "Cross-app imports are forbidden. Use @quantract/shared for shared code." },
+            { group: ["@quantract/crm", "@quantract/crm/*"], message: "Cross-app imports are forbidden. Use @quantract/shared for shared code." },
             { group: ["@quantract/marketing", "@quantract/marketing/*"], message: "Cross-app imports are forbidden. Use @quantract/shared for shared code." },
+            { group: ["@quantract/certificates", "@quantract/certificates/*"], message: "Cross-app imports are forbidden. Use @quantract/shared for shared code." },
             { group: ["**/apps/*"], message: "Relative cross-app imports are forbidden. Use workspace packages." },
           ],
         },

@@ -33,6 +33,12 @@ build/
 .DS_Store
 *.pem
 
+# Non-pnpm lockfiles (pnpm-lock.yaml is the single source of truth)
+package-lock.json
+**/package-lock.json
+yarn.lock
+**/yarn.lock
+
 # Logs
 npm-debug.log*
 yarn-debug.log*
