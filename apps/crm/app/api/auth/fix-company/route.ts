@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { neonAuth } from "@neondatabase/auth/next/server";
 import { p } from "@/lib/server/prisma";
-import { setSession, setCompanyId, setProfileComplete, setUserEmail } from "@/lib/serverAuth";
+import { neonAuth, setSession, setCompanyId, setProfileComplete, setUserEmail } from "@/lib/serverAuth";
 import { randomUUID } from "crypto";
 
 export const runtime = "nodejs";

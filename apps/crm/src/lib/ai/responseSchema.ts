@@ -15,7 +15,7 @@ export const AiResponseSchema = z.object({
       z.object({
         type: z.enum(["NAVIGATE", "DRAFT_EMAIL", "DRAFT_SMS", "SUGGEST_NEXT_STEP"]),
         label: z.string().max(200),
-        payload: z.record(z.unknown()).optional(),
+        payload: z.record(z.string(), z.unknown()).optional(),
       })
     )
     .max(10)

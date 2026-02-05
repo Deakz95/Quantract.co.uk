@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -19,7 +19,15 @@ const passwordSchema = magicSchema.extend({
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
-export default function OfficeLogin() {
+export default function OfficeLoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[var(--background)] flex items-center justify-center"><div className="w-8 h-8 border-4 border-[var(--primary)] border-t-transparent rounded-full animate-spin" /></div>}>
+      <OfficeLogin />
+    </Suspense>
+  );
+}
+
+function OfficeLogin() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") || "/office";

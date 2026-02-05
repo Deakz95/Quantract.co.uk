@@ -25,7 +25,8 @@ export type OutboxItemType =
   | "receipt_upload"
   | "check_complete"
   | "cost_item_create"
-  | "dispatch_status_update";
+  | "dispatch_status_update"
+  | "qr_tag_assign";
 
 export type OutboxItem = {
   id: string;
@@ -212,6 +213,15 @@ async function processItem(item: OutboxItem): Promise<boolean> {
 
     case "photo_upload": {
       const { targetType, targetId, fileUri, mimeType, fileName } = item.payload;
+      // Validate file URI is accessible before attempting upload
+      try {
+        await fetch(fileUri, { method: "HEAD" });
+      } catch {
+        // File URI is stale (OS cleaned up temp file) — mark as permanently failed
+        item.attempts = MAX_ATTEMPTS;
+        item.lastError = "Photo file no longer available — please retake the photo";
+        throw new Error(item.lastError);
+      }
       const formData = new FormData();
       formData.append("file", {
         uri: fileUri,
@@ -230,6 +240,14 @@ async function processItem(item: OutboxItem): Promise<boolean> {
     }
 
     case "receipt_upload": {
+      // Validate file URI is accessible before attempting upload
+      try {
+        await fetch(item.payload.fileUri, { method: "HEAD" });
+      } catch {
+        item.attempts = MAX_ATTEMPTS;
+        item.lastError = "Receipt photo no longer available — please recapture";
+        throw new Error(item.lastError);
+      }
       const fd = new FormData();
       fd.append("file", {
         uri: item.payload.fileUri,
@@ -285,6 +303,22 @@ async function processItem(item: OutboxItem): Promise<boolean> {
       break;
     }
 
+    case "qr_tag_assign": {
+      const headers: Record<string, string> = {};
+      if (item.idempotencyKey) {
+        headers["idempotency-key"] = item.idempotencyKey;
+      }
+      res = await apiFetch("/api/engineer/qr-tags/assign", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          code: item.payload.code,
+          certificateId: item.payload.certificateId,
+        }),
+      });
+      break;
+    }
+
     default:
       // Unknown type — remove from outbox
       return true;
@@ -298,6 +332,13 @@ async function processItem(item: OutboxItem): Promise<boolean> {
   if (res.ok || res.status === 409) {
     // 409 = already exists / conflict — treat as success (idempotent)
     return true;
+  }
+
+  // Rate limited — respect Retry-After and throw to trigger backoff retry
+  if (res.status === 429) {
+    const retryAfter = res.headers.get("retry-after");
+    const waitSecs = retryAfter ? parseInt(retryAfter, 10) : 30;
+    throw new Error(`Rate limited — retry after ${waitSecs}s`);
   }
 
   // Storage full — non-retryable for photo uploads

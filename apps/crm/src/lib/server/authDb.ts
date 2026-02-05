@@ -75,6 +75,7 @@ export async function validateMagicLink(tokenRaw: string) {
     include: { user: true },
   });
   if (!token) return { ok: false as const, error: "Invalid link" };
+  if (token.revokedAt) return { ok: false as const, error: "Link revoked" };
   if (token.usedAt) return { ok: false as const, error: "Link already used" };
   if (token.expiresAt.getTime() < Date.now()) return { ok: false as const, error: "Link expired" };
 
@@ -101,6 +102,29 @@ export async function consumeMagicLink(tokenRaw: string) {
   const result = await validateMagicLink(tokenRaw);
   if (!result.ok) return result;
   return { ok: true as const, user: result.user };
+}
+
+/**
+ * Revoke a magic link token by ID. Use this to invalidate tokens before expiry.
+ */
+export async function revokeMagicLinkToken(tokenId: string) {
+  const db = getPrisma();
+  await db.magicLinkToken.updateMany({
+    where: { id: tokenId, revokedAt: null, usedAt: null },
+    data: { revokedAt: new Date() },
+  });
+}
+
+/**
+ * Revoke all unused magic link tokens for a user. Useful when a user changes their email
+ * or their client/account is suspended.
+ */
+export async function revokeAllMagicLinkTokensForUser(userId: string) {
+  const db = getPrisma();
+  await db.magicLinkToken.updateMany({
+    where: { userId, revokedAt: null, usedAt: null },
+    data: { revokedAt: new Date() },
+  });
 }
 
 export async function findUserByEmail(email: string) {

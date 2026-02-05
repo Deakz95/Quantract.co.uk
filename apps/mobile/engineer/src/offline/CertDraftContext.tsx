@@ -146,10 +146,11 @@ export function CertDraftProvider({ children }: { children: React.ReactNode }) {
     }
     await saveDraft(current);
 
-    const itemId = `cert_draft_${current.certificateId}_${Date.now()}`;
+    const itemId = `cert_draft_${current.certificateId}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     await enqueue({
       id: itemId,
       type: "certificate_draft_save",
+      idempotencyKey: itemId,
       payload: {
         certificateId: current.certificateId,
         data: current.data,

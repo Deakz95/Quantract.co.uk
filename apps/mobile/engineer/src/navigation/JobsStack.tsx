@@ -4,6 +4,7 @@ import JobsScreen from "../screens/JobsScreen";
 import JobDetailScreen from "../screens/JobDetailScreen";
 import LogTimeScreen from "../screens/LogTimeScreen";
 import CertificateEditScreen from "../screens/CertificateEditScreen";
+import JobPackScreen from "../screens/JobPackScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -31,6 +32,11 @@ export default function JobsStack() {
         name="CertificateEdit"
         component={CertificateEditScreen}
         options={{ title: "Certificate" }}
+      />
+      <Stack.Screen
+        name="JobPack"
+        component={JobPackScreen}
+        options={{ title: "Job Pack" }}
       />
     </Stack.Navigator>
   );

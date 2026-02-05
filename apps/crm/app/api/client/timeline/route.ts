@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { requireRole, getUserEmail } from "@/lib/serverAuth";
 import { getPrisma } from "@/lib/server/prisma";
 import { withRequestLogging } from "@/lib/server/observability";
+import { requireClientOrPortalSession } from "@/lib/server/portalAuth";
 
 export const runtime = "nodejs";
 
@@ -38,27 +38,14 @@ const CERT_LABELS: Record<string, string> = {
  */
 export const GET = withRequestLogging(async function GET() {
   try {
-    await requireRole("client");
-    const email = ((await getUserEmail()) || "").trim().toLowerCase();
-    if (!email) {
-      return NextResponse.json({ ok: false, error: "Missing email" }, { status: 400 });
-    }
+    const ctx = await requireClientOrPortalSession();
+    const { clientId, companyId } = ctx;
+    const email = ctx.clientEmail;
 
     const prisma = getPrisma();
     if (!prisma) {
       return NextResponse.json({ ok: false, error: "service_unavailable" }, { status: 503 });
     }
-
-    const client = await prisma.client.findFirst({
-      where: { email },
-      select: { id: true, companyId: true },
-    });
-
-    if (!client) {
-      return NextResponse.json({ ok: true, items: [] });
-    }
-
-    const { id: clientId, companyId } = client;
     const items: TimelineItem[] = [];
 
     // ── Jobs ──

@@ -3,6 +3,7 @@ import { requireCompanyContext, getEffectiveRole } from "@/lib/serverAuth";
 import { getPrisma } from "@/lib/server/prisma";
 import { withRequestLogging, logError } from "@/lib/server/observability";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
+import { rateLimitEngineerWrite, createRateLimitResponse } from "@/lib/server/rateLimitMiddleware";
 
 export const runtime = "nodejs";
 
@@ -102,6 +103,10 @@ export const POST = withRequestLogging(async function POST(req: Request) {
     if (effectiveRole !== "engineer" && effectiveRole !== "admin") {
       return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
     }
+
+    // Rate limit by authenticated user
+    const rl = rateLimitEngineerWrite(authCtx.email);
+    if (!rl.ok) return createRateLimitResponse({ error: rl.error!, resetAt: rl.resetAt! });
 
     const client = getPrisma();
     if (!client) {

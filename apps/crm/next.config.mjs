@@ -119,9 +119,10 @@ const nextConfig = {
   },
 };
 
-const configWithPWA = withPWA(nextConfig);
+// next-pwa disabled: incompatible with Next.js 16 Turbopack build
+// const configWithPWA = withPWA(nextConfig);
 
-export default withSentryConfig(configWithPWA, {
+export default withSentryConfig(nextConfig, {
   silent: true,
   // Upload sourcemaps to Sentry for readable stack traces
   widenClientFileUpload: true,

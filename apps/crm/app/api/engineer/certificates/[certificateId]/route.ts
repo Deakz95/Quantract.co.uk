@@ -4,8 +4,9 @@ import * as repo from "@/lib/server/repo";
 import { normalizeCertificateData } from "@/lib/certificates";
 import { getRouteParams } from "@/lib/server/routeParams";
 import { rateLimitEngineerWrite, createRateLimitResponse } from "@/lib/server/rateLimitMiddleware";
+import { withRequestLogging } from "@/lib/server/observability";
 
-export async function GET(_req: Request, ctx: { params: Promise<{ certificateId: string }> }) {
+export const GET = withRequestLogging(async function GET(_req: Request, ctx: { params: Promise<{ certificateId: string }> }) {
   const session = await requireRoles("engineer");
   if (!session) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
@@ -18,9 +19,9 @@ export async function GET(_req: Request, ctx: { params: Promise<{ certificateId:
   const out = await repo.getCertificateForEngineer(certificateId, email);
   if (!out) return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });
   return NextResponse.json({ ok: true, ...out });
-}
+});
 
-export async function PATCH(req: Request, ctx: { params: Promise<{ certificateId: string }> }) {
+export const PATCH = withRequestLogging(async function PATCH(req: Request, ctx: { params: Promise<{ certificateId: string }> }) {
   const session = await requireRoles("engineer");
   if (!session) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
@@ -76,4 +77,4 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ certificateId
 
   const out = await repo.getCertificateForEngineer(certificateId, email);
   return NextResponse.json({ ok: true, ...(out ?? { certificate: cert, testResults: [] }) });
-}
+});

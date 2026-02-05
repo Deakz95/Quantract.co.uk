@@ -125,10 +125,11 @@ export default function CertificateEditScreen() {
           onPress: async () => {
             setCompleting(true);
             try {
-              const itemId = `cert_complete_${certificateId}_${Date.now()}`;
+              const itemId = `cert_complete_${certificateId}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
               await enqueue({
                 id: itemId,
                 type: "certificate_complete",
+                idempotencyKey: itemId,
                 payload: { certificateId },
               });
               await clearDraft();

@@ -1,11 +1,38 @@
 import { getSession, validateAppToken } from "@/lib/server/authDb";
 import { hasCapability, ROLE_DEFAULTS, type Capability } from "@/lib/permissions";
 import { p } from "@/lib/server/prisma";
-import { neonAuth } from "@neondatabase/auth/next/server";
+import { createNeonAuth } from "@neondatabase/auth/next/server";
 import { cookies } from "next/headers";
 import { randomUUID } from "crypto";
 import { timeStart, logPerf } from "@/lib/perf/timing";
 import { type Role, ALL_ROLES } from "@quantract/shared";
+
+// Lazy-initialized Neon Auth instance (createNeonAuth replaced the old neonAuth export)
+let _neonAuthInstance: ReturnType<typeof createNeonAuth> | null = null;
+function getNeonAuthInstance() {
+  if (!_neonAuthInstance) {
+    const baseUrl = process.env.NEON_AUTH_BASE_URL || process.env.NEON_AUTH_URL || "";
+    const secret = process.env.NEON_AUTH_COOKIE_SECRET || "x".repeat(32);
+    if (!baseUrl) return null;
+    _neonAuthInstance = createNeonAuth({ baseUrl, cookies: { secret } });
+  }
+  return _neonAuthInstance;
+}
+
+/**
+ * Compatibility wrapper: replaces the removed `neonAuth()` export from @neondatabase/auth.
+ * Returns { user } by calling createNeonAuth().getSession().
+ */
+export async function neonAuth(): Promise<{ user: any }> {
+  const instance = getNeonAuthInstance();
+  if (!instance) return { user: null };
+  try {
+    const { data } = await instance.getSession();
+    return { user: data?.user ?? null };
+  } catch {
+    return { user: null };
+  }
+}
 
 export type { Role };
 
@@ -720,9 +747,14 @@ async function resolveBetterAuthSession() {
 }
 
 async function resolveNeonSession() {
-  const prisma = p();
-  const { user } = await neonAuth();
+  const auth = getNeonAuthInstance();
+  if (!auth) return null;
+
+  const sessionResult = await auth.getSession();
+  const user = (sessionResult as any)?.data?.user ?? (sessionResult as any)?.user;
   if (!user) return null;
+
+  const prisma = p();
 
   const email = (user.email || "").toLowerCase();
   let dbUser = await prisma.user.findFirst({

@@ -12,11 +12,11 @@ const MAX_JSON_SIZE = 64_000; // 64 KB per field
 const createSchema = z.object({
   toolSlug: z.enum(TOOL_SLUGS),
   name: z.string().min(1).max(200),
-  inputsJson: z.record(z.unknown()).refine(
+  inputsJson: z.record(z.string(), z.unknown()).refine(
     (v) => JSON.stringify(v).length <= MAX_JSON_SIZE,
     { message: `inputsJson too large (max ${MAX_JSON_SIZE / 1000} KB)` },
   ),
-  outputsJson: z.record(z.unknown()).refine(
+  outputsJson: z.record(z.string(), z.unknown()).refine(
     (v) => JSON.stringify(v).length <= MAX_JSON_SIZE,
     { message: `outputsJson too large (max ${MAX_JSON_SIZE / 1000} KB)` },
   ),

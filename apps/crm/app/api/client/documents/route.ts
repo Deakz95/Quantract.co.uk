@@ -24,8 +24,38 @@ export const GET = withRequestLogging(async function GET() {
       return NextResponse.json({ ok: false, error: "service_unavailable" }, { status: 503 });
     }
 
+    // Scope documents to those associated with the client's certificates
+    // via QrAssignment, ensuring clients can only see their own documents.
+    // We also include documents directly linked to certificates belonging to this client.
     const documents = await prisma.document.findMany({
-      where: { companyId: ctx.companyId },
+      where: {
+        companyId: ctx.companyId,
+        deletedAt: null,
+        OR: [
+          // Documents linked via QrAssignment to certificates owned by this client
+          {
+            qrAssignments: {
+              some: {
+                certificate: {
+                  clientId: ctx.clientId,
+                },
+              },
+            },
+          },
+          // Documents linked via QrAssignment directly to this client's certificates
+          {
+            qrAssignments: {
+              some: {
+                certificate: {
+                  job: {
+                    clientId: ctx.clientId,
+                  },
+                },
+              },
+            },
+          },
+        ],
+      },
       select: {
         id: true,
         type: true,

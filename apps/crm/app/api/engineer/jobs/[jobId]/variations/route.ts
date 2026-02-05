@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { getUserEmail, requireRole } from "@/lib/serverAuth";
 import * as repo from "@/lib/server/repo";
 import { writeUploadBytes } from "@/lib/server/storage";
-import { withRequestLogging } from "@/lib/server/observability";
+import { withRequestLogging, logError } from "@/lib/server/observability";
 import { getRouteParams } from "@/lib/server/routeParams";
+import { rateLimitEngineerWrite, createRateLimitResponse } from "@/lib/server/rateLimitMiddleware";
 
 export const runtime = "nodejs";
 
@@ -13,6 +14,11 @@ export const POST = withRequestLogging(async function POST(req: Request, ctx: { 
   if (!email) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
+
+  // Rate limit by authenticated user
+  const rl = rateLimitEngineerWrite(email);
+  if (!rl.ok) return createRateLimitResponse({ error: rl.error!, resetAt: rl.resetAt! });
+
   const { jobId } = await getRouteParams(ctx);
   const job = await repo.getJobForEngineer(jobId, email);
   if (!job) return NextResponse.json({ ok: false, error: "not_found" }, { status: 404 });

@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { neonAuth } from "@neondatabase/auth/next/server";
 import { p } from "@/lib/server/prisma";
-import { getCompanyIdFromCookie, getEmailFromCookie, getRoleFromCookie } from "@/lib/serverAuth";
+import { neonAuth, getCompanyIdFromCookie, getEmailFromCookie, getRoleFromCookie } from "@/lib/serverAuth";
 
 export const dynamic = "force-dynamic";
 

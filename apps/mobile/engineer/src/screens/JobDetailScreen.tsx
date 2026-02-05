@@ -295,6 +295,15 @@ export default function JobDetailScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* Job Pack link */}
+      <TouchableOpacity
+        style={styles.jobPackBtn}
+        onPress={() => nav.navigate("JobPack", { jobId })}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.jobPackBtnText}>View Job Pack</Text>
+      </TouchableOpacity>
+
       {/* Dispatch status workflow */}
       {entryId && dispatchStatus && dispatchStatus !== "completed" ? (
         <View style={styles.dispatchCard}>
@@ -727,6 +736,14 @@ const styles = StyleSheet.create({
     borderColor: "#fde047",
   },
   timerWarnText: { fontSize: 13, fontWeight: "600", color: "#854d0e" },
+  jobPackBtn: {
+    backgroundColor: "#e2e8f0",
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  jobPackBtnText: { color: "#0f172a", fontSize: 14, fontWeight: "600" },
   actionRow: { flexDirection: "row", gap: 10, marginBottom: 12 },
   actionBtn: { flex: 1, borderRadius: 10, paddingVertical: 14, alignItems: "center" },
   startBtn: { backgroundColor: "#16a34a" },

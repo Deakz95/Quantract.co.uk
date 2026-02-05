@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -19,7 +19,15 @@ const passwordSchema = magicSchema.extend({
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
-export default function EngineerLogin() {
+export default function EngineerLoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[var(--background)] flex items-center justify-center"><div className="w-8 h-8 border-4 border-[var(--primary)] border-t-transparent rounded-full animate-spin" /></div>}>
+      <EngineerLogin />
+    </Suspense>
+  );
+}
+
+function EngineerLogin() {
   const searchParams = useSearchParams();
   const next = searchParams.get("next") || "/engineer";
   const [mode, setMode] = useState<"magic" | "password">("magic");

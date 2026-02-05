@@ -11,6 +11,9 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import { apiFetch } from "../api/client";
 import { openDocument } from "../utils/documentViewer";
 import CertificatePicker from "../components/CertificatePicker";
+import { enqueue } from "../offline/outbox";
+import { useOutbox } from "../offline/OutboxContext";
+import { makeIdempotencyKey } from "../utils/idempotency";
 
 type ScanResult = {
   type: string;
@@ -20,7 +23,14 @@ type ScanResult = {
   documentId: string | null;
 };
 
-type ScanMode = "idle" | "verify" | "tag_assign";
+type AssetResult = {
+  id: string;
+  name: string;
+  type: string;
+  identifier: string | null;
+};
+
+type ScanMode = "idle" | "verify" | "tag_assign" | "asset_view";
 
 export default function ScanCertScreen() {
   const [permission, requestPermission] = useCameraPermissions();
@@ -28,12 +38,16 @@ export default function ScanCertScreen() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ScanResult | null>(null);
   const [error, setError] = useState("");
+  const { flush } = useOutbox();
 
   // QR tag assignment state
   const [scanMode, setScanMode] = useState<ScanMode>("idle");
   const [tagCode, setTagCode] = useState<string | null>(null);
   const [assigning, setAssigning] = useState(false);
   const [assignSuccess, setAssignSuccess] = useState(false);
+
+  // Asset state
+  const [assetResult, setAssetResult] = useState<AssetResult | null>(null);
 
   // Extract verification token from QR URL like /verify/{token}
   function extractToken(data: string): string | null {
@@ -59,6 +73,18 @@ export default function ScanCertScreen() {
     }
   }
 
+  // Extract asset ID from URL like /asset/{uuid}
+  function extractAssetId(data: string): string | null {
+    try {
+      const url = new URL(data);
+      const match = url.pathname.match(/\/asset\/([a-f0-9-]{36})/);
+      return match ? match[1] : null;
+    } catch {
+      const match = data.match(/\/asset\/([a-f0-9-]{36})/);
+      return match ? match[1] : null;
+    }
+  }
+
   async function handleBarCodeScanned({ data }: { data: string }) {
     if (scanned || loading) return;
     setScanned(true);
@@ -67,6 +93,43 @@ export default function ScanCertScreen() {
     setResult(null);
     setTagCode(null);
     setAssignSuccess(false);
+    setAssetResult(null);
+
+    // Check if it's an asset QR (/asset/{uuid})
+    const assetId = extractAssetId(data);
+    if (assetId) {
+      setScanMode("asset_view");
+      try {
+        const res = await apiFetch(`/api/engineer/checks?assetId=${assetId}`);
+        const json = await res.json().catch(() => null);
+        if (json?.ok && json.asset) {
+          setAssetResult({
+            id: json.asset.id,
+            name: json.asset.name || "Unknown Asset",
+            type: json.asset.type || "asset",
+            identifier: json.asset.identifier || null,
+          });
+        } else {
+          // Still show the asset ID even if we can't load details
+          setAssetResult({
+            id: assetId,
+            name: "Asset",
+            type: "asset",
+            identifier: assetId.slice(0, 8),
+          });
+        }
+      } catch {
+        // Offline — show basic info
+        setAssetResult({
+          id: assetId,
+          name: "Asset (offline)",
+          type: "asset",
+          identifier: assetId.slice(0, 8),
+        });
+      }
+      setLoading(false);
+      return;
+    }
 
     // Check if it's a QR tag URL (/qr/{code})
     const qrCode = extractTagCode(data);
@@ -134,7 +197,17 @@ export default function ScanCertScreen() {
         Alert.alert("Assignment Failed", msg);
       }
     } catch {
-      Alert.alert("Network Error", "Connect to network to assign QR tags.");
+      // Offline: queue for later
+      const key = makeIdempotencyKey("qr_assign");
+      await enqueue({
+        id: key,
+        type: "qr_tag_assign",
+        idempotencyKey: key,
+        payload: { code: tagCode, certificateId },
+      });
+      flush();
+      setAssignSuccess(true);
+      Alert.alert("Queued Offline", "Tag assignment will sync when connected.");
     } finally {
       setAssigning(false);
     }
@@ -147,6 +220,7 @@ export default function ScanCertScreen() {
     setScanMode("idle");
     setTagCode(null);
     setAssignSuccess(false);
+    setAssetResult(null);
   }
 
   if (!permission) {
@@ -192,6 +266,20 @@ export default function ScanCertScreen() {
                 <Text style={styles.retryBtnText}>Scan Again</Text>
               </TouchableOpacity>
             </>
+          ) : scanMode === "asset_view" && assetResult ? (
+            <View style={styles.resultCard}>
+              <Text style={styles.resultTitle}>{assetResult.name}</Text>
+              <View style={styles.statusBadge}>
+                <Text style={styles.statusText}>{assetResult.type}</Text>
+              </View>
+              {assetResult.identifier ? (
+                <Text style={styles.resultSub}>ID: {assetResult.identifier}</Text>
+              ) : null}
+              <Text style={styles.resultSub}>Asset scanned successfully</Text>
+              <TouchableOpacity style={styles.retryBtn} onPress={resetScanner} activeOpacity={0.7}>
+                <Text style={styles.retryBtnText}>Scan Another</Text>
+              </TouchableOpacity>
+            </View>
           ) : scanMode === "tag_assign" && tagCode ? (
             assignSuccess ? (
               <View style={styles.resultCard}>

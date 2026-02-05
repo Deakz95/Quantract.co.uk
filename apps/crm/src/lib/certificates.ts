@@ -57,17 +57,17 @@ const assessmentSchema = z.object({
 const baseSchema = z.object({
   version: z.literal(1),
   type: z.enum(CERTIFICATE_TYPES),
-  overview: overviewSchema.default({}),
-  installation: installationSchema.default({}),
-  inspection: inspectionSchema.default({}),
-  declarations: declarationSchema.default({}),
-  assessment: assessmentSchema.default({}),
+  overview: overviewSchema.default({ jobReference: "", siteName: "", installationAddress: "", clientName: "", clientEmail: "", jobDescription: "" }),
+  installation: installationSchema.default({ descriptionOfWork: "", supplyType: "", earthingArrangement: "", distributionType: "", maxDemand: "" }),
+  inspection: inspectionSchema.default({ limitations: "", observations: "", nextInspectionDate: "" }),
+  declarations: declarationSchema.default({ extentOfWork: "", worksTested: "", comments: "" }),
+  assessment: assessmentSchema.default({ overallAssessment: "", recommendations: "" }),
   signatures: z
     .object({
-      engineer: signatureSchema.optional().default({}),
-      customer: signatureSchema.optional().default({}),
+      engineer: signatureSchema.optional().default({ name: "", signatureText: "", signedAtISO: "" }),
+      customer: signatureSchema.optional().default({ name: "", signatureText: "", signedAtISO: "" }),
     })
-    .default({}),
+    .default({ engineer: { name: "", signatureText: "", signedAtISO: "" }, customer: { name: "", signatureText: "", signedAtISO: "" } }),
 });
 
 export const eicCertificateSchema = baseSchema.extend({ type: z.literal("EIC") });

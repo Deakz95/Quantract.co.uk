@@ -3,6 +3,7 @@ import { requireRole, getUserEmail } from "@/lib/serverAuth";
 import * as repo from "@/lib/server/repo";
 import { withRequestLogging } from "@/lib/server/observability";
 import { getRouteParams } from "@/lib/server/routeParams";
+import { rateLimitEngineerWrite, createRateLimitResponse } from "@/lib/server/rateLimitMiddleware";
 
 export const GET = withRequestLogging(async function GET(_req: Request, ctx: { params: Promise<{ jobId: string }> }) {
   try {
@@ -32,6 +33,11 @@ export const POST = withRequestLogging(async function POST(req: Request, ctx: { 
     if (!email) {
       return NextResponse.json({ ok: false, error: "Missing engineer email" }, { status: 401 });
     }
+
+    // Rate limit by authenticated user
+    const rl = rateLimitEngineerWrite(email);
+    if (!rl.ok) return createRateLimitResponse({ error: rl.error!, resetAt: rl.resetAt! });
+
     const { jobId } = await getRouteParams(ctx);
     const job = await repo.getJobForEngineer(jobId, email);
     if (!job) {

@@ -56,6 +56,7 @@
     "@radix-ui/react-slot": "^1.2.4",
     "@sentry/nextjs": "latest",
     "@tailwindcss/postcss": "^4.1.18",
+    "@types/leaflet": "^1.9.21",
     "@types/node": "20.17.19",
     "@types/react": "18.2.79",
     "@types/react-dom": "18.2.25",
@@ -64,8 +65,8 @@
     "bullmq": "^5.66.5",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "ioredis": "^5.9.2",
     "jszip": "^3.10.1",
-    "@types/leaflet": "^1.9.21",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.562.0",
     "next": "16.1.0",
@@ -80,10 +81,11 @@
     "react-leaflet": "^5.0.0",
     "redis": "^4.7.0",
     "resend": "^4.8.0",
+    "server-only": "^0.0.1",
     "stripe": "^16.12.0",
     "tailwind-merge": "^3.4.0",
     "tailwindcss": "^4.1.18",
-    "zod": "^3.24.1"
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@playwright/test": "^1.57.0",

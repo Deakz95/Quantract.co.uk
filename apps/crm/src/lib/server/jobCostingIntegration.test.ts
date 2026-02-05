@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock @neondatabase/auth to avoid next/headers import issue in test environment
 vi.mock("@neondatabase/auth/next/server", () => ({
-  neonAuth: vi.fn(),
+  createNeonAuth: vi.fn(() => ({ getSession: vi.fn() })),
   createAuthServer: vi.fn(),
 }));
 

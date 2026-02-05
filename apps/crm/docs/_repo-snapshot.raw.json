@@ -1,9 +1,9 @@
 {
   "repo_root": "C:\\Users\\user\\Documents\\GitHub\\Quantract.co.uk",
-  "generated_at": "2026-02-04T23:17:57.746230+00:00",
-  "head_commit": "b093344940f3444c696fbeb1d01bc96dfe58600f",
+  "generated_at": "2026-02-05T02:20:24.511242+00:00",
+  "head_commit": "39549b8ede9aa911de4badb2e8c38f9844e8a819",
   "branch": "master",
-  "git_tracked_count": 1419,
+  "git_tracked_count": 1532,
   "top_level_dirs": [
     "apps",
     "docs",
@@ -172,7 +172,8 @@
     "PdfTemplate",
     "PdfTemplateVersion",
     "OpsAuditLog",
-    "CronRun"
+    "CronRun",
+    "EngineerQualification"
   ],
   "api_routes": [
     "/api/admin/activities",
@@ -185,6 +186,7 @@
     "/api/admin/ai/recommendations",
     "/api/admin/assets",
     "/api/admin/assets/[assetId]",
+    "/api/admin/audit",
     "/api/admin/billing/checkout",
     "/api/admin/billing/portal",
     "/api/admin/billing/status",
@@ -237,8 +239,14 @@
     "/api/admin/deals/recommendations",
     "/api/admin/dispatch/copy-week",
     "/api/admin/dispatch/recurring",
+    "/api/admin/dispatch/recurring/[ruleId]",
+    "/api/admin/dispatch/recurring/generate",
     "/api/admin/engineers",
     "/api/admin/engineers/[engineerId]",
+    "/api/admin/engineers/[engineerId]/avatar",
+    "/api/admin/engineers/[engineerId]/profile",
+    "/api/admin/engineers/[engineerId]/qualifications",
+    "/api/admin/engineers/[engineerId]/qualifications/[qualId]",
     "/api/admin/engineers/[engineerId]/schedule-config",
     "/api/admin/engineers/activity",
     "/api/admin/enquiries",
@@ -264,36 +272,31 @@
     "/api/admin/import/upload",
     "/api/admin/invites",
     "/api/admin/invites/[inviteId]",
-    "/api/admin/invoices",
-    "/api/admin/invoices/[invoiceId]",
     "/api/admin/invoices/[invoiceId]/certificates",
     "/api/admin/invoices/[invoiceId]/certificates/[certificateId]",
     "/api/admin/invoices/[invoiceId]/payment-link",
-    "/api/admin/invoices/[invoiceId]/pdf",
-    "/api/admin/invoices/[invoiceId]/remind",
-    "/api/admin/invoices/[invoiceId]/send",
-    "/api/admin/invoices/auto-chase/run",
-    "/api/admin/jobs/[jobId]/budget-lines",
     "/api/health"
   ],
   "languages": {
-    ".ts": 731,
-    ".tsx": 390,
-    ".sql": 54,
-    ".md": 50,
-    ".png": 42,
-    ".json": 36,
+    ".ts": 778,
+    ".tsx": 432,
+    ".sql": 60,
+    ".md": 54,
+    ".png": 46,
+    ".json": 35,
     ".txt": 19,
+    ".js": 17,
     ".mjs": 14,
-    ".js": 11,
     ".css": 10,
+    ".webmanifest": 7,
     ".svg": 7,
     ".example": 5,
     ".html": 5,
-    ".yml": 3,
-    ".webmanifest": 3
+    ".yml": 3
   },
   "recent_commits": [
+    "39549b8 updates on eslint",
+    "27413a6 Apply orchestrator spec runs: dispatch board, office control room, certificates, storage, ops API, mobile engineer",
     "b093344 Gitignore specs: docs/specs/ managed externally by AILOOP orchestrator",
     "2f12ce3 md files",
     "5e8d27b 08-office: update spec with concrete paths, mark DONE",
@@ -301,8 +304,6 @@
     "d8ed2a5 11-stage-d2-pdf-template-editor: mark as DONE",
     "4ced103 05-stage-b2-storage-metering: mark as DONE",
     "7bfb9f3 08-office: bulk job actions, invoice chase button, receipt categories",
-    "35f9900 Baseline checkpoint: all AILOOP-landed features (typecheck green)",
-    "a3c1ee1 Pre-AILOOP snapshot: save all pending changes",
-    "cf5df0b Add missing entitlements module and EntitlementGate component"
+    "35f9900 Baseline checkpoint: all AILOOP-landed features (typecheck green)"
   ]
 }

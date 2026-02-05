@@ -127,7 +127,6 @@ declare module "tailwindcss" {
 }
 
 declare module "@neondatabase/auth/next/server" {
-  export const neonAuth: () => Promise<{ user: any }>;
   export const createNeonAuth: (config: any) => any;
   export const createAuthServer: (config?: any) => any;
   export const authApiHandler: (config: any) => any;

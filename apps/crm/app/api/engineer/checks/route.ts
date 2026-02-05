@@ -7,6 +7,7 @@ import { randomUUID } from "crypto";
 import { z } from "zod";
 import { renderCheckPdf } from "@/lib/server/pdf";
 import { createDocument } from "@/lib/server/documents";
+import { rateLimitEngineerWrite, createRateLimitResponse } from "@/lib/server/rateLimitMiddleware";
 
 const completeSchema = z.object({
   checkId: z.string().min(1),
@@ -83,6 +84,10 @@ export async function POST(req: Request) {
     if (role !== "engineer" && role !== "admin") {
       return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
     }
+
+    // Rate limit by authenticated user
+    const rl = rateLimitEngineerWrite(authCtx.email);
+    if (!rl.ok) return createRateLimitResponse({ error: rl.error!, resetAt: rl.resetAt! });
 
     const prisma = getPrisma();
     if (!prisma) return NextResponse.json({ ok: false, error: "service_unavailable" }, { status: 503 });

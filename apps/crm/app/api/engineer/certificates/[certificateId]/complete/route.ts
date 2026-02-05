@@ -4,8 +4,9 @@ import * as repo from "@/lib/server/repo";
 import { certificateIsReadyForCompletion } from "@/lib/certificates";
 import { getRouteParams } from "@/lib/server/routeParams";
 import { rateLimitEngineerWrite, createRateLimitResponse } from "@/lib/server/rateLimitMiddleware";
+import { withRequestLogging } from "@/lib/server/observability";
 
-export async function POST(_req: Request, ctx: { params: Promise<{ certificateId: string }> }) {
+export const POST = withRequestLogging(async function POST(_req: Request, ctx: { params: Promise<{ certificateId: string }> }) {
   const session = await requireRoles("engineer");
   if (!session) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
@@ -30,4 +31,4 @@ export async function POST(_req: Request, ctx: { params: Promise<{ certificateId
   const cert = await repo.completeCertificate(certificateId, "engineer");
   if (!cert) return NextResponse.json({ ok: false, error: "Unable to complete certificate" }, { status: 400 });
   return NextResponse.json({ ok: true, certificate: cert });
-}
+});

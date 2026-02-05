@@ -27,7 +27,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <ThemeInitializer />
         <AdminContextBanner />
         <ToastProvider>
-          <NeonAuthUIProvider authClient={authClient}>{children}</NeonAuthUIProvider>
+          <NeonAuthUIProvider authClient={authClient as any}>{children}</NeonAuthUIProvider>
           <QuantractAIWidget />
           <Toaster />
         </ToastProvider>

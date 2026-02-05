@@ -3,6 +3,7 @@ import { requireRole, getUserEmail, requireCompanyContext } from "@/lib/serverAu
 import * as repo from "@/lib/server/repo";
 import { getPrisma } from "@/lib/server/prisma";
 import { withRequestLogging } from "@/lib/server/observability";
+import { rateLimitEngineerWrite, createRateLimitResponse } from "@/lib/server/rateLimitMiddleware";
 
 export const runtime = "nodejs";
 
@@ -15,6 +16,10 @@ export const POST = withRequestLogging(async function POST(
     await requireRole("engineer");
     const email = await getUserEmail();
     if (!email) return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });
+
+    // Rate limit by authenticated user
+    const rl = rateLimitEngineerWrite(email);
+    if (!rl.ok) return createRateLimitResponse({ error: rl.error!, resetAt: rl.resetAt! });
 
     const { jobId } = await params;
     const authCtx = await requireCompanyContext();
