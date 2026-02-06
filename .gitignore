@@ -76,3 +76,6 @@ nul
 
 # AILOOP specs (managed externally by orchestrator)
 apps/crm/docs/specs/
+
+# Repo snapshots (generated artifacts)
+**/_repo-snapshot.*
