@@ -274,7 +274,7 @@ export default function AdminJobDetail({ jobId }: Props) {
       ]);
       if (j.ok) setJob(j.job);
       if (c.ok) setCosting(c.costing);
-      if (t.ok) setTimeEntries(Array.isArray(t.timeEntries) ? t.timeEntries : []);
+      if (t.ok) setTimeEntries(Array.isArray(t.entries) ? t.entries : Array.isArray(t.timeEntries) ? t.timeEntries : []);
       if (ci.ok) setCostItems(Array.isArray(ci.costItems) ? ci.costItems : []);
       if (bl.ok) setBudgetLines(Array.isArray(bl.lines) ? bl.lines : []);
       if (ce.ok) setCerts(Array.isArray(ce.certificates) ? ce.certificates : []);
