@@ -5,6 +5,7 @@ import { NextResponse } from "next/server";
 import { requireCompanyContext, getEffectiveRole } from "@/lib/serverAuth";
 import { getPrisma } from "@/lib/server/prisma";
 import { withRequestLogging, logError } from "@/lib/server/observability";
+import * as repo from "@/lib/server/repo";
 
 export const runtime = "nodejs";
 
@@ -74,6 +75,17 @@ export const PATCH = withRequestLogging(async function PATCH(req: Request) {
         ...(status === "approved" ? { postedAt: new Date() } : {}),
       },
     });
+
+    try {
+      await repo.recordAuditEvent({
+        entityType: "supplier_bill",
+        entityId: id,
+        action: "supplier_bill.status_changed",
+        actorRole: effectiveRole,
+        actor: authCtx.email,
+        meta: { newStatus: status },
+      });
+    } catch { /* audit write failure is non-critical */ }
 
     return NextResponse.json({ ok: true, data: bill });
   } catch (error: any) {

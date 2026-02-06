@@ -5,12 +5,13 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
-import { ArrowLeft, Phone, RefreshCw } from "lucide-react";
+import { ArrowLeft, Phone, RefreshCw, AlertTriangle } from "lucide-react";
 
 interface Option {
   label: string;
   nextId: string | null;
   answer?: string;
+  urgent?: boolean;
 }
 
 interface Step {
@@ -29,6 +30,7 @@ export default function TroubleshootPage() {
   const [current, setCurrent] = useState<Step | null>(null);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [answer, setAnswer] = useState<string | null>(null);
+  const [answerUrgent, setAnswerUrgent] = useState(false);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
   const [callbackSent, setCallbackSent] = useState(false);
@@ -43,6 +45,7 @@ export default function TroubleshootPage() {
       if (d.ok) {
         setCurrent(d.data);
         setAnswer(null);
+        setAnswerUrgent(false);
       } else {
         setFetchError(true);
       }
@@ -59,6 +62,7 @@ export default function TroubleshootPage() {
     if (option.answer) {
       setHistory((h) => [...h, { step: current, selectedLabel: option.label, answer: option.answer }]);
       setAnswer(option.answer);
+      setAnswerUrgent(!!option.urgent);
       setCurrent(null);
     } else if (option.nextId) {
       setHistory((h) => [...h, { step: current, selectedLabel: option.label }]);
@@ -69,6 +73,7 @@ export default function TroubleshootPage() {
   function restart() {
     setHistory([]);
     setAnswer(null);
+    setAnswerUrgent(false);
     setCallbackSent(false);
     loadStep("start");
   }
@@ -164,10 +169,13 @@ export default function TroubleshootPage() {
 
           {/* Answer / recommendation */}
           {answer && (
-            <div className="rounded-2xl border border-green-200 bg-green-50 p-5 space-y-4">
+            <div className={`rounded-2xl border p-5 space-y-4 ${answerUrgent ? "border-amber-300 bg-amber-50" : "border-green-200 bg-green-50"}`}>
               <div>
-                <h2 className="text-sm font-semibold text-green-900 mb-2">Recommendation</h2>
-                <p className="text-sm text-green-800">{answer}</p>
+                <h2 className={`text-sm font-semibold mb-2 flex items-center gap-1.5 ${answerUrgent ? "text-amber-900" : "text-green-900"}`}>
+                  {answerUrgent && <AlertTriangle size={16} strokeWidth={2} className="text-amber-600 shrink-0" />}
+                  {answerUrgent ? "Urgent — action needed" : "Recommendation"}
+                </h2>
+                <p className={`text-sm ${answerUrgent ? "text-amber-800" : "text-green-800"}`}>{answer}</p>
               </div>
 
               <div className="flex flex-wrap gap-2">
@@ -186,7 +194,7 @@ export default function TroubleshootPage() {
                     {callbackLoading ? "Sending\u2026" : "Request callback"}
                   </Button>
                 ) : (
-                  <span className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-green-700">
+                  <span className={`inline-flex items-center px-3 py-1.5 text-xs font-medium ${answerUrgent ? "text-amber-700" : "text-green-700"}`}>
                     Callback requested — we&rsquo;ll be in touch.
                   </span>
                 )}

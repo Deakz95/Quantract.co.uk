@@ -8,11 +8,16 @@
     ".": "./src/index.ts",
     "./utils": "./src/utils/index.ts",
     "./roles": "./src/roles.ts",
-    "./money": "./src/money.ts"
+    "./money": "./src/money.ts",
+    "./pdfTemplateConstants": "./src/pdfTemplateConstants.ts",
+    "./certificate-types": "./src/certificate-types.ts"
   },
   "scripts": {
     "lint": "eslint src/",
     "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "^3.24.1"
   },
   "devDependencies": {
     "@types/node": "20.17.19",

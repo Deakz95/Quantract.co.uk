@@ -61,6 +61,17 @@ export const ACTION_LABELS: Record<string, string> = {
   "scheduled_check.overdue": "Check overdue",
   // Checklist gating
   "job.completion.override": "Completion override",
+  // PDF templates
+  "pdf_template.created": "Template created",
+  "pdf_template.updated": "Template updated",
+  "pdf_template.deleted": "Template deleted",
+  "pdf_template.version_created": "Template version saved",
+  // Office approvals
+  "timesheet.approved": "Timesheet approved",
+  "timesheet.rejected": "Timesheet rejected",
+  "expense.confirmed": "Expense confirmed",
+  "expense.rejected": "Expense rejected",
+  "supplier_bill.status_changed": "Supplier bill status changed",
 };
 
 /**
@@ -116,6 +127,9 @@ export function formatAuditDescription(event: AuditEntityInfo): string {
   }
   if (event.entityType === "scheduled_check") {
     return `Scheduled check — ${label}`;
+  }
+  if (event.entityType === "pdf_template") {
+    return `PDF template — ${label}`;
   }
 
   return `${event.entityType} — ${label}`;

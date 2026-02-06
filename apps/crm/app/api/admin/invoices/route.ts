@@ -7,6 +7,7 @@ import { withRequestLogging, logError } from "@/lib/server/observability";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { randomBytes, randomUUID } from "crypto";
 import { resolveLegalEntity, allocateInvoiceNumberForEntity } from "@/lib/server/multiEntity";
+import { scopedKey, getIdempotentResponse, setIdempotentResponse } from "@/lib/server/idempotency";
 
 export const runtime = "nodejs";
 
@@ -67,6 +68,17 @@ export const POST = withRequestLogging(async function POST(req: Request) {
     // Only roles with invoices.manage capability can create invoices
     if (!INVOICE_MANAGE_ROLES.includes(effectiveRole)) {
       return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
+    }
+
+    // --- Idempotency-Key support ---
+    const rawIdemKey = req.headers.get("idempotency-key");
+    let idemKey: string | null = null;
+    if (rawIdemKey) {
+      idemKey = scopedKey(rawIdemKey, ctx.companyId, ctx.userId, "POST:/api/admin/invoices");
+      const cached = await getIdempotentResponse(idemKey);
+      if (cached) {
+        return NextResponse.json(cached);
+      }
     }
 
     const client = getPrisma();
@@ -166,7 +178,9 @@ export const POST = withRequestLogging(async function POST(req: Request) {
         },
       });
 
-      return NextResponse.json({ ok: true, invoice });
+      const quoteInvResponse = { ok: true, invoice };
+      if (idemKey) await setIdempotentResponse(idemKey, quoteInvResponse).catch(() => {});
+      return NextResponse.json(quoteInvResponse);
     }
 
     // Manual invoice
@@ -226,7 +240,9 @@ export const POST = withRequestLogging(async function POST(req: Request) {
       },
     });
 
-    return NextResponse.json({ ok: true, invoice });
+    const manualInvResponse = { ok: true, invoice };
+    if (idemKey) await setIdempotentResponse(idemKey, manualInvResponse).catch(() => {});
+    return NextResponse.json(manualInvResponse);
   } catch (error: any) {
     if (error?.status === 401) {
       return NextResponse.json({ ok: false, error: "unauthenticated" }, { status: 401 });

@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Button, Card, CardHeader, CardTitle, CardContent, CardDescription, Input, Label, NativeSelect, Textarea } from "@quantract/ui";
-import { getCertificateTemplate, type EICRCertificate } from "../../lib/certificate-types";
+import { getCertificateTemplate, type EICRCertificate } from "@quantract/shared/certificate-types";
 import { generateCertificatePDF } from "../../lib/pdf-generator";
 import BoardViewer, { type BoardData, type Circuit } from "../../components/BoardViewer";
 import {
@@ -14,6 +14,8 @@ import {
   generateCertificateNumber,
 } from "../../lib/certificateStore";
 import { StickyActionBar } from "../../components/StickyActionBar";
+import { SignatureCapture } from "../../components/SignatureCapture";
+import { PhotoCapture } from "../../components/PhotoCapture";
 
 // Example board data - in production this would come from form input
 const EXAMPLE_BOARD: BoardData = {
@@ -89,6 +91,9 @@ function EICRPageContent() {
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [activeTab, setActiveTab] = useState<"details" | "boards">("boards");
   const [boards, setBoards] = useState<BoardData[]>([EXAMPLE_BOARD, EXAMPLE_3PHASE_BOARD]);
+  const [engineerSig, setEngineerSig] = useState<string | null>(null);
+  const [customerSig, setCustomerSig] = useState<string | null>(null);
+  const [photos, setPhotos] = useState<string[]>([]);
 
   // Load existing certificate if ID is provided (only after hydration)
   useEffect(() => {
@@ -219,7 +224,11 @@ function EICRPageContent() {
 
     setIsGenerating(true);
     try {
-      const pdfBytes = await generateCertificatePDF(data);
+      const pdfBytes = await generateCertificatePDF(data, {
+        engineerSignature: engineerSig,
+        customerSignature: customerSig,
+        photos,
+      });
       const blob = new Blob([new Uint8Array(pdfBytes)], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -706,6 +715,23 @@ function EICRPageContent() {
 
           </div>
         )}
+      </div>
+
+      {/* Signatures & Photos */}
+      <div className="max-w-[1200px] mx-auto px-6 py-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Signatures & Site Photos</CardTitle>
+            <CardDescription>Capture signatures and attach photos from site</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid md:grid-cols-2 gap-6">
+              <SignatureCapture label="Engineer Signature" value={engineerSig} onChange={setEngineerSig} />
+              <SignatureCapture label="Customer Signature" value={customerSig} onChange={setCustomerSig} />
+            </div>
+            <PhotoCapture photos={photos} onChange={setPhotos} />
+          </CardContent>
+        </Card>
       </div>
 
       <StickyActionBar

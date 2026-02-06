@@ -782,7 +782,7 @@ export function AppShell({
       {mobileNavOpen && !hideNav && (
         <div className="lg:hidden fixed inset-0 z-30 bg-black/50 backdrop-blur-sm" onClick={() => setMobileNavOpen(false)}>
           <div 
-            className="w-72 h-full overflow-y-auto bg-[var(--card)] border-r border-[var(--border)] p-4 animate-fade-in"
+            className="nav-scroll w-72 h-full overflow-y-auto overscroll-contain bg-[var(--card)] border-r border-[var(--border)] p-4 animate-fade-in"
             onClick={(e) => e.stopPropagation()}
           >
             <nav className="space-y-0.5">
@@ -799,7 +799,7 @@ export function AppShell({
         {/* Desktop Sidebar */}
         {hideNav ? null : (
           <aside className="hidden lg:block lg:col-span-3">
-            <div className="sticky top-20 max-h-[calc(100vh-5rem)] overflow-y-auto">
+            <div className="nav-scroll sticky top-20 max-h-[calc(100vh-5rem)] overflow-y-auto overscroll-contain">
               <nav className="space-y-0.5">
                 {role === "admin" || role === "office"
                   ? renderAccordionNav(adminSections, isActive, openSections, toggleSection)

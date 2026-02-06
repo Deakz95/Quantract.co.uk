@@ -33,6 +33,7 @@ import {
 } from "./canonical";
 import { renderCertificatePdfFromSnapshot, getActiveTemplateLayout, buildCertificateDataDict } from "@/lib/server/pdf";
 import { renderFromTemplate, type TemplateImageAttachments } from "@/lib/server/pdfTemplateRenderer";
+import { validateTemplateForCertType } from "@quantract/shared/pdfTemplateConstants";
 import { addBusinessBreadcrumb } from "@/lib/server/observability";
 import { readUploadBytes } from "@/lib/server/storage";
 
@@ -120,6 +121,13 @@ export async function issueCertificate(input: IssueCertificateInput): Promise<Is
   let templateVersionId: string | null = null;
   const templateResult = await getActiveTemplateLayout(companyId, "certificate");
   if (templateResult) {
+    // Soft-validate template has required bindings for this cert type (log-only, non-blocking)
+    const certTypeValidation = validateTemplateForCertType(templateResult.layout as any[], cert.type);
+    if (!certTypeValidation.valid) {
+      console.warn(
+        `[issueCertificate] Template missing bindings for ${cert.type}: ${certTypeValidation.missing?.join(", ")}. Proceeding anyway.`,
+      );
+    }
     try {
       const dataDict = buildCertificateDataDict({
         id: cert.id,

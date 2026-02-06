@@ -53,7 +53,6 @@ export default async function QrResolvePage({ params, searchParams }: Props) {
               type: true,
               issuedAt: true,
               outcome: true,
-              inspectorName: true,
             },
           },
         },
@@ -176,6 +175,18 @@ export default async function QrResolvePage({ params, searchParams }: Props) {
 
         {cert && (
           <div className="space-y-3 mb-6">
+            {/* Status badge */}
+            <div className="flex justify-center mb-2">
+              <span
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold"
+                style={{
+                  backgroundColor: cert.outcome === "satisfactory" ? "#dcfce7" : cert.outcome === "unsatisfactory" ? "#fef2f2" : "#f3f4f6",
+                  color: cert.outcome === "satisfactory" ? "#166534" : cert.outcome === "unsatisfactory" ? "#991b1b" : "#374151",
+                }}
+              >
+                {cert.outcome === "satisfactory" ? "Satisfactory" : cert.outcome === "unsatisfactory" ? "Unsatisfactory" : "Issued"}
+              </span>
+            </div>
             {cert.certificateNumber && (
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">Certificate No.</span>
@@ -202,12 +213,6 @@ export default async function QrResolvePage({ params, searchParams }: Props) {
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">Outcome</span>
                 <span className="font-medium text-gray-900">{cert.outcome}</span>
-              </div>
-            )}
-            {cert.inspectorName && (
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Inspector</span>
-                <span className="font-medium text-gray-900">{cert.inspectorName}</span>
               </div>
             )}
           </div>

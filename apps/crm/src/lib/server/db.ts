@@ -452,7 +452,7 @@ export type JobBudgetLine = {
 
 export type AuditEvent = {
   id: string;
-  entityType: "quote" | "agreement" | "invoice" | "job" | "certificate" | "variation" | "enquiry" | "client" | "site" | "stage" | "contact" | "deal" | "activity" | "deal_stage" | "company";
+  entityType: "quote" | "agreement" | "invoice" | "job" | "certificate" | "variation" | "enquiry" | "client" | "site" | "stage" | "contact" | "deal" | "activity" | "deal_stage" | "company" | "timesheet" | "expense" | "supplier_bill";
   entityId: string;
   action:
     | "quote.created"
@@ -506,7 +506,12 @@ export type AuditEvent = {
     | "deal_stage.deleted"
     | "deal_stage.reordered"
     | "financials.working_days_updated"
-    | "financials.working_days_mask_updated";
+    | "financials.working_days_mask_updated"
+    | "timesheet.approved"
+    | "timesheet.rejected"
+    | "expense.confirmed"
+    | "expense.rejected"
+    | "supplier_bill.status_changed";
   actorRole: Role | "system";
   actor?: string; // email / name if available
   meta?: Record<string, unknown>;

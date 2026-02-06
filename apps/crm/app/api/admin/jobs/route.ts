@@ -4,6 +4,7 @@ import { getPrisma } from "@/lib/server/prisma";
 import { withRequestLogging, logError } from "@/lib/server/observability";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { randomUUID } from "crypto";
+import { scopedKey, getIdempotentResponse, setIdempotentResponse } from "@/lib/server/idempotency";
 
 export const runtime = "nodejs";
 
@@ -70,6 +71,17 @@ export const POST = withRequestLogging(async function POST(req: Request) {
     // Only admin can create jobs
     if (effectiveRole !== "admin") {
       return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
+    }
+
+    // --- Idempotency-Key support ---
+    const rawIdemKey = req.headers.get("idempotency-key");
+    let idemKey: string | null = null;
+    if (rawIdemKey) {
+      idemKey = scopedKey(rawIdemKey, ctx.companyId, ctx.userId, "POST:/api/admin/jobs");
+      const cached = await getIdempotentResponse(idemKey);
+      if (cached) {
+        return NextResponse.json(cached);
+      }
     }
 
     const client = getPrisma();
@@ -168,7 +180,9 @@ export const POST = withRequestLogging(async function POST(req: Request) {
         });
       });
 
-      return NextResponse.json({ ok: true, job: { ...job, jobNumber: `J-${String(job.jobNumber).padStart(4, "0")}` } });
+      const manualResponse = { ok: true, job: { ...job, jobNumber: `J-${String(job.jobNumber).padStart(4, "0")}` } };
+      if (idemKey) await setIdempotentResponse(idemKey, manualResponse).catch(() => {});
+      return NextResponse.json(manualResponse);
     }
 
     // From quote
@@ -256,7 +270,9 @@ export const POST = withRequestLogging(async function POST(req: Request) {
       });
     });
 
-    return NextResponse.json({ ok: true, job: { ...job, jobNumber: `J-${String(job.jobNumber).padStart(4, "0")}` } });
+    const responseBody = { ok: true, job: { ...job, jobNumber: `J-${String(job.jobNumber).padStart(4, "0")}` } };
+    if (idemKey) await setIdempotentResponse(idemKey, responseBody).catch(() => {});
+    return NextResponse.json(responseBody);
   } catch (error) {
     if (error instanceof PrismaClientKnownRequestError) {
       logError(error, { route: "/api/admin/jobs", action: "create" });

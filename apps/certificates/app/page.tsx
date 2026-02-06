@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CERTIFICATE_INFO } from "../lib/certificate-types";
+import { CERTIFICATE_INFO } from "@quantract/shared/certificate-types";
 
 const certIcons: Record<string, React.ReactNode> = {
   EIC: (

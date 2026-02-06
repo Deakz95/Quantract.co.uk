@@ -1,25 +1,28 @@
-"use client";
-
+import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { usePathname } from "next/navigation";
-import Head from "next/head";
-import { StorageWarningBanner } from "@/components/admin/StorageWarningBanner";
+import { redirect } from "next/navigation";
+import { getAuthContext } from "@/lib/serverAuth";
+import { OfficeLayoutInner } from "./OfficeLayoutInner";
 
-export default function OfficeLayout({ children }: { children: ReactNode }) {
-  const pathname = usePathname();
-  const isLogin = pathname === "/office/login";
+export const metadata: Metadata = {
+  manifest: "/manifest-office.webmanifest",
+};
 
-  // Login page renders standalone — no shell
-  if (isLogin) return children;
+/**
+ * Office layout — server component for metadata + server-side role gate.
+ * Defense-in-depth: redirects non-office/non-admin roles even if middleware is bypassed.
+ * Best-effort: if auth resolution fails (e.g. on /office/login), allow through.
+ */
+export default async function OfficeLayout({ children }: { children: ReactNode }) {
+  try {
+    const ctx = await getAuthContext();
+    if (ctx && ctx.role !== "office" && ctx.role !== "admin") {
+      redirect(`/${ctx.role}`);
+    }
+  } catch {
+    // Auth resolution failed (e.g. login page, no session) — allow through.
+    // Middleware + API-level guards are the primary enforcement.
+  }
 
-  return (
-    <>
-      <head>
-        <link rel="manifest" href="/manifest-office.webmanifest" />
-        <meta name="theme-color" content="#0f172a" />
-      </head>
-      <StorageWarningBanner />
-      {children}
-    </>
-  );
+  return <OfficeLayoutInner>{children}</OfficeLayoutInner>;
 }

@@ -3,12 +3,11 @@
 import type { ReactNode } from "react";
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { Shell } from "@/components/shell/Shell";
-import { PwaInstallPrompt } from "@/components/client/PwaInstallPrompt";
+import { StorageWarningBanner } from "@/components/admin/StorageWarningBanner";
 
-export default function Layout({ children }: { children: ReactNode }) {
+export function OfficeLayoutInner({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const isLogin = pathname === "/client/login";
+  const isLogin = pathname === "/office/login";
 
   // Register service worker for PWA support (production only, not on login page)
   useEffect(() => {
@@ -24,22 +23,13 @@ export default function Layout({ children }: { children: ReactNode }) {
     });
   }, [isLogin]);
 
+  // Login page renders standalone — no shell
   if (isLogin) return children;
 
   return (
     <>
-      <head>
-        <link rel="manifest" href="/manifest-client.webmanifest" />
-        <meta name="theme-color" content="#0f172a" />
-      </head>
-      <Shell
-        role="client"
-        title="Client Portal"
-        subtitle="View quotes, sign agreements, download invoices and documents."
-      >
-        <PwaInstallPrompt />
-        {children}
-      </Shell>
+      <StorageWarningBanner />
+      {children}
     </>
   );
 }

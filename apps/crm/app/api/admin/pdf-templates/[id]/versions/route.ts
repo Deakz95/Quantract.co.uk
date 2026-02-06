@@ -3,7 +3,7 @@ import { requireRoles, requireCompanyId } from "@/lib/serverAuth";
 import { getPrisma } from "@/lib/server/prisma";
 import { withRequestLogging } from "@/lib/server/observability";
 import { validateLayout } from "@/lib/server/pdfTemplateRenderer";
-import { validateTemplateForCertType } from "@/lib/pdfTemplateConstants";
+import { validateTemplateForCertType } from "@quantract/shared/pdfTemplateConstants";
 import crypto from "node:crypto";
 
 export const runtime = "nodejs";

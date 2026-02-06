@@ -69,3 +69,17 @@ input[type="checkbox"] {
   min-width: 24px;
   min-height: 24px;
 }
+
+/* ========================================
+   TABLET UX — Touch optimisation
+   ======================================== */
+
+/* Disable double-tap zoom on all interactive elements */
+html {
+  touch-action: manipulation;
+}
+
+/* Safe-area padding for notched devices / home indicators */
+.safe-area-bottom {
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+}

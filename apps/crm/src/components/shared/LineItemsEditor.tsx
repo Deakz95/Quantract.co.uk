@@ -117,12 +117,12 @@ export default function LineItemsEditor(props: {
           </div>
 
           {/* Row 2: Qty, Unit Price, Line Total, Remove */}
-          <div className="mt-4 flex flex-wrap items-center gap-4">
-            <div className="flex items-center gap-2">
+          <div className="mt-4 grid grid-cols-2 sm:grid-cols-[1fr_1fr_auto_auto] items-center gap-3">
+            <label className="grid gap-1">
               <span className="text-xs font-semibold text-[var(--muted-foreground)]">Qty</span>
               <input
                 type="number"
-                className="w-24 min-h-12 rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 text-sm text-center text-[var(--foreground)] touch-manipulation"
+                className="w-full min-h-12 rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 text-sm text-center text-[var(--foreground)] touch-manipulation"
                 value={it.qty || ""}
                 onChange={(e) => setItem(i, { qty: e.target.value === "" ? 0 : Number(e.target.value) })}
                 onFocus={(e) => e.target.select()}
@@ -131,13 +131,13 @@ export default function LineItemsEditor(props: {
                 placeholder="0"
                 disabled={disabled}
               />
-            </div>
+            </label>
 
-            <div className="flex items-center gap-2">
+            <label className="grid gap-1">
               <span className="text-xs font-semibold text-[var(--muted-foreground)]">Unit £</span>
               <input
                 type="number"
-                className="w-32 min-h-12 rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 text-sm text-[var(--foreground)] touch-manipulation"
+                className="w-full min-h-12 rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 text-sm text-[var(--foreground)] touch-manipulation"
                 value={it.unitPrice || ""}
                 onChange={(e) => setItem(i, { unitPrice: e.target.value === "" ? 0 : Number(e.target.value) })}
                 onFocus={(e) => e.target.select()}
@@ -146,16 +146,18 @@ export default function LineItemsEditor(props: {
                 placeholder="0.00"
                 disabled={disabled}
               />
+            </label>
+
+            <div className="flex items-end gap-2 min-h-12">
+              <div>
+                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Line</span>
+                <div className="text-sm font-bold text-[var(--foreground)] min-w-[80px]">
+                  {fmtGBP(Number(it.qty || 0) * Number(it.unitPrice || 0))}
+                </div>
+              </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-[var(--muted-foreground)]">Line</span>
-              <span className="text-sm font-bold text-[var(--foreground)] min-w-[80px]">
-                {fmtGBP(Number(it.qty || 0) * Number(it.unitPrice || 0))}
-              </span>
-            </div>
-
-            <div className="ml-auto">
+            <div className="flex items-end">
               <Button
                 type="button"
                 variant="ghost"

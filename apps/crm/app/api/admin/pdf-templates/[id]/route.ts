@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireRoles, requireCompanyId } from "@/lib/serverAuth";
 import { getPrisma } from "@/lib/server/prisma";
 import { withRequestLogging } from "@/lib/server/observability";
+import crypto from "node:crypto";
 
 export const runtime = "nodejs";
 
@@ -103,6 +104,24 @@ export const PATCH = withRequestLogging(async function PATCH(
   }
 
   const updated = await client.pdfTemplate.update({ where: { id }, data });
+
+  // Audit event for template update
+  try {
+    await client.auditEvent.create({
+      data: {
+        id: crypto.randomUUID(),
+        companyId,
+        entityType: "pdf_template",
+        entityId: id,
+        action: "pdf_template.updated",
+        actorRole: "admin",
+        meta: { fields: Object.keys(data), docType: template.docType },
+      },
+    });
+  } catch {
+    // Non-fatal
+  }
+
   return NextResponse.json({ ok: true, template: updated });
 });
 
@@ -139,5 +158,23 @@ export const DELETE = withRequestLogging(async function DELETE(
   }
 
   await client.pdfTemplate.delete({ where: { id } });
+
+  // Audit event for template deletion
+  try {
+    await client.auditEvent.create({
+      data: {
+        id: crypto.randomUUID(),
+        companyId,
+        entityType: "pdf_template",
+        entityId: id,
+        action: "pdf_template.deleted",
+        actorRole: "admin",
+        meta: { docType: template.docType, name: template.name },
+      },
+    });
+  } catch {
+    // Non-fatal
+  }
+
   return NextResponse.json({ ok: true });
 });

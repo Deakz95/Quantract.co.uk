@@ -25,6 +25,7 @@ import { openDocument } from "../utils/documentViewer";
 
 // Dispatch status workflow
 type DispatchStatus = "scheduled" | "en_route" | "on_site" | "in_progress" | "completed";
+const DISPATCH_ORDER: DispatchStatus[] = ["scheduled", "en_route", "on_site", "in_progress", "completed"];
 const DISPATCH_TRANSITIONS: Record<string, { next: DispatchStatus; label: string; color: string }[]> = {
   scheduled: [
     { next: "en_route", label: "En Route", color: "#2563eb" },
@@ -53,6 +54,76 @@ const DISPATCH_STATUS_BG: Record<string, string> = {
   in_progress: "#dcfce7",
   completed: "#e2e8f0",
 };
+
+/** Read-only visual timeline for dispatch status progression */
+function DispatchTimeline({ currentStatus }: { currentStatus: string }) {
+  const currentIdx = DISPATCH_ORDER.indexOf(currentStatus as DispatchStatus);
+  if (currentIdx < 0) return null;
+
+  return (
+    <View style={timelineStyles.container}>
+      {DISPATCH_ORDER.map((status, idx) => {
+        const isDone = idx < currentIdx;
+        const isCurrent = idx === currentIdx;
+        return (
+          <View key={status} style={timelineStyles.step}>
+            {/* Connector line (before dot, except first) */}
+            {idx > 0 ? (
+              <View style={[timelineStyles.line, isDone || isCurrent ? timelineStyles.lineDone : null]} />
+            ) : null}
+            {/* Status dot */}
+            <View
+              style={[
+                timelineStyles.dot,
+                isDone ? timelineStyles.dotDone : isCurrent ? timelineStyles.dotCurrent : timelineStyles.dotPending,
+              ]}
+            >
+              {isDone ? <Text style={timelineStyles.checkmark}>✓</Text> : null}
+            </View>
+            {/* Label */}
+            <Text
+              style={[
+                timelineStyles.label,
+                (isDone || isCurrent) ? timelineStyles.labelActive : null,
+              ]}
+              numberOfLines={1}
+            >
+              {DISPATCH_STATUS_LABEL[status]}
+            </Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+const timelineStyles = StyleSheet.create({
+  container: { flexDirection: "row", alignItems: "flex-start", marginBottom: 12, paddingHorizontal: 4 },
+  step: { flex: 1, alignItems: "center" },
+  line: {
+    position: "absolute",
+    top: 10,
+    right: "50%",
+    width: "100%",
+    height: 2,
+    backgroundColor: "#e2e8f0",
+  },
+  lineDone: { backgroundColor: "#16a34a" },
+  dot: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 1,
+  },
+  dotDone: { backgroundColor: "#16a34a" },
+  dotCurrent: { backgroundColor: "#2563eb", borderWidth: 3, borderColor: "#bfdbfe" },
+  dotPending: { backgroundColor: "#e2e8f0" },
+  checkmark: { color: "#fff", fontSize: 11, fontWeight: "800" },
+  label: { fontSize: 9, color: "#94a3b8", marginTop: 4, textAlign: "center" },
+  labelActive: { color: "#0f172a", fontWeight: "600" },
+});
 
 function pounds(v: number) {
   return `\u00A3${Number(v || 0).toFixed(2)}`;
@@ -307,6 +378,7 @@ export default function JobDetailScreen() {
       {/* Dispatch status workflow */}
       {entryId && dispatchStatus && dispatchStatus !== "completed" ? (
         <View style={styles.dispatchCard}>
+          <DispatchTimeline currentStatus={dispatchStatus} />
           <View style={styles.dispatchRow}>
             <Text style={styles.dispatchLabel}>Status:</Text>
             <View style={[styles.dispatchBadge, { backgroundColor: DISPATCH_STATUS_BG[dispatchStatus] || "#e2e8f0" }]}>
@@ -349,6 +421,7 @@ export default function JobDetailScreen() {
         </View>
       ) : entryId && dispatchStatus === "completed" ? (
         <View style={styles.dispatchCard}>
+          <DispatchTimeline currentStatus="completed" />
           <View style={styles.dispatchRow}>
             <Text style={styles.dispatchLabel}>Status:</Text>
             <View style={[styles.dispatchBadge, { backgroundColor: DISPATCH_STATUS_BG.completed }]}>

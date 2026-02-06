@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Button, Card, CardHeader, CardTitle, CardContent, CardDescription, Input, Label, NativeSelect, Textarea } from "@quantract/ui";
-import { getCertificateTemplate, type MWCCertificate } from "../../lib/certificate-types";
+import { getCertificateTemplate, type MWCCertificate } from "@quantract/shared/certificate-types";
 import { generateCertificatePDF } from "../../lib/pdf-generator";
 import {
   useCertificateStore,
@@ -13,6 +13,8 @@ import {
   generateCertificateNumber,
 } from "../../lib/certificateStore";
 import { StickyActionBar } from "../../components/StickyActionBar";
+import { SignatureCapture } from "../../components/SignatureCapture";
+import { PhotoCapture } from "../../components/PhotoCapture";
 
 function MWCPageContent() {
   const searchParams = useSearchParams();
@@ -27,6 +29,9 @@ function MWCPageContent() {
   const [currentCertId, setCurrentCertId] = useState<string | null>(certificateId);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [engineerSig, setEngineerSig] = useState<string | null>(null);
+  const [customerSig, setCustomerSig] = useState<string | null>(null);
+  const [photos, setPhotos] = useState<string[]>([]);
 
   // Load existing certificate if ID is provided (only after hydration)
   useEffect(() => {
@@ -128,7 +133,11 @@ function MWCPageContent() {
 
     setIsGenerating(true);
     try {
-      const pdfBytes = await generateCertificatePDF(data);
+      const pdfBytes = await generateCertificatePDF(data, {
+        engineerSignature: engineerSig,
+        customerSignature: customerSig,
+        photos,
+      });
       const blob = new Blob([new Uint8Array(pdfBytes)], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -433,6 +442,23 @@ function MWCPageContent() {
           </CardContent>
         </Card>
 
+      </div>
+
+      {/* Signatures & Photos */}
+      <div className="max-w-5xl mx-auto px-6 py-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Signatures & Site Photos</CardTitle>
+            <CardDescription>Capture signatures and attach photos from site</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid md:grid-cols-2 gap-6">
+              <SignatureCapture label="Engineer Signature" value={engineerSig} onChange={setEngineerSig} />
+              <SignatureCapture label="Customer Signature" value={customerSig} onChange={setCustomerSig} />
+            </div>
+            <PhotoCapture photos={photos} onChange={setPhotos} />
+          </CardContent>
+        </Card>
       </div>
 
       <StickyActionBar

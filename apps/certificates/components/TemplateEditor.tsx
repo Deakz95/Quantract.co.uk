@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
-import { Save, Eye, Plus, Trash2, GripVertical, Type, Minus, Square, Table, Image, Loader2, Pen, FileImage } from "lucide-react";
-import { DOC_TYPE_BINDINGS } from "../lib/pdfTemplateConstants";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import { Save, Eye, Plus, Trash2, GripVertical, Type, Minus, Square, Table, Image, Loader2, Pen, FileImage, Copy, Undo2, Redo2, AlertTriangle } from "lucide-react";
+import { DOC_TYPE_BINDINGS, DOC_TYPE_BINDING_GROUPS, PDF_FONT_FAMILIES, CERT_TYPE_REQUIRED_BINDINGS, validateTemplateForCertType } from "@quantract/shared/pdfTemplateConstants";
+import type { PdfFontFamily, BindingGroup } from "@quantract/shared/pdfTemplateConstants";
 
 type LayoutElement = {
   id: string;
@@ -14,6 +15,7 @@ type LayoutElement = {
   binding?: string;
   fontSize?: number;
   fontWeight?: "normal" | "bold";
+  fontFamily?: PdfFontFamily;
   color?: string;
   align?: "left" | "center" | "right";
   lineColor?: string;
@@ -23,6 +25,7 @@ type LayoutElement = {
   columns?: Array<{ header: string; binding: string; width: number }>;
   imageSource?: "logo" | "signature_engineer" | "signature_customer" | "photo";
   signatureRole?: "engineer" | "customer";
+  photoIndex?: number;
 };
 
 export type { LayoutElement };
@@ -44,6 +47,7 @@ const CANVAS_HEIGHT = 891;
 const SCALE = CANVAS_WIDTH / 210;
 const GRID_MM = 5;
 const GRID_PX = GRID_MM * SCALE;
+const MAX_UNDO = 50;
 
 function snapToGrid(val: number): number {
   return Math.round(val / GRID_MM) * GRID_MM;
@@ -82,6 +86,14 @@ const ELEMENT_DEFAULTS: Record<string, Partial<LayoutElement>> = {
   photo: { w: 60, h: 40, imageSource: "photo" as const },
 };
 
+const FONT_FAMILY_CSS: Record<string, string> = {
+  Helvetica: "Helvetica, Arial, sans-serif",
+  Courier: "Courier New, Courier, monospace",
+  TimesRoman: "Times New Roman, Times, serif",
+};
+
+const CERT_TYPES = Object.keys(CERT_TYPE_REQUIRED_BINDINGS).filter(k => k !== "_base");
+
 export function TemplateEditor({
   template,
   onSave,
@@ -104,28 +116,106 @@ export function TemplateEditor({
   const [resizing, setResizing] = useState<{ id: string; startX: number; startY: number; elW: number; elH: number } | null>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
 
+  // Undo/redo history
+  const [undoStack, setUndoStack] = useState<LayoutElement[][]>([]);
+  const [redoStack, setRedoStack] = useState<LayoutElement[][]>([]);
+  const skipHistoryRef = useRef(false);
+
+  // Binding search filter
+  const [bindingSearch, setBindingSearch] = useState("");
+
+  // Cert type selector for validation
+  const [selectedCertType, setSelectedCertType] = useState<string>("EICR");
+
   const selected = elements.find(e => e.id === selectedId) || null;
   const bindings = DOC_TYPE_BINDINGS[template.docType] || [];
+  const bindingGroups: BindingGroup[] = DOC_TYPE_BINDING_GROUPS[template.docType] || [];
+
+  const pushUndo = useCallback((prev: LayoutElement[]) => {
+    if (skipHistoryRef.current) return;
+    setUndoStack(stack => {
+      const next = [...stack, prev];
+      return next.length > MAX_UNDO ? next.slice(-MAX_UNDO) : next;
+    });
+    setRedoStack([]);
+  }, []);
+
+  const undo = useCallback(() => {
+    setUndoStack(stack => {
+      if (stack.length === 0) return stack;
+      const prev = stack[stack.length - 1];
+      const rest = stack.slice(0, -1);
+      setRedoStack(redo => [...redo, elements]);
+      skipHistoryRef.current = true;
+      setElements(prev);
+      setDirty(true);
+      return rest;
+    });
+  }, [elements]);
+
+  const redo = useCallback(() => {
+    setRedoStack(stack => {
+      if (stack.length === 0) return stack;
+      const next = stack[stack.length - 1];
+      const rest = stack.slice(0, -1);
+      setUndoStack(undo => [...undo, elements]);
+      skipHistoryRef.current = true;
+      setElements(next);
+      setDirty(true);
+      return rest;
+    });
+  }, [elements]);
 
   const updateElement = useCallback((id: string, updates: Partial<LayoutElement>) => {
-    setElements(prev => prev.map(e => e.id === id ? { ...e, ...updates } : e));
+    setElements(prev => {
+      pushUndo(prev);
+      return prev.map(e => e.id === id ? { ...e, ...updates } : e);
+    });
     setDirty(true);
-  }, []);
+  }, [pushUndo]);
+
+  useEffect(() => {
+    skipHistoryRef.current = false;
+  }, [elements]);
 
   const addElement = useCallback((type: LayoutElement["type"]) => {
     const defaults = ELEMENT_DEFAULTS[type] || {};
     const id = `el_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
     const newEl: LayoutElement = { id, type, x: 15, y: 50, ...defaults } as LayoutElement;
-    setElements(prev => [...prev, newEl]);
+    setElements(prev => {
+      pushUndo(prev);
+      return [...prev, newEl];
+    });
     setSelectedId(id);
     setDirty(true);
-  }, []);
+  }, [pushUndo]);
+
+  const duplicateElement = useCallback((id: string) => {
+    const el = elements.find(e => e.id === id);
+    if (!el) return;
+    const newId = `el_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+    const newEl: LayoutElement = {
+      ...structuredClone(el),
+      id: newId,
+      x: Math.min(el.x + 5, 210),
+      y: Math.min(el.y + 5, 297),
+    };
+    setElements(prev => {
+      pushUndo(prev);
+      return [...prev, newEl];
+    });
+    setSelectedId(newId);
+    setDirty(true);
+  }, [elements, pushUndo]);
 
   const removeElement = useCallback((id: string) => {
-    setElements(prev => prev.filter(e => e.id !== id));
+    setElements(prev => {
+      pushUndo(prev);
+      return prev.filter(e => e.id !== id);
+    });
     if (selectedId === id) setSelectedId(null);
     setDirty(true);
-  }, [selectedId]);
+  }, [selectedId, pushUndo]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -140,6 +230,28 @@ export function TemplateEditor({
     if (url) setPreviewUrl(url);
     setPreviewing(false);
   };
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) return;
+      if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+      } else if ((e.ctrlKey || e.metaKey) && (e.key === "y" || (e.key === "z" && e.shiftKey))) {
+        e.preventDefault();
+        redo();
+      } else if ((e.ctrlKey || e.metaKey) && e.key === "d" && selectedId) {
+        e.preventDefault();
+        duplicateElement(selectedId);
+      } else if (e.key === "Delete" && selectedId) {
+        e.preventDefault();
+        removeElement(selectedId);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [undo, redo, selectedId, duplicateElement, removeElement]);
 
   const handleMouseDown = (e: React.MouseEvent, id: string) => {
     e.preventDefault();
@@ -164,53 +276,91 @@ export function TemplateEditor({
       if (dragging) {
         const dx = pxToMm(e.clientX - dragging.startX);
         const dy = pxToMm(e.clientY - dragging.startY);
-        updateElement(dragging.id, {
-          x: Math.max(0, Math.min(210, snapToGrid(dragging.elX + dx))),
-          y: Math.max(0, Math.min(297, snapToGrid(dragging.elY + dy))),
-        });
+        skipHistoryRef.current = true;
+        setElements(prev => prev.map(e => e.id === dragging.id ? { ...e, x: Math.max(0, Math.min(210, snapToGrid(dragging.elX + dx))), y: Math.max(0, Math.min(297, snapToGrid(dragging.elY + dy))) } : e));
+        setDirty(true);
       }
       if (resizing) {
         const dx = pxToMm(e.clientX - resizing.startX);
         const dy = pxToMm(e.clientY - resizing.startY);
-        updateElement(resizing.id, {
-          w: Math.max(5, snapToGrid(resizing.elW + dx)),
-          h: Math.max(1, snapToGrid(resizing.elH + dy)),
-        });
+        skipHistoryRef.current = true;
+        setElements(prev => prev.map(e => e.id === resizing.id ? { ...e, w: Math.max(5, snapToGrid(resizing.elW + dx)), h: Math.max(1, snapToGrid(resizing.elH + dy)) } : e));
+        setDirty(true);
       }
     };
-    const handleUp = () => { setDragging(null); setResizing(null); };
+    const handleUp = () => {
+      if (dragging || resizing) skipHistoryRef.current = false;
+      setDragging(null);
+      setResizing(null);
+    };
     window.addEventListener("mousemove", handleMove);
     window.addEventListener("mouseup", handleUp);
     return () => { window.removeEventListener("mousemove", handleMove); window.removeEventListener("mouseup", handleUp); };
-  }, [dragging, resizing, updateElement]);
+  }, [dragging, resizing]);
+
+  // Cert-type validation warnings
+  const certValidation = useMemo(() => {
+    if (template.docType !== "certificate") return null;
+    return validateTemplateForCertType(elements, selectedCertType);
+  }, [template.docType, elements, selectedCertType]);
+
+  // Filter binding groups by search
+  const filteredGroups = useMemo(() => {
+    if (!bindingSearch.trim()) return bindingGroups;
+    const q = bindingSearch.toLowerCase();
+    return bindingGroups
+      .map(g => ({ ...g, bindings: g.bindings.filter(b => b.toLowerCase().includes(q)) }))
+      .filter(g => g.bindings.length > 0);
+  }, [bindingGroups, bindingSearch]);
 
   return (
     <div className="flex flex-col gap-4">
       {/* Top bar */}
       <div className="flex items-center justify-between">
-        <div className="text-sm text-[var(--muted-foreground)]">
-          Version {latestVersion?.version || 0}
-          {dirty && <span className="ml-2 text-amber-600">(unsaved changes)</span>}
+        <div className="flex items-center gap-3">
+          <div className="text-sm text-[var(--muted-foreground)]">
+            Version {latestVersion?.version || 0}
+            {dirty && <span className="ml-2 text-amber-600">(unsaved changes)</span>}
+          </div>
+          <div className="flex items-center gap-1">
+            <button onClick={undo} disabled={undoStack.length === 0} className="p-1 rounded hover:bg-[var(--card)] transition disabled:opacity-30" title="Undo (Ctrl+Z)">
+              <Undo2 className="w-4 h-4" />
+            </button>
+            <button onClick={redo} disabled={redoStack.length === 0} className="p-1 rounded hover:bg-[var(--card)] transition disabled:opacity-30" title="Redo (Ctrl+Y)">
+              <Redo2 className="w-4 h-4" />
+            </button>
+          </div>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={handlePreview}
-            disabled={previewing}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[var(--border)] text-sm hover:bg-[var(--card)] transition disabled:opacity-50"
-          >
+          <button onClick={handlePreview} disabled={previewing} className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[var(--border)] text-sm hover:bg-[var(--card)] transition disabled:opacity-50">
             {previewing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
             Preview
           </button>
-          <button
-            onClick={handleSave}
-            disabled={saving || !dirty}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--primary)] text-white text-sm font-medium hover:opacity-90 transition disabled:opacity-50"
-          >
+          <button onClick={handleSave} disabled={saving || !dirty} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--primary)] text-white text-sm font-medium hover:opacity-90 transition disabled:opacity-50">
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Save
           </button>
         </div>
       </div>
+
+      {/* Cert-type validation warnings */}
+      {template.docType === "certificate" && (
+        <div className="flex items-center gap-3 text-xs">
+          <label className="flex items-center gap-1 text-[var(--muted-foreground)]">
+            Validate for:
+            <select value={selectedCertType} onChange={e => setSelectedCertType(e.target.value)} className="rounded border border-[var(--border)] bg-[var(--background)] px-1.5 py-0.5 text-xs">
+              {CERT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </label>
+          {certValidation && !certValidation.valid && (
+            <div className="flex items-center gap-1 text-amber-600">
+              <AlertTriangle className="w-3.5 h-3.5" />
+              Missing bindings: {certValidation.missing!.join(", ")}
+            </div>
+          )}
+          {certValidation?.valid && <span className="text-green-600">All required bindings present</span>}
+        </div>
+      )}
 
       {/* Preview modal */}
       {previewUrl && (
@@ -232,11 +382,7 @@ export function TemplateEditor({
           {(["text", "line", "rect", "table", "image", "signature", "photo"] as const).map(type => {
             const Icon = ELEMENT_ICONS[type];
             return (
-              <button
-                key={type}
-                onClick={() => addElement(type)}
-                className="flex items-center gap-2 w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--card)] text-sm hover:border-[var(--primary)]/50 transition"
-              >
+              <button key={type} onClick={() => addElement(type)} className="flex items-center gap-2 w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--card)] text-sm hover:border-[var(--primary)]/50 transition">
                 <Icon className="w-4 h-4 text-[var(--muted-foreground)]" />
                 <span className="capitalize">{type}</span>
               </button>
@@ -246,17 +392,9 @@ export function TemplateEditor({
           <h4 className="text-xs font-semibold uppercase tracking-wider text-[var(--muted-foreground)] mt-4 mb-2">Elements</h4>
           <div className="space-y-1 max-h-60 overflow-y-auto">
             {elements.map(el => (
-              <button
-                key={el.id}
-                onClick={() => setSelectedId(el.id)}
-                className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-xs transition ${
-                  el.id === selectedId ? "bg-[var(--primary)]/10 border border-[var(--primary)]/30" : "hover:bg-[var(--card)]"
-                }`}
-              >
+              <button key={el.id} onClick={() => setSelectedId(el.id)} className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-xs transition ${el.id === selectedId ? "bg-[var(--primary)]/10 border border-[var(--primary)]/30" : "hover:bg-[var(--card)]"}`}>
                 <GripVertical className="w-3 h-3 text-[var(--muted-foreground)]" />
-                <span className="truncate flex-1 text-left">
-                  {el.type === "text" ? (el.binding || "Text").slice(0, 20) : el.type}
-                </span>
+                <span className="truncate flex-1 text-left">{el.type === "text" ? (el.binding || "Text").slice(0, 20) : el.type}</span>
               </button>
             ))}
           </div>
@@ -264,38 +402,13 @@ export function TemplateEditor({
 
         {/* Center: Canvas */}
         <div className="flex-1 min-w-0">
-          <div
-            ref={canvasRef}
-            className="relative bg-white border border-[var(--border)] shadow-sm mx-auto"
-            style={{
-              width: CANVAS_WIDTH,
-              height: CANVAS_HEIGHT,
-              backgroundImage: `linear-gradient(to right, #e5e7eb 1px, transparent 1px), linear-gradient(to bottom, #e5e7eb 1px, transparent 1px)`,
-              backgroundSize: `${GRID_PX}px ${GRID_PX}px`,
-            }}
-            onClick={() => setSelectedId(null)}
-          >
+          <div ref={canvasRef} className="relative bg-white border border-[var(--border)] shadow-sm mx-auto" style={{ width: CANVAS_WIDTH, height: CANVAS_HEIGHT, backgroundImage: `linear-gradient(to right, #e5e7eb 1px, transparent 1px), linear-gradient(to bottom, #e5e7eb 1px, transparent 1px)`, backgroundSize: `${GRID_PX}px ${GRID_PX}px` }} onClick={() => setSelectedId(null)}>
             {elements.map(el => {
               const isSelected = el.id === selectedId;
               return (
-                <div
-                  key={el.id}
-                  className={`absolute cursor-move ${isSelected ? "ring-2 ring-blue-500 z-10" : "hover:ring-1 hover:ring-blue-300"}`}
-                  style={{
-                    left: mmToPx(el.x), top: mmToPx(el.y), width: mmToPx(el.w), height: mmToPx(el.h),
-                    backgroundColor: el.type === "rect" && el.fillColor ? el.fillColor + "33" : undefined,
-                    borderColor: el.type === "rect" && el.strokeColor ? el.strokeColor : undefined,
-                    borderWidth: el.type === "rect" ? 1 : undefined,
-                    borderStyle: el.type === "rect" ? "solid" : undefined,
-                  }}
-                  onMouseDown={e => handleMouseDown(e, el.id)}
-                >
+                <div key={el.id} className={`absolute cursor-move ${isSelected ? "ring-2 ring-blue-500 z-10" : "hover:ring-1 hover:ring-blue-300"}`} style={{ left: mmToPx(el.x), top: mmToPx(el.y), width: mmToPx(el.w), height: mmToPx(el.h), backgroundColor: el.type === "rect" && el.fillColor ? el.fillColor + "33" : undefined, borderColor: el.type === "rect" && el.strokeColor ? el.strokeColor : undefined, borderWidth: el.type === "rect" ? 1 : undefined, borderStyle: el.type === "rect" ? "solid" : undefined }} onMouseDown={e => handleMouseDown(e, el.id)}>
                   <div className="w-full h-full overflow-hidden pointer-events-none flex items-center" style={{ padding: "0 2px" }}>
-                    {el.type === "text" && (
-                      <span className="truncate leading-none" style={{ fontSize: Math.min((el.fontSize || 10) * 0.9, 14), fontWeight: el.fontWeight === "bold" ? 700 : 400, color: el.color || "#000", textAlign: el.align || "left", width: "100%" }}>
-                        {el.binding || "Text"}
-                      </span>
-                    )}
+                    {el.type === "text" && <span className="truncate leading-none" style={{ fontSize: Math.min((el.fontSize || 10) * 0.9, 14), fontWeight: el.fontWeight === "bold" ? 700 : 400, fontFamily: FONT_FAMILY_CSS[el.fontFamily ?? "Helvetica"], color: el.color || "#000", textAlign: el.align || "left", width: "100%" }}>{el.binding || "Text"}</span>}
                     {el.type === "line" && <div className="w-full" style={{ height: el.lineThickness || 1, backgroundColor: el.lineColor || "#000" }} />}
                     {el.type === "table" && <span className="text-xs text-gray-400">[Table: {el.columns?.length || 0} cols]</span>}
                     {el.type === "image" && <span className="text-xs text-gray-400">{el.imageSource === "logo" ? "[Logo]" : "[Image]"}</span>}
@@ -308,7 +421,7 @@ export function TemplateEditor({
                     {el.type === "photo" && (
                       <div className="flex flex-col items-center justify-center w-full h-full border border-dashed border-gray-300 rounded bg-gray-50/50">
                         <FileImage className="w-3 h-3 text-gray-400" />
-                        <span className="text-[9px] text-gray-400 mt-0.5">Photo</span>
+                        <span className="text-[9px] text-gray-400 mt-0.5">Photo #{(el as any).photoIndex ?? 0}</span>
                       </div>
                     )}
                   </div>
@@ -328,9 +441,10 @@ export function TemplateEditor({
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium capitalize">{selected.type}</span>
-                <button onClick={() => removeElement(selected.id)} className="text-red-500 hover:text-red-700" title="Delete element">
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => duplicateElement(selected.id)} className="text-[var(--muted-foreground)] hover:text-[var(--foreground)]" title="Duplicate (Ctrl+D)"><Copy className="w-4 h-4" /></button>
+                  <button onClick={() => removeElement(selected.id)} className="text-red-500 hover:text-red-700" title="Delete (Del)"><Trash2 className="w-4 h-4" /></button>
+                </div>
               </div>
 
               {/* Position & Size */}
@@ -357,13 +471,29 @@ export function TemplateEditor({
                   <div>
                     <label className="block text-[10px] text-[var(--muted-foreground)]">Text / Binding</label>
                     <input type="text" value={selected.binding || ""} onChange={e => updateElement(selected.id, { binding: e.target.value })} className="w-full rounded border border-[var(--border)] bg-[var(--background)] px-2 py-1 text-xs" placeholder="Static text or {{binding}}" />
-                    {bindings.length > 0 && (
-                      <div className="mt-1 flex flex-wrap gap-1">
-                        {bindings.slice(0, 8).map(b => (
-                          <button key={b} onClick={() => updateElement(selected.id, { binding: `{{${b}}}` })} className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 text-[10px] hover:bg-blue-100 dark:bg-blue-950 dark:text-blue-300">{b}</button>
-                        ))}
+                    {bindingGroups.length > 0 && (
+                      <div className="mt-1">
+                        <input type="text" value={bindingSearch} onChange={e => setBindingSearch(e.target.value)} placeholder="Search bindings…" className="w-full rounded border border-[var(--border)] bg-[var(--background)] px-2 py-0.5 text-[10px] mb-1" />
+                        <div className="max-h-32 overflow-y-auto space-y-1">
+                          {filteredGroups.map(group => (
+                            <div key={group.label}>
+                              <div className="text-[9px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wider">{group.label}</div>
+                              <div className="flex flex-wrap gap-0.5">
+                                {group.bindings.map(b => (
+                                  <button key={b} onClick={() => updateElement(selected.id, { binding: `{{${b}}}` })} className="px-1 py-0.5 rounded bg-blue-50 text-blue-700 text-[9px] hover:bg-blue-100 dark:bg-blue-950 dark:text-blue-300">{b}</button>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
+                  </div>
+                  <div>
+                    <label className="block text-[10px] text-[var(--muted-foreground)]">Font</label>
+                    <select value={selected.fontFamily || "Helvetica"} onChange={e => updateElement(selected.id, { fontFamily: e.target.value as PdfFontFamily })} className="w-full rounded border border-[var(--border)] bg-[var(--background)] px-2 py-1 text-xs">
+                      {PDF_FONT_FAMILIES.map(f => <option key={f} value={f} style={{ fontFamily: FONT_FAMILY_CSS[f] }}>{f}</option>)}
+                    </select>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
@@ -435,6 +565,14 @@ export function TemplateEditor({
                   <button onClick={() => { const cols = [...(selected.columns || []), { header: "Col", binding: "field", width: 30 }]; updateElement(selected.id, { columns: cols }); }} className="flex items-center gap-1 text-[10px] text-[var(--primary)] mt-1">
                     <Plus className="w-3 h-3" /> Add column
                   </button>
+                </div>
+              )}
+
+              {selected.type === "photo" && (
+                <div>
+                  <label className="block text-[10px] text-[var(--muted-foreground)]">Photo Index</label>
+                  <input type="number" value={(selected as any).photoIndex ?? 0} onChange={e => updateElement(selected.id, { photoIndex: Math.max(0, Math.min(4, Number(e.target.value))) } as any)} className="w-full rounded border border-[var(--border)] bg-[var(--background)] px-2 py-1 text-xs" min={0} max={4} />
+                  <p className="text-[9px] text-[var(--muted-foreground)] mt-0.5">Which attached photo to display (0–4)</p>
                 </div>
               )}
 

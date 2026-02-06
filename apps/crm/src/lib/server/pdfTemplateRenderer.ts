@@ -14,6 +14,7 @@
 
 import { PDFDocument, StandardFonts } from "pdf-lib";
 import type { BrandContext } from "@/lib/server/pdf";
+import type { PdfFontFamily } from "@quantract/shared/pdfTemplateConstants";
 
 // ── Types ──
 
@@ -30,6 +31,7 @@ export interface LayoutElement {
   binding?: string; // e.g. "{{clientName}}", "{{invoiceNumber}}", or static text
   fontSize?: number;
   fontWeight?: "normal" | "bold";
+  fontFamily?: PdfFontFamily; // defaults to "Helvetica"
   color?: string; // hex
   align?: "left" | "center" | "right";
   // line
@@ -161,8 +163,23 @@ export async function renderFromTemplate(
   attachments?: TemplateImageAttachments | null,
 ): Promise<Buffer> {
   const doc = await PDFDocument.create();
-  const font = await doc.embedFont(StandardFonts.Helvetica);
-  const bold = await doc.embedFont(StandardFonts.HelveticaBold);
+  // Embed all standard font variants for font family support
+  const fonts = {
+    Helvetica: {
+      normal: await doc.embedFont(StandardFonts.Helvetica),
+      bold: await doc.embedFont(StandardFonts.HelveticaBold),
+    },
+    Courier: {
+      normal: await doc.embedFont(StandardFonts.Courier),
+      bold: await doc.embedFont(StandardFonts.CourierBold),
+    },
+    TimesRoman: {
+      normal: await doc.embedFont(StandardFonts.TimesRoman),
+      bold: await doc.embedFont(StandardFonts.TimesRomanBold),
+    },
+  };
+  const font = fonts.Helvetica.normal;
+  const bold = fonts.Helvetica.bold;
   const page = doc.addPage([A4_W_PT, A4_H_PT]);
 
   // Embed logo if available
@@ -204,7 +221,8 @@ export async function renderFromTemplate(
       case "text": {
         const resolved = resolveBinding(el.binding, data);
         if (!resolved) break;
-        const usedFont = el.fontWeight === "bold" ? bold : font;
+        const family = fonts[el.fontFamily ?? "Helvetica"] ?? fonts.Helvetica;
+        const usedFont = el.fontWeight === "bold" ? family.bold : family.normal;
         const size = el.fontSize ?? 10;
         const color = el.color ? hexToRgbValues(el.color) : BLACK;
         // Simple alignment: left (default), center, right
@@ -299,13 +317,21 @@ export async function renderFromTemplate(
         } else if (el.imageSource === "signature_customer") {
           imgToDraw = embeddedAttachments.signatureCustomer ?? null;
         } else if (el.imageSource === "photo") {
-          imgToDraw = embeddedAttachments.photos[0] ?? null;
+          const photoIdx = (el as any).photoIndex ?? 0;
+          imgToDraw = embeddedAttachments.photos[photoIdx] ?? null;
         }
         if (imgToDraw) {
+          // Fit image within bounding box preserving aspect ratio, centered
           const aspectRatio = imgToDraw.height / imgToDraw.width;
-          const drawW = Math.min(wPt, mmToPt(el.imageSource === "logo" ? 40 : el.w));
-          const drawH = Math.min(drawW * aspectRatio, hPt);
-          page.drawImage(imgToDraw, { x: xPt, y: yPt + hPt - drawH, width: drawW, height: drawH });
+          let drawW = wPt;
+          let drawH = drawW * aspectRatio;
+          if (drawH > hPt) {
+            drawH = hPt;
+            drawW = drawH / aspectRatio;
+          }
+          const offsetX = (wPt - drawW) / 2;
+          const offsetY = (hPt - drawH) / 2;
+          page.drawImage(imgToDraw, { x: xPt + offsetX, y: yPt + offsetY, width: drawW, height: drawH });
         }
         break;
       }
@@ -354,13 +380,21 @@ export async function renderFromTemplate(
         break;
       }
       case "photo": {
-        // Render first available photo attachment in the element box
-        const photoImg = embeddedAttachments.photos[0] ?? null;
+        // Render photo attachment in the element box (supports photoIndex for multiple)
+        const pIdx = (el as any).photoIndex ?? 0;
+        const photoImg = embeddedAttachments.photos[pIdx] ?? null;
         if (photoImg) {
+          // Fit photo within bounding box preserving aspect ratio, centered
           const photoAspect = photoImg.height / photoImg.width;
-          const drawW = Math.min(wPt, mmToPt(el.w));
-          const drawH = Math.min(drawW * photoAspect, hPt);
-          page.drawImage(photoImg, { x: xPt, y: yPt + hPt - drawH, width: drawW, height: drawH });
+          let drawW = wPt;
+          let drawH = drawW * photoAspect;
+          if (drawH > hPt) {
+            drawH = hPt;
+            drawW = drawH / photoAspect;
+          }
+          const pOffX = (wPt - drawW) / 2;
+          const pOffY = (hPt - drawH) / 2;
+          page.drawImage(photoImg, { x: xPt + pOffX, y: yPt + pOffY, width: drawW, height: drawH });
         } else {
           // Placeholder
           page.drawRectangle({
@@ -544,4 +578,4 @@ function getReceiptDefaultLayout(): TemplateLayout {
 }
 
 // Re-export shared constants for convenience
-export { DOC_TYPE_BINDINGS } from "@/lib/pdfTemplateConstants";
+export { DOC_TYPE_BINDINGS } from "@quantract/shared/pdfTemplateConstants";

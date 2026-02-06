@@ -85,6 +85,54 @@ export const CERT_TYPE_REQUIRED_BINDINGS: Record<string, string[]> = {
   EML: ["extentOfWork"],
 };
 
+/** Supported PDF font families (standard 14 PDF fonts available in pdf-lib) */
+export const PDF_FONT_FAMILIES = ["Helvetica", "Courier", "TimesRoman"] as const;
+export type PdfFontFamily = (typeof PDF_FONT_FAMILIES)[number];
+
+/** Grouped bindings by section for the template editor UI */
+export type BindingGroup = { label: string; bindings: string[] };
+
+export const CERT_BINDING_GROUPS: BindingGroup[] = [
+  { label: "Header", bindings: ["companyName", "id", "certificateNumber", "certType", "status", "issuedAt"] },
+  { label: "Overview", bindings: ["jobReference", "siteName", "installationAddress", "clientName", "clientEmail", "jobDescription"] },
+  { label: "Inspector", bindings: ["inspectorName", "inspectorEmail"] },
+  { label: "Installation", bindings: ["descriptionOfWork", "supplyType", "earthingArrangement", "distributionType", "maxDemand"] },
+  { label: "Inspection", bindings: ["limitations", "observations", "nextInspectionDate"] },
+  { label: "Assessment", bindings: ["overallAssessment", "recommendations"] },
+  { label: "Declarations", bindings: ["extentOfWork", "worksTested", "declarationComments"] },
+  { label: "Outcome", bindings: ["outcome", "outcomeReason"] },
+  { label: "Signatures", bindings: ["engineerName", "engineerSignedAt", "customerName", "customerSignedAt"] },
+  { label: "Footer", bindings: ["footerLine1", "footerLine2", "contactDetails"] },
+];
+
+export const DOC_TYPE_BINDING_GROUPS: Record<string, BindingGroup[]> = {
+  invoice: [
+    { label: "Header", bindings: ["companyName", "id", "invoiceNumber", "createdAt", "paidAt"] },
+    { label: "Client", bindings: ["clientName", "clientEmail"] },
+    { label: "Totals", bindings: ["subtotal", "vat", "vatPercent", "total", "status"] },
+    { label: "Footer", bindings: ["footerLine1", "footerLine2", "contactDetails"] },
+  ],
+  quote: [
+    { label: "Header", bindings: ["companyName", "id", "createdAt", "acceptedAt"] },
+    { label: "Client", bindings: ["clientName", "clientEmail", "siteAddress", "notes"] },
+    { label: "Totals", bindings: ["subtotal", "vat", "vatPercent", "total", "status"] },
+    { label: "Footer", bindings: ["footerLine1", "footerLine2", "contactDetails"] },
+  ],
+  certificate: CERT_BINDING_GROUPS,
+  variation: [
+    { label: "Header", bindings: ["companyName", "id", "status"] },
+    { label: "Client", bindings: ["clientName", "reason"] },
+    { label: "Totals", bindings: ["subtotal", "vat", "vatPercent", "total"] },
+    { label: "Footer", bindings: ["footerLine1", "footerLine2", "contactDetails"] },
+  ],
+  receipt: [
+    { label: "Header", bindings: ["companyName", "invoiceNumber", "receiptId", "paidAt"] },
+    { label: "Client", bindings: ["clientName", "clientEmail"] },
+    { label: "Payment", bindings: ["amount", "provider"] },
+    { label: "Footer", bindings: ["footerLine1", "footerLine2", "contactDetails"] },
+  ],
+};
+
 /**
  * Validate that a template layout includes all required bindings for the given cert type.
  * Returns { valid: true } or { valid: false, missing: string[] }.

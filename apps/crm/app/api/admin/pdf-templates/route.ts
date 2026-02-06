@@ -14,7 +14,7 @@ const VALID_DOC_TYPES = ["invoice", "quote", "certificate", "variation", "receip
  * GET /api/admin/pdf-templates
  * List all PDF templates for the current company.
  */
-export const GET = withRequestLogging(async function GET() {
+export const GET = withRequestLogging(async function GET(req: Request) {
   try {
     await requireRoles(["admin", "office"]);
   } catch {
@@ -33,8 +33,16 @@ export const GET = withRequestLogging(async function GET() {
     return NextResponse.json({ ok: false, error: "prisma_disabled" }, { status: 400 });
   }
 
+  // Optional docType filter (e.g. ?docType=certificate)
+  const url = new URL(req.url);
+  const docTypeFilter = url.searchParams.get("docType");
+  const where: Record<string, unknown> = { companyId };
+  if (docTypeFilter && VALID_DOC_TYPES.includes(docTypeFilter)) {
+    where.docType = docTypeFilter;
+  }
+
   const templates = await client.pdfTemplate.findMany({
-    where: { companyId },
+    where,
     include: { versions: { select: { id: true, version: true, createdAt: true }, orderBy: { version: "desc" } } },
     orderBy: [{ docType: "asc" }, { name: "asc" }],
   });
@@ -92,9 +100,10 @@ export const POST = withRequestLogging(async function POST(req: Request) {
 
   const defaultLayout = getDefaultLayout(docType);
 
+  const templateId = crypto.randomUUID();
   const template = await client.pdfTemplate.create({
     data: {
-      id: crypto.randomUUID(),
+      id: templateId,
       companyId,
       docType,
       name,
@@ -109,6 +118,23 @@ export const POST = withRequestLogging(async function POST(req: Request) {
     },
     include: { versions: true },
   });
+
+  // Audit event for template creation
+  try {
+    await client.auditEvent.create({
+      data: {
+        id: crypto.randomUUID(),
+        companyId,
+        entityType: "pdf_template",
+        entityId: templateId,
+        action: "pdf_template.created",
+        actorRole: "admin",
+        meta: { docType, name },
+      },
+    });
+  } catch {
+    // Non-fatal — audit logging should not block template creation
+  }
 
   return NextResponse.json({ ok: true, template }, { status: 201 });
 });

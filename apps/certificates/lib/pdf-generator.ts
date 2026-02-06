@@ -1,6 +1,6 @@
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
-import type { CertificateData, EICCertificate, EICRCertificate, MWCCertificate } from "./certificate-types";
-import { CERTIFICATE_INFO } from "./certificate-types";
+import type { CertificateData, EICCertificate, EICRCertificate, MWCCertificate } from "@quantract/shared/certificate-types";
+import { CERTIFICATE_INFO } from "@quantract/shared/certificate-types";
 import type { LayoutElement } from "../components/TemplateEditor";
 
 // ── Brand context (mirrors CRM BrandContext) ──
@@ -44,8 +44,9 @@ const FONT_SIZES = {
 export type GeneratePDFOptions = {
   brand?: BrandContext;
   templateLayout?: LayoutElement[];
-  photos?: Record<string, Uint8Array>;
-  signatures?: Record<string, string>; // role -> data URI
+  photos?: string[]; // data URI strings (JPEG/PNG)
+  engineerSignature?: string | null; // data URI (PNG)
+  customerSignature?: string | null; // data URI (PNG)
 };
 
 export async function generateCertificatePDF(
@@ -268,6 +269,94 @@ export async function generateCertificatePDF(
           y -= 15;
         }
       });
+    }
+  }
+
+  // Photos & Signatures
+  const sigs = options?.engineerSignature || options?.customerSignature;
+  const photoList = options?.photos;
+
+  if (sigs || (photoList && photoList.length > 0)) {
+    // New page for media if running low on space
+    if (y < 250) {
+      page = pdfDoc.addPage([pageWidth, pageHeight]);
+      y = pageHeight - margin;
+    }
+
+    // Helper: convert data URI to Uint8Array
+    const dataUriToBytes = (dataUri: string): Uint8Array => {
+      const base64 = dataUri.split(",")[1];
+      if (!base64) return new Uint8Array(0);
+      const binary = atob(base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      return bytes;
+    };
+
+    // Embed and draw a signature image
+    const drawSignatureImage = async (label: string, dataUri: string) => {
+      if (y < 100) {
+        page = pdfDoc.addPage([pageWidth, pageHeight]);
+        y = pageHeight - margin;
+      }
+      const bytes = dataUriToBytes(dataUri);
+      if (bytes.length === 0) return;
+      try {
+        const img = dataUri.includes("image/jpeg")
+          ? await pdfDoc.embedJpg(bytes)
+          : await pdfDoc.embedPng(bytes);
+        drawText(label, margin, y, { size: FONT_SIZES.small, color: COLORS.muted });
+        y -= 14;
+        const maxW = 150;
+        const maxH = 60;
+        const aspect = img.height / img.width;
+        let drawW = maxW;
+        let drawH = drawW * aspect;
+        if (drawH > maxH) { drawH = maxH; drawW = drawH / aspect; }
+        page.drawImage(img, { x: margin, y: y - drawH, width: drawW, height: drawH });
+        y -= drawH + 10;
+      } catch {
+        // skip failed image embed
+      }
+    };
+
+    if (options?.engineerSignature || options?.customerSignature) {
+      drawSection("Signatures");
+      if (options?.engineerSignature) {
+        await drawSignatureImage("Engineer Signature:", options.engineerSignature);
+      }
+      if (options?.customerSignature) {
+        await drawSignatureImage("Customer Signature:", options.customerSignature);
+      }
+    }
+
+    if (photoList && photoList.length > 0) {
+      drawSection("Site Photos");
+      for (let i = 0; i < photoList.length; i++) {
+        if (y < 120) {
+          page = pdfDoc.addPage([pageWidth, pageHeight]);
+          y = pageHeight - margin;
+        }
+        const bytes = dataUriToBytes(photoList[i]);
+        if (bytes.length === 0) continue;
+        try {
+          const img = photoList[i].includes("image/jpeg")
+            ? await pdfDoc.embedJpg(bytes)
+            : await pdfDoc.embedPng(bytes);
+          drawText(`Photo ${i + 1}`, margin, y, { size: FONT_SIZES.small, color: COLORS.muted });
+          y -= 14;
+          const maxW = contentWidth;
+          const maxH = 200;
+          const aspect = img.height / img.width;
+          let drawW = maxW;
+          let drawH = drawW * aspect;
+          if (drawH > maxH) { drawH = maxH; drawW = drawH / aspect; }
+          page.drawImage(img, { x: margin, y: y - drawH, width: drawW, height: drawH });
+          y -= drawH + 15;
+        } catch {
+          // skip failed image embed
+        }
+      }
     }
   }
 

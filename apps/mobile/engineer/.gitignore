@@ -31,7 +31,12 @@ yarn-error.*
 *.pem
 
 # local env files
+.env
 .env*.local
+
+# lockfiles (monorepo uses root pnpm-lock.yaml)
+package-lock.json
+yarn.lock
 
 # typescript
 *.tsbuildinfo

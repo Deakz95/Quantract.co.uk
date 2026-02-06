@@ -6,27 +6,21 @@ expense receipts, certificate editing, and offline support.
 ## Prerequisites
 
 - Node >= 18
-- npm (this project uses npm workspaces)
+- pnpm (pinned via `packageManager` in root `package.json` — run `corepack enable` to auto-activate)
 - Expo CLI (bundled via `npx expo`)
 - For device builds: Xcode (iOS) or Android Studio (Android)
 
 ## Install
 
-From the **app directory** (`apps/mobile/engineer/`):
+From the **monorepo root** (recommended):
 
 ```bash
-npm install
+pnpm install         # installs all workspaces including this app
 ```
 
-Or from the **monorepo root**:
-
-```bash
-npm install          # installs all workspaces including this app
-```
-
-> The app is registered as an npm workspace (`"engineer"`) in the root
-> `package.json`. Either install flow produces a deterministic
-> `package-lock.json`.
+> The app is registered as a pnpm workspace (`"engineer"`) in
+> `pnpm-workspace.yaml`. The root `pnpm-lock.yaml` is the single lockfile
+> for the entire monorepo — do not use npm or yarn.
 
 ## Development
 
@@ -40,22 +34,35 @@ npx expo start --web     # launch in browser
 From the monorepo root:
 
 ```bash
-npm run dev:engineer     # shortcut for `npm run start --workspace engineer`
+pnpm dev:engineer        # shortcut defined in root package.json
 ```
 
 ## Type-check / Lint
 
 ```bash
-npm run typecheck        # runs tsc --noEmit
-npm run lint             # same as typecheck (no separate linter configured yet)
+pnpm typecheck           # runs tsc --noEmit
+pnpm lint                # eslint + tsc --noEmit
 ```
 
-These scripts are picked up by the root `typecheck:all` and `lint:all` commands.
+From the monorepo root:
+
+```bash
+pnpm --filter engineer run typecheck
+pnpm --filter engineer run lint
+```
+
+These scripts are also picked up by `pnpm typecheck:all` and `pnpm lint:all`.
 
 ## Build (Web export)
 
 ```bash
-npm run build:web        # expo export --platform web → outputs to dist/
+pnpm build:web           # expo export --platform web → outputs to dist/
+```
+
+From the monorepo root:
+
+```bash
+pnpm build:engineer      # shortcut defined in root package.json
 ```
 
 ## Project Structure

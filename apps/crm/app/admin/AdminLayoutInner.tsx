@@ -1,8 +1,9 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { PwaInstallPrompt } from "@/components/client/PwaInstallPrompt";
+import { AdminPwaInstallPrompt } from "@/components/admin/PwaInstallPrompt";
 import { StorageWarningBanner } from "@/components/admin/StorageWarningBanner";
 
 /**
@@ -11,11 +12,28 @@ import { StorageWarningBanner } from "@/components/admin/StorageWarningBanner";
  */
 export function AdminLayoutInner({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+
+  // Register service worker for offline shell caching (production only)
+  useEffect(() => {
+    if (
+      typeof window === "undefined" ||
+      !("serviceWorker" in navigator) ||
+      process.env.NODE_ENV !== "production"
+    ) {
+      return;
+    }
+    navigator.serviceWorker
+      .register("/sw.js", { scope: "/admin" })
+      .catch(() => {
+        // SW registration failed — graceful no-op
+      });
+  }, []);
+
   if (pathname === "/admin/login") return children;
   return (
     <>
       <StorageWarningBanner />
-      <PwaInstallPrompt />
+      <AdminPwaInstallPrompt />
       {children}
     </>
   );

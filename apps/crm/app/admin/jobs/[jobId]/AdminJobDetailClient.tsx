@@ -10,7 +10,7 @@ import { useToast } from "@/components/ui/useToast";
 import { Breadcrumbs, type BreadcrumbItem } from "@/components/ui/Breadcrumbs";
 import CompactTimeline from "@/components/admin/CompactTimeline";
 import NextActionPanel from "@/components/admin/NextActionPanel";
-import { Navigation } from "lucide-react";
+import { Navigation, Phone, ExternalLink } from "lucide-react";
 
 function cleanJobTitle(raw?: string | null, jobNumber?: number | null): string {
   const jNum = jobNumber ? `J-${String(jobNumber).padStart(4, "0")}` : null;
@@ -26,6 +26,7 @@ type Job = {
   jobNumber?: number;
   quoteId?: string;
   quoteNumber?: string;
+  clientId?: string;
   title?: string;
   clientName: string;
   clientEmail: string;
@@ -193,6 +194,7 @@ export default function AdminJobDetail({ jobId }: Props) {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [clientPhone, setClientPhone] = useState<string | null>(null);
   const [budgetBusy, setBudgetBusy] = useState(false);
   const [snagBusy, setSnagBusy] = useState(false);
   const [snagTitle, setSnagTitle] = useState("");
@@ -275,6 +277,14 @@ export default function AdminJobDetail({ jobId }: Props) {
       if (s.ok) setStages(Array.isArray(s.stages) ? s.stages : []);
       if (inv.ok) setInvoices(Array.isArray(inv.invoices) ? inv.invoices : []);
       if (sn.ok) setSnagItems(Array.isArray(sn.snagItems) ? sn.snagItems : []);
+      // Fetch client phone for quick-action "Call Client"
+      const clientId = j.ok && j.job?.clientId;
+      if (clientId) {
+        fetch(`/api/admin/clients/${clientId}`, { cache: "no-store" })
+          .then((r) => r.json())
+          .then((d) => { if (d.ok && d.client?.phone) setClientPhone(d.client.phone); })
+          .catch(() => {});
+      }
     } finally {
       setLoading(false);
     }
@@ -653,11 +663,20 @@ export default function AdminJobDetail({ jobId }: Props) {
                   📍 {job.siteAddress || [job.site?.address1, job.site?.city, job.site?.postcode].filter(Boolean).join(", ") || job.site?.name}
                 </div>
               )}
-              {/* Quick action: navigate to site */}
-              {(() => {
-                const addr = job.siteAddress || [job.site?.address1, job.site?.city, job.site?.postcode].filter(Boolean).join(", ");
-                return addr ? (
-                  <div className="mt-2">
+              {/* Quick actions: call, navigate, share */}
+              <div className="mt-2 flex flex-wrap gap-2">
+                {clientPhone && (
+                  <a
+                    href={`tel:${encodeURIComponent(clientPhone)}`}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border)] bg-[var(--muted)] px-3 py-2 text-xs font-semibold text-[var(--foreground)] hover:bg-[var(--primary)]/10 transition-colors min-h-10 touch-manipulation"
+                  >
+                    <Phone size={14} />
+                    Call client
+                  </a>
+                )}
+                {(() => {
+                  const addr = job.siteAddress || [job.site?.address1, job.site?.city, job.site?.postcode].filter(Boolean).join(", ");
+                  return addr ? (
                     <a
                       href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(addr)}`}
                       target="_blank"
@@ -667,9 +686,28 @@ export default function AdminJobDetail({ jobId }: Props) {
                       <Navigation size={14} />
                       Navigate to site
                     </a>
-                  </div>
-                ) : null;
-              })()}
+                  ) : null;
+                })()}
+                <button
+                  onClick={async () => {
+                    const url = `${window.location.origin}/admin/jobs/${jobId}`;
+                    const shareData = { title: cleanJobTitle(job.title, job.jobNumber), url };
+                    if (typeof navigator !== "undefined" && navigator.share) {
+                      try { await navigator.share(shareData); return; } catch { /* cancelled */ }
+                    }
+                    try {
+                      await navigator.clipboard.writeText(url);
+                      toast({ title: "Link copied", variant: "success" });
+                    } catch {
+                      toast({ title: "Copy failed", variant: "destructive" });
+                    }
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border)] bg-[var(--muted)] px-3 py-2 text-xs font-semibold text-[var(--foreground)] hover:bg-[var(--primary)]/10 transition-colors min-h-10 touch-manipulation"
+                >
+                  <ExternalLink size={14} />
+                  Share job
+                </button>
+              </div>
             </div>
           ) : null}
         </div>
@@ -1178,14 +1216,14 @@ export default function AdminJobDetail({ jobId }: Props) {
             </CardHeader>
             <CardContent>
               <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3">
-                <div className="grid gap-2 sm:grid-cols-4">
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                   <label className="grid gap-1 sm:col-span-2">
                     <span className="text-xs font-semibold text-[var(--muted-foreground)]">Title</span>
-                    <input value={varTitle} onChange={(e) => setVarTitle(e.target.value)} className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm placeholder:text-[var(--muted-foreground)]" placeholder="e.g. Extra sockets" />
+                    <input value={varTitle} onChange={(e) => setVarTitle(e.target.value)} className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-3 text-sm min-h-12 touch-manipulation placeholder:text-[var(--muted-foreground)]" placeholder="e.g. Extra sockets" />
                   </label>
                   <label className="grid gap-1 sm:col-span-2">
                     <span className="text-xs font-semibold text-[var(--muted-foreground)]">Stage (optional)</span>
-                    <select value={varStageId} onChange={(e) => setVarStageId(e.target.value)} className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm">
+                    <select value={varStageId} onChange={(e) => setVarStageId(e.target.value)} className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-3 text-sm min-h-12 touch-manipulation">
                       <option value="">Unassigned</option>
                       {stages.map((stage) => (
                         <option key={stage.id} value={stage.id}>{stage.name}</option>
@@ -1194,7 +1232,7 @@ export default function AdminJobDetail({ jobId }: Props) {
                   </label>
                   <label className="grid gap-1 sm:col-span-2">
                     <span className="text-xs font-semibold text-[var(--muted-foreground)]">Reason (optional)</span>
-                    <input value={varReason} onChange={(e) => setVarReason(e.target.value)} className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm placeholder:text-[var(--muted-foreground)]" placeholder="Client requested change" />
+                    <input value={varReason} onChange={(e) => setVarReason(e.target.value)} className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-3 text-sm min-h-12 touch-manipulation placeholder:text-[var(--muted-foreground)]" placeholder="Client requested change" />
                   </label>
                 </div>
                 <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
@@ -1305,23 +1343,23 @@ export default function AdminJobDetail({ jobId }: Props) {
             </CardHeader>
             <CardContent>
               <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3">
-                <div className="grid gap-2 sm:grid-cols-4">
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                   <label className="grid gap-1">
                     <span className="text-xs font-semibold text-[var(--muted-foreground)]">Type</span>
-                    <select value={invoiceType || "stage"} onChange={(e) => setInvoiceType(e.target.value as Invoice["type"])} className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm">
+                    <select value={invoiceType || "stage"} onChange={(e) => setInvoiceType(e.target.value as Invoice["type"])} className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-3 text-sm min-h-12 touch-manipulation">
                       <option value="stage">Stage</option>
                       <option value="deposit">Deposit</option>
                       <option value="final">Final</option>
                       <option value="variation">Variation</option>
                     </select>
                   </label>
-                  <label className="grid gap-1 sm:col-span-2">
+                  <label className="grid gap-1 sm:col-span-2 lg:col-span-2">
                     <span className="text-xs font-semibold text-[var(--muted-foreground)]">Stage name (optional)</span>
-                    <input value={invoiceStageName} onChange={(e) => setInvoiceStageName(e.target.value)} className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm placeholder:text-[var(--muted-foreground)]" placeholder="e.g. First Fix" />
+                    <input value={invoiceStageName} onChange={(e) => setInvoiceStageName(e.target.value)} className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-3 text-sm min-h-12 touch-manipulation placeholder:text-[var(--muted-foreground)]" placeholder="e.g. First Fix" />
                   </label>
                   <label className="grid gap-1">
                     <span className="text-xs font-semibold text-[var(--muted-foreground)]">Subtotal (ex VAT)</span>
-                    <input value={invoiceAmount} onChange={(e) => setInvoiceAmount(e.target.value)} type="number" step="0.01" className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm" />
+                    <input value={invoiceAmount} onChange={(e) => setInvoiceAmount(e.target.value)} type="number" step="0.01" className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-3 text-sm min-h-12 touch-manipulation" />
                   </label>
                 </div>
                 {certs.filter((c) => c.status === "issued").length > 0 && (

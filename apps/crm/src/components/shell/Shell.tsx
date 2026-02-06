@@ -127,7 +127,7 @@ export function Shell({
       {/* Mobile drawer */}
       <div
         className={cn(
-          "md:hidden fixed top-14 left-0 bottom-0 z-50 w-64 bg-[var(--background)] border-r border-[var(--border)] shadow-xl transition-transform duration-200 ease-in-out overflow-y-auto",
+          "nav-scroll md:hidden fixed top-14 left-0 bottom-0 z-50 w-64 bg-[var(--background)] border-r border-[var(--border)] shadow-xl transition-transform duration-200 ease-in-out overflow-y-auto overscroll-contain",
           drawerOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
@@ -185,7 +185,7 @@ export function Shell({
         <div className="grid grid-cols-1 gap-6 md:grid-cols-12">
           {/* Sidebar — desktop only */}
           <aside className="hidden md:block md:col-span-3">
-            <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-2 shadow-sm">
+            <div className="nav-scroll sticky top-20 max-h-[calc(100vh-5rem)] overflow-y-auto overscroll-contain rounded-2xl border border-[var(--border)] bg-[var(--background)] p-2 shadow-sm">
               {items.filter(it => !it.section).map((it) => (
                 <Link
                   key={it.href}

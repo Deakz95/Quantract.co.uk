@@ -78,6 +78,7 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
   const [confirmVoid, setConfirmVoid] = useState(false);
   const [confirmRemoveIndex, setConfirmRemoveIndex] = useState<number | null>(null);
   const [amendmentLineage, setAmendmentLineage] = useState<{ amends: any | null; amendments: any[] }>({ amends: null, amendments: [] });
+  const [templateInfo, setTemplateInfo] = useState<{ name: string; version: number } | null>(null);
   const [lastSaveFailed, setLastSaveFailed] = useState(false);
   const skipAutoSave = useRef(true);
 
@@ -175,6 +176,22 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
       })
       .catch(() => {});
   }, [apiBase, certificateId, mode]);
+
+  // Fetch template version info for issued certificates
+  useEffect(() => {
+    if (mode !== "admin" || !cert || cert.status !== "issued") return;
+    fetch(`${apiBase}/${certificateId}/revisions`, { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.ok && Array.isArray(d.revisions) && d.revisions.length > 0) {
+          const latest = d.revisions[0];
+          if (latest.templateName && latest.templateVersion) {
+            setTemplateInfo({ name: latest.templateName, version: latest.templateVersion });
+          }
+        }
+      })
+      .catch(() => {});
+  }, [apiBase, certificateId, mode, cert?.status]);
 
   const save = useCallback(
     async (mode: SaveMode) => {
@@ -389,6 +406,11 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
                 <CardTitle>Header</CardTitle>
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge>{cert.status}</Badge>
+                  {templateInfo ? (
+                    <span className="text-xs text-[var(--muted-foreground)]">
+                      Template: {templateInfo.name} v{templateInfo.version}
+                    </span>
+                  ) : null}
                   {cert.pdfKey && mode === "admin" ? (
                     <a className="text-sm font-semibold text-[var(--foreground)] hover:underline" href={`/api/admin/certificates/${certificateId}/pdf`} target="_blank" rel="noreferrer">
                       View PDF

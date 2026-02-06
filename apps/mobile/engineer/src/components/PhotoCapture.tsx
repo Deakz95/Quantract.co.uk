@@ -1,9 +1,10 @@
-import React, { useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Alert, Image, ActivityIndicator, Linking } from "react-native";
+import React, { useState, useEffect, useRef } from "react";
+import { View, Text, TouchableOpacity, StyleSheet, Alert, Image, ActivityIndicator, Linking, AppState } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
+const MAX_RETRIES = 2;
 
 export type PhotoResult = {
   uri: string;
@@ -18,10 +19,55 @@ type PhotoCaptureProps = {
   disabled?: boolean;
 };
 
+/** Verify file URI is accessible (guards against stale temp files). */
+async function verifyFileUri(uri: string): Promise<boolean> {
+  try {
+    const res = await fetch(uri, { method: "HEAD" });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 export function PhotoCapture({ onPhoto, disabled }: PhotoCaptureProps) {
   const [loading, setLoading] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
   const [permDenied, setPermDenied] = useState<"camera" | "library" | null>(null);
+  const appStateRef = useRef(AppState.currentState);
+
+  // Re-check permissions when user returns from Settings
+  useEffect(() => {
+    if (!permDenied) return;
+    const sub = AppState.addEventListener("change", async (nextState) => {
+      if (appStateRef.current.match(/inactive|background/) && nextState === "active") {
+        const perm = permDenied === "camera"
+          ? await ImagePicker.getCameraPermissionsAsync()
+          : await ImagePicker.getMediaLibraryPermissionsAsync();
+        if (perm.granted) setPermDenied(null);
+      }
+      appStateRef.current = nextState;
+    });
+    return () => sub.remove();
+  }, [permDenied]);
+
+  async function launchWithRetry(
+    launcher: (opts: ImagePicker.ImagePickerOptions) => Promise<ImagePicker.ImagePickerResult>,
+    options: ImagePicker.ImagePickerOptions,
+  ): Promise<ImagePicker.ImagePickerResult> {
+    let lastError: unknown;
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        return await launcher(options);
+      } catch (e) {
+        lastError = e;
+        // Only retry on transient errors, not user cancellation
+        if (attempt < MAX_RETRIES) {
+          await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
+        }
+      }
+    }
+    throw lastError;
+  }
 
   async function pickImage(useCamera: boolean) {
     setLoading(true);
@@ -38,7 +84,6 @@ export function PhotoCapture({ onPhoto, disabled }: PhotoCaptureProps) {
         const perm = await ImagePicker.requestCameraPermissionsAsync();
         if (!perm.granted) {
           if (!perm.canAskAgain) {
-            // Permission permanently denied — show persistent banner
             setPermDenied("camera");
           } else {
             Alert.alert("Permission Required", "Camera access is needed to take photos.");
@@ -46,7 +91,7 @@ export function PhotoCapture({ onPhoto, disabled }: PhotoCaptureProps) {
           setLoading(false);
           return;
         }
-        result = await ImagePicker.launchCameraAsync(options);
+        result = await launchWithRetry(ImagePicker.launchCameraAsync, options);
       } else {
         const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (!perm.granted) {
@@ -58,7 +103,7 @@ export function PhotoCapture({ onPhoto, disabled }: PhotoCaptureProps) {
           setLoading(false);
           return;
         }
-        result = await ImagePicker.launchImageLibraryAsync(options);
+        result = await launchWithRetry(ImagePicker.launchImageLibraryAsync, options);
       }
 
       if (result.canceled || !result.assets?.[0]) {
@@ -79,6 +124,14 @@ export function PhotoCapture({ onPhoto, disabled }: PhotoCaptureProps) {
       // Check file size
       if (asset.fileSize && asset.fileSize > MAX_FILE_SIZE) {
         Alert.alert("File Too Large", "Photos must be under 5MB. Please try a smaller image.");
+        setLoading(false);
+        return;
+      }
+
+      // Verify file URI is accessible before passing to parent
+      const uriValid = await verifyFileUri(asset.uri);
+      if (!uriValid) {
+        Alert.alert("Photo Unavailable", "The captured photo could not be read. Please try again.");
         setLoading(false);
         return;
       }

@@ -15,7 +15,8 @@
     "build:crm": "pnpm --filter @quantract/crm run build",
     "build:marketing": "pnpm --filter @quantract/marketing run build",
     "build:certificates": "pnpm --filter @quantract/certificates run build",
-    "build:tools": "pnpm --filter @quantract/tools run build"
+    "build:tools": "pnpm --filter @quantract/tools run build",
+    "build:engineer": "pnpm --filter engineer run build:web"
   },
   "packageManager": "pnpm@10.28.0",
   "engines": {

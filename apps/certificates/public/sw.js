@@ -2,9 +2,9 @@
 // Strategy: cache app shell + static assets only.
 // NEVER cache /api/* or authenticated responses.
 
-const CACHE_NAME = "qcerts-v1";
+const CACHE_NAME = "qcerts-v2";
 
-const APP_SHELL = ["/", "/dashboard"];
+const APP_SHELL = ["/", "/dashboard", "/eic", "/eicr", "/mwc", "/fire", "/eml", "/templates"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

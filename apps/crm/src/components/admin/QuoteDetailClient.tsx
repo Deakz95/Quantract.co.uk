@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Breadcrumbs, type BreadcrumbItem } from "@/components/ui/Breadcrumbs";
 import NextActionPanel from "@/components/admin/NextActionPanel";
-import { Phone, Navigation, ExternalLink } from "lucide-react";
+import { Phone, Navigation, ExternalLink, Ellipsis } from "lucide-react";
 
 const AUDIT_LABELS: Record<string, string> = {
   "quote.created": "Quote created",
@@ -65,6 +65,7 @@ export default function QuoteDetailClient({ quoteId }: { quoteId: string }) {
   const [confirmRevoke, setConfirmRevoke] = useState(false);
   const [confirmReject, setConfirmReject] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
+  const [moreOpen, setMoreOpen] = useState(false);
 
   async function loadClients() {
     try {
@@ -470,44 +471,79 @@ export default function QuoteDetailClient({ quoteId }: { quoteId: string }) {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-3">
+            {/* Primary actions — always visible */}
             <a href={`/api/client/quotes/${quote.token}/pdf`} target="_blank" rel="noreferrer">
               <Button type="button" variant="secondary" className="min-h-12 px-4 touch-manipulation">Quote PDF</Button>
             </a>
-            <Button type="button" variant="secondary" className="min-h-12 px-4 touch-manipulation" onClick={duplicateQuote} disabled={busy}>
-              Duplicate
-            </Button>
-            <Button type="button" variant="secondary" className="min-h-12 px-4 touch-manipulation" onClick={load} disabled={busy}>
-              Refresh
-            </Button>
             <Button type="button" variant="secondary" className="min-h-12 px-4 touch-manipulation" onClick={sendEmail} disabled={busy}>
               Send email
-            </Button>
-            <Button type="button" variant="secondary" className="min-h-12 px-4 touch-manipulation" onClick={() => setConfirmRevoke(true)} disabled={busy}>
-              Revoke link
             </Button>
             <Button type="button" className="min-h-12 px-4 touch-manipulation" onClick={markSent} disabled={busy || quote.status === "accepted"}>
               Mark sent
             </Button>
             {quote.status !== "accepted" && quote.status !== "rejected" && (
               <Button type="button" onClick={acceptQuote} disabled={busy} className="min-h-12 px-4 touch-manipulation bg-green-600 hover:bg-green-700">
-                ✓ Accept Quote
-              </Button>
-            )}
-            {quote.status !== "accepted" && quote.status !== "rejected" && (
-              <Button type="button" variant="destructive" className="min-h-12 px-4 touch-manipulation" onClick={() => setConfirmReject(true)} disabled={busy}>
-                ✗ Reject Quote
+                Accept
               </Button>
             )}
             {quote.status === "accepted" && (
               <>
                 <Button type="button" onClick={convertToJob} disabled={busy} className="min-h-12 px-4 touch-manipulation bg-blue-600 hover:bg-blue-700">
-                  → Convert to Job
+                  Convert to Job
                 </Button>
                 <Button type="button" onClick={convertToInvoice} disabled={busy} className="min-h-12 px-4 touch-manipulation bg-emerald-600 hover:bg-emerald-700">
-                  → Convert to Invoice
+                  Convert to Invoice
                 </Button>
               </>
             )}
+
+            {/* Secondary actions — hidden behind overflow on tablet, inline on desktop */}
+            <div className="hidden md:contents">
+              <Button type="button" variant="secondary" className="min-h-12 px-4 touch-manipulation" onClick={duplicateQuote} disabled={busy}>
+                Duplicate
+              </Button>
+              <Button type="button" variant="secondary" className="min-h-12 px-4 touch-manipulation" onClick={load} disabled={busy}>
+                Refresh
+              </Button>
+              <Button type="button" variant="secondary" className="min-h-12 px-4 touch-manipulation" onClick={() => setConfirmRevoke(true)} disabled={busy}>
+                Revoke link
+              </Button>
+              {quote.status !== "accepted" && quote.status !== "rejected" && (
+                <Button type="button" variant="destructive" className="min-h-12 px-4 touch-manipulation" onClick={() => setConfirmReject(true)} disabled={busy}>
+                  Reject
+                </Button>
+              )}
+            </div>
+
+            {/* Overflow menu — visible only on < md screens */}
+            <div className="relative md:hidden">
+              <Button
+                type="button"
+                variant="secondary"
+                className="min-h-12 min-w-12 px-2 touch-manipulation"
+                onClick={() => setMoreOpen((v) => !v)}
+              >
+                <Ellipsis size={18} />
+              </Button>
+              {moreOpen && (
+                <div className="absolute right-0 top-full mt-1 z-30 min-w-[180px] rounded-xl border border-[var(--border)] bg-[var(--card)] shadow-lg">
+                  <button onClick={() => { duplicateQuote(); setMoreOpen(false); }} disabled={busy} className="w-full text-left px-4 py-3 text-sm text-[var(--foreground)] hover:bg-[var(--primary)]/10 touch-manipulation">
+                    Duplicate
+                  </button>
+                  <button onClick={() => { load(); setMoreOpen(false); }} disabled={busy} className="w-full text-left px-4 py-3 text-sm text-[var(--foreground)] hover:bg-[var(--primary)]/10 border-t border-[var(--border)] touch-manipulation">
+                    Refresh
+                  </button>
+                  <button onClick={() => { setConfirmRevoke(true); setMoreOpen(false); }} disabled={busy} className="w-full text-left px-4 py-3 text-sm text-[var(--foreground)] hover:bg-[var(--primary)]/10 border-t border-[var(--border)] touch-manipulation">
+                    Revoke link
+                  </button>
+                  {quote.status !== "accepted" && quote.status !== "rejected" && (
+                    <button onClick={() => { setConfirmReject(true); setMoreOpen(false); }} disabled={busy} className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 border-t border-[var(--border)] touch-manipulation">
+                      Reject quote
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent>

@@ -7,8 +7,31 @@ import { getBrandContextForCurrentCompany } from "@/lib/server/repo";
 
 export const runtime = "nodejs";
 
-/** Sample data used for preview rendering */
-const SAMPLE_DATA: Record<string, unknown> = {
+/** Cert-type-specific sample data */
+const CERT_TYPE_SAMPLE: Record<string, Record<string, unknown>> = {
+  EICR: {
+    certType: "EICR",
+    overallAssessment: "Satisfactory",
+    recommendations: "Recommend upgrading consumer unit to 18th edition standard",
+    limitations: "Unable to access loft space wiring",
+    observations: "C2: Lack of earthing to gas/water bonding",
+    nextInspectionDate: "2031-01-15",
+  },
+  EIC: {
+    certType: "EIC",
+    extentOfWork: "Full rewire of domestic property",
+    worksTested: "All circuits tested including ring final, lighting, and cooker circuits",
+    declarationComments: "Installation complies with BS 7671:2018",
+  },
+  MWC: {
+    certType: "MWC",
+    extentOfWork: "Addition of 2 double sockets to kitchen ring final",
+    declarationComments: "Minor works in compliance with BS 7671",
+  },
+};
+
+/** Base sample data used for preview rendering */
+const BASE_SAMPLE_DATA: Record<string, unknown> = {
   companyName: "Acme Electrical Ltd",
   id: "PREVIEW-001",
   invoiceNumber: "INV-0042",
@@ -22,32 +45,57 @@ const SAMPLE_DATA: Record<string, unknown> = {
   clientEmail: "jane@example.com",
   siteAddress: "123 High Street, London, SW1A 1AA",
   siteName: "Smith Residence",
+  installationAddress: "123 High Street, London, SW1A 1AA",
   inspectorName: "John Engineer",
   inspectorEmail: "john@acme.com",
   notes: "Standard rewiring quote",
   reason: "Additional sockets requested",
   receiptId: "PAY-0001",
-  amount: "£1,440.00",
+  amount: "\u00A31,440.00",
   provider: "STRIPE",
-  subtotal: "£1,200.00",
-  vat: "£240.00",
+  subtotal: "\u00A31,200.00",
+  vat: "\u00A3240.00",
   vatPercent: "20",
-  total: "£1,440.00",
+  total: "\u00A31,440.00",
   status: "SENT",
-  footerLine1: "Acme Electrical Ltd — Registered in England No. 12345678",
+  footerLine1: "Acme Electrical Ltd \u2014 Registered in England No. 12345678",
   footerLine2: "VAT No. GB 987654321",
   contactDetails: "info@acme.com | 020 1234 5678",
+  // Certificate-specific fields
+  jobReference: "JOB-2026-042",
+  jobDescription: "Periodic inspection and testing of domestic electrical installation",
+  descriptionOfWork: "Full periodic inspection and testing",
+  supplyType: "Single phase",
+  earthingArrangement: "TN-C-S",
+  distributionType: "Single consumer unit",
+  maxDemand: "100A",
+  overallAssessment: "Satisfactory",
+  recommendations: "",
+  extentOfWork: "",
+  worksTested: "",
+  declarationComments: "",
+  limitations: "",
+  observations: "",
+  nextInspectionDate: "",
+  outcome: "PASS",
+  outcomeReason: "Installation meets requirements",
+  engineerName: "John Engineer",
+  engineerSignedAt: new Date().toLocaleDateString("en-GB"),
+  customerName: "Jane Smith",
+  customerSignedAt: new Date().toLocaleDateString("en-GB"),
   items: [
-    { description: "Consumer unit upgrade", qty: 1, unitPrice: "£450.00", lineTotal: "£450.00" },
-    { description: "Socket installation (double)", qty: 6, unitPrice: "£85.00", lineTotal: "£510.00" },
-    { description: "Testing and certification", qty: 1, unitPrice: "£240.00", lineTotal: "£240.00" },
+    { description: "Consumer unit upgrade", qty: 1, unitPrice: "\u00A3450.00", lineTotal: "\u00A3450.00" },
+    { description: "Socket installation (double)", qty: 6, unitPrice: "\u00A385.00", lineTotal: "\u00A3510.00" },
+    { description: "Testing and certification", qty: 1, unitPrice: "\u00A3240.00", lineTotal: "\u00A3240.00" },
   ],
 };
 
 /**
  * POST /api/admin/pdf-templates/[id]/preview
  * Render a preview PDF from the provided layout JSON.
- * Accepts { layout } in the body, or renders the latest saved version if no layout provided.
+ * Accepts { layout, certType?, certificateId? } in the body.
+ * - certType: use cert-type-specific sample data
+ * - certificateId: preview using real certificate data (must belong to same company)
  */
 export const POST = withRequestLogging(async function POST(
   req: Request,
@@ -106,8 +154,73 @@ export const POST = withRequestLogging(async function POST(
     brand = null;
   }
 
-  // Use company name from brand
-  const previewData = { ...SAMPLE_DATA, companyName: brand?.name ?? "Quantract" };
+  // Build preview data
+  let previewData: Record<string, unknown> = { ...BASE_SAMPLE_DATA, companyName: brand?.name ?? "Quantract" };
+
+  // Merge cert-type-specific sample data if requested
+  if (body.certType && typeof body.certType === "string" && CERT_TYPE_SAMPLE[body.certType]) {
+    previewData = { ...previewData, ...CERT_TYPE_SAMPLE[body.certType] };
+  }
+
+  // Optional: preview using a real certificate's data (with strict tenant scoping)
+  if (body.certificateId && typeof body.certificateId === "string") {
+    const cert = await client.certificate.findFirst({
+      where: { id: body.certificateId, companyId },
+      select: {
+        id: true,
+        type: true,
+        status: true,
+        certificateNumber: true,
+        inspectorName: true,
+        inspectorEmail: true,
+        outcome: true,
+        outcomeReason: true,
+        data: true,
+        issuedAt: true,
+      },
+    });
+    if (!cert) {
+      return NextResponse.json({ ok: false, error: "certificate_not_found" }, { status: 404 });
+    }
+    // Build data dict from the real certificate (safe because we verified companyId)
+    const certData = (cert.data as Record<string, unknown>) ?? {};
+    const overview = (certData.overview as Record<string, unknown>) ?? {};
+    const installation = (certData.installation as Record<string, unknown>) ?? {};
+    const inspection = (certData.inspection as Record<string, unknown>) ?? {};
+    const assessment = (certData.assessment as Record<string, unknown>) ?? {};
+    const declarations = (certData.declarations as Record<string, unknown>) ?? {};
+    previewData = {
+      ...previewData,
+      id: cert.id,
+      certType: cert.type,
+      certificateNumber: cert.certificateNumber ?? "",
+      status: cert.status,
+      inspectorName: cert.inspectorName ?? "",
+      inspectorEmail: cert.inspectorEmail ?? "",
+      outcome: cert.outcome ?? "",
+      outcomeReason: cert.outcomeReason ?? "",
+      issuedAt: cert.issuedAt ? new Date(cert.issuedAt).toLocaleDateString("en-GB") : "",
+      siteName: overview.siteName ?? "",
+      installationAddress: overview.installationAddress ?? "",
+      clientName: overview.clientName ?? "",
+      clientEmail: overview.clientEmail ?? "",
+      jobReference: overview.jobReference ?? "",
+      jobDescription: overview.jobDescription ?? "",
+      descriptionOfWork: installation.descriptionOfWork ?? "",
+      supplyType: installation.supplyType ?? "",
+      earthingArrangement: installation.earthingArrangement ?? "",
+      distributionType: installation.distributionType ?? "",
+      maxDemand: installation.maxDemand ?? "",
+      limitations: inspection.limitations ?? "",
+      observations: inspection.observations ?? "",
+      nextInspectionDate: inspection.nextInspectionDate ?? "",
+      overallAssessment: assessment.overallAssessment ?? "",
+      recommendations: assessment.recommendations ?? "",
+      extentOfWork: declarations.extentOfWork ?? "",
+      worksTested: declarations.worksTested ?? "",
+      declarationComments: declarations.comments ?? "",
+    };
+  }
 
   const pdfBuffer = await renderFromTemplate(layout, previewData, brand);
 

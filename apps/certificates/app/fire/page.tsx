@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Button, Card, CardHeader, CardTitle, CardContent, CardDescription, Input, Label, NativeSelect, Textarea } from "@quantract/ui";
-import { getCertificateTemplate, type FireAlarmCertificate } from "../../lib/certificate-types";
+import { getCertificateTemplate, type FireAlarmCertificate } from "@quantract/shared/certificate-types";
 import {
   useCertificateStore,
   useStoreHydration,
@@ -12,6 +12,8 @@ import {
   generateCertificateNumber,
 } from "../../lib/certificateStore";
 import { StickyActionBar } from "../../components/StickyActionBar";
+import { SignatureCapture } from "../../components/SignatureCapture";
+import { PhotoCapture } from "../../components/PhotoCapture";
 
 function FireAlarmPageContent() {
   const searchParams = useSearchParams();
@@ -26,6 +28,9 @@ function FireAlarmPageContent() {
   const [currentCertId, setCurrentCertId] = useState<string | null>(certificateId);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [engineerSig, setEngineerSig] = useState<string | null>(null);
+  const [customerSig, setCustomerSig] = useState<string | null>(null);
+  const [photos, setPhotos] = useState<string[]>([]);
 
   // Load existing certificate if ID is provided (only after hydration)
   useEffect(() => {
@@ -685,6 +690,23 @@ function FireAlarmPageContent() {
           </div>
         </div>
       </div>
+      {/* Signatures & Photos */}
+      <div className="max-w-[1200px] mx-auto px-6 py-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Signatures & Site Photos</CardTitle>
+            <CardDescription>Capture signatures and attach photos from site</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid md:grid-cols-2 gap-6">
+              <SignatureCapture label="Engineer Signature" value={engineerSig} onChange={setEngineerSig} />
+              <SignatureCapture label="Customer Signature" value={customerSig} onChange={setCustomerSig} />
+            </div>
+            <PhotoCapture photos={photos} onChange={setPhotos} />
+          </CardContent>
+        </Card>
+      </div>
+
       <StickyActionBar
         onSave={handleSave}
         onDownload={handleDownload}

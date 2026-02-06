@@ -25,7 +25,7 @@ Verify: `git ls-files --cached -- '**/node_modules/*' '**/.next/*' '**/dist/*' '
 
 ## Workspace Structure
 
-- [ ] `pnpm-workspace.yaml` lists `apps/*`, `apps/mobile/*`, and `packages/*`
+- [ ] `pnpm-workspace.yaml` lists `apps/*`, `apps/mobile/engineer`, and `packages/*`
 - [ ] Each app declares shared packages as `workspace:*` dependencies
 - [ ] No app has a direct dependency on another app
 

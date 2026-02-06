@@ -34,6 +34,13 @@ export async function GET(_req: Request, ctx: { params: Promise<{ certificateId:
         pdfGeneratedAt: true,
         issuedAt: true,
         issuedBy: true,
+        templateVersionId: true,
+        templateVersion: {
+          select: {
+            version: true,
+            template: { select: { name: true, docType: true } },
+          },
+        },
         createdAt: true,
       },
     });
@@ -50,6 +57,9 @@ export async function GET(_req: Request, ctx: { params: Promise<{ certificateId:
         pdfGeneratedAt: r.pdfGeneratedAt?.toISOString() ?? null,
         issuedAt: r.issuedAt?.toISOString() ?? null,
         issuedBy: r.issuedBy,
+        templateVersionId: r.templateVersionId ?? null,
+        templateName: r.templateVersion?.template?.name ?? null,
+        templateVersion: r.templateVersion?.version ?? null,
         createdAt: r.createdAt?.toISOString() ?? null,
       })),
     });

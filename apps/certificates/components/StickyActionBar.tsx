@@ -20,13 +20,16 @@ export function StickyActionBar({
   downloadLabel = "Download PDF",
 }: StickyActionBarProps) {
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-20 bg-[var(--card)] border-t border-[var(--border)] px-4 py-3 safe-area-bottom">
+    <div
+      className="fixed bottom-0 left-0 right-0 z-20 bg-[var(--card)] border-t border-[var(--border)] px-4 safe-area-bottom"
+      style={{ paddingTop: 12, paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}
+    >
       <div className="max-w-5xl mx-auto flex items-center justify-end gap-3">
         <Button
           variant="secondary"
           onClick={onSave}
           disabled={isSaving}
-          className="min-h-[48px] px-6"
+          className="min-h-[48px] min-w-[100px] px-6 text-base"
         >
           {saveStatus === "saving" ? (
             "Saving..."
@@ -45,7 +48,7 @@ export function StickyActionBar({
           onClick={onDownload}
           disabled={isGenerating}
           size="lg"
-          className="min-h-[48px] px-8"
+          className="min-h-[48px] min-w-[140px] px-8 text-base"
         >
           {isGenerating ? "Generating..." : downloadLabel}
         </Button>

@@ -5,6 +5,7 @@ import { NextResponse } from "next/server";
 import { requireCompanyContext, getEffectiveRole } from "@/lib/serverAuth";
 import { getPrisma } from "@/lib/server/prisma";
 import { withRequestLogging, logError } from "@/lib/server/observability";
+import * as repo from "@/lib/server/repo";
 
 export const runtime = "nodejs";
 
@@ -146,12 +147,32 @@ export const POST = withRequestLogging(async function POST(req: Request) {
               data: { status: "approved", approvedAt: new Date(), approvedBy: authCtx.userId },
             });
             approved++;
+            try {
+              await repo.recordAuditEvent({
+                entityType: "timesheet",
+                entityId: item.id,
+                action: "timesheet.approved",
+                actorRole: effectiveRole,
+                actor: authCtx.email,
+                meta: { bulk: true },
+              });
+            } catch { /* audit write failure is non-critical */ }
           } else {
             await prisma.timesheet.update({
               where: { id: item.id, companyId: cid },
               data: { status: "rejected" },
             });
             rejected++;
+            try {
+              await repo.recordAuditEvent({
+                entityType: "timesheet",
+                entityId: item.id,
+                action: "timesheet.rejected",
+                actorRole: effectiveRole,
+                actor: authCtx.email,
+                meta: { bulk: true },
+              });
+            } catch { /* audit write failure is non-critical */ }
           }
         } else if (item.type === "expense") {
           if (action === "approve") {
@@ -170,6 +191,16 @@ export const POST = withRequestLogging(async function POST(req: Request) {
               data: { status: "CONFIRMED" },
             });
             approved++;
+            try {
+              await repo.recordAuditEvent({
+                entityType: "expense",
+                entityId: item.id,
+                action: "expense.confirmed",
+                actorRole: effectiveRole,
+                actor: authCtx.email,
+                meta: { bulk: true },
+              });
+            } catch { /* audit write failure is non-critical */ }
           } else {
             // For reject, set back to UPLOADED (no dedicated rejected status yet)
             await prisma.expense.update({
@@ -177,6 +208,16 @@ export const POST = withRequestLogging(async function POST(req: Request) {
               data: { status: "UPLOADED" },
             });
             rejected++;
+            try {
+              await repo.recordAuditEvent({
+                entityType: "expense",
+                entityId: item.id,
+                action: "expense.rejected",
+                actorRole: effectiveRole,
+                actor: authCtx.email,
+                meta: { bulk: true },
+              });
+            } catch { /* audit write failure is non-critical */ }
           }
         }
       } catch {
