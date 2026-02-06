@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireRole, getCompanyId, getUserEmail } from "@/lib/serverAuth";
+import { requireCompanyContext, getEffectiveRole } from "@/lib/serverAuth";
 import { getPrisma } from "@/lib/server/prisma";
 import { withRequestLogging } from "@/lib/server/observability";
 import { hasAdminBypass, getPlanDefinition, getTrialStatus } from "@/lib/billing/plans";
@@ -14,9 +14,13 @@ export const GET = withRequestLogging(async function GET() {
   let msDb = 0;
 
   const stopAuth = timeStart("billing_status_auth");
-  await requireRole("admin");
-  const companyId = await getCompanyId();
-  const userEmail = await getUserEmail();
+  const authCtx = await requireCompanyContext();
+  const effectiveRole = getEffectiveRole(authCtx);
+  if (effectiveRole !== "admin" && effectiveRole !== "office") {
+    return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
+  }
+  const companyId = authCtx.companyId;
+  const userEmail = authCtx.email;
   msAuth = stopAuth();
 
   const client = getPrisma();
