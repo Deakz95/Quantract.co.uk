@@ -105,28 +105,17 @@ export const POST = withRequestLogging(async function POST(req: Request) {
     });
 
     if (engineer) {
-      // Working hours check
-      const startHour = startAt.getHours() + startAt.getMinutes() / 60;
-      const endHour = endAt.getHours() + endAt.getMinutes() / 60;
-      if (startHour < engineer.workStartHour || endHour > engineer.workEndHour) {
-        return NextResponse.json(
-          { ok: false, error: "outside_working_hours", workStartHour: engineer.workStartHour, workEndHour: engineer.workEndHour },
-          { status: 422 },
-        );
-      }
+      const startHour = startAt.getUTCHours() + startAt.getUTCMinutes() / 60;
+      const endHour = endAt.getUTCHours() + endAt.getUTCMinutes() / 60;
 
-      // Break overlap check (soft warning — log only, don't block)
-      // Previously returned 422 but the frontend has no force-override UI,
-      // so this was silently blocking all lunch-hour bookings.
-      const breakMinutes = (engineer as any).breakMinutes ?? 30;
-      if (breakMinutes > 0 && !body.force) {
-        const workMid = (engineer.workStartHour + engineer.workEndHour) / 2;
-        const breakStartH = workMid - breakMinutes / 60 / 2;
-        const breakEndH = breakStartH + breakMinutes / 60;
-        if (startHour < breakEndH && endHour > breakStartH) {
-          // Log the overlap but don't block — break overlap is advisory, not mandatory
-          console.warn(`[schedule] Entry overlaps break window (${breakStartH}-${breakEndH}) for engineer ${engineerEmail}`);
-        }
+      // Working hours check — advisory only, don't block scheduling
+      // Reasons: (1) engineers may have workStartHour/workEndHour = 0 from bad data,
+      // (2) getUTCHours uses UTC while working hours are conceptual local time,
+      // (3) blocking scheduling entirely defeats the purpose of the schedule board.
+      const wStart = engineer.workStartHour ?? 8;
+      const wEnd = engineer.workEndHour ?? 17;
+      if (wStart > 0 && wEnd > 0 && (startHour < wStart || endHour > wEnd)) {
+        console.warn(`[schedule] Entry outside working hours (${wStart}-${wEnd}) for engineer ${engineerEmail}`);
       }
 
       // Travel buffer: inflate existing entries by buffer minutes after their end time

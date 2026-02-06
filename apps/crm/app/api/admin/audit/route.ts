@@ -209,11 +209,11 @@ export const GET = withRequestLogging(async function GET(req: NextRequest) {
         prisma.quote
           .findMany({
             where: { id: { in: [...entityIds.quote] }, companyId: cid },
-            select: { id: true, quoteNumber: true, reference: true, clientName: true },
+            select: { id: true, quoteNumber: true, clientName: true },
           })
           .then((rows: any[]) => {
             for (const r of rows) {
-              entityNames[r.id] = r.reference || r.quoteNumber || `Quote ${r.clientName}` || r.id.slice(0, 8);
+              entityNames[r.id] = r.quoteNumber || `Quote ${r.clientName}` || r.id.slice(0, 8);
             }
           })
       );
@@ -294,7 +294,7 @@ export const GET = withRequestLogging(async function GET(req: NextRequest) {
       );
     }
 
-    await Promise.all(resolvers);
+    await Promise.allSettled(resolvers);
 
     // Fill fallbacks for any entity IDs not resolved
     for (const e of allEvents) {
