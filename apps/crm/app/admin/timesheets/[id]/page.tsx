@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/Table";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { TimesheetActions } from "./timesheetActions";
+import { requestBaseUrl } from "@/lib/server/requestBaseUrl";
 
 type TimesheetEntry = {
   id?: string;
@@ -22,9 +23,16 @@ type Timesheet = {
 };
 
 async function loadTimesheet(id: string): Promise<Timesheet | null> {
-  const res = await fetch(`/api/admin/timesheets/${id}`, { cache: "no-store" });
-  const j = (await res.json()) as { timesheet?: Timesheet | null };
-  return j.timesheet ?? null;
+  try {
+    const base = requestBaseUrl();
+    const res = await fetch(`${base}/api/admin/timesheets/${id}`, { cache: "no-store" });
+    if (!res.ok) return null;
+    const j = await res.json();
+    // API returns { item: sheet }
+    return j.item ?? j.timesheet ?? null;
+  } catch {
+    return null;
+  }
 }
 
 type Props = {
@@ -81,28 +89,34 @@ export default async function Page({ params }: Props) {
           <CardTitle>Entries</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Job</TableHead>
-                <TableHead>Start</TableHead>
-                <TableHead>End</TableHead>
-                <TableHead>Break</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {(sheet.entries || []).map((e) => (
-                <TableRow key={e.id}>
-                  <TableCell className="font-medium">{e.jobId ? e.jobId.slice(0, 8) : "—"}</TableCell>
-                  <TableCell>{e.startedAtISO ? new Date(e.startedAtISO).toLocaleString() : "—"}</TableCell>
-                  <TableCell>{e.endedAtISO ? new Date(e.endedAtISO).toLocaleString() : "—"}</TableCell>
-                  <TableCell>{typeof e.breakMinutes === "number" ? e.breakMinutes : "—"}</TableCell>
-                  <TableCell>{e.status || "draft"}</TableCell>
+          {!sheet.entries || sheet.entries.length === 0 ? (
+            <div className="text-sm text-[var(--muted-foreground)] py-4 text-center">
+              No time entries recorded for this timesheet.
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Job</TableHead>
+                  <TableHead>Start</TableHead>
+                  <TableHead>End</TableHead>
+                  <TableHead>Break</TableHead>
+                  <TableHead>Status</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {sheet.entries.map((e) => (
+                  <TableRow key={e.id}>
+                    <TableCell className="font-medium">{e.jobId ? e.jobId.slice(0, 8) : "—"}</TableCell>
+                    <TableCell>{e.startedAtISO ? new Date(e.startedAtISO).toLocaleString() : "—"}</TableCell>
+                    <TableCell>{e.endedAtISO ? new Date(e.endedAtISO).toLocaleString() : "—"}</TableCell>
+                    <TableCell>{typeof e.breakMinutes === "number" ? e.breakMinutes : "—"}</TableCell>
+                    <TableCell>{e.status || "draft"}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
       </div>
