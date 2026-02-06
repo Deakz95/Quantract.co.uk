@@ -97,42 +97,48 @@ export const GET = withRequestLogging(async function GET(req: NextRequest) {
     let impersonationTotal = 0;
 
     if (includeImpersonation) {
-      const impWhere: any = { companyId: cid };
-      if (Object.keys(dateFilter).length > 0) impWhere.startedAt = dateFilter;
+      try {
+        const impWhere: any = { companyId: cid };
+        if (Object.keys(dateFilter).length > 0) impWhere.startedAt = dateFilter;
 
-      const [impRows, impCount] = await Promise.all([
-        prisma.impersonation_logs.findMany({
-          where: impWhere,
-          include: {
-            adminUser: { select: { id: true, name: true, email: true } },
-            targetUser: { select: { id: true, name: true, email: true } },
+        const [impRows, impCount] = await Promise.all([
+          prisma.impersonation_logs.findMany({
+            where: impWhere,
+            include: {
+              adminUser: { select: { id: true, name: true, email: true } },
+              targetUser: { select: { id: true, name: true, email: true } },
+            },
+            orderBy: { startedAt: "desc" },
+            take: entityType === "impersonation" ? limit : 20,
+            skip: entityType === "impersonation" ? skip : 0,
+          }),
+          prisma.impersonation_logs.count({ where: impWhere }),
+        ]);
+
+        impersonationEvents = impRows.map((r: any) => ({
+          id: r.id,
+          type: "impersonation",
+          entityType: "impersonation",
+          entityId: r.id,
+          action: r.endedAt ? "impersonation_ended" : "impersonation_active",
+          actorRole: "admin",
+          actor: r.adminUserId,
+          meta: {
+            targetUserId: r.targetUserId,
+            targetName: r.targetUser?.name || r.targetUser?.email || r.targetUserId?.slice(0, 8),
+            adminName: r.adminUser?.name || r.adminUser?.email || r.adminUserId?.slice(0, 8),
+            reason: r.reason,
+            startedAt: r.startedAt,
+            endedAt: r.endedAt,
           },
-          orderBy: { startedAt: "desc" },
-          take: entityType === "impersonation" ? limit : 20,
-          skip: entityType === "impersonation" ? skip : 0,
-        }),
-        prisma.impersonation_logs.count({ where: impWhere }),
-      ]);
-
-      impersonationEvents = impRows.map((r: any) => ({
-        id: r.id,
-        type: "impersonation",
-        entityType: "impersonation",
-        entityId: r.id,
-        action: r.endedAt ? "impersonation_ended" : "impersonation_active",
-        actorRole: "admin",
-        actor: r.adminUserId,
-        meta: {
-          targetUserId: r.targetUserId,
-          targetName: r.targetUser?.name || r.targetUser?.email || r.targetUserId.slice(0, 8),
-          adminName: r.adminUser?.name || r.adminUser?.email || r.adminUserId.slice(0, 8),
-          reason: r.reason,
-          startedAt: r.startedAt,
-          endedAt: r.endedAt,
-        },
-        createdAt: r.startedAt,
-      }));
-      impersonationTotal = impCount;
+          createdAt: r.startedAt,
+        }));
+        impersonationTotal = impCount;
+      } catch (impErr) {
+        // Impersonation logs query may fail if table has orphaned FK references
+        // or hasn't been properly initialized — don't let it break the entire audit log
+        console.warn("[audit] impersonation_logs query failed, skipping:", impErr);
+      }
     }
 
     // ---- Merge & sort by date desc ----
@@ -152,6 +158,9 @@ export const GET = withRequestLogging(async function GET(req: NextRequest) {
       allEvents = merged.slice(0, limit);
       total = auditTotal + impersonationTotal;
     }
+
+    // Guard against null/undefined entries that could crash downstream resolution
+    allEvents = allEvents.filter(Boolean);
 
     // ---- Resolve actor names (User IDs -> names) ----
     const actorIds = new Set<string>();

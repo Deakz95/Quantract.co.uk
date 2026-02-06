@@ -258,11 +258,20 @@ export default function AdminSchedulePage() {
         }),
       });
       const d = await r.json();
-      if (!r.ok) throw new Error(d?.error || "Failed");
+      if (!r.ok) {
+        const msg = d?.error === "outside_working_hours"
+          ? `Outside working hours (${d.workStartHour}:00–${d.workEndHour}:00)`
+          : d?.error === "clash"
+            ? "Time clash with an existing booking"
+            : d?.error === "max_jobs_exceeded"
+              ? `Engineer already has ${d.currentCount} jobs that day (max ${d.maxJobsPerDay})`
+              : d?.error || "Failed";
+        throw new Error(msg);
+      }
       toast({ title: "Scheduled", description: "Job added to board.", variant: "success" });
       await refresh();
-    } catch {
-      toast({ title: "Error", description: "Could not schedule job.", variant: "destructive" });
+    } catch (err: any) {
+      toast({ title: "Error", description: err?.message || "Could not schedule job.", variant: "destructive" });
     } finally {
       setBusy(null);
     }
@@ -314,11 +323,20 @@ export default function AdminSchedulePage() {
         }),
       });
       const d = await r.json();
-      if (!r.ok) throw new Error(d?.error || "Failed");
+      if (!r.ok) {
+        const msg = d?.error === "outside_working_hours"
+          ? `Outside working hours (${d.workStartHour}:00–${d.workEndHour}:00)`
+          : d?.error === "clash"
+            ? "Time clash with an existing booking"
+            : d?.error === "max_jobs_exceeded"
+              ? `Engineer already has ${d.currentCount} jobs that day (max ${d.maxJobsPerDay})`
+              : d?.error || "Failed";
+        throw new Error(msg);
+      }
       toast({ title: "Scheduled", description: "Entry added to schedule.", variant: "success" });
       await refresh();
-    } catch {
-      toast({ title: "Error", description: "Could not create schedule entry.", variant: "destructive" });
+    } catch (err: any) {
+      toast({ title: "Error", description: err?.message || "Could not create schedule entry.", variant: "destructive" });
     } finally {
       setBusy(null);
     }

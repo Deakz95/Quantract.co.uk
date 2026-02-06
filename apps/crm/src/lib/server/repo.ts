@@ -2517,12 +2517,14 @@ export async function createScheduleEntry(input: {
   const row = await client.scheduleEntry
     .create({
       data: {
+        id: crypto.randomUUID(),
         companyId,
         jobId: input.jobId,
         engineerId: eng.id,
         startAt,
         endAt,
         notes: input.notes ?? null,
+        updatedAt: new Date(),
       } as any,
       include: { engineer: true, job: { select: { id: true, title: true } } },
     })

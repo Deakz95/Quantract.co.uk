@@ -115,17 +115,17 @@ export const POST = withRequestLogging(async function POST(req: Request) {
         );
       }
 
-      // Break overlap check (soft warning — overridable by sending force: true)
+      // Break overlap check (soft warning — log only, don't block)
+      // Previously returned 422 but the frontend has no force-override UI,
+      // so this was silently blocking all lunch-hour bookings.
       const breakMinutes = (engineer as any).breakMinutes ?? 30;
       if (breakMinutes > 0 && !body.force) {
         const workMid = (engineer.workStartHour + engineer.workEndHour) / 2;
         const breakStartH = workMid - breakMinutes / 60 / 2;
         const breakEndH = breakStartH + breakMinutes / 60;
         if (startHour < breakEndH && endHour > breakStartH) {
-          return NextResponse.json(
-            { ok: false, error: "overlaps_break", breakStart: breakStartH, breakEnd: breakEndH, overridable: true },
-            { status: 422 },
-          );
+          // Log the overlap but don't block — break overlap is advisory, not mandatory
+          console.warn(`[schedule] Entry overlaps break window (${breakStartH}-${breakEndH}) for engineer ${engineerEmail}`);
         }
       }
 

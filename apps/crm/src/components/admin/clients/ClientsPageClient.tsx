@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -63,6 +64,7 @@ const validationSchema: ValidationSchema = {
 
 export default function ClientsPageClient() {
   const { toast } = useToast();
+  const searchParams = useSearchParams();
 
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -119,6 +121,15 @@ export default function ClientsPageClient() {
     void load();
     return () => abortRef.current?.abort();
   }, [load]);
+
+  // Auto-open edit form when ?edit=<id> is in the URL
+  const editParam = searchParams.get("edit");
+  useEffect(() => {
+    if (editParam && clients.length > 0 && !editing) {
+      const match = clients.find((c) => c.id === editParam);
+      if (match) startEdit(match);
+    }
+  }, [editParam, clients]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const filtered = useMemo(() => {
     let result = clients;
