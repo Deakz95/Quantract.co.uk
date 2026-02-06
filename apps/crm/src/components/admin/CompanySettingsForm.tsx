@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/Input";
-import { Check, Palette, RefreshCw, Sparkles } from "lucide-react";
+import { Check, Palette, RefreshCw, Settings, Sparkles } from "lucide-react";
 import { themes, ThemeConfig, applyThemeToDOM, persistTheme, getThemeById } from "@/lib/themes";
 
 type CompanySettings = {
@@ -31,6 +31,7 @@ type CompanySettings = {
   nextCertificateNumber: number;
   onboardedAt?: string | null;
   markJobCompletedOnCertIssue?: boolean;
+  uiMode?: string;
 };
 
 function pickSettings(json: any): CompanySettings | null {
@@ -43,6 +44,7 @@ function pickSettings(json: any): CompanySettings | null {
     themeAccent: s.themeAccent || "#22d3ee",
     themeBg: s.themeBg || "#0f1115",
     themeText: s.themeText || "#f8fafc",
+    uiMode: s.uiMode || "full",
   } as CompanySettings;
 }
 
@@ -163,6 +165,7 @@ export function CompanySettingsForm(props: { mode: "settings" | "onboarding" }) 
           defaultPaymentTermsDays: form.defaultPaymentTermsDays ?? 14,
           autoChaseEnabled: Boolean(form.autoChaseEnabled),
           markJobCompletedOnCertIssue: Boolean(form.markJobCompletedOnCertIssue),
+          uiMode: form.uiMode,
           markOnboarded,
         }),
       });
@@ -249,6 +252,60 @@ export function CompanySettingsForm(props: { mode: "settings" | "onboarding" }) 
 
   return (
     <div className="space-y-6">
+      {/* Navigation Complexity */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Settings className="w-5 h-5 text-[var(--primary)]" />
+            <CardTitle>Navigation Complexity</CardTitle>
+          </div>
+          <CardDescription>Choose how many features are visible in your sidebar</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {([
+              {
+                id: "simple",
+                title: "Simple",
+                count: 6,
+                desc: "Dashboard, Jobs, Quotes, Invoices, Schedule, Clients. Best for small teams or solo operators.",
+              },
+              {
+                id: "standard",
+                title: "Standard",
+                count: 10,
+                desc: "Adds Certificates, Engineers, Reports, Timesheets. Good for growing teams.",
+              },
+              {
+                id: "full",
+                title: "Full",
+                count: "All",
+                desc: "Everything visible. All tools, office, sales, and admin sections. For power users.",
+              },
+            ] as const).map((opt) => (
+              <button
+                key={opt.id}
+                onClick={() => setForm({ ...form, uiMode: opt.id })}
+                className={`relative p-4 rounded-xl border-2 transition-all duration-200 text-left hover:scale-[1.02] ${
+                  form.uiMode === opt.id
+                    ? "border-[var(--primary)] shadow-lg ring-2 ring-[var(--primary)]/30 bg-[var(--primary)]/5"
+                    : "border-[var(--border)] hover:border-[var(--primary)]/50 bg-[var(--card)]"
+                }`}
+              >
+                {form.uiMode === opt.id && (
+                  <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-[var(--primary)] flex items-center justify-center">
+                    <Check className="w-4 h-4 text-white" />
+                  </div>
+                )}
+                <div className="font-semibold text-sm text-[var(--foreground)]">{opt.title}</div>
+                <div className="text-xs text-[var(--muted-foreground)] mt-1">{opt.count} nav items</div>
+                <p className="text-xs text-[var(--muted-foreground)] mt-2 leading-relaxed">{opt.desc}</p>
+              </button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Color Palettes Section */}
       <Card>
         <CardHeader>
