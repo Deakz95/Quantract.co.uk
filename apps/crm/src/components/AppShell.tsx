@@ -120,7 +120,6 @@ const ADMIN_SECTIONS: NavSection[] = [
       { label: "Control Room", href: "/admin/office", icon: Building2 },
       { label: "Approvals", href: "/admin/office/approvals", icon: CheckCircle },
       { label: "Compliance", href: "/admin/office/compliance", icon: BadgeCheck },
-      { label: "Alerts", href: "/admin/office/alerts", icon: AlertTriangle },
       { label: "Purchasing", href: "/admin/office/purchasing", icon: Receipt },
     ],
   },
@@ -358,16 +357,16 @@ export function AppShell({
       }));
     }
 
-    // Hide Enquiries in simple mode
-    if (uiMode === "simple") {
+    // Hide Enquiries in simple and standard modes
+    if (uiMode === "simple" || uiMode === "standard") {
       sections = sections.map((s) => ({
         ...s,
         items: s.items.filter((item) => item.label !== "Enquiries"),
       }));
     }
 
-    // Hide Dispatch in simple mode
-    if (uiMode === "simple") {
+    // Hide Dispatch in simple and standard modes
+    if (uiMode === "simple" || uiMode === "standard") {
       sections = sections.map((s) => ({
         ...s,
         items: s.items.filter((item) => item.label !== "Dispatch"),
@@ -620,7 +619,7 @@ export function AppShell({
             {role === "admin" && (
               <div className="relative">
                 <Button variant="ghost" size="sm" onClick={() => setToolsOpen(!toolsOpen)}>
-                  <Settings className="w-4 h-4 mr-1.5" />
+                  <Activity className="w-4 h-4 mr-1.5" />
                   <span className="hidden sm:inline">Tools</span>
                 </Button>
                 {toolsOpen && (

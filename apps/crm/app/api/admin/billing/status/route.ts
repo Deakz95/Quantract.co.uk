@@ -71,7 +71,7 @@ export const GET = withRequestLogging(async function GET() {
 
     const hasBypass = hasAdminBypass(userEmail);
     const displayPlan = hasBypass ? "pro" : effectivePlan;
-    const planDef = getPlanDefinition(displayPlan);
+    const planDef = getPlanDefinition(displayPlan, userEmail);
     const trialStatus = getTrialStatus(effectivePlan, effectiveTrialStartedAt, userEmail);
 
     return {
