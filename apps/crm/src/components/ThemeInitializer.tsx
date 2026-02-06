@@ -12,6 +12,9 @@ export function ThemeInitializer() {
     const persisted = loadPersistedTheme();
     const theme = persisted || getDefaultTheme();
     applyThemeToDOM(theme);
+
+    // Clean up orphaned legacy key from old theme system
+    try { localStorage.removeItem("qt-theme"); } catch { /* ignore */ }
   }, []);
 
   return null;

@@ -408,23 +408,40 @@ export function AppShell({
     return init;
   });
 
-  // Auto-open the section containing the current route (never closes other sections)
+  // Track which sections the user has manually toggled (survives route changes)
+  const [manualToggles, setManualToggles] = useState<Set<string>>(new Set());
+
+  // Auto-open the section containing the current route, auto-close others (except CORE + manually toggled)
   useEffect(() => {
     if (role !== "admin" && role !== "office") return;
     const sections = role === "office" ? OFFICE_SECTIONS : ADMIN_SECTIONS;
     const match = sections.find((s) =>
       s.items.some((item) => pathname === item.href || pathname.startsWith(item.href + "/"))
     );
-    if (!match) return;
     setOpenSections((prev) => {
-      if (prev[match.id]) return prev; // already open — no-op
-      const next = { ...prev, [match.id]: true };
+      const next: Record<string, boolean> = {};
+      for (const s of sections) {
+        if (DEFAULT_OPEN_SECTIONS.has(s.id)) {
+          // Always-open sections (CORE) stay open
+          next[s.id] = true;
+        } else if (match && s.id === match.id) {
+          // Active section opens
+          next[s.id] = true;
+        } else if (manualToggles.has(s.id)) {
+          // Manually toggled sections keep their state
+          next[s.id] = prev[s.id] ?? false;
+        } else {
+          // Everything else collapses
+          next[s.id] = false;
+        }
+      }
       try { localStorage.setItem("qt-nav-open", JSON.stringify(next)); } catch { /* ignore */ }
       return next;
     });
-  }, [pathname, role]);
+  }, [pathname, role, manualToggles]);
 
   const toggleSection = (id: string) => {
+    setManualToggles((prev) => new Set(prev).add(id));
     setOpenSections((prev) => {
       const next = { ...prev, [id]: !prev[id] };
       try { localStorage.setItem("qt-nav-open", JSON.stringify(next)); } catch { /* ignore */ }
