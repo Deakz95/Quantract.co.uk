@@ -2905,6 +2905,16 @@ export async function addTimeEntry(input: { jobId: string; engineerEmail: string
   }
 
   await assertTimesheetEditable(client, eng.id, input.startedAtISO);
+
+  // Auto-link to a timesheet for this engineer's week
+  const weekStart = new Date(startOfWeekMondayISO(input.startedAtISO));
+  const sheet = await client.timesheet.upsert({
+    where: { companyId_engineerId_weekStart: { companyId, engineerId: eng.id, weekStart } } as any,
+    create: { id: crypto.randomUUID(), companyId, engineerId: eng.id, weekStart, status: "draft" } as any,
+    update: {},
+    select: { id: true },
+  }).catch(() => null);
+
   const row = await client.timeEntry
     .create({
       data: {
@@ -2912,6 +2922,7 @@ export async function addTimeEntry(input: { jobId: string; engineerEmail: string
         companyId,
         jobId: input.jobId,
         engineerId: eng.id,
+        timesheetId: sheet?.id ?? null,
         status: "draft",
         startedAt: new Date(input.startedAtISO),
         endedAt: input.endedAtISO ? new Date(input.endedAtISO) : null,
