@@ -38,7 +38,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { getCached, setCached } from "@/lib/client/swrCache";
 import { toTitleCase } from "@/lib/cn";
 
-type WidgetType = 'stats' | 'quickActions' | 'recentActivity' | 'teamOverview' | 'performance' | 'calendar' | 'invoiceChart' | 'jobsMap' | 'revenue' | 'breakEven' | 'needsAttention' | 'lowStock' | 'maintenanceAlerts' | 'recentStockChanges' | 'systemHealth';
+type WidgetType = 'stats' | 'quickActions' | 'recentActivity' | 'teamOverview' | 'performance' | 'calendar' | 'invoiceChart' | 'jobsMap' | 'revenue' | 'breakEven' | 'needsAttention' | 'lowStock' | 'maintenanceAlerts' | 'recentStockChanges' | 'systemHealth' | 'dispatchToday' | 'approvalsPending' | 'todaysProblems' | 'compliance' | 'profitLeakage';
 
 type Widget = {
   id: string;
@@ -178,6 +178,11 @@ const AVAILABLE_WIDGETS: Widget[] = [
   { id: 'maintenanceAlerts', type: 'maintenanceAlerts', title: 'Maintenance Alerts', description: 'Open maintenance alerts', size: 'small' },
   { id: 'recentStockChanges', type: 'recentStockChanges', title: 'Recent Stock Changes', description: 'Latest truck stock movements', size: 'medium' },
   { id: 'systemHealth', type: 'systemHealth', title: 'System Health', description: 'Error rates, webhook and cron status', size: 'small' },
+  { id: 'dispatchToday', type: 'dispatchToday', title: 'Dispatch Today', description: "Today's scheduled engineers", size: 'medium' },
+  { id: 'approvalsPending', type: 'approvalsPending', title: 'Approvals Pending', description: 'Pending timesheets & expenses', size: 'small' },
+  { id: 'todaysProblems', type: 'todaysProblems', title: "Today's Problems", description: 'Overdue checks & invoices', size: 'medium' },
+  { id: 'compliance', type: 'compliance', title: 'Compliance', description: 'Upcoming compliance items', size: 'small' },
+  { id: 'profitLeakage', type: 'profitLeakage', title: 'Profit Leakage', description: 'Overdue invoices & unbilled jobs', size: 'medium' },
 ];
 
 const quickActions = [
@@ -1296,6 +1301,42 @@ function RecentStockChangesWidget({ data, loading }: { data: WidgetsData | null;
   );
 }
 
+function OfficeSummaryWidget({ title, description, icon: Icon, href, loading }: {
+  title: string;
+  description: string;
+  icon: typeof Briefcase;
+  href: string;
+  loading: boolean;
+}) {
+  if (loading) {
+    return (
+      <Card className="h-full">
+        <CardContent className="p-5">
+          <div className="h-8 w-8 rounded-full bg-[var(--muted)] animate-pulse" />
+          <div className="mt-3 h-5 w-32 bg-[var(--muted)] rounded animate-pulse" />
+          <div className="mt-2 h-4 w-48 bg-[var(--muted)] rounded animate-pulse" />
+        </CardContent>
+      </Card>
+    );
+  }
+  return (
+    <Link href={href}>
+      <Card variant="interactive" className="h-full group">
+        <CardContent className="p-5">
+          <div className="flex items-start justify-between">
+            <div className="w-10 h-10 rounded-xl bg-[var(--muted)] flex items-center justify-center">
+              <Icon className="w-5 h-5 text-[var(--muted-foreground)]" />
+            </div>
+            <ArrowUpRight className="w-4 h-4 text-[var(--muted-foreground)] opacity-0 group-hover:opacity-100 transition-opacity" />
+          </div>
+          <div className="mt-3 text-sm font-semibold text-[var(--foreground)]">{title}</div>
+          <div className="mt-1 text-xs text-[var(--muted-foreground)]">{description}</div>
+        </CardContent>
+      </Card>
+    </Link>
+  );
+}
+
 function QuickQuoteModal({ onClose }: { onClose: () => void }) {
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
@@ -1974,6 +2015,16 @@ export default function DashboardPage() {
         return <RecentStockChangesWidget data={dashboardState.widgetsData} loading={secLoading} />;
       case 'systemHealth':
         return <SystemHealthWidget />;
+      case 'dispatchToday':
+        return <OfficeSummaryWidget title="Dispatch Today" description="View today's scheduled engineers and jobs" icon={Calendar} href="/admin/dispatch" loading={secLoading} />;
+      case 'approvalsPending':
+        return <OfficeSummaryWidget title="Approvals Pending" description="Timesheets and expenses awaiting approval" icon={CheckCircle} href="/admin/office/approvals" loading={secLoading} />;
+      case 'todaysProblems':
+        return <OfficeSummaryWidget title="Today's Problems" description="Overdue scheduled checks and unpaid invoices" icon={AlertTriangle} href="/admin/office/alerts" loading={secLoading} />;
+      case 'compliance':
+        return <OfficeSummaryWidget title="Compliance" description="Upcoming compliance items and certifications" icon={Award} href="/admin/office/compliance" loading={secLoading} />;
+      case 'profitLeakage':
+        return <OfficeSummaryWidget title="Profit Leakage" description="Overdue invoices and unbilled completed jobs" icon={TrendingDown} href="/admin/reports/revenue" loading={secLoading} />;
       default:
         return null;
     }

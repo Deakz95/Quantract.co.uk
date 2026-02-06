@@ -10,7 +10,10 @@ import { useToast } from "@/components/ui/useToast";
 import { Breadcrumbs, type BreadcrumbItem } from "@/components/ui/Breadcrumbs";
 import CompactTimeline from "@/components/admin/CompactTimeline";
 import NextActionPanel from "@/components/admin/NextActionPanel";
-import { Navigation, Phone, ExternalLink } from "lucide-react";
+import { Navigation, Phone, ExternalLink, CheckCircle } from "lucide-react";
+import { cn } from "@/lib/cn";
+
+type JobTab = "summary" | "financial" | "work" | "documents";
 
 function cleanJobTitle(raw?: string | null, jobNumber?: number | null): string {
   const jNum = jobNumber ? `J-${String(jobNumber).padStart(4, "0")}` : null;
@@ -201,6 +204,8 @@ export default function AdminJobDetail({ jobId }: Props) {
   const [snagDescription, setSnagDescription] = useState("");
   const [consumingStock, setConsumingStock] = useState(false);
   const [snagUpdatingId, setSnagUpdatingId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<JobTab>("summary");
+  const [completeDialogOpen, setCompleteDialogOpen] = useState(false);
 
   // Variation quick-create (creates a draft then you edit line items in the variation editor)
   const [varTitle, setVarTitle] = useState("");
@@ -628,6 +633,26 @@ export default function AdminJobDetail({ jobId }: Props) {
     }
   }
 
+  async function completeJob() {
+    setBusy(true);
+    try {
+      const r = await fetch(`/api/admin/jobs/${jobId}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ status: "completed" }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!d.ok) throw new Error(d.error || "Failed");
+      toast({ title: "Job completed", variant: "success" });
+      await refresh();
+      setCompleteDialogOpen(true);
+    } catch (error: unknown) {
+      toast({ title: "Could not complete job", description: getErrorMessage(error, "Unknown error"), variant: "destructive" });
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function createCert(type: Certificate["type"]) {
     setBusy(true);
     try {
@@ -711,10 +736,42 @@ export default function AdminJobDetail({ jobId }: Props) {
             </div>
           ) : null}
         </div>
-        <Button type="button" variant="secondary" className="min-h-12 px-4 touch-manipulation" onClick={refresh} disabled={busy}>
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button type="button" variant="secondary" className="min-h-12 px-4 touch-manipulation" onClick={refresh} disabled={busy}>
+            Refresh
+          </Button>
+          {job && job.status !== "completed" && (
+            <Button type="button" variant="gradient" className="min-h-12 px-4 touch-manipulation" onClick={completeJob} disabled={busy}>
+              <CheckCircle className="w-4 h-4 mr-1.5" />
+              Complete Job
+            </Button>
+          )}
+        </div>
       </div>
+
+      {/* Complete Job Dialog */}
+      {completeDialogOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setCompleteDialogOpen(false)}>
+          <div onClick={(e) => e.stopPropagation()} className="w-full max-w-sm bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-xl p-6 animate-fade-in">
+            <div className="text-lg font-bold text-[var(--foreground)]">Job Completed</div>
+            <div className="mt-2 text-sm text-[var(--muted-foreground)]">Would you like to create an invoice from this job?</div>
+            <div className="mt-4 flex items-center gap-3">
+              <Button
+                type="button"
+                onClick={() => {
+                  setCompleteDialogOpen(false);
+                  router.push(`/admin/invoices/new?fromJob=${jobId}`);
+                }}
+              >
+                Create Invoice
+              </Button>
+              <Button type="button" variant="secondary" onClick={() => setCompleteDialogOpen(false)}>
+                Not Now
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <div className="text-sm text-[var(--muted-foreground)]">Loading…</div>
@@ -722,85 +779,149 @@ export default function AdminJobDetail({ jobId }: Props) {
         <div className="text-sm text-[var(--muted-foreground)]">Not found.</div>
       ) : (
         <>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">Recent Activity</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <CompactTimeline jobId={jobId} />
-            </CardContent>
-          </Card>
+          {/* Tab Navigation */}
+          <div className="flex gap-1 rounded-xl bg-[var(--muted)] p-1">
+            {([
+              { key: "summary" as JobTab, label: "Summary" },
+              { key: "financial" as JobTab, label: "Financial" },
+              { key: "work" as JobTab, label: "Work" },
+              { key: "documents" as JobTab, label: "Documents" },
+            ] as const).map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setActiveTab(tab.key)}
+                className={cn(
+                  "flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                  activeTab === tab.key
+                    ? "bg-[var(--card)] text-[var(--foreground)] shadow-sm"
+                    : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                )}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
 
-          {(() => {
-            const hasInvoices = invoices.length > 0;
-            const hasCerts = certs.length > 0;
-            const allPaid = hasInvoices && invoices.every((i) => i.status === "paid");
-            switch (job.status) {
-              case "new":
-                return (
-                  <NextActionPanel
-                    headline="Next step: schedule this job"
-                    body="Assign an engineer and set a start date to move this job forward."
-                  />
-                );
-              case "scheduled":
-                return (
-                  <NextActionPanel
-                    headline="Job is scheduled"
-                    body={`Waiting for work to begin.${job.engineerEmail ? ` Assigned to ${job.engineerEmail}.` : ""}`}
-                  />
-                );
-              case "in_progress":
-                return (
-                  <NextActionPanel
-                    headline="Work in progress"
-                    body="Mark the job as complete when all work is finished, or raise a variation for scope changes."
-                  />
-                );
-              case "completed":
-                if (!hasCerts && !hasInvoices) {
-                  return (
-                    <NextActionPanel
-                      headline="Job complete — issue certificate or invoice"
-                      body="This job is finished. Create a compliance certificate or a final invoice."
-                    />
-                  );
-                }
-                if (!hasCerts) {
-                  return (
-                    <NextActionPanel
-                      headline="Job complete — certificate needed"
-                      body="An invoice exists but no certificate has been issued yet."
-                    />
-                  );
-                }
-                if (!hasInvoices) {
-                  return (
-                    <NextActionPanel
-                      headline="Job complete — invoice needed"
-                      body="A certificate has been issued. Create a final invoice to bill the client."
-                    />
-                  );
-                }
-                if (!allPaid) {
-                  return (
-                    <NextActionPanel
-                      headline="Awaiting payment"
-                      body="Job is complete and invoiced. Follow up with the client if payment is overdue."
-                    />
-                  );
-                }
-                return (
-                  <NextActionPanel
-                    headline="All done"
-                    body="Job complete, certificate issued, and all invoices paid."
-                  />
-                );
-              default:
-                return null;
-            }
-          })()}
+          {/* SUMMARY TAB */}
+          {activeTab === "summary" && (
+            <>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm">Recent Activity</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CompactTimeline jobId={jobId} />
+                </CardContent>
+              </Card>
 
+              {(() => {
+                const hasInvoices = invoices.length > 0;
+                const hasCerts = certs.length > 0;
+                const allPaid = hasInvoices && invoices.every((i) => i.status === "paid");
+                switch (job.status) {
+                  case "new":
+                    return (
+                      <NextActionPanel
+                        headline="Next step: schedule this job"
+                        body="Assign an engineer and set a start date to move this job forward."
+                      />
+                    );
+                  case "scheduled":
+                    return (
+                      <NextActionPanel
+                        headline="Job is scheduled"
+                        body={`Waiting for work to begin.${job.engineerEmail ? ` Assigned to ${job.engineerEmail}.` : ""}`}
+                      />
+                    );
+                  case "in_progress":
+                    return (
+                      <NextActionPanel
+                        headline="Work in progress"
+                        body="Mark the job as complete when all work is finished, or raise a variation for scope changes."
+                      />
+                    );
+                  case "completed":
+                    if (!hasCerts && !hasInvoices) {
+                      return (
+                        <NextActionPanel
+                          headline="Job complete — issue certificate or invoice"
+                          body="This job is finished. Create a compliance certificate or a final invoice."
+                        />
+                      );
+                    }
+                    if (!hasCerts) {
+                      return (
+                        <NextActionPanel
+                          headline="Job complete — certificate needed"
+                          body="An invoice exists but no certificate has been issued yet."
+                        />
+                      );
+                    }
+                    if (!hasInvoices) {
+                      return (
+                        <NextActionPanel
+                          headline="Job complete — invoice needed"
+                          body="A certificate has been issued. Create a final invoice to bill the client."
+                        />
+                      );
+                    }
+                    if (!allPaid) {
+                      return (
+                        <NextActionPanel
+                          headline="Awaiting payment"
+                          body="Job is complete and invoiced. Follow up with the client if payment is overdue."
+                        />
+                      );
+                    }
+                    return (
+                      <NextActionPanel
+                        headline="All done"
+                        body="Job complete, certificate issued, and all invoices paid."
+                      />
+                    );
+                  default:
+                    return null;
+                }
+              })()}
+
+              {/* Quick summary of linked items */}
+              <div className="grid gap-3 sm:grid-cols-3">
+                {job.quoteId && (
+                  <Link href={`/admin/quotes/${job.quoteId}`}>
+                    <Card variant="interactive" className="h-full">
+                      <CardContent className="p-4">
+                        <div className="text-xs font-semibold text-[var(--muted-foreground)]">Linked Quote</div>
+                        <div className="mt-1 text-sm font-bold text-[var(--foreground)]">{job.quoteNumber || "View Quote"}</div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                )}
+                {invoices.length > 0 && (
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="text-xs font-semibold text-[var(--muted-foreground)]">Invoices</div>
+                      <div className="mt-1 text-sm font-bold text-[var(--foreground)]">{invoices.length} invoice{invoices.length !== 1 ? "s" : ""}</div>
+                      <div className="text-xs text-[var(--muted-foreground)]">{invoices.filter(i => i.status === "paid").length} paid</div>
+                    </CardContent>
+                  </Card>
+                )}
+                {certs.length > 0 && (
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="text-xs font-semibold text-[var(--muted-foreground)]">Certificates</div>
+                      <div className="mt-1 text-sm font-bold text-[var(--foreground)]">{certs.length} cert{certs.length !== 1 ? "s" : ""}</div>
+                      <div className="text-xs text-[var(--muted-foreground)]">{certs.filter(c => c.status === "issued").length} issued</div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* FINANCIAL TAB */}
+          {activeTab === "financial" && (
+            <>
           <Card>
             <CardHeader>
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -940,55 +1061,6 @@ export default function AdminJobDetail({ jobId }: Props) {
 
           <Card>
             <CardHeader>
-              <CardTitle>Time entries</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  void addTime(event.currentTarget);
-                }}
-                className="flex flex-wrap items-end gap-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3"
-              >
-                <label className="grid gap-1">
-                  <span className="text-xs font-semibold text-[var(--muted-foreground)]">Engineer email</span>
-                  <input name="engineerEmail" className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-3 text-sm min-h-12 touch-manipulation placeholder:text-[var(--muted-foreground)]" placeholder="engineer@example.com" />
-                </label>
-                <label className="grid gap-1">
-                  <span className="text-xs font-semibold text-[var(--muted-foreground)]">Start</span>
-                  <input name="startedAt" type="datetime-local" className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-3 text-sm min-h-12 touch-manipulation" />
-                </label>
-                <label className="grid gap-1">
-                  <span className="text-xs font-semibold text-[var(--muted-foreground)]">End</span>
-                  <input name="endedAt" type="datetime-local" className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-3 text-sm min-h-12 touch-manipulation" />
-                </label>
-                <Button type="submit" disabled={busy}>
-                  Add
-                </Button>
-              </form>
-
-              {timeEntries.length === 0 ? (
-                <div className="mt-3 text-sm text-[var(--muted-foreground)]">No time logged yet.</div>
-              ) : (
-                <div className="mt-3 space-y-2">
-                  {timeEntries.map((t) => (
-                    <div key={t.id} className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3 text-sm">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div className="font-semibold text-[var(--foreground)]">{t.engineerEmail || "Engineer"}</div>
-                        <div className="text-xs text-[var(--muted-foreground)]">
-                          {new Date(t.startedAtISO).toLocaleString("en-GB")} → {t.endedAtISO ? new Date(t.endedAtISO).toLocaleString("en-GB") : "(running)"}
-                        </div>
-                      </div>
-                      {t.notes ? <div className="mt-1 text-xs text-[var(--muted-foreground)]">{t.notes}</div> : null}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
               <CardTitle>Cost items</CardTitle>
             </CardHeader>
             <CardContent>
@@ -1098,111 +1170,6 @@ export default function AdminJobDetail({ jobId }: Props) {
                           </div>
                         </div>
                       ) : null}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <CardTitle>Job stages</CardTitle>
-                <div className="flex flex-wrap gap-2">
-                  <Button type="button" variant="secondary" disabled={busy} onClick={() => ensureStages("reactive")}>Reactive template</Button>
-                  <Button type="button" variant="secondary" disabled={busy} onClick={() => ensureStages("install")}>Install template</Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {stages.length === 0 ? (
-                <div className="text-sm text-[var(--muted-foreground)]">No stages yet. Choose a template above.</div>
-              ) : (
-                <div className="space-y-2">
-                  {stages.map((s) => (
-                    <div key={s.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3">
-                      <div className="min-w-0">
-                        <div className="text-sm font-semibold text-[var(--foreground)]">{s.name}</div>
-                        <div className="mt-0.5 text-xs text-[var(--muted-foreground)]">{s.status}</div>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        <Button type="button" variant="secondary" disabled={busy} onClick={() => setStageStatus(s.id, "not_started")}>Not started</Button>
-                        <Button type="button" variant="secondary" disabled={busy} onClick={() => setStageStatus(s.id, "in_progress")}>In progress</Button>
-                        <Button type="button" disabled={busy} onClick={() => setStageStatus(s.id, "done")}>Done</Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Snag items</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3">
-                <div className="grid gap-2 sm:grid-cols-2">
-                  <label className="grid gap-1 sm:col-span-2">
-                    <span className="text-xs font-semibold text-[var(--muted-foreground)]">Title</span>
-                    <input
-                      value={snagTitle}
-                      onChange={(e) => setSnagTitle(e.target.value)}
-                      className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm placeholder:text-[var(--muted-foreground)]"
-                      placeholder="e.g. Replace cracked socket"
-                      disabled={snagBusy}
-                    />
-                  </label>
-                  <label className="grid gap-1 sm:col-span-2">
-                    <span className="text-xs font-semibold text-[var(--muted-foreground)]">Details</span>
-                    <textarea
-                      value={snagDescription}
-                      onChange={(e) => setSnagDescription(e.target.value)}
-                      className="min-h-[90px] rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm placeholder:text-[var(--muted-foreground)]"
-                      placeholder="Location, parts needed, or any notes."
-                      disabled={snagBusy}
-                    />
-                  </label>
-                </div>
-                <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-                  <div className="text-xs text-[var(--muted-foreground)]">Track site issues to close out before handover.</div>
-                  <Button type="button" onClick={createSnag} disabled={snagBusy}>Add snag</Button>
-                </div>
-              </div>
-
-              {snagItems.length === 0 ? (
-                <div className="mt-3 text-sm text-[var(--muted-foreground)]">No snag items yet.</div>
-              ) : (
-                <div className="mt-3 space-y-2">
-                  {snagItems.map((item) => (
-                    <div key={item.id} className="flex flex-wrap items-start justify-between gap-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3">
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <div className="text-sm font-semibold text-[var(--foreground)]">{item.title}</div>
-                          <Badge>{item.status.replace("_", " ")}</Badge>
-                        </div>
-                        {item.description ? (
-                          <div className="mt-1 text-xs text-[var(--muted-foreground)]">{item.description}</div>
-                        ) : null}
-                        <div className="mt-1 text-xs text-[var(--muted-foreground)]">
-                          Logged {new Date(item.createdAtISO).toLocaleString("en-GB")}
-                          {item.resolvedAtISO ? ` • Resolved ${new Date(item.resolvedAtISO).toLocaleString("en-GB")}` : ""}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <select
-                          className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-xs"
-                          value={item.status}
-                          disabled={snagUpdatingId === item.id}
-                          onChange={(event) => updateSnagStatus(item.id, event.target.value as SnagItem["status"])}
-                        >
-                          <option value="open">Open</option>
-                          <option value="in_progress">In progress</option>
-                          <option value="resolved">Resolved</option>
-                        </select>
-                      </div>
                     </div>
                   ))}
                 </div>
@@ -1415,51 +1382,218 @@ export default function AdminJobDetail({ jobId }: Props) {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <CardTitle>Certificates</CardTitle>
-                <div className="flex flex-wrap gap-2">
-                  <Button type="button" variant="secondary" disabled={busy} onClick={() => createCert("MWC")}>MWC</Button>
-                  <Button type="button" variant="secondary" disabled={busy} onClick={() => createCert("EIC")}>EIC</Button>
-                  <Button type="button" variant="secondary" disabled={busy} onClick={() => createCert("EICR")}>EICR</Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {certs.length === 0 ? (
-                <div className="text-sm text-[var(--muted-foreground)]">No certificates yet.</div>
-              ) : (
-                <div className="space-y-2">
-                  {certs.map((c) => (
-                    <div key={c.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3">
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Link href={`/admin/certificates/${c.id}`} className="text-sm font-semibold text-[var(--foreground)] hover:underline">
-                            {c.type}{c.certificateNumber ? ` • ${c.certificateNumber}` : ""}
-                          </Link>
-                          <Badge>{c.status}</Badge>
-                          {c.certificateNumber ? <Badge>{c.certificateNumber}</Badge> : null}
+            </>
+          )}
+
+          {/* WORK TAB */}
+          {activeTab === "work" && (
+            <>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Time entries</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <form
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      void addTime(event.currentTarget);
+                    }}
+                    className="flex flex-wrap items-end gap-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3"
+                  >
+                    <label className="grid gap-1">
+                      <span className="text-xs font-semibold text-[var(--muted-foreground)]">Engineer email</span>
+                      <input name="engineerEmail" className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-3 text-sm min-h-12 touch-manipulation placeholder:text-[var(--muted-foreground)]" placeholder="engineer@example.com" />
+                    </label>
+                    <label className="grid gap-1">
+                      <span className="text-xs font-semibold text-[var(--muted-foreground)]">Start</span>
+                      <input name="startedAt" type="datetime-local" className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-3 text-sm min-h-12 touch-manipulation" />
+                    </label>
+                    <label className="grid gap-1">
+                      <span className="text-xs font-semibold text-[var(--muted-foreground)]">End</span>
+                      <input name="endedAt" type="datetime-local" className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-3 text-sm min-h-12 touch-manipulation" />
+                    </label>
+                    <Button type="submit" disabled={busy}>
+                      Add
+                    </Button>
+                  </form>
+
+                  {timeEntries.length === 0 ? (
+                    <div className="mt-3 text-sm text-[var(--muted-foreground)]">No time logged yet.</div>
+                  ) : (
+                    <div className="mt-3 space-y-2">
+                      {timeEntries.map((t) => (
+                        <div key={t.id} className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3 text-sm">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="font-semibold text-[var(--foreground)]">{t.engineerEmail || "Engineer"}</div>
+                            <div className="text-xs text-[var(--muted-foreground)]">
+                              {new Date(t.startedAtISO).toLocaleString("en-GB")} → {t.endedAtISO ? new Date(t.endedAtISO).toLocaleString("en-GB") : "(running)"}
+                            </div>
+                          </div>
+                          {t.notes ? <div className="mt-1 text-xs text-[var(--muted-foreground)]">{t.notes}</div> : null}
                         </div>
-                        {c.issuedAtISO ? (
-                          <div className="mt-1 text-xs text-[var(--muted-foreground)]">Issued {new Date(c.issuedAtISO).toLocaleString("en-GB")}</div>
-                        ) : c.completedAtISO ? (
-                          <div className="mt-1 text-xs text-[var(--muted-foreground)]">Completed {new Date(c.completedAtISO).toLocaleString("en-GB")}</div>
-                        ) : null}
-                      </div>
-                      {c.pdfKey ? (
-                        <a className="text-sm font-semibold text-[var(--foreground)] hover:underline" href={`/api/admin/certificates/${c.id}/pdf`} target="_blank" rel="noreferrer">
-                          PDF
-                        </a>
-                      ) : (
-                        <span className="text-xs text-[var(--muted-foreground)]">No PDF yet (issue to generate)</span>
-                      )}
+                      ))}
                     </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <CardTitle>Job stages</CardTitle>
+                    <div className="flex flex-wrap gap-2">
+                      <Button type="button" variant="secondary" disabled={busy} onClick={() => ensureStages("reactive")}>Reactive template</Button>
+                      <Button type="button" variant="secondary" disabled={busy} onClick={() => ensureStages("install")}>Install template</Button>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {stages.length === 0 ? (
+                    <div className="text-sm text-[var(--muted-foreground)]">No stages yet. Choose a template above.</div>
+                  ) : (
+                    <div className="space-y-2">
+                      {stages.map((s) => (
+                        <div key={s.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3">
+                          <div className="min-w-0">
+                            <div className="text-sm font-semibold text-[var(--foreground)]">{s.name}</div>
+                            <div className="mt-0.5 text-xs text-[var(--muted-foreground)]">{s.status}</div>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            <Button type="button" variant="secondary" disabled={busy} onClick={() => setStageStatus(s.id, "not_started")}>Not started</Button>
+                            <Button type="button" variant="secondary" disabled={busy} onClick={() => setStageStatus(s.id, "in_progress")}>In progress</Button>
+                            <Button type="button" disabled={busy} onClick={() => setStageStatus(s.id, "done")}>Done</Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Snag items</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3">
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <label className="grid gap-1 sm:col-span-2">
+                        <span className="text-xs font-semibold text-[var(--muted-foreground)]">Title</span>
+                        <input
+                          value={snagTitle}
+                          onChange={(e) => setSnagTitle(e.target.value)}
+                          className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm placeholder:text-[var(--muted-foreground)]"
+                          placeholder="e.g. Replace cracked socket"
+                          disabled={snagBusy}
+                        />
+                      </label>
+                      <label className="grid gap-1 sm:col-span-2">
+                        <span className="text-xs font-semibold text-[var(--muted-foreground)]">Details</span>
+                        <textarea
+                          value={snagDescription}
+                          onChange={(e) => setSnagDescription(e.target.value)}
+                          className="min-h-[90px] rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm placeholder:text-[var(--muted-foreground)]"
+                          placeholder="Location, parts needed, or any notes."
+                          disabled={snagBusy}
+                        />
+                      </label>
+                    </div>
+                    <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                      <div className="text-xs text-[var(--muted-foreground)]">Track site issues to close out before handover.</div>
+                      <Button type="button" onClick={createSnag} disabled={snagBusy}>Add snag</Button>
+                    </div>
+                  </div>
+
+                  {snagItems.length === 0 ? (
+                    <div className="mt-3 text-sm text-[var(--muted-foreground)]">No snag items yet.</div>
+                  ) : (
+                    <div className="mt-3 space-y-2">
+                      {snagItems.map((item) => (
+                        <div key={item.id} className="flex flex-wrap items-start justify-between gap-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3">
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <div className="text-sm font-semibold text-[var(--foreground)]">{item.title}</div>
+                              <Badge>{item.status.replace("_", " ")}</Badge>
+                            </div>
+                            {item.description ? (
+                              <div className="mt-1 text-xs text-[var(--muted-foreground)]">{item.description}</div>
+                            ) : null}
+                            <div className="mt-1 text-xs text-[var(--muted-foreground)]">
+                              Logged {new Date(item.createdAtISO).toLocaleString("en-GB")}
+                              {item.resolvedAtISO ? ` • Resolved ${new Date(item.resolvedAtISO).toLocaleString("en-GB")}` : ""}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <select
+                              className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-xs"
+                              value={item.status}
+                              disabled={snagUpdatingId === item.id}
+                              onChange={(event) => updateSnagStatus(item.id, event.target.value as SnagItem["status"])}
+                            >
+                              <option value="open">Open</option>
+                              <option value="in_progress">In progress</option>
+                              <option value="resolved">Resolved</option>
+                            </select>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </>
+          )}
+
+          {/* DOCUMENTS TAB */}
+          {activeTab === "documents" && (
+            <>
+              <Card>
+                <CardHeader>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <CardTitle>Certificates</CardTitle>
+                    <div className="flex flex-wrap gap-2">
+                      <Button type="button" variant="secondary" disabled={busy} onClick={() => createCert("MWC")}>MWC</Button>
+                      <Button type="button" variant="secondary" disabled={busy} onClick={() => createCert("EIC")}>EIC</Button>
+                      <Button type="button" variant="secondary" disabled={busy} onClick={() => createCert("EICR")}>EICR</Button>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {certs.length === 0 ? (
+                    <div className="text-sm text-[var(--muted-foreground)]">No certificates yet.</div>
+                  ) : (
+                    <div className="space-y-2">
+                      {certs.map((c) => (
+                        <div key={c.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3">
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <Link href={`/admin/certificates/${c.id}`} className="text-sm font-semibold text-[var(--foreground)] hover:underline">
+                                {c.type}{c.certificateNumber ? ` • ${c.certificateNumber}` : ""}
+                              </Link>
+                              <Badge>{c.status}</Badge>
+                              {c.certificateNumber ? <Badge>{c.certificateNumber}</Badge> : null}
+                            </div>
+                            {c.issuedAtISO ? (
+                              <div className="mt-1 text-xs text-[var(--muted-foreground)]">Issued {new Date(c.issuedAtISO).toLocaleString("en-GB")}</div>
+                            ) : c.completedAtISO ? (
+                              <div className="mt-1 text-xs text-[var(--muted-foreground)]">Completed {new Date(c.completedAtISO).toLocaleString("en-GB")}</div>
+                            ) : null}
+                          </div>
+                          {c.pdfKey ? (
+                            <a className="text-sm font-semibold text-[var(--foreground)] hover:underline" href={`/api/admin/certificates/${c.id}/pdf`} target="_blank" rel="noreferrer">
+                              PDF
+                            </a>
+                          ) : (
+                            <span className="text-xs text-[var(--muted-foreground)]">No PDF yet (issue to generate)</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </>
+          )}
         </>
       )}
     </div>

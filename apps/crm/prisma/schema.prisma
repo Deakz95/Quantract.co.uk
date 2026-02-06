@@ -455,6 +455,7 @@ model Company {
   importJobs                  ImportJob[]
   toolPresets                 ToolPreset[]
   ramsDocuments               RamsDocument[]
+  uiMode                      String                       @default("full")
   markJobCompletedOnCertIssue Boolean                      @default(false)
   // Certificates v2
   certificateRevisions        CertificateRevision[]

@@ -53,20 +53,39 @@ export const GET = withRequestLogging(async function GET() {
             where: { companyId },
             orderBy: { createdAt: "desc" },
             take: 10,
-            include: {
-              stockItem: { select: { id: true, name: true } },
-              user: { select: { id: true, name: true } },
-            },
           }).catch(() => [])
         : [],
     ]);
 
-    const enrichedChanges = (recentStockChanges as any[]).map((c: any) => ({
+    // Batch-fetch related stock item names and user names (no FK relations on TruckStockLog)
+    const logs = recentStockChanges as any[];
+    const stockItemIds = [...new Set(logs.map((l: any) => l.stockItemId).filter(Boolean))];
+    const userIds = [...new Set(logs.map((l: any) => l.userId).filter(Boolean))];
+
+    const [stockItems, users] = await Promise.all([
+      stockItemIds.length > 0
+        ? prisma.stockItem.findMany({
+            where: { id: { in: stockItemIds } },
+            select: { id: true, name: true },
+          }).catch(() => [])
+        : [],
+      userIds.length > 0
+        ? prisma.user.findMany({
+            where: { id: { in: userIds } },
+            select: { id: true, name: true },
+          }).catch(() => [])
+        : [],
+    ]);
+
+    const siMap = new Map((stockItems as any[]).map((si: any) => [si.id, si.name]));
+    const userMap = new Map((users as any[]).map((u: any) => [u.id, u.name]));
+
+    const enrichedChanges = logs.map((c: any) => ({
       id: c.id,
       stockItemId: c.stockItemId,
-      stockItemName: c.stockItem?.name ?? null,
+      stockItemName: siMap.get(c.stockItemId) ?? null,
       userId: c.userId,
-      userName: c.user?.name ?? null,
+      userName: userMap.get(c.userId) ?? null,
       qtyDelta: c.qtyDelta,
       reason: c.reason,
       jobId: c.jobId,

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createNeonAuth } from "@neondatabase/auth/next/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -42,15 +43,16 @@ function logAuthResponse(method: string, path: string, status: number) {
   }
 }
 
-async function getNeonHandlers(): Promise<NeonHandlerObj | null> {
+let _handlers: NeonHandlerObj | null = null;
+
+function getNeonHandlers(): NeonHandlerObj | null {
+  if (_handlers) return _handlers;
   const baseUrl = process.env.NEON_AUTH_BASE_URL || process.env.NEON_AUTH_URL || "";
-  if (!baseUrl) return null;
-
-  // Lazy import so missing env never crashes build-time evaluation
-  const mod = await import("@neondatabase/auth/next/server");
-  const authApiHandler = (mod as any).authApiHandler as () => NeonHandlerObj;
-
-  return authApiHandler();
+  const secret = process.env.NEON_AUTH_COOKIE_SECRET || "";
+  if (!baseUrl || !secret) return null;
+  const auth = createNeonAuth({ baseUrl, cookies: { secret } });
+  _handlers = auth.handler() as NeonHandlerObj;
+  return _handlers;
 }
 
 async function call(method: keyof NeonHandlerObj, req: NextRequest, ctx: Ctx) {
@@ -60,17 +62,17 @@ async function call(method: keyof NeonHandlerObj, req: NextRequest, ctx: Ctx) {
   // Log request details for debugging
   logAuthRequest(method, req, path);
 
-  const handlers = await getNeonHandlers();
+  const handlers = getNeonHandlers();
 
   if (!handlers || !handlers[method]) {
-    console.error(`[Auth] Neon Auth not configured - NEON_AUTH_BASE_URL missing`);
+    console.error(`[Auth] Neon Auth not configured - NEON_AUTH_BASE_URL or NEON_AUTH_COOKIE_SECRET missing`);
     return NextResponse.json(
       {
         ok: false,
         error: {
           code: "NEON_AUTH_NOT_CONFIGURED",
           message:
-            "Neon Auth is not configured. Set NEON_AUTH_BASE_URL (or NEON_AUTH_URL) in your environment.",
+            "Neon Auth is not configured. Set NEON_AUTH_BASE_URL and NEON_AUTH_COOKIE_SECRET in your environment.",
         },
       },
       { status: 500 }

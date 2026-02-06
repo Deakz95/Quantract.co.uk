@@ -79,6 +79,7 @@ export const GET = withRequestLogging(async function GET() {
         pdfFooterLine1: true,
         pdfFooterLine2: true,
         pdfContactDetails: true,
+        uiMode: true,
       },
     });
     msDb = stopDb();
@@ -212,6 +213,11 @@ export const PATCH = withRequestLogging(async function PATCH(req: Request) {
       typeof body.pdfContactDetails === "string"
         ? body.pdfContactDetails.trim() || null
         : body.pdfContactDetails === null ? null : undefined,
+
+    uiMode:
+      typeof body.uiMode === "string" && ["simple", "standard", "full"].includes(body.uiMode)
+        ? body.uiMode
+        : undefined,
   };
 
   // --- Subdomain (requires feature_subdomain entitlement) ---

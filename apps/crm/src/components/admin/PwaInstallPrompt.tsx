@@ -3,10 +3,13 @@
 import { useEffect, useState } from "react";
 import { X, Download } from "lucide-react";
 
+const STORAGE_KEY = "qt_admin_pwa_dismissed";
+const DISMISS_DURATION_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+
 /**
  * PWA install prompt banner for the admin/CRM portal.
- * Indigo-branded variant. Uses `qt_admin_pwa_dismissed` storage key
- * to avoid conflicts with the client portal banner.
+ * Indigo-branded variant. Uses localStorage with a 30-day expiry
+ * so the banner stays dismissed across sessions.
  */
 export function AdminPwaInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -20,14 +23,18 @@ export function AdminPwaInstallPrompt() {
       return;
     }
 
-    // Check if user previously dismissed
+    // Check if user previously dismissed within the last 30 days
     try {
-      if (sessionStorage.getItem("qt_admin_pwa_dismissed") === "1") {
-        setDismissed(true);
-        return;
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const ts = Number(raw);
+        if (!isNaN(ts) && Date.now() - ts < DISMISS_DURATION_MS) {
+          setDismissed(true);
+          return;
+        }
       }
     } catch {
-      // sessionStorage unavailable
+      // localStorage unavailable
     }
 
     const handler = (e: Event) => {
@@ -52,9 +59,9 @@ export function AdminPwaInstallPrompt() {
   const handleDismiss = () => {
     setDismissed(true);
     try {
-      sessionStorage.setItem("qt_admin_pwa_dismissed", "1");
+      localStorage.setItem(STORAGE_KEY, String(Date.now()));
     } catch {
-      // sessionStorage unavailable
+      // localStorage unavailable
     }
   };
 

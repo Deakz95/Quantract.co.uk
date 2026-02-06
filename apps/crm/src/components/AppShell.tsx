@@ -57,6 +57,7 @@ const BRAND_NAME = process.env.NEXT_PUBLIC_QT_BRAND_NAME || "Quantract";
 const BRAND_TAGLINE = process.env.NEXT_PUBLIC_QT_BRAND_TAGLINE || "Electrical & Building Services";
 
 export type Role = "admin" | "client" | "engineer" | "office";
+export type UiMode = "simple" | "standard" | "full";
 
 type NavItem = {
   label: string;
@@ -86,6 +87,9 @@ const ADMIN_SECTIONS: NavSection[] = [
       { label: "Certificates", href: "/admin/certificates", icon: BadgeCheck },
       { label: "Schedule", href: "/admin/schedule", icon: CalendarDays },
       { label: "Dispatch", href: "/admin/dispatch", icon: Activity },
+      { label: "Clients", href: "/admin/clients", icon: Users },
+      { label: "Engineers", href: "/admin/engineers", icon: Users },
+      { label: "Timesheets", href: "/admin/timesheets", icon: Clock },
     ],
   },
   {
@@ -95,40 +99,6 @@ const ADMIN_SECTIONS: NavSection[] = [
       { label: "Deals", href: "/admin/deals", icon: Target },
       { label: "Enquiries", href: "/admin/enquiries", icon: Inbox },
       { label: "Reports", href: "/admin/reports", icon: FileBarChart },
-    ],
-  },
-  {
-    id: "work",
-    title: "Work",
-    items: [
-      { label: "Jobs", href: "/admin/jobs", icon: Briefcase },
-      { label: "Timesheets", href: "/admin/timesheets", icon: Clock },
-      { label: "Engineers", href: "/admin/engineers", icon: Users },
-    ],
-  },
-  {
-    id: "money",
-    title: "Money",
-    items: [
-      { label: "Quotes", href: "/admin/quotes", icon: FileText },
-      { label: "Invoices", href: "/admin/invoices", icon: Receipt },
-    ],
-  },
-  {
-    id: "people",
-    title: "People",
-    items: [
-      { label: "Clients", href: "/admin/clients", icon: Users },
-      { label: "Contacts", href: "/admin/contacts", icon: Users },
-      { label: "Engineers", href: "/admin/engineers", icon: Users },
-    ],
-  },
-  {
-    id: "portals",
-    title: "Portals",
-    items: [
-      { label: "Client Portal", href: "/client", icon: ChevronRight },
-      { label: "Engineer Portal", href: "/engineer", icon: ChevronRight },
     ],
   },
   {
@@ -159,16 +129,23 @@ const ADMIN_SECTIONS: NavSection[] = [
     title: "Admin",
     dividerBefore: true,
     items: [
-      { label: "Roles", href: "/admin/roles", icon: Shield },
-      { label: "Entitlements", href: "/admin/entitlements", icon: CheckCircle },
-      { label: "Audit Log", href: "/admin/audit", icon: FileBarChart },
-      { label: "System Health", href: "/admin/ops", icon: Activity },
       { label: "Settings", href: "/admin/settings", icon: Settings },
+      { label: "Roles", href: "/admin/roles", icon: Shield },
+      { label: "Audit Log", href: "/admin/audit", icon: FileBarChart },
       { label: "Import", href: "/admin/import", icon: Upload },
       { label: "Invites", href: "/admin/invites", icon: Mail },
     ],
   },
 ];
+
+// Items visible in each uiMode tier
+const SIMPLE_NAV_LABELS = new Set(["Dashboard", "Jobs", "Quotes", "Invoices", "Schedule", "Clients"]);
+const STANDARD_NAV_LABELS = new Set([
+  ...SIMPLE_NAV_LABELS, "Certificates", "Engineers", "Reports", "Timesheets",
+]);
+// Sections visible per tier
+const SIMPLE_SECTIONS = new Set(["core"]);
+const STANDARD_SECTIONS = new Set(["core", "sales"]);
 
 const OFFICE_SECTIONS: NavSection[] = [
   {
@@ -204,7 +181,7 @@ const OFFICE_SECTIONS: NavSection[] = [
   },
 ];
 
-const DEFAULT_OPEN_SECTIONS = new Set(["core", "sales", "work", "money", "control", "approvals", "compliance", "purchasing"]);
+const DEFAULT_OPEN_SECTIONS = new Set(["core", "sales", "tools", "control", "approvals", "compliance", "purchasing"]);
 
 // Legacy flat array for client/engineer roles (no sections)
 const adminNav: NavItem[] = ADMIN_SECTIONS.flatMap((s) => s.items);
@@ -344,6 +321,8 @@ export function AppShell({
   const { status: billingStatus } = useBillingStatus();
   const plan = billingStatus?.plan ?? "";
   const isFree = !plan || plan === "free" || plan === "trial";
+  const isPro = plan === "pro_plus" || plan === "enterprise";
+  const [uiMode, setUiMode] = useState<UiMode>("full");
   const nav = useMemo(() => {
     if (role === "engineer") return engineerNav;
     return clientNav;
@@ -351,12 +330,52 @@ export function AppShell({
 
   const adminSections = useMemo(() => {
     if (role === "office") return OFFICE_SECTIONS;
-    if (!isFree) return ADMIN_SECTIONS;
-    return ADMIN_SECTIONS.map((s) => ({
-      ...s,
-      items: s.items.filter((item) => item.label !== "Deals"),
-    })).filter((s) => s.items.length > 0);
-  }, [isFree, role]);
+
+    let sections = ADMIN_SECTIONS;
+
+    // Filter by uiMode
+    if (uiMode === "simple") {
+      sections = sections
+        .filter((s) => SIMPLE_SECTIONS.has(s.id))
+        .map((s) => ({
+          ...s,
+          items: s.items.filter((item) => SIMPLE_NAV_LABELS.has(item.label)),
+        }));
+    } else if (uiMode === "standard") {
+      sections = sections
+        .filter((s) => STANDARD_SECTIONS.has(s.id))
+        .map((s) => ({
+          ...s,
+          items: s.items.filter((item) => STANDARD_NAV_LABELS.has(item.label)),
+        }));
+    }
+
+    // Hide Deals for non-pro plans
+    if (!isPro) {
+      sections = sections.map((s) => ({
+        ...s,
+        items: s.items.filter((item) => item.label !== "Deals"),
+      }));
+    }
+
+    // Hide Enquiries in simple mode
+    if (uiMode === "simple") {
+      sections = sections.map((s) => ({
+        ...s,
+        items: s.items.filter((item) => item.label !== "Enquiries"),
+      }));
+    }
+
+    // Hide Dispatch in simple mode
+    if (uiMode === "simple") {
+      sections = sections.map((s) => ({
+        ...s,
+        items: s.items.filter((item) => item.label !== "Dispatch"),
+      }));
+    }
+
+    return sections.filter((s) => s.items.length > 0);
+  }, [uiMode, isPro, role]);
   const pathname = usePathname();
   const [newOpen, setNewOpen] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
@@ -459,15 +478,20 @@ export function AppShell({
         if (role !== "admin" && role !== "office") return;
         const res = await fetch("/api/admin/settings", { cache: "no-store" });
         const data = await res.json().catch(() => null);
-        const s = data?.settings;
+        const s = data?.company ?? data?.settings;
         if (!res.ok || !data?.ok || !s) return;
+
+        // Apply uiMode
+        if (s.uiMode && ["simple", "standard", "full"].includes(s.uiMode)) {
+          setUiMode(s.uiMode as UiMode);
+        }
 
         const root = document.documentElement;
         root.style.setProperty("--qt-theme-primary", String(s.themePrimary || "#3b82f6"));
         root.style.setProperty("--qt-theme-accent", String(s.themeAccent || "#06b6d4"));
         root.style.setProperty("--qt-theme-bg", String(s.themeBg || "#f8fafc"));
         root.style.setProperty("--qt-theme-text", String(s.themeText || "#0f172a"));
-        
+
         // Apply theme to CSS variables
         root.style.setProperty("--primary", String(s.themePrimary || "#3b82f6"));
         root.style.setProperty("--accent", String(s.themeAccent || "#06b6d4"));
@@ -516,8 +540,8 @@ export function AppShell({
 
           {/* Center: Role Badge */}
           <div className="hidden md:flex items-center gap-2">
-            <Badge variant={role === "admin" || role === "office" ? "gradient" : "secondary"}>
-              {role === "admin" ? "Admin" : role === "office" ? "Office" : role === "engineer" ? "Engineer" : "Client"} Portal
+            <Badge variant="secondary" className="text-[10px] uppercase tracking-wider">
+              {role === "admin" ? "Admin" : role === "office" ? "Office" : role === "engineer" ? "Engineer" : "Client"}
             </Badge>
           </div>
 
