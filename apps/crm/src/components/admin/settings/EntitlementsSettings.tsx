@@ -607,7 +607,7 @@ function FeatureFlag({ label, enabled }: { label: string; enabled: boolean }) {
       className={cn(
         "flex items-center gap-2 p-3 rounded-lg border",
         enabled
-          ? "bg-green-50 dark:bg-green-900/40 border-green-200 dark:border-green-700"
+          ? "bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-700"
           : "bg-[var(--muted)] border-[var(--border)]"
       )}
     >
@@ -619,7 +619,7 @@ function FeatureFlag({ label, enabled }: { label: string; enabled: boolean }) {
       <span
         className={cn(
           "text-sm",
-          enabled ? "text-green-800 dark:text-green-300" : "text-[var(--muted-foreground)]"
+          enabled ? "text-green-800 dark:text-green-400" : "text-[var(--muted-foreground)]"
         )}
       >
         {label}

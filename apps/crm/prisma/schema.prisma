@@ -339,10 +339,10 @@ model Company {
   brandName                   String                       @default("Quantract")
   brandTagline                String?
   logoKey                     String?
-  themePrimary                String                       @default("#0f172a")
-  themeAccent                 String                       @default("#16a34a")
-  themeBg                     String                       @default("#f8fafc")
-  themeText                   String                       @default("#0f172a")
+  themePrimary                String                       @default("#6366f1")
+  themeAccent                 String                       @default("#22d3ee")
+  themeBg                     String                       @default("#0f1115")
+  themeText                   String                       @default("#f8fafc")
   pdfFooterLine1              String?
   pdfFooterLine2              String?
   pdfContactDetails           String?

@@ -497,16 +497,16 @@ export function AppShell({
         }
 
         const root = document.documentElement;
-        root.style.setProperty("--qt-theme-primary", String(s.themePrimary || "#3b82f6"));
-        root.style.setProperty("--qt-theme-accent", String(s.themeAccent || "#06b6d4"));
-        root.style.setProperty("--qt-theme-bg", String(s.themeBg || "#f8fafc"));
-        root.style.setProperty("--qt-theme-text", String(s.themeText || "#0f172a"));
+        root.style.setProperty("--qt-theme-primary", String(s.themePrimary || "#6366f1"));
+        root.style.setProperty("--qt-theme-accent", String(s.themeAccent || "#22d3ee"));
+        root.style.setProperty("--qt-theme-bg", String(s.themeBg || "#0f1115"));
+        root.style.setProperty("--qt-theme-text", String(s.themeText || "#f8fafc"));
 
         // Apply theme to CSS variables
-        root.style.setProperty("--primary", String(s.themePrimary || "#3b82f6"));
-        root.style.setProperty("--accent", String(s.themeAccent || "#06b6d4"));
-        root.style.setProperty("--background", String(s.themeBg || "#f8fafc"));
-        root.style.setProperty("--foreground", String(s.themeText || "#0f172a"));
+        root.style.setProperty("--primary", String(s.themePrimary || "#6366f1"));
+        root.style.setProperty("--accent", String(s.themeAccent || "#22d3ee"));
+        root.style.setProperty("--background", String(s.themeBg || "#0f1115"));
+        root.style.setProperty("--foreground", String(s.themeText || "#f8fafc"));
       } catch {
         // ignore
       }
