@@ -140,9 +140,9 @@ export function EntitlementsSettings() {
       {/* Header with Refresh */}
       <div className="flex justify-between items-center">
         <div>
-          <h3 className="text-lg font-semibold text-[var(--foreground)]">Entitlements & Usage</h3>
+          <h3 className="text-lg font-semibold text-[var(--foreground)]">Plan & Usage</h3>
           <p className="text-sm text-[var(--muted-foreground)]">
-            View your current plan, limits, and usage counters for debugging.
+            View your plan details and usage.
           </p>
         </div>
         <Button variant="secondary" onClick={fetchData} disabled={loading}>
@@ -374,17 +374,23 @@ export function EntitlementsSettings() {
         </div>
       </div>
 
-      {/* Entitlement Overrides (Admin) */}
-      <EntitlementOverrides />
-
-      {/* Raw Limits (Debug) */}
+      {/* Advanced / Developer Tools */}
       <details className="bg-[var(--muted)] rounded-xl p-4">
         <summary className="cursor-pointer text-sm font-medium text-[var(--muted-foreground)]">
-          Raw Limits (Debug)
+          Advanced / Developer Tools
         </summary>
-        <pre className="mt-4 text-xs overflow-auto">
-          {JSON.stringify(data.limits, null, 2)}
-        </pre>
+        <div className="mt-4 space-y-6">
+          <EntitlementOverrides />
+
+          <details className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4">
+            <summary className="cursor-pointer text-sm font-medium text-[var(--muted-foreground)]">
+              Raw Limits
+            </summary>
+            <pre className="mt-4 text-xs overflow-auto">
+              {JSON.stringify(data.limits, null, 2)}
+            </pre>
+          </details>
+        </div>
       </details>
     </div>
   );
@@ -601,7 +607,7 @@ function FeatureFlag({ label, enabled }: { label: string; enabled: boolean }) {
       className={cn(
         "flex items-center gap-2 p-3 rounded-lg border",
         enabled
-          ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
+          ? "bg-green-50 dark:bg-green-900/40 border-green-200 dark:border-green-700"
           : "bg-[var(--muted)] border-[var(--border)]"
       )}
     >
@@ -613,7 +619,7 @@ function FeatureFlag({ label, enabled }: { label: string; enabled: boolean }) {
       <span
         className={cn(
           "text-sm",
-          enabled ? "text-[var(--foreground)]" : "text-[var(--muted-foreground)]"
+          enabled ? "text-green-800 dark:text-green-300" : "text-[var(--muted-foreground)]"
         )}
       >
         {label}

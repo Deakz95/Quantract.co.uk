@@ -186,8 +186,7 @@ const AVAILABLE_WIDGETS: Widget[] = [
 ];
 
 const quickActions = [
-  { label: "Create Quote", href: "/admin/quotes/new", icon: FileText },
-  { label: "Quick Quote", href: "#quick-quote", icon: Zap },
+  { label: "New Quote", href: "/admin/quotes/new", icon: FileText },
   { label: "New Invoice", href: "/admin/invoices/new", icon: Receipt },
   { label: "Add Job", href: "/admin/jobs/new", icon: Briefcase },
   { label: "View Schedule", href: "/admin/schedule", icon: Clock },
@@ -419,7 +418,7 @@ function StatsWidget({ data, loading, onRefresh, isRefreshing }: {
   );
 }
 
-function QuickActionsWidget({ onQuickQuote }: { onQuickQuote?: () => void }) {
+function QuickActionsWidget() {
   return (
     <Card>
       <CardHeader>
@@ -429,23 +428,14 @@ function QuickActionsWidget({ onQuickQuote }: { onQuickQuote?: () => void }) {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {quickActions.map((action) => (
-            action.href === "#quick-quote" ? (
-              <button key={action.href} type="button" onClick={onQuickQuote}>
-                <div className="p-4 rounded-xl border border-[var(--border)] hover:border-[var(--primary)] hover:bg-[var(--muted)] transition-all duration-200 text-center group">
-                  <action.icon className="w-6 h-6 mx-auto text-[var(--muted-foreground)] group-hover:text-[var(--primary)] transition-colors" />
-                  <div className="mt-2 text-sm font-medium text-[var(--foreground)]">{action.label}</div>
-                </div>
-              </button>
-            ) : (
-              <Link key={action.href} href={action.href}>
-                <div className="p-4 rounded-xl border border-[var(--border)] hover:border-[var(--primary)] hover:bg-[var(--muted)] transition-all duration-200 text-center group">
-                  <action.icon className="w-6 h-6 mx-auto text-[var(--muted-foreground)] group-hover:text-[var(--primary)] transition-colors" />
-                  <div className="mt-2 text-sm font-medium text-[var(--foreground)]">{action.label}</div>
-                </div>
-              </Link>
-            )
+            <Link key={action.href} href={action.href}>
+              <div className="p-4 rounded-xl border border-[var(--border)] hover:border-[var(--primary)] hover:bg-[var(--muted)] transition-all duration-200 text-center group">
+                <action.icon className="w-6 h-6 mx-auto text-[var(--muted-foreground)] group-hover:text-[var(--primary)] transition-colors" />
+                <div className="mt-2 text-sm font-medium text-[var(--foreground)]">{action.label}</div>
+              </div>
+            </Link>
           ))}
         </div>
       </CardContent>
@@ -1938,7 +1928,7 @@ export default function DashboardPage() {
           />
         );
       case 'quickActions':
-        return <QuickActionsWidget onQuickQuote={() => setQuickQuoteOpen(true)} />;
+        return <QuickActionsWidget />;
       case 'recentActivity':
         return (
           <RecentActivityWidget

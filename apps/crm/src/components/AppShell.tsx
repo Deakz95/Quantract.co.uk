@@ -180,7 +180,8 @@ const OFFICE_SECTIONS: NavSection[] = [
   },
 ];
 
-const DEFAULT_OPEN_SECTIONS = new Set(["core", "sales", "tools", "control", "approvals", "compliance", "purchasing"]);
+const DEFAULT_OPEN_SECTIONS = new Set(["core"]);
+const NAV_VERSION = 2; // bump to reset stale localStorage when defaults change
 
 // Legacy flat array for client/engineer roles (no sections)
 const adminNav: NavItem[] = ADMIN_SECTIONS.flatMap((s) => s.items);
@@ -373,6 +374,14 @@ export function AppShell({
       }));
     }
 
+    // Hide BETA items in simple and standard modes
+    if (uiMode !== "full") {
+      sections = sections.map((s) => ({
+        ...s,
+        items: s.items.filter((item) => !item.beta),
+      }));
+    }
+
     return sections.filter((s) => s.items.length > 0);
   }, [uiMode, isPro, role]);
   const pathname = usePathname();
@@ -390,10 +399,12 @@ export function AppShell({
     }
     try {
       const stored = localStorage.getItem("qt-nav-open");
-      if (stored) return JSON.parse(stored);
+      const version = localStorage.getItem("qt-nav-version");
+      if (stored && version === String(NAV_VERSION)) return JSON.parse(stored);
     } catch { /* ignore */ }
     const init: Record<string, boolean> = {};
     for (const s of ADMIN_SECTIONS) init[s.id] = DEFAULT_OPEN_SECTIONS.has(s.id);
+    try { localStorage.setItem("qt-nav-version", String(NAV_VERSION)); } catch { /* ignore */ }
     return init;
   });
 
@@ -778,7 +789,6 @@ export function AppShell({
                   { label: "New Quote", href: "/admin/quotes/new", icon: FileText },
                   { label: "New Enquiry", href: "/admin/enquiries?new=1", icon: Inbox },
                   { label: "New Client", href: "/admin/clients", icon: Users },
-                  { label: "New Contact", href: "/admin/contacts?new=1", icon: User },
                   { label: "New Job", href: "/admin/jobs", icon: Briefcase },
                   { label: "New Invoice", href: "/admin/invoices", icon: Receipt },
                 ].map((item) => (
