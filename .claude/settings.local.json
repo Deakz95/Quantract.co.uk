@@ -55,7 +55,11 @@
       "Bash(npx prisma:*)",
       "Bash(git status:*)",
       "Bash(test:*)",
-      "Bash(findstr:*)"
+      "Bash(findstr:*)",
+      "Bash(git log:*)",
+      "Bash(tasklist:*)",
+      "Bash(npx next build:*)",
+      "Bash(pnpm -C apps/crm tsc:*)"
     ]
   }
 }
