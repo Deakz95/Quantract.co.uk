@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { AppShell } from "@/components/AppShell";
+import { AdminSettingsShell } from "@/components/admin/settings/AdminSettingsShell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/Input";
@@ -105,14 +105,14 @@ export default function LeadScoringSettingsPage() {
 
   if (loading) {
     return (
-      <AppShell role="admin" title="Lead Scoring Settings">
+      <AdminSettingsShell title="Lead Scoring" subtitle="Configure how incoming enquiries are scored and prioritised">
         <div className="animate-pulse h-64 rounded bg-[var(--muted)]" />
-      </AppShell>
+      </AdminSettingsShell>
     );
   }
 
   return (
-    <AppShell role="admin" title="Lead Scoring Settings" subtitle="Configure how incoming enquiries are scored and prioritised">
+    <AdminSettingsShell title="Lead Scoring" subtitle="Configure how incoming enquiries are scored and prioritised">
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <Link href="/admin/settings">
@@ -220,6 +220,6 @@ export default function LeadScoringSettingsPage() {
           </CardContent>
         </Card>
       </div>
-    </AppShell>
+    </AdminSettingsShell>
   );
 }

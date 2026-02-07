@@ -551,8 +551,8 @@ function QuantractAIWidgetInner({
 
   const positionClasses = position === "bottom-right" ? "right-4 sm:right-6" : "left-4 sm:left-6";
   const panelClasses = isFullscreen
-    ? "fixed inset-0 z-50"
-    : `fixed bottom-4 sm:bottom-6 ${positionClasses} z-50 w-[95vw] sm:w-[420px] h-[80vh] sm:h-[600px] max-h-[calc(100vh-2rem)]`;
+    ? "fixed inset-0 z-[9999]"
+    : `fixed bottom-4 sm:bottom-6 ${positionClasses} z-[9999] w-[95vw] sm:w-[420px] h-[80vh] sm:h-[600px] max-h-[calc(100vh-2rem)]`;
 
   const derivedPrompts = useMemo(() => prompts.slice(0, 4), [prompts]);
 
@@ -636,7 +636,7 @@ function QuantractAIWidgetInner({
       <button
         onClick={() => setIsOpen(true)}
         className={cn(
-          `fixed bottom-4 sm:bottom-6 ${positionClasses} z-50 rounded-full shadow-lg flex items-center gap-2 px-4 h-14 transition-all hover:scale-105 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2`
+          `fixed bottom-4 sm:bottom-6 ${positionClasses} z-[9999] rounded-full shadow-lg flex items-center gap-2 px-4 h-14 transition-all hover:scale-105 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2`
         )}
         style={{ backgroundColor: accentColor }}
         aria-label="Open AI Assistant"

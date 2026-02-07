@@ -1,12 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { AppShell } from "@/components/AppShell";
-import { Breadcrumbs, type BreadcrumbItem } from "@/components/ui/Breadcrumbs";
+import { AdminSettingsShell } from "@/components/admin/settings/AdminSettingsShell";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Shield, Lock, Settings, AlertCircle } from "lucide-react";
+import { Shield, Lock, Settings, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { useToast } from "@/components/ui/useToast";
 
@@ -60,15 +59,8 @@ export default function SecuritySettingsPage() {
     });
   };
 
-  const breadcrumbItems: BreadcrumbItem[] = [
-    { label: "Dashboard", href: "/admin" },
-    { label: "Settings", href: "/admin/settings" },
-    { label: "Security" },
-  ];
-
   return (
-    <AppShell role="admin" title="Security" subtitle="Manage your account security settings">
-      <Breadcrumbs items={breadcrumbItems} />
+    <AdminSettingsShell title="Security" subtitle="Manage your account security settings">
       <div className="space-y-6 max-w-2xl">
 
         {/* Change Password */}
@@ -220,6 +212,6 @@ export default function SecuritySettingsPage() {
           </CardContent>
         </Card>
       </div>
-    </AppShell>
+    </AdminSettingsShell>
   );
 }

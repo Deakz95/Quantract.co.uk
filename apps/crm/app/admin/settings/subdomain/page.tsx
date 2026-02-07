@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { AppShell } from "@/components/AppShell";
-import { Breadcrumbs, type BreadcrumbItem } from "@/components/ui/Breadcrumbs";
+import { AdminSettingsShell } from "@/components/admin/settings/AdminSettingsShell";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -74,15 +73,8 @@ export default function SubdomainSettingsPage() {
   const canUseCustomDomain = entitlements ? hasEntitlement(entitlements, 'feature_custom_domain') : false;
   const portalUrl = subdomain ? `https://${subdomain}.quantract.co.uk` : '';
 
-  const breadcrumbItems: BreadcrumbItem[] = [
-    { label: "Dashboard", href: "/admin" },
-    { label: "Settings", href: "/admin/settings" },
-    { label: "Custom Domain" },
-  ];
-
   return (
-    <AppShell role="admin" title="Custom Domain" subtitle="Configure your branded portal URL">
-      <Breadcrumbs items={breadcrumbItems} />
+    <AdminSettingsShell title="Custom Domain" subtitle="Configure your branded portal URL">
       <div className="space-y-6 max-w-2xl">
 
         {loading ? (
@@ -268,6 +260,6 @@ export default function SubdomainSettingsPage() {
           </>
         )}
       </div>
-    </AppShell>
+    </AdminSettingsShell>
   );
 }

@@ -1,4 +1,17 @@
 /**
+ * Extract a UK postcode from a free-text address string.
+ * Returns the postcode in uppercase with a single space (e.g. "M33 5RP") or null.
+ */
+export function extractUKPostcode(address: string): string | null {
+  // Standard UK postcode regex — covers all formats (A9 9AA, A99 9AA, A9A 9AA, AA9 9AA, AA99 9AA, AA9A 9AA)
+  const match = address.match(
+    /\b([A-Z]{1,2}\d[A-Z\d]?)\s*(\d[A-Z]{2})\b/i
+  );
+  if (!match) return null;
+  return `${match[1].toUpperCase()} ${match[2].toUpperCase()}`;
+}
+
+/**
  * Free UK postcode geocoding via postcodes.io (no API key required).
  * Returns { latitude, longitude } or null if lookup fails.
  */

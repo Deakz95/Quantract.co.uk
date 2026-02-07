@@ -100,9 +100,11 @@ export default function LeafletMap({ pins, onPinClick }: { pins: MapPin[]; onPin
   }, [pins, onPinClick]);
 
   return (
-    <div
-      ref={containerRef}
-      className="rounded-xl overflow-hidden h-[320px] md:h-[420px]"
-    />
+    <div className="relative isolate">
+      <div
+        ref={containerRef}
+        className="rounded-xl overflow-hidden h-[320px] md:h-[420px]"
+      />
+    </div>
   );
 }

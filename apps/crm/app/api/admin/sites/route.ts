@@ -5,7 +5,7 @@ import * as repo from "@/lib/server/repo";
 import { withRequestLogging, logError } from "@/lib/server/observability";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { randomUUID } from "crypto";
-import { geocodePostcode } from "@/lib/server/geocode";
+import { geocodePostcode, extractUKPostcode } from "@/lib/server/geocode";
 
 export const runtime = "nodejs";
 
@@ -63,8 +63,12 @@ export const POST = withRequestLogging(async function POST(req: Request) {
     const clientId = String(body?.clientId ?? "").trim();
     if (!clientId) return NextResponse.json({ ok: false, error: "missing_client_id" }, { status: 400 });
 
-    // Geocode postcode if provided
-    const postcode = typeof body?.postcode === "string" ? body.postcode.trim() : null;
+    // Geocode postcode if provided — or extract from address1
+    let postcode = typeof body?.postcode === "string" ? body.postcode.trim() : null;
+    const address1 = typeof body?.address1 === "string" ? body.address1.trim() : null;
+    if (!postcode && address1) {
+      postcode = extractUKPostcode(address1);
+    }
     let latitude: number | null = typeof body?.latitude === "number" ? body.latitude : null;
     let longitude: number | null = typeof body?.longitude === "number" ? body.longitude : null;
     let warning: string | null = null;

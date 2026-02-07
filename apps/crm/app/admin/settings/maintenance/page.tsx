@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AppShell } from "@/components/AppShell";
+import { AdminSettingsShell } from "@/components/admin/settings/AdminSettingsShell";
 import { Button } from "@/components/ui/button";
 import { Plus, Settings, Trash2 } from "lucide-react";
 
@@ -69,7 +69,7 @@ export default function MaintenanceSettingsPage() {
   }
 
   return (
-    <AppShell role="admin" title="Maintenance Rules" subtitle="Configure automated maintenance schedules and alerts">
+    <AdminSettingsShell title="Maintenance Rules" subtitle="Configure automated maintenance schedules and alerts">
       <div className="space-y-4">
         {/* Create form */}
         <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 space-y-3">
@@ -149,6 +149,6 @@ export default function MaintenanceSettingsPage() {
           </div>
         )}
       </div>
-    </AppShell>
+    </AdminSettingsShell>
   );
 }

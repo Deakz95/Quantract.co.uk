@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireCompanyContext, getEffectiveRole } from "@/lib/serverAuth";
 import { getPrisma } from "@/lib/server/prisma";
-import { geocodePostcode } from "@/lib/server/geocode";
+import { geocodePostcode, extractUKPostcode } from "@/lib/server/geocode";
 import { logError } from "@/lib/server/observability";
 
 export const runtime = "nodejs";
@@ -44,7 +44,18 @@ export async function PATCH(
     }
 
     // Handle postcode + geocoding
-    const newPostcode = typeof body.postcode === "string" ? body.postcode.trim() : undefined;
+    let newPostcode = typeof body.postcode === "string" ? body.postcode.trim() : undefined;
+
+    // If no postcode provided but address1 is being updated, try to extract one
+    const newAddress1 = typeof body.address1 === "string" ? body.address1.trim() : undefined;
+    if (newPostcode === undefined && !existing.postcode && !existing.latitude) {
+      const addrSource = newAddress1 ?? existing.address1;
+      if (addrSource) {
+        const extracted = extractUKPostcode(addrSource);
+        if (extracted) newPostcode = extracted;
+      }
+    }
+
     const postcodeChanged = newPostcode !== undefined && newPostcode !== existing.postcode;
 
     if (postcodeChanged) {

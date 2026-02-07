@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { AppShell } from "@/components/AppShell";
-import { Breadcrumbs, type BreadcrumbItem } from "@/components/ui/Breadcrumbs";
+import { AdminSettingsShell } from "@/components/admin/settings/AdminSettingsShell";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -221,13 +220,6 @@ export default function StorageInsightsPage() {
     });
   };
 
-  const breadcrumbItems: BreadcrumbItem[] = [
-    { label: "Dashboard", href: "/admin" },
-    { label: "Settings", href: "/admin/settings" },
-    { label: "Storage", href: "/admin/settings/storage" },
-    { label: "Insights" },
-  ];
-
   // Pagination helpers
   const totalPages = data ? Math.ceil(data.totalCount / PAGE_SIZE) : 0;
   const currentPage = Math.floor(offset / PAGE_SIZE) + 1;
@@ -268,8 +260,7 @@ export default function StorageInsightsPage() {
   );
 
   return (
-    <AppShell role="admin" title="Storage Insights" subtitle="Identify and clean up unused storage">
-      <Breadcrumbs items={breadcrumbItems} />
+    <AdminSettingsShell title="Storage Insights" subtitle="Identify and clean up unused storage">
       <div className="space-y-6 max-w-3xl">
         {loading ? (
           <div className="p-8 text-center text-[var(--muted-foreground)]">
@@ -497,6 +488,6 @@ export default function StorageInsightsPage() {
           </span>
         </label>
       </ConfirmDialog>
-    </AppShell>
+    </AdminSettingsShell>
   );
 }

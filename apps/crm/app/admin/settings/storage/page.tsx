@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { AppShell } from "@/components/AppShell";
-import { Breadcrumbs, type BreadcrumbItem } from "@/components/ui/Breadcrumbs";
+import { AdminSettingsShell } from "@/components/admin/settings/AdminSettingsShell";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Database, ArrowUpRight, ExternalLink } from "lucide-react";
@@ -107,12 +106,6 @@ export default function StorageSettingsPage() {
     }
   };
 
-  const breadcrumbItems: BreadcrumbItem[] = [
-    { label: "Dashboard", href: "/admin" },
-    { label: "Settings", href: "/admin/settings" },
-    { label: "Storage" },
-  ];
-
   const barColor = !usage
     ? "bg-gray-300"
     : usage.percentUsed >= 90
@@ -122,8 +115,7 @@ export default function StorageSettingsPage() {
         : "bg-green-500";
 
   return (
-    <AppShell role="admin" title="Storage" subtitle="Monitor your file storage usage">
-      <Breadcrumbs items={breadcrumbItems} />
+    <AdminSettingsShell title="Storage" subtitle="Monitor your file storage usage">
       <div className="space-y-6 max-w-2xl">
         {loading ? (
           <div className="p-8 text-center text-[var(--muted-foreground)]">
@@ -392,6 +384,6 @@ export default function StorageSettingsPage() {
           </Card>
         </EntitlementGate>
       </div>
-    </AppShell>
+    </AdminSettingsShell>
   );
 }
