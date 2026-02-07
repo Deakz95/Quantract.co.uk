@@ -66,7 +66,10 @@
       "Bash(gh api:*)",
       "Bash(echo:*)",
       "Bash(git diff:*)",
-      "Bash(npx tsx:*)"
+      "Bash(npx tsx:*)",
+      "Bash(npx vitest run:*)",
+      "Bash(npx jest --passWithNoTests)",
+      "Bash(pnpm test:*)"
     ]
   }
 }

@@ -693,3 +693,67 @@ export function getCertificateTemplate(type: CertificateType): CertificateData {
       });
   }
 }
+
+// Re-export the config-driven type registry
+export {
+  CERTIFICATE_TYPE_REGISTRY,
+  validateFromRegistry,
+  getTypeConfig,
+  getTypeSections,
+  getRequiredSections,
+  getTypeFeatures,
+  getTypeSignatures,
+  getTypeValidationRules,
+  typeHasSection,
+  getTypesByCategory,
+  getAllRegisteredTypes,
+} from "./certificate-registry";
+export type {
+  CertificateTypeConfig,
+  CertificateSectionConfig,
+  CertificateFeatures,
+  CertificateSignatureConfig,
+  ValidationRule,
+  RegistryValidationResult,
+  RegistryValidationError,
+} from "./certificate-registry";
+
+// Re-export the workflow engine (CERT-A14)
+export {
+  getCertificateSteps,
+  getStepRules,
+  validateStep,
+  canAdvanceStep,
+  getNextIncompleteStep,
+  getCompletedSteps,
+  getWorkflowProgress,
+  getStepBySection,
+  getNextStep,
+  getPreviousStep,
+} from "./certificate-workflow";
+export type {
+  WorkflowStep,
+  StepValidationResult,
+  WorkflowProgress,
+} from "./certificate-workflow";
+
+// Re-export the lifecycle state machine (CERT-A16)
+export {
+  deriveLifecycleState,
+  derivePreCompletionState,
+  canTransition,
+  getAvailableTransitions,
+  canComplete,
+  canLock,
+  getStateInfo,
+  isEditable,
+  fromCrmStatus,
+  toCrmStatus,
+  toOfflineStatus,
+} from "./certificate-lifecycle";
+export type {
+  LifecycleState,
+  StoredLifecycleState,
+  TransitionResult,
+  LifecycleStateInfo,
+} from "./certificate-lifecycle";

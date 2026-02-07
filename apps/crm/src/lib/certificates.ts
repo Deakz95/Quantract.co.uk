@@ -1,4 +1,21 @@
 import { z } from "zod";
+import {
+  CERTIFICATE_TYPE_REGISTRY,
+  validateFromRegistry,
+  deriveLifecycleState,
+  canComplete as lifecycleCanComplete,
+  canLock as lifecycleCanLock,
+  getStateInfo,
+  isEditable,
+  fromCrmStatus,
+  toCrmStatus,
+  type CertificateTypeConfig,
+  type RegistryValidationResult,
+  type LifecycleState,
+  type LifecycleStateInfo,
+  type TransitionResult,
+} from "@quantract/shared/certificate-types";
+import type { CertificateType as SharedCertificateType } from "@quantract/shared/certificate-types";
 
 export const CERTIFICATE_TYPES = [
   "EIC", "EICR", "MWC",
@@ -507,6 +524,35 @@ function validateMWCv2(d: Record<string, unknown>): ReadinessResult {
   return buildResult(checks);
 }
 
+// ── CRM sub-type → shared registry base type mapping ──
+
+const CRM_TYPE_TO_REGISTRY: Record<string, SharedCertificateType> = {
+  EIC: "EIC",
+  EICR: "EICR",
+  MWC: "MWC",
+  FIRE_DESIGN: "FIRE",
+  FIRE_INSTALLATION: "FIRE",
+  FIRE_COMMISSIONING: "FIRE",
+  FIRE_INSPECTION_SERVICING: "FIRE",
+  EL_COMPLETION: "EML",
+  EL_PERIODIC: "EML",
+  // Solar types don't have a shared registry entry yet — fall through to generic
+};
+
+/** Convert a RegistryValidationResult to the local ReadinessResult shape */
+function fromRegistryResult(r: RegistryValidationResult): ReadinessResult {
+  return {
+    ok: r.ok,
+    missing: r.missing,
+    errors: r.errors.map((e) => ({
+      section: e.section,
+      field: e.field,
+      message: e.message,
+    })),
+    completionPercent: r.completionPercent,
+  };
+}
+
 // ── Main function ──
 
 export function certificateIsReadyForCompletion(
@@ -514,18 +560,22 @@ export function certificateIsReadyForCompletion(
 ): ReadinessResult {
   const d = data as Record<string, unknown>;
 
-  // --- V2 path: per-type structured validation ---
+  // --- V2 path: config-driven validation via registry ---
   if (isV2CertificateData(d)) {
     const certType = str(d.type);
+    const registryType = CRM_TYPE_TO_REGISTRY[certType];
+    const config = registryType
+      ? CERTIFICATE_TYPE_REGISTRY[registryType]
+      : undefined;
 
-    if (certType === "EICR") return validateEICRv2(d);
-    if (certType === "EIC") return validateEICv2(d);
-    if (certType === "MWC") return validateMWCv2(d);
+    if (config) {
+      return fromRegistryResult(validateFromRegistry(config, d));
+    }
 
-    // For other v2 types (fire, EL, solar, etc.) fall through to generic v2 checks
+    // Fallback for types not in the registry (solar sub-types, future types):
+    // generic v2 checks
     const checks: { passed: boolean; missing: string; error?: ValidationError }[] = [];
 
-    // Generic v2 checks: contractor + boards + overall condition + signatures
     const contractor = (d.contractorDetails ?? {}) as Record<string, unknown>;
     pushCheck(checks, hasStr(contractor.companyName), "contractor company name", {
       section: "contractorDetails", field: "companyName", message: "Contractor company name is required",
@@ -590,3 +640,98 @@ export function certificateIsReadyForCompletion(
 
   return { ok: missing.length === 0, missing, errors, completionPercent };
 }
+
+// ── Lifecycle helpers (CERT-A16) ──
+
+/**
+ * Derive the lifecycle state for a CRM certificate.
+ *
+ * Maps the CRM type to the shared registry type, then delegates to the
+ * shared `deriveLifecycleState()` which uses workflow progress for
+ * pre-completion states.
+ */
+export function getCertificateLifecycle(
+  crmType: CertificateType,
+  crmStatus: string,
+  data: Record<string, unknown>,
+): LifecycleState {
+  const registryType = CRM_TYPE_TO_REGISTRY[crmType];
+  if (!registryType) {
+    // Types not in the registry (solar, etc.) — use stored status directly
+    return fromCrmStatus(crmStatus);
+  }
+  return deriveLifecycleState(crmStatus, registryType, data);
+}
+
+/**
+ * Get display metadata for a CRM certificate's lifecycle state.
+ */
+export function getCertificateLifecycleInfo(
+  crmType: CertificateType,
+  crmStatus: string,
+  data: Record<string, unknown>,
+): LifecycleStateInfo {
+  return getStateInfo(getCertificateLifecycle(crmType, crmStatus, data));
+}
+
+/**
+ * Check whether a CRM certificate can be edited.
+ */
+export function isCertificateEditableByCrmStatus(
+  crmType: CertificateType,
+  crmStatus: string,
+  data: Record<string, unknown>,
+): boolean {
+  return isEditable(getCertificateLifecycle(crmType, crmStatus, data));
+}
+
+/**
+ * Check whether a CRM certificate can be completed.
+ *
+ * Combines the lifecycle state-machine guard with the existing
+ * `certificateIsReadyForCompletion()` validation — the caller doesn't
+ * need to run both separately.
+ */
+export function canCompleteCertificate(
+  crmType: CertificateType,
+  crmStatus: string,
+  data: CertificateData,
+): TransitionResult & { readiness?: ReadinessResult } {
+  const registryType = CRM_TYPE_TO_REGISTRY[crmType];
+
+  // State-machine guard
+  const transition = registryType
+    ? lifecycleCanComplete(crmStatus, registryType, data as Record<string, unknown>)
+    : lifecycleCanComplete(crmStatus, "EIC", data as Record<string, unknown>);
+
+  if (!transition.allowed) {
+    return transition;
+  }
+
+  // Data-validation gate (reuses existing readiness logic)
+  const readiness = certificateIsReadyForCompletion(data);
+  if (!readiness.ok) {
+    return {
+      allowed: false,
+      reason: `Missing: ${readiness.missing.join(", ")}`,
+      readiness,
+    };
+  }
+
+  return { allowed: true, readiness };
+}
+
+/**
+ * Check whether a CRM certificate can be locked (issued).
+ */
+export function canLockCertificate(crmStatus: string): TransitionResult {
+  return lifecycleCanLock(crmStatus);
+}
+
+/**
+ * Convert a lifecycle state back to CRM status for persistence.
+ */
+export { toCrmStatus, fromCrmStatus };
+
+// Re-export lifecycle types for CRM consumers
+export type { LifecycleState, LifecycleStateInfo, TransitionResult };

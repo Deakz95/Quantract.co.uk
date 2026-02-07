@@ -30,6 +30,12 @@ export interface ObservationCounts {
   fi: number;
 }
 
+export interface StepValidationFeedback {
+  ok: boolean;
+  missing: string[];
+  errors: { section: string; field: string; message: string }[];
+}
+
 interface CertificateLayoutProps {
   certType: CertType;
   sections: SectionConfig[];
@@ -44,6 +50,8 @@ interface CertificateLayoutProps {
   isSaving: boolean;
   isGenerating: boolean;
   children: ReactNode;
+  /** Workflow: validate before advancing to next step. Return null to allow, or errors to block. */
+  onValidateStep?: (sectionId: string) => StepValidationFeedback | null;
 }
 
 // ── Constants ──
@@ -222,13 +230,18 @@ export function CertificateLayout({
   isSaving,
   isGenerating,
   children,
+  onValidateStep,
 }: CertificateLayoutProps) {
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [stepErrors, setStepErrors] = useState<string[]>([]);
   const rightPanelRef = useRef<HTMLDivElement>(null);
 
   const meta = CERT_META[certType];
   const activeIdx = sections.findIndex((s) => s.id === activeSection);
+
+  // Clear step errors when section changes
+  useEffect(() => { setStepErrors([]); }, [activeSection]);
 
   // Progress calculation
   const completedCount = sections.filter((s) => s.getStatus() === "complete").length;
@@ -256,7 +269,19 @@ export function CertificateLayout({
   }, [sections, onSectionChange]);
 
   const goPrev = useCallback(() => goToSection(activeIdx - 1), [activeIdx, goToSection]);
-  const goNext = useCallback(() => goToSection(activeIdx + 1), [activeIdx, goToSection]);
+
+  // Forward navigation with optional validation gating
+  const goNext = useCallback(() => {
+    if (onValidateStep) {
+      const result = onValidateStep(activeSection);
+      if (result && !result.ok) {
+        setStepErrors(result.missing);
+        return; // Block advancement
+      }
+    }
+    setStepErrors([]);
+    goToSection(activeIdx + 1);
+  }, [activeIdx, activeSection, goToSection, onValidateStep]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -507,6 +532,34 @@ export function CertificateLayout({
               </div>
               <div className="ml-7 h-0.5 w-12 rounded-full bg-[var(--primary)]/40" />
             </div>
+
+            {/* Step validation errors */}
+            {stepErrors.length > 0 && (
+              <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
+                <div className="flex items-start gap-3">
+                  <svg className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 6a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 6zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                  </svg>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-amber-300 mb-1">Complete this section to continue</p>
+                    <ul className="text-sm text-amber-200/80 space-y-0.5">
+                      {stepErrors.map((err) => (
+                        <li key={err} className="flex items-center gap-1.5">
+                          <span className="w-1 h-1 rounded-full bg-amber-400 shrink-0" />
+                          {err.charAt(0).toUpperCase() + err.slice(1)}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <button
+                    onClick={() => setStepErrors([])}
+                    className="p-1 rounded hover:bg-amber-500/20 text-amber-400 transition-colors shrink-0"
+                  >
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Form content */}
             <div className="min-h-[60vh]">

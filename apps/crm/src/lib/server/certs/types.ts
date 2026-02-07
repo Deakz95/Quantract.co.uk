@@ -1,7 +1,14 @@
 /**
  * Certificate type metadata registry.
- * Single source of truth for all supported certificate types.
+ * Extends the shared config-driven registry (CERT-A13) with CRM-specific
+ * sub-types (e.g. FIRE_DESIGN, EL_COMPLETION) and checklist sections.
  */
+
+import type { CertificateType as SharedCertificateType } from "@quantract/shared/certificate-types";
+import {
+  CERTIFICATE_TYPE_REGISTRY,
+  type CertificateTypeConfig,
+} from "@quantract/shared/certificate-types";
 
 export const CERTIFICATE_TYPES_V2 = [
   // Electrical (BS 7671)
@@ -34,11 +41,14 @@ export type CertTypeMetadata = {
   standard: string;
   requiredSignatureRoles: string[];
   checklistSections: string[];
+  /** Maps to the shared registry base type (CERT-A13) for config-driven validation/features */
+  baseType?: SharedCertificateType;
 };
 
 const META: Record<CertificateTypeV2, CertTypeMetadata> = {
   EIC: {
     type: "EIC",
+    baseType: "EIC",
     displayName: "Electrical Installation Certificate",
     shortName: "EIC",
     category: "electrical",
@@ -48,6 +58,7 @@ const META: Record<CertificateTypeV2, CertTypeMetadata> = {
   },
   EICR: {
     type: "EICR",
+    baseType: "EICR",
     displayName: "Electrical Installation Condition Report",
     shortName: "EICR",
     category: "electrical",
@@ -57,6 +68,7 @@ const META: Record<CertificateTypeV2, CertTypeMetadata> = {
   },
   MWC: {
     type: "MWC",
+    baseType: "MWC",
     displayName: "Minor Electrical Installation Works Certificate",
     shortName: "MWC",
     category: "electrical",
@@ -66,6 +78,7 @@ const META: Record<CertificateTypeV2, CertTypeMetadata> = {
   },
   FIRE_DESIGN: {
     type: "FIRE_DESIGN",
+    baseType: "FIRE",
     displayName: "Fire Detection & Alarm — Design Certificate",
     shortName: "Fire Design",
     category: "fire",
@@ -75,6 +88,7 @@ const META: Record<CertificateTypeV2, CertTypeMetadata> = {
   },
   FIRE_INSTALLATION: {
     type: "FIRE_INSTALLATION",
+    baseType: "FIRE",
     displayName: "Fire Detection & Alarm — Installation Certificate",
     shortName: "Fire Installation",
     category: "fire",
@@ -84,6 +98,7 @@ const META: Record<CertificateTypeV2, CertTypeMetadata> = {
   },
   FIRE_COMMISSIONING: {
     type: "FIRE_COMMISSIONING",
+    baseType: "FIRE",
     displayName: "Fire Detection & Alarm — Commissioning Certificate",
     shortName: "Fire Commissioning",
     category: "fire",
@@ -93,6 +108,7 @@ const META: Record<CertificateTypeV2, CertTypeMetadata> = {
   },
   FIRE_INSPECTION_SERVICING: {
     type: "FIRE_INSPECTION_SERVICING",
+    baseType: "FIRE",
     displayName: "Fire Detection & Alarm — Inspection & Servicing Certificate",
     shortName: "Fire Inspection",
     category: "fire",
@@ -102,6 +118,7 @@ const META: Record<CertificateTypeV2, CertTypeMetadata> = {
   },
   EL_COMPLETION: {
     type: "EL_COMPLETION",
+    baseType: "EML",
     displayName: "Emergency Lighting — Completion Certificate",
     shortName: "EL Completion",
     category: "emergency_lighting",
@@ -111,6 +128,7 @@ const META: Record<CertificateTypeV2, CertTypeMetadata> = {
   },
   EL_PERIODIC: {
     type: "EL_PERIODIC",
+    baseType: "EML",
     displayName: "Emergency Lighting — Periodic Inspection Certificate",
     shortName: "EL Periodic",
     category: "emergency_lighting",
@@ -161,4 +179,15 @@ export function isValidCertType(type: string): type is CertificateTypeV2 {
 
 export function getAllCertTypes(): CertTypeMetadata[] {
   return Object.values(META);
+}
+
+/**
+ * Get the shared registry config for a CRM certificate type.
+ * Maps CRM sub-types (e.g. FIRE_DESIGN) to their base type config (FIRE).
+ * Returns undefined for types not yet in the shared registry (e.g. solar sub-types).
+ */
+export function getSharedTypeConfig(type: string): CertificateTypeConfig | undefined {
+  const meta = META[type as CertificateTypeV2];
+  if (!meta?.baseType) return undefined;
+  return CERTIFICATE_TYPE_REGISTRY[meta.baseType];
 }

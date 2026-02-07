@@ -1,6 +1,14 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { useState, useEffect } from 'react';
+import {
+  deriveLifecycleState,
+  toOfflineStatus,
+  getStateInfo,
+  isEditable,
+  type LifecycleState,
+  type LifecycleStateInfo,
+} from '@quantract/shared/certificate-types';
 
 export type CertificateStatus = 'draft' | 'in_progress' | 'complete' | 'issued';
 export type CertificateType = 'EIC' | 'EICR' | 'MWC' | 'FIRE' | 'EML';
@@ -219,3 +227,39 @@ export const TYPE_LABELS: Record<CertificateType, string> = {
   FIRE: 'Fire Alarm Certificate',
   EML: 'Emergency Lighting Certificate',
 };
+
+// ── Lifecycle helpers (CERT-A16) ──
+
+/**
+ * Derive the lifecycle state for a stored certificate.
+ * Combines the persisted status with workflow progress to compute
+ * the full 5-state lifecycle (draft → in_progress → ready_for_review → completed → locked).
+ */
+export function getCertificateLifecycleState(cert: StoredCertificate): LifecycleState {
+  return deriveLifecycleState(cert.status, cert.certificate_type, cert.data);
+}
+
+/**
+ * Get display metadata for a certificate's lifecycle state.
+ */
+export function getCertificateStateInfo(cert: StoredCertificate): LifecycleStateInfo {
+  return getStateInfo(getCertificateLifecycleState(cert));
+}
+
+/**
+ * Check whether a certificate's data can be edited.
+ */
+export function isCertificateEditable(cert: StoredCertificate): boolean {
+  return isEditable(getCertificateLifecycleState(cert));
+}
+
+/**
+ * Update the stored status to match a lifecycle state transition.
+ * Converts lifecycle state → offline app status format.
+ */
+export function lifecycleToStoredStatus(state: LifecycleState): CertificateStatus {
+  return toOfflineStatus(state);
+}
+
+// Re-export lifecycle types for convenience
+export type { LifecycleState, LifecycleStateInfo };
