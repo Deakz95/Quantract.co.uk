@@ -2026,7 +2026,7 @@ export default function DashboardPage() {
         {/* Onboarding Checklist */}
         <OnboardingChecklist />
 
-        {/* Customize Controls */}
+        {/* Customise Controls */}
         <div className="flex items-center justify-end gap-2">
           {isCustomizing ? (
             <>
@@ -2044,7 +2044,7 @@ export default function DashboardPage() {
           ) : (
             <Button variant="ghost" size="sm" onClick={() => setIsCustomizing(true)}>
               <Settings className="w-4 h-4 mr-1" />
-              Customize Dashboard
+              Customise Dashboard
             </Button>
           )}
         </div>

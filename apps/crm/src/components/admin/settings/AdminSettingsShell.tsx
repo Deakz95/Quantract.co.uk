@@ -14,6 +14,8 @@ const tabs = [
   { label: "PDF Templates", href: "/admin/settings/pdf-templates", icon: LayoutTemplate, desc: "Layout editor" },
   { label: "Legal Entities", href: "/admin/settings/legal-entities", icon: Briefcase, desc: "Billing entities" },
   { label: "Service Lines", href: "/admin/settings/service-lines", icon: Receipt, desc: "Service categories" },
+  { label: "Custom Domain", href: "/admin/settings/subdomain", icon: Settings, desc: "Branded portal URL" },
+  { label: "Terms & Payments", href: "/admin/settings/terms", icon: FileText, desc: "T&Cs & payment terms" },
   { label: "Notifications", href: "/admin/settings/notifications", icon: Mail, desc: "SMS & Email" },
   { label: "Lead Capture", href: "/admin/settings/lead-capture", icon: Inbox, desc: "Website forms" },
   { label: "Financials", href: "/admin/settings/financials", icon: PoundSterling, desc: "Overheads & rates" },

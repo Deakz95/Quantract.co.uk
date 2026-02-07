@@ -879,7 +879,7 @@ export function AppShell({
                 About
               </Link>
               <Link href="/admin/settings/appearance" className="hover:text-[var(--primary)] transition-colors">
-                Customize Theme
+                Customise Theme
               </Link>
             </div>
           </div>

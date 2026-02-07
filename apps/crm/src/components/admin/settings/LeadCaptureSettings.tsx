@@ -780,7 +780,9 @@ function EmbedTab({
   const [copied, setCopied] = useState<string | null>(null);
 
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
-  const apiEndpoint = `${baseUrl}/api/public/tenants/${companySlug}/enquiries`;
+  const apiEndpoint = companySlug
+    ? `${baseUrl}/api/public/tenants/${companySlug}/enquiries`
+    : `${baseUrl}/api/public/tenants/YOUR_COMPANY_SLUG/enquiries`;
 
   const copyToClipboard = (text: string, key: string) => {
     navigator.clipboard.writeText(text);

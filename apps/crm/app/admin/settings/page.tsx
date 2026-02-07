@@ -60,11 +60,11 @@ export default function SettingsPage() {
                 </div>
                 <div className="space-y-1">
                   <label className="text-sm font-medium text-[var(--muted-foreground)]">Tagline</label>
-                  <p className="text-[var(--foreground)]">{data.brandTagline || data.brandName || 'Not set'}</p>
+                  <p className="text-[var(--foreground)]">{data.brandTagline || 'Not set'}</p>
                 </div>
               </div>
               <div className="mt-4 pt-4 border-t border-[var(--border)]">
-                <Link href="/admin/settings/account">
+                <Link href="/admin/settings/appearance">
                   <Button variant="secondary" size="sm">Edit Company Details</Button>
                 </Link>
               </div>
@@ -80,14 +80,14 @@ export default function SettingsPage() {
                 </div>
                 <div>
                   <CardTitle>Theme</CardTitle>
-                  <CardDescription>Customize your brand colors</CardDescription>
+                  <CardDescription>Customise your brand colours</CardDescription>
                 </div>
               </div>
             </CardHeader>
             <CardContent>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-[var(--muted-foreground)]">Primary Color</label>
+                  <label className="text-sm font-medium text-[var(--muted-foreground)]">Primary Colour</label>
                   <div className="flex items-center gap-3">
                     <div
                       className="w-8 h-8 rounded-lg border border-[var(--border)]"
@@ -97,7 +97,7 @@ export default function SettingsPage() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-[var(--muted-foreground)]">Accent Color</label>
+                  <label className="text-sm font-medium text-[var(--muted-foreground)]">Accent Colour</label>
                   <div className="flex items-center gap-3">
                     <div
                       className="w-8 h-8 rounded-lg border border-[var(--border)]"
@@ -109,7 +109,7 @@ export default function SettingsPage() {
               </div>
               <div className="mt-4 pt-4 border-t border-[var(--border)]">
                 <Link href="/admin/settings/appearance">
-                  <Button variant="secondary" size="sm">Customize Theme</Button>
+                  <Button variant="secondary" size="sm">Customise Theme</Button>
                 </Link>
               </div>
             </CardContent>
@@ -134,8 +134,8 @@ export default function SettingsPage() {
                   <label className="text-sm font-medium text-[var(--muted-foreground)]">Current Plan</label>
                   <div className="flex items-center gap-2">
                     <span className="text-[var(--foreground)] font-semibold text-lg">{data.plan || 'Free'}</span>
-                    <Badge variant={data.plan === 'Pro' ? 'success' : 'secondary'}>
-                      {data.plan === 'Pro' ? 'Active' : 'Free Tier'}
+                    <Badge variant={data.subscriptionStatus === 'active' || data.subscriptionStatus === 'trialing' ? 'success' : 'secondary'}>
+                      {data.subscriptionStatus === 'active' ? 'Active' : data.subscriptionStatus === 'trialing' ? 'Trial' : data.plan ? 'Inactive' : 'Free Tier'}
                     </Badge>
                   </div>
                 </div>

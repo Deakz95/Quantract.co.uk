@@ -56,6 +56,7 @@ export function CompanySettingsForm(props: { mode: "settings" | "onboarding"; se
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [info, setInfo] = useState<string | null>(null);
   const [form, setForm] = useState<CompanySettings | null>(null);
   const [selectedPalette, setSelectedPalette] = useState<string | null>(null);
 
@@ -223,9 +224,11 @@ export function CompanySettingsForm(props: { mode: "settings" | "onboarding"; se
       if (!res.ok || !json?.ok) throw new Error(json?.error || (dryRun ? "dry_run_failed" : "auto_chase_failed"));
 
       if (dryRun) {
-        alert(`Dry run: would send ${json.sent} reminders (examined ${json.examined}).`);
+        setInfo(`Dry run: would send ${json.sent} reminders (examined ${json.examined}).`);
+        setTimeout(() => setInfo(null), 5000);
       } else {
-        alert(`Auto-chase run complete. Examined ${json.examined}, sent ${json.sent}, skipped ${json.skipped}.`);
+        setInfo(`Auto-chase complete. Examined ${json.examined}, sent ${json.sent}, skipped ${json.skipped}.`);
+        setTimeout(() => setInfo(null), 5000);
       }
     } catch (e: any) {
       setError(e?.message || (dryRun ? "dry_run_failed" : "auto_chase_failed"));
@@ -481,8 +484,8 @@ export function CompanySettingsForm(props: { mode: "settings" | "onboarding"; se
 
       }
 
-      {/* Defaults & Numbering — not on PDF page */}
-      {section !== "pdf" && <Card>
+      {/* Defaults & Numbering — only when no section filter */}
+      {!section && <Card>
         <CardHeader>
           <CardTitle>Defaults & Numbering</CardTitle>
           <CardDescription>Business defaults and document numbering</CardDescription>
@@ -573,8 +576,8 @@ export function CompanySettingsForm(props: { mode: "settings" | "onboarding"; se
 
       }
 
-      {/* Job & Certificate — not on PDF page */}
-      {section !== "pdf" && <Card>
+      {/* Job & Certificate — only when no section filter */}
+      {!section && <Card>
         <CardHeader>
           <CardTitle>Job & Certificate</CardTitle>
           <CardDescription>Automation between jobs and certificates</CardDescription>
@@ -701,6 +704,12 @@ export function CompanySettingsForm(props: { mode: "settings" | "onboarding"; se
         <div className="rounded-xl border border-[var(--success)]/30 bg-[var(--success)]/5 p-4 text-sm text-[var(--success)] flex items-center gap-2">
           <Check className="w-4 h-4" />
           Settings saved successfully!
+        </div>
+      )}
+
+      {info && (
+        <div className="rounded-xl border border-[var(--primary)]/30 bg-[var(--primary)]/5 p-4 text-sm text-[var(--foreground)]">
+          {info}
         </div>
       )}
 

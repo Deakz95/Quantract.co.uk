@@ -732,7 +732,7 @@ export function PdfTemplateEditor({
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-[10px] text-[var(--muted-foreground)]">Color</label>
+                      <label className="block text-[10px] text-[var(--muted-foreground)]">Colour</label>
                       <input
                         type="color"
                         value={selected.color || "#000000"}
@@ -760,7 +760,7 @@ export function PdfTemplateEditor({
               {selected.type === "line" && (
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-[10px] text-[var(--muted-foreground)]">Color</label>
+                    <label className="block text-[10px] text-[var(--muted-foreground)]">Colour</label>
                     <input
                       type="color"
                       value={selected.lineColor || "#000000"}

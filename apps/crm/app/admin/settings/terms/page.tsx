@@ -334,7 +334,7 @@ Any disputes will be resolved through negotiation in the first instance. If nece
                 placeholder="Enter your terms and conditions..."
               />
               <div className="text-xs text-[var(--muted-foreground)]">
-                These terms will be included on your quotes and invoices. Customize them to match your business requirements.
+                These terms will be included on your quotes and invoices. Customise them to match your business requirements.
               </div>
             </div>
           </CardContent>

@@ -82,6 +82,8 @@ export const GET = withRequestLogging(async function GET() {
         pdfFooterLine2: true,
         pdfContactDetails: true,
         uiMode: true,
+        plan: true,
+        subscriptionStatus: true,
       },
     });
     msDb = stopDb();
