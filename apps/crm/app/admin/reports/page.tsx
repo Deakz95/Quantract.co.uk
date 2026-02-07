@@ -16,7 +16,7 @@ type ReportCard = {
 const reports: ReportCard[] = [
   {
     title: "Pipeline Report",
-    description: "Visualize your sales funnel and track deals through each stage",
+    description: "Visualise your sales funnel and track deals through each stage",
     href: "/admin/reports/pipeline",
     icon: GitBranch,
     color: "from-blue-500 to-blue-600",
@@ -44,7 +44,7 @@ const reports: ReportCard[] = [
   },
   {
     title: "Revenue Report",
-    description: "Analyze revenue trends and forecasts",
+    description: "Analyse revenue trends and forecasts",
     href: "/admin/reports/revenue",
     icon: FileBarChart,
     color: "from-pink-500 to-rose-500",
@@ -60,7 +60,7 @@ const reports: ReportCard[] = [
 
 export default function ReportsPage() {
   return (
-    <AppShell role="admin" title="Reports" subtitle="Analyze your business performance with detailed insights">
+    <AppShell role="admin" title="Reports" subtitle="Analyse your business performance with detailed insights">
       <div className="space-y-6">
         {/* Quick Stats Banner */}
         <Card className="bg-gradient-to-r from-[var(--primary)] to-[var(--primary-dark)] text-white border-0">

@@ -396,18 +396,6 @@ export default function JobsPage() {
       },
     },
     {
-      key: 'description',
-      label: 'Description',
-      render: (job) => {
-        const desc = job.description || job.notes || '';
-        return (
-          <span className="text-[var(--muted-foreground)] text-xs line-clamp-1" title={desc}>
-            {desc ? (desc.length > 60 ? desc.slice(0, 57) + '...' : desc) : '-'}
-          </span>
-        );
-      },
-    },
-    {
       key: 'clientName',
       label: 'Client',
       sortable: true,

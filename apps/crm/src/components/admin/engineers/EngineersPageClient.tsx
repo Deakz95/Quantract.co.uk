@@ -449,7 +449,7 @@ export default function EngineersPageClient() {
                                 <span className="text-[10px] text-slate-400">{activityData[e.id].todayJobCount} job{activityData[e.id].todayJobCount === 1 ? '' : 's'} today</span>
                               )}
                               {activityData[e.id].lastActive && (
-                                <span className="text-[10px] text-slate-400">Last active {(() => { const d = Math.floor((Date.now() - new Date(activityData[e.id].lastActive!).getTime()) / 86400000); return d === 0 ? 'today' : d === 1 ? 'yesterday' : `${d}d ago`; })()}</span>
+                                <span className="text-[10px] text-slate-400">Last active {(() => { const d = Math.floor((Date.now() - new Date(activityData[e.id].lastActive!).getTime()) / 86400000); return d <= 0 ? 'today' : d === 1 ? 'yesterday' : `${d}d ago`; })()}</span>
                               )}
                             </div>
                           )}

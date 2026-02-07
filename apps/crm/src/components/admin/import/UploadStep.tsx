@@ -93,7 +93,7 @@ export function UploadStep({ entityType, onUploadComplete }: UploadStepProps) {
           {isUploading && (
             <div className="mt-4 flex items-center gap-2 text-sm text-[var(--muted-foreground)]">
               <div className="h-4 w-4 animate-spin rounded-full border-2 border-[var(--primary)] border-t-transparent" />
-              Uploading and analyzing file...
+              Uploading and analysing file...
             </div>
           )}
 
@@ -111,7 +111,7 @@ export function UploadStep({ entityType, onUploadComplete }: UploadStepProps) {
           <CardHeader>
             <div className="flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5 text-[var(--success)]" />
-              <CardTitle>File Analyzed</CardTitle>
+              <CardTitle>File Analysed</CardTitle>
             </div>
             <CardDescription>
               Found {uploadResult.totalRows} rows with {uploadResult.headers.length} columns

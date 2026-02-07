@@ -59,7 +59,14 @@
       "Bash(git log:*)",
       "Bash(tasklist:*)",
       "Bash(npx next build:*)",
-      "Bash(pnpm -C apps/crm tsc:*)"
+      "Bash(pnpm -C apps/crm tsc:*)",
+      "Bash(render logs:*)",
+      "Bash(render:*)",
+      "Bash(python3:*)",
+      "Bash(gh api:*)",
+      "Bash(echo:*)",
+      "Bash(git diff:*)",
+      "Bash(npx tsx:*)"
     ]
   }
 }

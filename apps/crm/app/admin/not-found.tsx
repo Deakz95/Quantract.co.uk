@@ -1,6 +1,11 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function AdminNotFound() {
+  const router = useRouter();
+
   return (
     <div className="flex items-center justify-center px-4 py-24">
       <div className="max-w-md w-full rounded-2xl border border-[var(--border)] bg-[var(--background)] p-8 text-center shadow-sm">
@@ -16,6 +21,12 @@ export default function AdminNotFound() {
           >
             Go to Dashboard
           </Link>
+          <button
+            onClick={() => router.back()}
+            className="inline-flex items-center justify-center min-h-[44px] px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--background)] text-sm font-medium text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors"
+          >
+            Go Back
+          </button>
         </div>
       </div>
     </div>

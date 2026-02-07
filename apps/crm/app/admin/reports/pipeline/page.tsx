@@ -109,7 +109,7 @@ export default function PipelineReportPage() {
   const totalDeals = data?.stages.reduce((sum, s) => sum + s.count, 0) || 0;
 
   return (
-    <AppShell role="admin" title="Pipeline Report" subtitle="Visualize your sales funnel and deal progression">
+    <AppShell role="admin" title="Pipeline Report" subtitle="Visualise your sales funnel and deal progression">
       <div className="space-y-6">
         {/* Header Actions */}
         <div className="flex flex-wrap items-center justify-between gap-4">

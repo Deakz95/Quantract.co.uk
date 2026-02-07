@@ -282,7 +282,7 @@ function StatsWidget({ data, loading, onRefresh, isRefreshing }: {
 }) {
   const stats = data ? [
     {
-      label: "Quotes Sent",
+      label: "Open Quotes",
       value: data.quotes.pendingCount.toString(),
       change: data.quotes.draftCount > 0
         ? `${data.quotes.draftCount} draft, ${data.quotes.sentCount} sent`
