@@ -1,19 +1,18 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback, useMemo, Suspense } from "react";
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Button, Card, CardHeader, CardTitle, CardContent, CardDescription, Input, Label, NativeSelect, Textarea } from "@quantract/ui";
+import { Button, Input, Label, NativeSelect, Textarea } from "@quantract/ui";
 import { getCertificateTemplate, type EICRCertificate, type BoardData as BoardDataType } from "@quantract/shared/certificate-types";
 import { generateCertificatePDF } from "../../lib/pdf-generator";
-import BoardViewer, { type BoardData, type Circuit } from "../../components/BoardViewer";
+import BoardViewer, { type BoardData } from "../../components/BoardViewer";
 import {
   useCertificateStore,
   useStoreHydration,
   createNewCertificate,
   generateCertificateNumber,
 } from "../../lib/certificateStore";
-import { StickyActionBar } from "../../components/StickyActionBar";
+import { CertificateLayout, SECTION_ICONS, type SectionConfig, type SectionStatus } from "../../components/CertificateLayout";
 import { PhotoCapture } from "../../components/PhotoCapture";
 import { ContractorDetails } from "../../components/ContractorDetails";
 import { ExtentAndLimitations } from "../../components/ExtentAndLimitations";
@@ -70,22 +69,7 @@ const DEFAULT_INSPECTION_ITEMS = [
 
 type SectionId = "contractor" | "installation" | "extent" | "supply" | "earthing" | "inspection" | "boards" | "tests" | "observations" | "summary" | "assessment" | "declaration" | "acknowledgement" | "photos";
 
-const SECTIONS: { id: SectionId; label: string }[] = [
-  { id: "contractor", label: "1. Contractor Details" },
-  { id: "installation", label: "2. Installation Details" },
-  { id: "extent", label: "3. Extent & Limitations" },
-  { id: "supply", label: "4. Supply Characteristics" },
-  { id: "earthing", label: "5. Earthing Arrangements" },
-  { id: "inspection", label: "6. General Inspection" },
-  { id: "boards", label: "7. Distribution Boards" },
-  { id: "tests", label: "8. Test Results" },
-  { id: "observations", label: "9. Observations" },
-  { id: "summary", label: "10. Summary of Condition" },
-  { id: "assessment", label: "11. Overall Assessment" },
-  { id: "declaration", label: "12. Declaration" },
-  { id: "acknowledgement", label: "13. Client Acknowledgement" },
-  { id: "photos", label: "14. Site Photos" },
-];
+const hasStr = (v: unknown) => typeof v === "string" && v.trim().length > 0;
 
 function EICRPageContent() {
   const searchParams = useSearchParams();
@@ -219,7 +203,7 @@ function EICRPageContent() {
     setSaveStatus("idle");
   };
 
-  // Auto-save
+  // Auto-save (5s debounce)
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dataRef = useRef(data);
   dataRef.current = data;
@@ -237,7 +221,7 @@ function EICRPageContent() {
   useEffect(() => {
     if (!currentCertId || saveStatus !== "idle") return;
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
-    autoSaveTimer.current = setTimeout(doAutoSave, 2000);
+    autoSaveTimer.current = setTimeout(doAutoSave, 5000);
     return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
   }, [data, currentCertId, saveStatus, doAutoSave]);
 
@@ -302,572 +286,591 @@ function EICRPageContent() {
     }
   };
 
+  // ── Section configs with icons and status functions ──
+
+  const sectionConfigs: SectionConfig[] = useMemo(() => [
+    {
+      id: "contractor",
+      label: "Contractor Details",
+      icon: SECTION_ICONS.building,
+      getStatus: (): SectionStatus => hasStr(data.contractorDetails.companyName) ? "complete" : "empty",
+    },
+    {
+      id: "installation",
+      label: "Installation Details",
+      icon: SECTION_ICONS.mapPin,
+      getStatus: (): SectionStatus => {
+        const hasClient = hasStr(data.overview.clientName);
+        const hasAddress = hasStr(data.overview.installationAddress);
+        if (hasClient && hasAddress) return "complete";
+        if (hasClient || hasAddress) return "partial";
+        return "empty";
+      },
+    },
+    {
+      id: "extent",
+      label: "Extent & Limitations",
+      icon: SECTION_ICONS.ruler,
+      getStatus: (): SectionStatus => hasStr(data.extentAndLimitations.extentCovered) ? "complete" : "empty",
+    },
+    {
+      id: "supply",
+      label: "Supply Characteristics",
+      icon: SECTION_ICONS.zap,
+      getStatus: (): SectionStatus => hasStr(data.supplyCharacteristics.systemType) ? "complete" : "empty",
+    },
+    {
+      id: "earthing",
+      label: "Earthing Arrangements",
+      icon: SECTION_ICONS.plug,
+      getStatus: (): SectionStatus => hasStr(data.earthingArrangements.meansOfEarthing) ? "complete" : "empty",
+    },
+    {
+      id: "inspection",
+      label: "General Inspection",
+      icon: SECTION_ICONS.clipboardCheck,
+      getStatus: (): SectionStatus => {
+        const filled = data.generalInspection.filter((item) => hasStr(item.outcome));
+        if (filled.length === 0) return "empty";
+        if (filled.length === data.generalInspection.length) return "complete";
+        return "partial";
+      },
+    },
+    {
+      id: "boards",
+      label: "Distribution Boards",
+      icon: SECTION_ICONS.layoutGrid,
+      getStatus: (): SectionStatus => data.boards.length > 0 ? "complete" : "empty",
+    },
+    {
+      id: "tests",
+      label: "Test Results",
+      icon: SECTION_ICONS.barChart,
+      getStatus: (): SectionStatus => {
+        const tr = data.testResults;
+        const vals = [
+          tr.continuityOfProtectiveConductors,
+          tr.insulationResistance,
+          tr.earthFaultLoopImpedance,
+          tr.rcdOperatingTime,
+          tr.rcdOperatingCurrent,
+        ];
+        const filled = vals.filter((v) => hasStr(v));
+        if (filled.length === 0) return "empty";
+        if (filled.length === vals.length) return "complete";
+        return "partial";
+      },
+    },
+    {
+      id: "observations",
+      label: "Observations",
+      icon: SECTION_ICONS.eye,
+      getStatus: (): SectionStatus => "complete",
+    },
+    {
+      id: "summary",
+      label: "Summary of Condition",
+      icon: SECTION_ICONS.clipboardList,
+      getStatus: (): SectionStatus => "complete",
+    },
+    {
+      id: "assessment",
+      label: "Overall Assessment",
+      icon: SECTION_ICONS.target,
+      getStatus: (): SectionStatus => hasStr(data.overallCondition) ? "complete" : "empty",
+    },
+    {
+      id: "declaration",
+      label: "Declaration",
+      icon: SECTION_ICONS.penTool,
+      getStatus: (): SectionStatus => engineerSig ? "complete" : "empty",
+    },
+    {
+      id: "acknowledgement",
+      label: "Client Acknowledgement",
+      icon: SECTION_ICONS.user,
+      getStatus: (): SectionStatus => customerSig ? "complete" : "empty",
+    },
+    {
+      id: "photos",
+      label: "Site Photos",
+      icon: SECTION_ICONS.camera,
+      getStatus: (): SectionStatus => "complete",
+    },
+  ], [
+    data.contractorDetails.companyName,
+    data.overview.clientName,
+    data.overview.installationAddress,
+    data.extentAndLimitations.extentCovered,
+    data.supplyCharacteristics.systemType,
+    data.earthingArrangements.meansOfEarthing,
+    data.generalInspection,
+    data.boards,
+    data.testResults,
+    data.overallCondition,
+    engineerSig,
+    customerSig,
+  ]);
+
   return (
-    <main className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
-      {/* Header */}
-      <header className="border-b border-[var(--border)] bg-[var(--card)] sticky top-0 z-10">
-        <div className="max-w-[1600px] mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href="/dashboard" className="text-[var(--muted-foreground)] hover:text-[var(--foreground)]">
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-            </Link>
+    <CertificateLayout
+      certType="EICR"
+      sections={sectionConfigs}
+      activeSection={activeSection}
+      onSectionChange={(id) => setActiveSection(id as SectionId)}
+      quickInfo={{
+        client: data.overview.clientName || undefined,
+        site: data.overview.installationAddress || undefined,
+        date: undefined,
+        reference: currentCertId ? `EICR-${currentCertId.slice(0, 6)}` : undefined,
+      }}
+      observationCounts={{
+        c1: summaryOfCondition.c1Count,
+        c2: summaryOfCondition.c2Count,
+        c3: summaryOfCondition.c3Count,
+        fi: summaryOfCondition.fiCount,
+      }}
+      saveStatus={saveStatus}
+      lastSaved={lastSaved}
+      onSave={handleSave}
+      onDownload={handleDownload}
+      isSaving={isSaving}
+      isGenerating={isGenerating}
+    >
+      {/* 1. Contractor Details */}
+      {activeSection === "contractor" && (
+        <div className="space-y-5">
+          <ContractorDetails
+            data={data.contractorDetails}
+            onChange={(contractorDetails) => {
+              setData((prev) => ({ ...prev, contractorDetails }));
+              setSaveStatus("idle");
+            }}
+          />
+        </div>
+      )}
+
+      {/* 2. Installation Details */}
+      {activeSection === "installation" && (
+        <div className="space-y-5">
+          <div className="grid md:grid-cols-2 gap-4">
             <div>
-              <h1 className="text-xl font-bold">Electrical Installation Condition Report</h1>
-              <p className="text-xs text-[var(--muted-foreground)]">
-                BS 7671:2018+A2:2022 | EICR
-                {currentCertId && (
-                  <span className="ml-2 text-[var(--primary)]">
-                    {lastSaved ? `Last saved ${lastSaved.toLocaleTimeString()}` : "Not saved"}
-                  </span>
-                )}
-              </p>
+              <Label htmlFor="jobReference">Report Reference</Label>
+              <Input id="jobReference" value={data.overview.jobReference} onChange={(e) => updateOverview("jobReference", e.target.value)} placeholder="e.g. EICR-2026-001" />
+            </div>
+            <div>
+              <Label htmlFor="dateOfInspection">Date of Inspection</Label>
+              <Input id="dateOfInspection" type="date" value={data.overview.dateOfInspection} onChange={(e) => updateOverview("dateOfInspection", e.target.value)} />
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="secondary" onClick={handleSave} disabled={isSaving} className="relative">
-              {saveStatus === "saving" ? "Saving..." : saveStatus === "saved" ? (
-                <span className="flex items-center gap-1">
-                  <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  Saved
-                </span>
-              ) : "Save"}
-            </Button>
-            <Button onClick={handleDownload} disabled={isGenerating}>
-              {isGenerating ? "Generating..." : "Download PDF"}
-            </Button>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="clientName">Client Name</Label>
+              <Input id="clientName" value={data.overview.clientName} onChange={(e) => updateOverview("clientName", e.target.value)} placeholder="Client or company name" />
+            </div>
+            <div>
+              <Label htmlFor="occupier">Occupier</Label>
+              <Input id="occupier" value={data.overview.occupier} onChange={(e) => updateOverview("occupier", e.target.value)} placeholder="Occupier name (if different)" />
+            </div>
+          </div>
+          <div>
+            <Label htmlFor="installationAddress">Installation Address</Label>
+            <Textarea id="installationAddress" value={data.overview.installationAddress} onChange={(e) => updateOverview("installationAddress", e.target.value)} placeholder="Full address of the installation" className="min-h-[80px]" />
+          </div>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="descriptionOfPremises">Description of Premises</Label>
+              <NativeSelect id="descriptionOfPremises" value={data.overview.descriptionOfPremises} onChange={(e) => updateOverview("descriptionOfPremises", e.target.value)}>
+                <option value="">Select...</option>
+                <option value="domestic">Domestic</option>
+                <option value="commercial">Commercial</option>
+                <option value="industrial">Industrial</option>
+                <option value="agricultural">Agricultural</option>
+                <option value="public">Public</option>
+                <option value="residential">Residential</option>
+                <option value="educational">Educational</option>
+                <option value="healthcare">Healthcare</option>
+                <option value="other">Other</option>
+              </NativeSelect>
+            </div>
+            <div>
+              <Label htmlFor="estimatedAgeOfWiring">Estimated Age of Wiring</Label>
+              <Input id="estimatedAgeOfWiring" value={data.overview.estimatedAgeOfWiring} onChange={(e) => updateOverview("estimatedAgeOfWiring", e.target.value)} placeholder="e.g. 15 years" />
+            </div>
+          </div>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="dateOfLastInspection">Date of Last Inspection</Label>
+              <Input id="dateOfLastInspection" type="date" value={data.overview.dateOfLastInspection} onChange={(e) => updateOverview("dateOfLastInspection", e.target.value)} />
+            </div>
+            <div>
+              <Label htmlFor="previousReportReference">Previous Report Reference</Label>
+              <Input id="previousReportReference" value={data.overview.previousReportReference} onChange={(e) => updateOverview("previousReportReference", e.target.value)} placeholder="Reference of previous report" />
+            </div>
+          </div>
+          <div>
+            <Label htmlFor="purposeOfReport">Purpose of Report</Label>
+            <Input id="purposeOfReport" value={data.overview.purposeOfReport} onChange={(e) => updateOverview("purposeOfReport", e.target.value)} placeholder="e.g. Periodic inspection, Change of tenancy, Mortgage survey" />
+          </div>
+          <div className="flex items-center gap-3">
+            <input type="checkbox" id="evidenceOfAlterations" checked={data.overview.evidenceOfAlterations} onChange={(e) => updateOverview("evidenceOfAlterations", e.target.checked)} className="w-5 h-5 rounded accent-[var(--primary)]" />
+            <Label htmlFor="evidenceOfAlterations" className="mb-0">Evidence of alterations or additions</Label>
+          </div>
+          {data.overview.evidenceOfAlterations && (
+            <div>
+              <Label htmlFor="alterationsDetails">Details of Alterations</Label>
+              <Textarea id="alterationsDetails" value={data.overview.alterationsDetails} onChange={(e) => updateOverview("alterationsDetails", e.target.value)} placeholder="Describe any alterations or additions observed..." className="min-h-[60px]" />
+            </div>
+          )}
+          <div className="flex items-center gap-3">
+            <input type="checkbox" id="recordsAvailable" checked={data.overview.recordsAvailable} onChange={(e) => updateOverview("recordsAvailable", e.target.checked)} className="w-5 h-5 rounded accent-[var(--primary)]" />
+            <Label htmlFor="recordsAvailable" className="mb-0">Previous records available</Label>
           </div>
         </div>
-      </header>
+      )}
 
-      {/* Section Navigation */}
-      <div className="max-w-[1600px] mx-auto px-6 pt-4">
-        <div className="flex gap-1 overflow-x-auto pb-2 scrollbar-none">
-          {SECTIONS.map((section) => (
-            <button
-              key={section.id}
-              onClick={() => setActiveSection(section.id)}
-              className={`px-3 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
-                activeSection === section.id
-                  ? "bg-[var(--primary)] text-white"
-                  : "text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
-              }`}
-            >
-              {section.label}
-            </button>
-          ))}
+      {/* 3. Extent & Limitations */}
+      {activeSection === "extent" && (
+        <div className="space-y-5">
+          <ExtentAndLimitations
+            data={data.extentAndLimitations}
+            onChange={(extentAndLimitations) => {
+              setData((prev) => ({ ...prev, extentAndLimitations }));
+              setSaveStatus("idle");
+            }}
+          />
         </div>
-      </div>
+      )}
 
-      <div className="max-w-[1600px] mx-auto px-6 py-6">
-        {/* Save Status Banner */}
-        {!currentCertId && (
-          <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl text-sm text-amber-400 flex items-center gap-3">
-            <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            <span>This report is not saved yet. Click &quot;Save&quot; to store it locally.</span>
+      {/* 4. Supply Characteristics */}
+      {activeSection === "supply" && (
+        <div className="space-y-5">
+          <div className="grid md:grid-cols-3 gap-4">
+            <div>
+              <Label htmlFor="systemType">System Type (Earthing)</Label>
+              <NativeSelect id="systemType" value={data.supplyCharacteristics.systemType} onChange={(e) => updateSupply("systemType", e.target.value)}>
+                <option value="">Select...</option>
+                <option value="TN-C-S">TN-C-S (PME)</option>
+                <option value="TN-S">TN-S</option>
+                <option value="TT">TT</option>
+                <option value="IT">IT</option>
+              </NativeSelect>
+            </div>
+            <div>
+              <Label htmlFor="numberOfPhases">Number of Phases</Label>
+              <NativeSelect id="numberOfPhases" value={data.supplyCharacteristics.numberOfPhases} onChange={(e) => updateSupply("numberOfPhases", e.target.value)}>
+                <option value="">Select...</option>
+                <option value="single">Single Phase</option>
+                <option value="three">Three Phase</option>
+              </NativeSelect>
+            </div>
+            <div>
+              <Label htmlFor="natureOfSupply">Nature of Supply</Label>
+              <NativeSelect id="natureOfSupply" value={data.supplyCharacteristics.natureOfSupply} onChange={(e) => updateSupply("natureOfSupply", e.target.value)}>
+                <option value="">Select...</option>
+                <option value="AC">AC</option>
+                <option value="DC">DC</option>
+              </NativeSelect>
+            </div>
           </div>
-        )}
-
-        {/* 1. Contractor Details */}
-        {activeSection === "contractor" && (
-          <div className="max-w-[900px]">
-            <ContractorDetails
-              data={data.contractorDetails}
-              onChange={(contractorDetails) => {
-                setData((prev) => ({ ...prev, contractorDetails }));
-                setSaveStatus("idle");
-              }}
-            />
+          <div className="grid md:grid-cols-3 gap-4">
+            <div>
+              <Label htmlFor="nominalVoltageToEarth">Nominal Voltage to Earth (V)</Label>
+              <Input id="nominalVoltageToEarth" value={data.supplyCharacteristics.nominalVoltageToEarth} onChange={(e) => updateSupply("nominalVoltageToEarth", e.target.value)} placeholder="230" />
+            </div>
+            <div>
+              <Label htmlFor="nominalVoltageBetweenPhases">Voltage Between Phases (V)</Label>
+              <Input id="nominalVoltageBetweenPhases" value={data.supplyCharacteristics.nominalVoltageBetweenPhases} onChange={(e) => updateSupply("nominalVoltageBetweenPhases", e.target.value)} placeholder="400" />
+            </div>
+            <div>
+              <Label htmlFor="frequency">Frequency (Hz)</Label>
+              <Input id="frequency" value={data.supplyCharacteristics.frequency} onChange={(e) => updateSupply("frequency", e.target.value)} placeholder="50" />
+            </div>
           </div>
-        )}
-
-        {/* 2. Installation Details */}
-        {activeSection === "installation" && (
-          <div className="max-w-[900px] flex flex-col gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Installation Details</CardTitle>
-                <CardDescription>Basic information about the installation</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="jobReference">Report Reference</Label>
-                    <Input id="jobReference" value={data.overview.jobReference} onChange={(e) => updateOverview("jobReference", e.target.value)} placeholder="e.g. EICR-2026-001" />
-                  </div>
-                  <div>
-                    <Label htmlFor="dateOfInspection">Date of Inspection</Label>
-                    <Input id="dateOfInspection" type="date" value={data.overview.dateOfInspection} onChange={(e) => updateOverview("dateOfInspection", e.target.value)} />
-                  </div>
-                </div>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="clientName">Client Name</Label>
-                    <Input id="clientName" value={data.overview.clientName} onChange={(e) => updateOverview("clientName", e.target.value)} placeholder="Client or company name" />
-                  </div>
-                  <div>
-                    <Label htmlFor="occupier">Occupier</Label>
-                    <Input id="occupier" value={data.overview.occupier} onChange={(e) => updateOverview("occupier", e.target.value)} placeholder="Occupier name (if different)" />
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="installationAddress">Installation Address</Label>
-                  <Textarea id="installationAddress" value={data.overview.installationAddress} onChange={(e) => updateOverview("installationAddress", e.target.value)} placeholder="Full address of the installation" className="min-h-[80px]" />
-                </div>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="descriptionOfPremises">Description of Premises</Label>
-                    <NativeSelect id="descriptionOfPremises" value={data.overview.descriptionOfPremises} onChange={(e) => updateOverview("descriptionOfPremises", e.target.value)}>
-                      <option value="">Select...</option>
-                      <option value="domestic">Domestic</option>
-                      <option value="commercial">Commercial</option>
-                      <option value="industrial">Industrial</option>
-                      <option value="agricultural">Agricultural</option>
-                      <option value="public">Public</option>
-                      <option value="residential">Residential</option>
-                      <option value="educational">Educational</option>
-                      <option value="healthcare">Healthcare</option>
-                      <option value="other">Other</option>
-                    </NativeSelect>
-                  </div>
-                  <div>
-                    <Label htmlFor="estimatedAgeOfWiring">Estimated Age of Wiring</Label>
-                    <Input id="estimatedAgeOfWiring" value={data.overview.estimatedAgeOfWiring} onChange={(e) => updateOverview("estimatedAgeOfWiring", e.target.value)} placeholder="e.g. 15 years" />
-                  </div>
-                </div>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="dateOfLastInspection">Date of Last Inspection</Label>
-                    <Input id="dateOfLastInspection" type="date" value={data.overview.dateOfLastInspection} onChange={(e) => updateOverview("dateOfLastInspection", e.target.value)} />
-                  </div>
-                  <div>
-                    <Label htmlFor="previousReportReference">Previous Report Reference</Label>
-                    <Input id="previousReportReference" value={data.overview.previousReportReference} onChange={(e) => updateOverview("previousReportReference", e.target.value)} placeholder="Reference of previous report" />
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="purposeOfReport">Purpose of Report</Label>
-                  <Input id="purposeOfReport" value={data.overview.purposeOfReport} onChange={(e) => updateOverview("purposeOfReport", e.target.value)} placeholder="e.g. Periodic inspection, Change of tenancy, Mortgage survey" />
-                </div>
-                <div className="flex items-center gap-3">
-                  <input type="checkbox" id="evidenceOfAlterations" checked={data.overview.evidenceOfAlterations} onChange={(e) => updateOverview("evidenceOfAlterations", e.target.checked)} className="w-5 h-5 rounded accent-[var(--primary)]" />
-                  <Label htmlFor="evidenceOfAlterations" className="mb-0">Evidence of alterations or additions</Label>
-                </div>
-                {data.overview.evidenceOfAlterations && (
-                  <div>
-                    <Label htmlFor="alterationsDetails">Details of Alterations</Label>
-                    <Textarea id="alterationsDetails" value={data.overview.alterationsDetails} onChange={(e) => updateOverview("alterationsDetails", e.target.value)} placeholder="Describe any alterations or additions observed..." className="min-h-[60px]" />
-                  </div>
-                )}
-                <div className="flex items-center gap-3">
-                  <input type="checkbox" id="recordsAvailable" checked={data.overview.recordsAvailable} onChange={(e) => updateOverview("recordsAvailable", e.target.checked)} className="w-5 h-5 rounded accent-[var(--primary)]" />
-                  <Label htmlFor="recordsAvailable" className="mb-0">Previous records available</Label>
-                </div>
-              </CardContent>
-            </Card>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="prospectiveFaultCurrent">Prospective Fault Current (kA)</Label>
+              <Input id="prospectiveFaultCurrent" value={data.supplyCharacteristics.prospectiveFaultCurrent} onChange={(e) => updateSupply("prospectiveFaultCurrent", e.target.value)} placeholder="e.g. 16" />
+            </div>
+            <div>
+              <Label htmlFor="externalLoopImpedance">External Ze (Ohm)</Label>
+              <Input id="externalLoopImpedance" value={data.supplyCharacteristics.externalLoopImpedance} onChange={(e) => updateSupply("externalLoopImpedance", e.target.value)} placeholder="e.g. 0.35" />
+            </div>
           </div>
-        )}
-
-        {/* 3. Extent & Limitations */}
-        {activeSection === "extent" && (
-          <div className="max-w-[900px]">
-            <ExtentAndLimitations
-              data={data.extentAndLimitations}
-              onChange={(extentAndLimitations) => {
-                setData((prev) => ({ ...prev, extentAndLimitations }));
-                setSaveStatus("idle");
-              }}
-            />
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="supplyProtectiveDeviceType">Supply Protective Device Type</Label>
+              <Input id="supplyProtectiveDeviceType" value={data.supplyCharacteristics.supplyProtectiveDeviceType} onChange={(e) => updateSupply("supplyProtectiveDeviceType", e.target.value)} placeholder="e.g. BS 88 Fuse" />
+            </div>
+            <div>
+              <Label htmlFor="supplyProtectiveDeviceRating">Supply Protective Device Rating (A)</Label>
+              <Input id="supplyProtectiveDeviceRating" value={data.supplyCharacteristics.supplyProtectiveDeviceRating} onChange={(e) => updateSupply("supplyProtectiveDeviceRating", e.target.value)} placeholder="e.g. 100" />
+            </div>
           </div>
-        )}
-
-        {/* 4. Supply Characteristics */}
-        {activeSection === "supply" && (
-          <div className="max-w-[900px]">
-            <Card>
-              <CardHeader>
-                <CardTitle>Supply Characteristics</CardTitle>
-                <CardDescription>Details of the electrical supply per BS 7671</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid md:grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="systemType">System Type (Earthing)</Label>
-                    <NativeSelect id="systemType" value={data.supplyCharacteristics.systemType} onChange={(e) => updateSupply("systemType", e.target.value)}>
-                      <option value="">Select...</option>
-                      <option value="TN-C-S">TN-C-S (PME)</option>
-                      <option value="TN-S">TN-S</option>
-                      <option value="TT">TT</option>
-                      <option value="IT">IT</option>
-                    </NativeSelect>
-                  </div>
-                  <div>
-                    <Label htmlFor="numberOfPhases">Number of Phases</Label>
-                    <NativeSelect id="numberOfPhases" value={data.supplyCharacteristics.numberOfPhases} onChange={(e) => updateSupply("numberOfPhases", e.target.value)}>
-                      <option value="">Select...</option>
-                      <option value="single">Single Phase</option>
-                      <option value="three">Three Phase</option>
-                    </NativeSelect>
-                  </div>
-                  <div>
-                    <Label htmlFor="natureOfSupply">Nature of Supply</Label>
-                    <NativeSelect id="natureOfSupply" value={data.supplyCharacteristics.natureOfSupply} onChange={(e) => updateSupply("natureOfSupply", e.target.value)}>
-                      <option value="">Select...</option>
-                      <option value="AC">AC</option>
-                      <option value="DC">DC</option>
-                    </NativeSelect>
-                  </div>
-                </div>
-                <div className="grid md:grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="nominalVoltageToEarth">Nominal Voltage to Earth (V)</Label>
-                    <Input id="nominalVoltageToEarth" value={data.supplyCharacteristics.nominalVoltageToEarth} onChange={(e) => updateSupply("nominalVoltageToEarth", e.target.value)} placeholder="230" />
-                  </div>
-                  <div>
-                    <Label htmlFor="nominalVoltageBetweenPhases">Voltage Between Phases (V)</Label>
-                    <Input id="nominalVoltageBetweenPhases" value={data.supplyCharacteristics.nominalVoltageBetweenPhases} onChange={(e) => updateSupply("nominalVoltageBetweenPhases", e.target.value)} placeholder="400" />
-                  </div>
-                  <div>
-                    <Label htmlFor="frequency">Frequency (Hz)</Label>
-                    <Input id="frequency" value={data.supplyCharacteristics.frequency} onChange={(e) => updateSupply("frequency", e.target.value)} placeholder="50" />
-                  </div>
-                </div>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="prospectiveFaultCurrent">Prospective Fault Current (kA)</Label>
-                    <Input id="prospectiveFaultCurrent" value={data.supplyCharacteristics.prospectiveFaultCurrent} onChange={(e) => updateSupply("prospectiveFaultCurrent", e.target.value)} placeholder="e.g. 16" />
-                  </div>
-                  <div>
-                    <Label htmlFor="externalLoopImpedance">External Ze (Ohm)</Label>
-                    <Input id="externalLoopImpedance" value={data.supplyCharacteristics.externalLoopImpedance} onChange={(e) => updateSupply("externalLoopImpedance", e.target.value)} placeholder="e.g. 0.35" />
-                  </div>
-                </div>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="supplyProtectiveDeviceType">Supply Protective Device Type</Label>
-                    <Input id="supplyProtectiveDeviceType" value={data.supplyCharacteristics.supplyProtectiveDeviceType} onChange={(e) => updateSupply("supplyProtectiveDeviceType", e.target.value)} placeholder="e.g. BS 88 Fuse" />
-                  </div>
-                  <div>
-                    <Label htmlFor="supplyProtectiveDeviceRating">Supply Protective Device Rating (A)</Label>
-                    <Input id="supplyProtectiveDeviceRating" value={data.supplyCharacteristics.supplyProtectiveDeviceRating} onChange={(e) => updateSupply("supplyProtectiveDeviceRating", e.target.value)} placeholder="e.g. 100" />
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <input type="checkbox" id="otherSourcesOfSupply" checked={data.supplyCharacteristics.otherSourcesOfSupply} onChange={(e) => updateSupply("otherSourcesOfSupply", e.target.checked)} className="w-5 h-5 rounded accent-[var(--primary)]" />
-                  <Label htmlFor="otherSourcesOfSupply" className="mb-0">Other sources of supply (e.g. generator, solar PV)</Label>
-                </div>
-                {data.supplyCharacteristics.otherSourcesOfSupply && (
-                  <div>
-                    <Label htmlFor="otherSourcesDetails">Other Sources Details</Label>
-                    <Input id="otherSourcesDetails" value={data.supplyCharacteristics.otherSourcesDetails} onChange={(e) => updateSupply("otherSourcesDetails", e.target.value)} placeholder="Describe other sources of supply" />
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+          <div className="flex items-center gap-3">
+            <input type="checkbox" id="otherSourcesOfSupply" checked={data.supplyCharacteristics.otherSourcesOfSupply} onChange={(e) => updateSupply("otherSourcesOfSupply", e.target.checked)} className="w-5 h-5 rounded accent-[var(--primary)]" />
+            <Label htmlFor="otherSourcesOfSupply" className="mb-0">Other sources of supply (e.g. generator, solar PV)</Label>
           </div>
-        )}
+          {data.supplyCharacteristics.otherSourcesOfSupply && (
+            <div>
+              <Label htmlFor="otherSourcesDetails">Other Sources Details</Label>
+              <Input id="otherSourcesDetails" value={data.supplyCharacteristics.otherSourcesDetails} onChange={(e) => updateSupply("otherSourcesDetails", e.target.value)} placeholder="Describe other sources of supply" />
+            </div>
+          )}
+        </div>
+      )}
 
-        {/* 5. Earthing Arrangements */}
-        {activeSection === "earthing" && (
-          <div className="max-w-[900px]">
-            <Card>
-              <CardHeader>
-                <CardTitle>Earthing Arrangements</CardTitle>
-                <CardDescription>Details of earthing and bonding per BS 7671</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="meansOfEarthing">Means of Earthing</Label>
-                    <NativeSelect id="meansOfEarthing" value={data.earthingArrangements.meansOfEarthing} onChange={(e) => updateEarthing("meansOfEarthing", e.target.value)}>
-                      <option value="">Select...</option>
-                      <option value="supply_distributor">Supply Distributor</option>
-                      <option value="earth_electrode">Earth Electrode</option>
-                      <option value="other">Other</option>
-                    </NativeSelect>
-                  </div>
-                  <div>
-                    <Label htmlFor="earthElectrodeType">Earth Electrode Type</Label>
-                    <NativeSelect id="earthElectrodeType" value={data.earthingArrangements.earthElectrodeType} onChange={(e) => updateEarthing("earthElectrodeType", e.target.value)}>
-                      <option value="">Select...</option>
-                      <option value="rod">Rod</option>
-                      <option value="tape">Tape</option>
-                      <option value="plate">Plate</option>
-                      <option value="ring">Ring</option>
-                      <option value="foundation">Foundation</option>
-                      <option value="other">Other</option>
-                    </NativeSelect>
-                  </div>
-                </div>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="earthingConductorType">Earthing Conductor Type</Label>
-                    <Input id="earthingConductorType" value={data.earthingArrangements.earthingConductorType} onChange={(e) => updateEarthing("earthingConductorType", e.target.value)} placeholder="e.g. Copper" />
-                  </div>
-                  <div>
-                    <Label htmlFor="earthingConductorSize">Earthing Conductor Size (mm2)</Label>
-                    <Input id="earthingConductorSize" value={data.earthingArrangements.earthingConductorSize} onChange={(e) => updateEarthing("earthingConductorSize", e.target.value)} placeholder="e.g. 16" />
-                  </div>
-                </div>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="mainProtectiveBondingType">Main Bonding Type</Label>
-                    <Input id="mainProtectiveBondingType" value={data.earthingArrangements.mainProtectiveBondingType} onChange={(e) => updateEarthing("mainProtectiveBondingType", e.target.value)} placeholder="e.g. Copper" />
-                  </div>
-                  <div>
-                    <Label htmlFor="mainProtectiveBondingSize">Main Bonding Size (mm2)</Label>
-                    <Input id="mainProtectiveBondingSize" value={data.earthingArrangements.mainProtectiveBondingSize} onChange={(e) => updateEarthing("mainProtectiveBondingSize", e.target.value)} placeholder="e.g. 10" />
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="zeMeasured">Ze Measured (Ohm)</Label>
-                  <Input id="zeMeasured" value={data.earthingArrangements.zeMeasured} onChange={(e) => updateEarthing("zeMeasured", e.target.value)} placeholder="e.g. 0.35" />
-                </div>
-
-                {/* Bonding checklist */}
-                <div className="border border-[var(--border)] rounded-xl p-4 space-y-3">
-                  <p className="text-sm font-semibold text-[var(--foreground)]">Main Protective Bonding Connected To:</p>
-                  <div className="grid md:grid-cols-3 gap-3">
-                    {[
-                      { key: "bondingToWater", label: "Water" },
-                      { key: "bondingToGas", label: "Gas" },
-                      { key: "bondingToOil", label: "Oil" },
-                      { key: "bondingToStructuralSteel", label: "Structural Steel" },
-                      { key: "bondingToLightningProtection", label: "Lightning Protection" },
-                      { key: "bondingToOther", label: "Other" },
-                    ].map(({ key, label }) => (
-                      <div key={key} className="flex items-center gap-2">
-                        <input type="checkbox" id={key} checked={(data.earthingArrangements as Record<string, unknown>)[key] as boolean} onChange={(e) => updateEarthing(key, e.target.checked)} className="w-4 h-4 rounded accent-[var(--primary)]" />
-                        <Label htmlFor={key} className="mb-0 text-sm">{label}</Label>
-                      </div>
-                    ))}
-                  </div>
-                  {data.earthingArrangements.bondingToOther && (
-                    <div>
-                      <Label htmlFor="bondingToOtherDetails">Other Bonding Details</Label>
-                      <Input id="bondingToOtherDetails" value={data.earthingArrangements.bondingToOtherDetails} onChange={(e) => updateEarthing("bondingToOtherDetails", e.target.value)} placeholder="Specify other bonding" />
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <input type="checkbox" id="supplementaryBondingPresent" checked={data.earthingArrangements.supplementaryBondingPresent} onChange={(e) => updateEarthing("supplementaryBondingPresent", e.target.checked)} className="w-5 h-5 rounded accent-[var(--primary)]" />
-                  <Label htmlFor="supplementaryBondingPresent" className="mb-0">Supplementary bonding present</Label>
-                </div>
-              </CardContent>
-            </Card>
+      {/* 5. Earthing Arrangements */}
+      {activeSection === "earthing" && (
+        <div className="space-y-5">
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="meansOfEarthing">Means of Earthing</Label>
+              <NativeSelect id="meansOfEarthing" value={data.earthingArrangements.meansOfEarthing} onChange={(e) => updateEarthing("meansOfEarthing", e.target.value)}>
+                <option value="">Select...</option>
+                <option value="supply_distributor">Supply Distributor</option>
+                <option value="earth_electrode">Earth Electrode</option>
+                <option value="other">Other</option>
+              </NativeSelect>
+            </div>
+            <div>
+              <Label htmlFor="earthElectrodeType">Earth Electrode Type</Label>
+              <NativeSelect id="earthElectrodeType" value={data.earthingArrangements.earthElectrodeType} onChange={(e) => updateEarthing("earthElectrodeType", e.target.value)}>
+                <option value="">Select...</option>
+                <option value="rod">Rod</option>
+                <option value="tape">Tape</option>
+                <option value="plate">Plate</option>
+                <option value="ring">Ring</option>
+                <option value="foundation">Foundation</option>
+                <option value="other">Other</option>
+              </NativeSelect>
+            </div>
           </div>
-        )}
-
-        {/* 6. General Inspection */}
-        {activeSection === "inspection" && (
-          <div className="max-w-[1200px]">
-            <InspectionChecklist
-              items={data.generalInspection}
-              onChange={(generalInspection) => {
-                setData((prev) => ({ ...prev, generalInspection: generalInspection as typeof prev.generalInspection }));
-                setSaveStatus("idle");
-              }}
-            />
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="earthingConductorType">Earthing Conductor Type</Label>
+              <Input id="earthingConductorType" value={data.earthingArrangements.earthingConductorType} onChange={(e) => updateEarthing("earthingConductorType", e.target.value)} placeholder="e.g. Copper" />
+            </div>
+            <div>
+              <Label htmlFor="earthingConductorSize">Earthing Conductor Size (mm2)</Label>
+              <Input id="earthingConductorSize" value={data.earthingArrangements.earthingConductorSize} onChange={(e) => updateEarthing("earthingConductorSize", e.target.value)} placeholder="e.g. 16" />
+            </div>
           </div>
-        )}
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="mainProtectiveBondingType">Main Bonding Type</Label>
+              <Input id="mainProtectiveBondingType" value={data.earthingArrangements.mainProtectiveBondingType} onChange={(e) => updateEarthing("mainProtectiveBondingType", e.target.value)} placeholder="e.g. Copper" />
+            </div>
+            <div>
+              <Label htmlFor="mainProtectiveBondingSize">Main Bonding Size (mm2)</Label>
+              <Input id="mainProtectiveBondingSize" value={data.earthingArrangements.mainProtectiveBondingSize} onChange={(e) => updateEarthing("mainProtectiveBondingSize", e.target.value)} placeholder="e.g. 10" />
+            </div>
+          </div>
+          <div>
+            <Label htmlFor="zeMeasured">Ze Measured (Ohm)</Label>
+            <Input id="zeMeasured" value={data.earthingArrangements.zeMeasured} onChange={(e) => updateEarthing("zeMeasured", e.target.value)} placeholder="e.g. 0.35" />
+          </div>
 
-        {/* 7. Distribution Boards */}
-        {activeSection === "boards" && (
-          <div className="flex flex-col gap-8">
-            <div className="flex items-center justify-between">
+          {/* Bonding checklist */}
+          <div className="border border-[var(--border)] rounded-xl p-4 space-y-3">
+            <p className="text-sm font-semibold text-[var(--foreground)]">Main Protective Bonding Connected To:</p>
+            <div className="grid md:grid-cols-3 gap-3">
+              {[
+                { key: "bondingToWater", label: "Water" },
+                { key: "bondingToGas", label: "Gas" },
+                { key: "bondingToOil", label: "Oil" },
+                { key: "bondingToStructuralSteel", label: "Structural Steel" },
+                { key: "bondingToLightningProtection", label: "Lightning Protection" },
+                { key: "bondingToOther", label: "Other" },
+              ].map(({ key, label }) => (
+                <div key={key} className="flex items-center gap-2">
+                  <input type="checkbox" id={key} checked={(data.earthingArrangements as Record<string, unknown>)[key] as boolean} onChange={(e) => updateEarthing(key, e.target.checked)} className="w-4 h-4 rounded accent-[var(--primary)]" />
+                  <Label htmlFor={key} className="mb-0 text-sm">{label}</Label>
+                </div>
+              ))}
+            </div>
+            {data.earthingArrangements.bondingToOther && (
               <div>
-                <h2 className="text-2xl font-bold mb-2">Distribution Boards</h2>
-                <p className="text-[var(--muted-foreground)]">Visual and table views of circuit schedules and test results</p>
+                <Label htmlFor="bondingToOtherDetails">Other Bonding Details</Label>
+                <Input id="bondingToOtherDetails" value={data.earthingArrangements.bondingToOtherDetails} onChange={(e) => updateEarthing("bondingToOtherDetails", e.target.value)} placeholder="Specify other bonding" />
               </div>
-              <Button variant="secondary" onClick={addBoard}>+ Add Board</Button>
-            </div>
-
-            {data.boards.length === 0 ? (
-              <div className="text-center py-12 text-[var(--muted-foreground)]">
-                <p className="text-lg mb-2">No distribution boards added yet</p>
-                <p className="text-sm">Click &quot;+ Add Board&quot; to add a consumer unit or distribution board</p>
-              </div>
-            ) : (
-              data.boards.map((board) => (
-                <BoardViewer key={board.id} board={board as unknown as BoardData} />
-              ))
             )}
           </div>
-        )}
 
-        {/* 8. Test Results */}
-        {activeSection === "tests" && (
-          <div className="max-w-[900px]">
-            <Card>
-              <CardHeader>
-                <CardTitle>Test Results Summary</CardTitle>
-                <CardDescription>Key test measurements at the origin of the installation</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid md:grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="continuityOfProtectiveConductors">Continuity R1+R2 (Ohm)</Label>
-                    <Input id="continuityOfProtectiveConductors" value={data.testResults.continuityOfProtectiveConductors} onChange={(e) => updateTests("continuityOfProtectiveConductors", e.target.value)} placeholder="e.g. 0.25" />
-                  </div>
-                  <div>
-                    <Label htmlFor="insulationResistance">Insulation Resistance (MOhm)</Label>
-                    <Input id="insulationResistance" value={data.testResults.insulationResistance} onChange={(e) => updateTests("insulationResistance", e.target.value)} placeholder="e.g. >200" />
-                  </div>
-                  <div>
-                    <Label htmlFor="earthFaultLoopImpedance">Zs (Ohm)</Label>
-                    <Input id="earthFaultLoopImpedance" value={data.testResults.earthFaultLoopImpedance} onChange={(e) => updateTests("earthFaultLoopImpedance", e.target.value)} placeholder="e.g. 0.45" />
-                  </div>
-                </div>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="rcdOperatingTime">RCD Operating Time (ms)</Label>
-                    <Input id="rcdOperatingTime" value={data.testResults.rcdOperatingTime} onChange={(e) => updateTests("rcdOperatingTime", e.target.value)} placeholder="e.g. 25" />
-                  </div>
-                  <div>
-                    <Label htmlFor="rcdOperatingCurrent">RCD Operating Current (mA)</Label>
-                    <Input id="rcdOperatingCurrent" value={data.testResults.rcdOperatingCurrent} onChange={(e) => updateTests("rcdOperatingCurrent", e.target.value)} placeholder="e.g. 30" />
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <input type="checkbox" id="polarityConfirmed" checked={data.testResults.polarityConfirmed} onChange={(e) => updateTests("polarityConfirmed", e.target.checked)} className="w-5 h-5 rounded accent-[var(--primary)]" />
-                  <Label htmlFor="polarityConfirmed" className="mb-0">Polarity confirmed</Label>
-                </div>
-              </CardContent>
-            </Card>
+          <div className="flex items-center gap-3">
+            <input type="checkbox" id="supplementaryBondingPresent" checked={data.earthingArrangements.supplementaryBondingPresent} onChange={(e) => updateEarthing("supplementaryBondingPresent", e.target.checked)} className="w-5 h-5 rounded accent-[var(--primary)]" />
+            <Label htmlFor="supplementaryBondingPresent" className="mb-0">Supplementary bonding present</Label>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* 9. Observations */}
-        {activeSection === "observations" && (
-          <div className="max-w-[900px]">
-            <ObservationsList
-              observations={data.observations}
-              onChange={(observations) => {
-                setData((prev) => ({ ...prev, observations }));
-                setSaveStatus("idle");
-              }}
-            />
+      {/* 6. General Inspection */}
+      {activeSection === "inspection" && (
+        <div className="space-y-5">
+          <InspectionChecklist
+            items={data.generalInspection}
+            onChange={(generalInspection) => {
+              setData((prev) => ({ ...prev, generalInspection: generalInspection as typeof prev.generalInspection }));
+              setSaveStatus("idle");
+            }}
+          />
+        </div>
+      )}
+
+      {/* 7. Distribution Boards */}
+      {activeSection === "boards" && (
+        <div className="space-y-5">
+          <div className="flex items-center justify-between">
+            <p className="text-[var(--muted-foreground)]">Visual and table views of circuit schedules and test results</p>
+            <Button variant="secondary" onClick={addBoard}>+ Add Board</Button>
           </div>
-        )}
 
-        {/* 10. Summary of Condition */}
-        {activeSection === "summary" && (
-          <div className="max-w-[900px]">
-            <SummaryOfCondition
-              c1Count={summaryOfCondition.c1Count}
-              c2Count={summaryOfCondition.c2Count}
-              c3Count={summaryOfCondition.c3Count}
-              fiCount={summaryOfCondition.fiCount}
-            />
+          {data.boards.length === 0 ? (
+            <div className="text-center py-12 text-[var(--muted-foreground)]">
+              <p className="text-lg mb-2">No distribution boards added yet</p>
+              <p className="text-sm">Click &quot;+ Add Board&quot; to add a consumer unit or distribution board</p>
+            </div>
+          ) : (
+            data.boards.map((board) => (
+              <BoardViewer key={board.id} board={board as unknown as BoardData} />
+            ))
+          )}
+        </div>
+      )}
+
+      {/* 8. Test Results */}
+      {activeSection === "tests" && (
+        <div className="space-y-5">
+          <div className="grid md:grid-cols-3 gap-4">
+            <div>
+              <Label htmlFor="continuityOfProtectiveConductors">Continuity R1+R2 (Ohm)</Label>
+              <Input id="continuityOfProtectiveConductors" value={data.testResults.continuityOfProtectiveConductors} onChange={(e) => updateTests("continuityOfProtectiveConductors", e.target.value)} placeholder="e.g. 0.25" />
+            </div>
+            <div>
+              <Label htmlFor="insulationResistance">Insulation Resistance (MOhm)</Label>
+              <Input id="insulationResistance" value={data.testResults.insulationResistance} onChange={(e) => updateTests("insulationResistance", e.target.value)} placeholder="e.g. >200" />
+            </div>
+            <div>
+              <Label htmlFor="earthFaultLoopImpedance">Zs (Ohm)</Label>
+              <Input id="earthFaultLoopImpedance" value={data.testResults.earthFaultLoopImpedance} onChange={(e) => updateTests("earthFaultLoopImpedance", e.target.value)} placeholder="e.g. 0.45" />
+            </div>
           </div>
-        )}
-
-        {/* 11. Overall Assessment */}
-        {activeSection === "assessment" && (
-          <div className="max-w-[900px]">
-            <Card>
-              <CardHeader>
-                <CardTitle>Overall Assessment</CardTitle>
-                <CardDescription>Overall condition of the installation</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="overallCondition">Overall Condition</Label>
-                    <NativeSelect id="overallCondition" value={data.overallCondition} onChange={(e) => setData((prev) => ({ ...prev, overallCondition: e.target.value as EICRCertificate["overallCondition"] }))}>
-                      <option value="">Select...</option>
-                      <option value="satisfactory">Satisfactory</option>
-                      <option value="unsatisfactory">Unsatisfactory</option>
-                      <option value="further_investigation">Further Investigation Required</option>
-                    </NativeSelect>
-                  </div>
-                  <div>
-                    <Label htmlFor="recommendedRetestDate">Recommended Retest Date</Label>
-                    <Input id="recommendedRetestDate" type="date" value={data.recommendedRetestDate} onChange={(e) => setData((prev) => ({ ...prev, recommendedRetestDate: e.target.value }))} />
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="retestInterval">Retest Interval</Label>
-                  <NativeSelect id="retestInterval" value={data.retestInterval} onChange={(e) => setData((prev) => ({ ...prev, retestInterval: e.target.value }))}>
-                    <option value="">Select...</option>
-                    <option value="1">1 year</option>
-                    <option value="2">2 years</option>
-                    <option value="3">3 years</option>
-                    <option value="5">5 years</option>
-                    <option value="10">10 years</option>
-                  </NativeSelect>
-                </div>
-                <div>
-                  <Label htmlFor="inspectorComments">Inspector Comments</Label>
-                  <Textarea id="inspectorComments" value={data.inspectorComments} onChange={(e) => { setData((prev) => ({ ...prev, inspectorComments: e.target.value })); setSaveStatus("idle"); }} placeholder="Any additional comments by the inspector..." className="min-h-[100px]" />
-                </div>
-              </CardContent>
-            </Card>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="rcdOperatingTime">RCD Operating Time (ms)</Label>
+              <Input id="rcdOperatingTime" value={data.testResults.rcdOperatingTime} onChange={(e) => updateTests("rcdOperatingTime", e.target.value)} placeholder="e.g. 25" />
+            </div>
+            <div>
+              <Label htmlFor="rcdOperatingCurrent">RCD Operating Current (mA)</Label>
+              <Input id="rcdOperatingCurrent" value={data.testResults.rcdOperatingCurrent} onChange={(e) => updateTests("rcdOperatingCurrent", e.target.value)} placeholder="e.g. 30" />
+            </div>
           </div>
-        )}
-
-        {/* 12. Declaration */}
-        {activeSection === "declaration" && (
-          <div className="max-w-[900px]">
-            <DeclarationSection
-              role="inspector"
-              data={data.declarationDetails}
-              onChange={(declarationDetails) => {
-                setData((prev) => ({ ...prev, declarationDetails }));
-                setSaveStatus("idle");
-              }}
-              signatureValue={engineerSig}
-              onSignatureChange={setEngineerSig}
-            />
+          <div className="flex items-center gap-3">
+            <input type="checkbox" id="polarityConfirmed" checked={data.testResults.polarityConfirmed} onChange={(e) => updateTests("polarityConfirmed", e.target.checked)} className="w-5 h-5 rounded accent-[var(--primary)]" />
+            <Label htmlFor="polarityConfirmed" className="mb-0">Polarity confirmed</Label>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* 13. Client Acknowledgement */}
-        {activeSection === "acknowledgement" && (
-          <div className="max-w-[900px]">
-            <ClientAcknowledgement
-              data={data.clientAcknowledgement}
-              onChange={(clientAcknowledgement) => {
-                setData((prev) => ({ ...prev, clientAcknowledgement }));
-                setSaveStatus("idle");
-              }}
-              signatureValue={customerSig}
-              onSignatureChange={setCustomerSig}
-            />
+      {/* 9. Observations */}
+      {activeSection === "observations" && (
+        <div className="space-y-5">
+          <ObservationsList
+            observations={data.observations}
+            onChange={(observations) => {
+              setData((prev) => ({ ...prev, observations }));
+              setSaveStatus("idle");
+            }}
+          />
+        </div>
+      )}
+
+      {/* 10. Summary of Condition */}
+      {activeSection === "summary" && (
+        <div className="space-y-5">
+          <SummaryOfCondition
+            c1Count={summaryOfCondition.c1Count}
+            c2Count={summaryOfCondition.c2Count}
+            c3Count={summaryOfCondition.c3Count}
+            fiCount={summaryOfCondition.fiCount}
+          />
+        </div>
+      )}
+
+      {/* 11. Overall Assessment */}
+      {activeSection === "assessment" && (
+        <div className="space-y-5">
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="overallCondition">Overall Condition</Label>
+              <NativeSelect id="overallCondition" value={data.overallCondition} onChange={(e) => setData((prev) => ({ ...prev, overallCondition: e.target.value as EICRCertificate["overallCondition"] }))}>
+                <option value="">Select...</option>
+                <option value="satisfactory">Satisfactory</option>
+                <option value="unsatisfactory">Unsatisfactory</option>
+                <option value="further_investigation">Further Investigation Required</option>
+              </NativeSelect>
+            </div>
+            <div>
+              <Label htmlFor="recommendedRetestDate">Recommended Retest Date</Label>
+              <Input id="recommendedRetestDate" type="date" value={data.recommendedRetestDate} onChange={(e) => setData((prev) => ({ ...prev, recommendedRetestDate: e.target.value }))} />
+            </div>
           </div>
-        )}
-
-        {/* 14. Site Photos */}
-        {activeSection === "photos" && (
-          <div className="max-w-[1200px]">
-            <Card>
-              <CardHeader>
-                <CardTitle>Site Photos</CardTitle>
-                <CardDescription>Attach photos from the inspection</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <PhotoCapture photos={photos} onChange={setPhotos} />
-              </CardContent>
-            </Card>
+          <div>
+            <Label htmlFor="retestInterval">Retest Interval</Label>
+            <NativeSelect id="retestInterval" value={data.retestInterval} onChange={(e) => setData((prev) => ({ ...prev, retestInterval: e.target.value }))}>
+              <option value="">Select...</option>
+              <option value="1">1 year</option>
+              <option value="2">2 years</option>
+              <option value="3">3 years</option>
+              <option value="5">5 years</option>
+              <option value="10">10 years</option>
+            </NativeSelect>
           </div>
-        )}
-      </div>
+          <div>
+            <Label htmlFor="inspectorComments">Inspector Comments</Label>
+            <Textarea id="inspectorComments" value={data.inspectorComments} onChange={(e) => { setData((prev) => ({ ...prev, inspectorComments: e.target.value })); setSaveStatus("idle"); }} placeholder="Any additional comments by the inspector..." className="min-h-[100px]" />
+          </div>
+        </div>
+      )}
 
-      <StickyActionBar
-        onSave={handleSave}
-        onDownload={handleDownload}
-        isSaving={isSaving}
-        isGenerating={isGenerating}
-        saveStatus={saveStatus}
-        downloadLabel="Download Report"
-      />
-    </main>
+      {/* 12. Declaration */}
+      {activeSection === "declaration" && (
+        <div className="space-y-5">
+          <DeclarationSection
+            role="inspector"
+            data={data.declarationDetails}
+            onChange={(declarationDetails) => {
+              setData((prev) => ({ ...prev, declarationDetails }));
+              setSaveStatus("idle");
+            }}
+            signatureValue={engineerSig}
+            onSignatureChange={setEngineerSig}
+          />
+        </div>
+      )}
+
+      {/* 13. Client Acknowledgement */}
+      {activeSection === "acknowledgement" && (
+        <div className="space-y-5">
+          <ClientAcknowledgement
+            data={data.clientAcknowledgement}
+            onChange={(clientAcknowledgement) => {
+              setData((prev) => ({ ...prev, clientAcknowledgement }));
+              setSaveStatus("idle");
+            }}
+            signatureValue={customerSig}
+            onSignatureChange={setCustomerSig}
+          />
+        </div>
+      )}
+
+      {/* 14. Site Photos */}
+      {activeSection === "photos" && (
+        <div className="space-y-5">
+          <PhotoCapture photos={photos} onChange={setPhotos} />
+        </div>
+      )}
+    </CertificateLayout>
   );
 }
 
