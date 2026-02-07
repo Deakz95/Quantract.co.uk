@@ -4,7 +4,7 @@ import { CompanySettingsForm } from "@/components/admin/CompanySettingsForm";
 export default function PdfSettingsPage() {
   return (
     <AdminSettingsShell title="PDF customiser" subtitle="Configure footers and template branding.">
-      <CompanySettingsForm mode="settings" />
+      <CompanySettingsForm mode="settings" section="pdf" />
     </AdminSettingsShell>
   );
 }

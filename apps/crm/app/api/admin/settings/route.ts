@@ -76,6 +76,8 @@ export const GET = withRequestLogging(async function GET() {
         themeAccent: true,
         themeBg: true,
         themeText: true,
+        pdfPrimaryColour: true,
+        pdfAccentColour: true,
         pdfFooterLine1: true,
         pdfFooterLine2: true,
         pdfContactDetails: true,
@@ -198,6 +200,16 @@ export const PATCH = withRequestLogging(async function PATCH(req: Request) {
 
     themeText:
       typeof body.themeText === "string" ? body.themeText.trim() : undefined,
+
+    pdfPrimaryColour:
+      typeof body.pdfPrimaryColour === "string"
+        ? body.pdfPrimaryColour.trim() || null
+        : body.pdfPrimaryColour === null ? null : undefined,
+
+    pdfAccentColour:
+      typeof body.pdfAccentColour === "string"
+        ? body.pdfAccentColour.trim() || null
+        : body.pdfAccentColour === null ? null : undefined,
 
     pdfFooterLine1:
       typeof body.pdfFooterLine1 === "string"

@@ -1,4 +1,4 @@
-import { requireRole, requireCompanyId } from "@/lib/serverAuth";
+import { requireRole, requireCompanyId, requireFinancialAccess } from "@/lib/serverAuth";
 import * as repo from "@/lib/server/repo";
 import { renderInvoicePdf, tryRenderWithTemplate } from "@/lib/server/pdf";
 import { withRequestLogging } from "@/lib/server/observability";
@@ -9,7 +9,7 @@ export const runtime = "nodejs";
 
 export const GET = withRequestLogging(
   async function GET(_: Request, ctx: { params: Promise<{ invoiceId: string }> }) {
-    await requireRole("admin");
+    await requireFinancialAccess();
     const { invoiceId } = await getRouteParams(ctx);
     const inv = await repo.getInvoiceById(invoiceId);
     if (!inv) return new Response("Not found", { status: 404 });

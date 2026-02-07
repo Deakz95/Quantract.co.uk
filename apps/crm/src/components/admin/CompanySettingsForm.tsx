@@ -19,6 +19,8 @@ type CompanySettings = {
   themeAccent: string;
   themeBg: string;
   themeText: string;
+  pdfPrimaryColour?: string | null;
+  pdfAccentColour?: string | null;
   pdfFooterLine1?: string | null;
   pdfFooterLine2?: string | null;
   pdfContactDetails?: string | null;
@@ -48,7 +50,8 @@ function pickSettings(json: any): CompanySettings | null {
   } as CompanySettings;
 }
 
-export function CompanySettingsForm(props: { mode: "settings" | "onboarding" }) {
+export function CompanySettingsForm(props: { mode: "settings" | "onboarding"; section?: "appearance" | "pdf" }) {
+  const section = props.section;
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -159,6 +162,8 @@ export function CompanySettingsForm(props: { mode: "settings" | "onboarding" }) 
           themeAccent: form.themeAccent,
           themeBg: form.themeBg,
           themeText: form.themeText,
+          pdfPrimaryColour: form.pdfPrimaryColour,
+          pdfAccentColour: form.pdfAccentColour,
           pdfFooterLine1: form.pdfFooterLine1,
           pdfFooterLine2: form.pdfFooterLine2,
           pdfContactDetails: form.pdfContactDetails,
@@ -252,8 +257,8 @@ export function CompanySettingsForm(props: { mode: "settings" | "onboarding" }) 
 
   return (
     <div className="space-y-6">
-      {/* Navigation Complexity */}
-      <Card>
+      {/* Navigation Complexity — Appearance only */}
+      {(!section || section === "appearance") && <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
             <Settings className="w-5 h-5 text-[var(--primary)]" />
@@ -306,14 +311,16 @@ export function CompanySettingsForm(props: { mode: "settings" | "onboarding" }) 
         </CardContent>
       </Card>
 
-      {/* Color Palettes Section */}
-      <Card>
+      }
+
+      {/* Colour Palette — Appearance only */}
+      {(!section || section === "appearance") && <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
             <Palette className="w-5 h-5 text-[var(--primary)]" />
-            <CardTitle>Color Palette</CardTitle>
+            <CardTitle>Colour Palette</CardTitle>
           </div>
-          <CardDescription>Choose a preset theme or customize your own colors</CardDescription>
+          <CardDescription>Choose a preset theme or customise your own colours</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -380,22 +387,24 @@ export function CompanySettingsForm(props: { mode: "settings" | "onboarding" }) 
         </CardContent>
       </Card>
 
-      {/* Custom Colors */}
-      <Card>
+      }
+
+      {/* Custom Colours — Appearance only */}
+      {(!section || section === "appearance") && <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-[var(--primary)]" />
-            <CardTitle>Custom Colors</CardTitle>
+            <CardTitle>Custom Colours</CardTitle>
           </div>
-          <CardDescription>Fine-tune each color individually</CardDescription>
+          <CardDescription>Fine-tune each colour individually</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {([
-              { key: "themePrimary" as const, label: "Primary", desc: "Main brand color" },
+              { key: "themePrimary" as const, label: "Primary", desc: "Main brand colour" },
               { key: "themeAccent" as const, label: "Accent", desc: "Secondary highlights" },
-              { key: "themeBg" as const, label: "Background", desc: "Page background" },
-              { key: "themeText" as const, label: "Text", desc: "Main text color" },
+              { key: "themeBg" as const, label: "Background", desc: "Page background colour" },
+              { key: "themeText" as const, label: "Text", desc: "Main text colour" },
             ]).map(({ key, label, desc }) => (
               <div key={key} className="space-y-2">
                 <label className="text-sm font-medium text-[var(--foreground)]">{label}</label>
@@ -419,8 +428,10 @@ export function CompanySettingsForm(props: { mode: "settings" | "onboarding" }) 
         </CardContent>
       </Card>
 
-      {/* Branding */}
-      <Card>
+      }
+
+      {/* Branding — Appearance only */}
+      {(!section || section === "appearance") && <Card>
         <CardHeader>
           <CardTitle>Branding</CardTitle>
           <CardDescription>Your company identity</CardDescription>
@@ -468,8 +479,10 @@ export function CompanySettingsForm(props: { mode: "settings" | "onboarding" }) 
         </CardContent>
       </Card>
 
-      {/* Defaults & Numbering */}
-      <Card>
+      }
+
+      {/* Defaults & Numbering — not on PDF page */}
+      {section !== "pdf" && <Card>
         <CardHeader>
           <CardTitle>Defaults & Numbering</CardTitle>
           <CardDescription>Business defaults and document numbering</CardDescription>
@@ -558,8 +571,10 @@ export function CompanySettingsForm(props: { mode: "settings" | "onboarding" }) 
         </CardContent>
       </Card>
 
-      {/* Job & Certificate */}
-      <Card>
+      }
+
+      {/* Job & Certificate — not on PDF page */}
+      {section !== "pdf" && <Card>
         <CardHeader>
           <CardTitle>Job & Certificate</CardTitle>
           <CardDescription>Automation between jobs and certificates</CardDescription>
@@ -580,8 +595,62 @@ export function CompanySettingsForm(props: { mode: "settings" | "onboarding" }) 
         </CardContent>
       </Card>
 
-      {/* PDF Footer */}
-      <Card>
+      }
+
+      {/* PDF Colours — PDF page only */}
+      {(!section || section === "pdf") && <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Palette className="w-5 h-5 text-[var(--primary)]" />
+            <CardTitle>PDF Colours</CardTitle>
+          </div>
+          <CardDescription>Colours used in generated PDF documents (invoices, quotes, certificates). These are separate from your website theme.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid sm:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-[var(--foreground)]">PDF Header Colour</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={form.pdfPrimaryColour || form.themePrimary || "#6366f1"}
+                  onChange={(e) => setForm({ ...form, pdfPrimaryColour: e.target.value })}
+                  className="h-10 w-14 rounded-lg border border-[var(--border)] cursor-pointer"
+                />
+                <Input
+                  value={form.pdfPrimaryColour || ""}
+                  onChange={(e) => setForm({ ...form, pdfPrimaryColour: e.target.value })}
+                  placeholder={form.themePrimary || "#6366f1"}
+                  className="flex-1 font-mono text-sm"
+                />
+              </div>
+              <p className="text-xs text-[var(--muted-foreground)]">Used for PDF headers, borders, and headings</p>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-[var(--foreground)]">PDF Accent Colour</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={form.pdfAccentColour || form.themeAccent || "#22d3ee"}
+                  onChange={(e) => setForm({ ...form, pdfAccentColour: e.target.value })}
+                  className="h-10 w-14 rounded-lg border border-[var(--border)] cursor-pointer"
+                />
+                <Input
+                  value={form.pdfAccentColour || ""}
+                  onChange={(e) => setForm({ ...form, pdfAccentColour: e.target.value })}
+                  placeholder={form.themeAccent || "#22d3ee"}
+                  className="flex-1 font-mono text-sm"
+                />
+              </div>
+              <p className="text-xs text-[var(--muted-foreground)]">Used for PDF highlights and secondary elements</p>
+            </div>
+          </div>
+          <p className="mt-4 text-xs text-[var(--muted-foreground)]">Leave blank to use your website theme colours as defaults.</p>
+        </CardContent>
+      </Card>}
+
+      {/* PDF Footer — PDF page only */}
+      {(!section || section === "pdf") && <Card>
         <CardHeader>
           <CardTitle>PDF Footer</CardTitle>
           <CardDescription>Footer text for generated documents</CardDescription>
@@ -618,6 +687,8 @@ export function CompanySettingsForm(props: { mode: "settings" | "onboarding" }) 
           </div>
         </CardContent>
       </Card>
+
+      }
 
       {/* Status Messages */}
       {error && (

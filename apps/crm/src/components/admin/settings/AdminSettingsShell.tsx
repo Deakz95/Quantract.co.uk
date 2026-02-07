@@ -9,7 +9,7 @@ import { cn } from "@/lib/cn";
 import { Palette, FileText, LayoutTemplate, User, Settings, Briefcase, Receipt, BarChart3, Mail, Inbox, PoundSterling } from "lucide-react";
 
 const tabs = [
-  { label: "Appearance", href: "/admin/settings/appearance", icon: Palette, desc: "Colors & branding" },
+  { label: "Appearance", href: "/admin/settings/appearance", icon: Palette, desc: "Colours & branding" },
   { label: "PDF Settings", href: "/admin/settings/pdf", icon: FileText, desc: "Footer & headers" },
   { label: "PDF Templates", href: "/admin/settings/pdf-templates", icon: LayoutTemplate, desc: "Layout editor" },
   { label: "Legal Entities", href: "/admin/settings/legal-entities", icon: Briefcase, desc: "Billing entities" },

@@ -3,8 +3,8 @@ import { CompanySettingsForm } from "@/components/admin/CompanySettingsForm";
 
 export default function AppearanceSettingsPage() {
   return (
-    <AdminSettingsShell title="Appearance" subtitle="Customize your brand colors and visual identity">
-      <CompanySettingsForm mode="settings" />
+    <AdminSettingsShell title="Appearance" subtitle="Customise your brand colours and visual identity">
+      <CompanySettingsForm mode="settings" section="appearance" />
     </AdminSettingsShell>
   );
 }

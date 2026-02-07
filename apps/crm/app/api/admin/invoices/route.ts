@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireCompanyContext, getEffectiveRole } from "@/lib/serverAuth";
+import { requireCompanyContext, getEffectiveRole, requireFinancialAccess } from "@/lib/serverAuth";
 import { getPrisma } from "@/lib/server/prisma";
 import { clampMoney } from "@/lib/invoiceMath";
 import { calcTotals } from "@/lib/calcTotals";
@@ -18,14 +18,8 @@ const INVOICE_MANAGE_ROLES = ["admin", "finance"];
 
 export const GET = withRequestLogging(async function GET() {
   try {
-    // Use requireCompanyContext for company-scoped data access
-    const ctx = await requireCompanyContext();
-    const effectiveRole = getEffectiveRole(ctx);
-
-    // Only roles with invoices.view capability can list invoices
-    if (!INVOICE_VIEW_ROLES.includes(effectiveRole)) {
-      return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
-    }
+    // Require financial access (admin/finance/office role, or accounts.access capability)
+    const ctx = await requireFinancialAccess();
 
     const client = getPrisma();
     if (!client) {

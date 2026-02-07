@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireRoles, requireCompanyContext } from "@/lib/serverAuth";
+import { requireRoles, requireCompanyContext, requireFinancialAccess } from "@/lib/serverAuth";
 import * as repo from "@/lib/server/repo";
 import { getRouteParams } from "@/lib/server/routeParams";
 import { getPrisma } from "@/lib/server/prisma";
@@ -7,8 +7,7 @@ import { createUndoToken } from "@/lib/server/undoToken";
 import { addBusinessBreadcrumb } from "@/lib/server/observability";
 
 export async function GET(_req: Request, ctx: { params: Promise<{ invoiceId: string }> }) {
-  const session = await requireRoles("admin");
-  if (!session) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const session = await requireFinancialAccess();
   const { invoiceId } = await getRouteParams(ctx);
   const invoice = await repo.getInvoiceById(invoiceId);
   if (!invoice) return NextResponse.json({ error: "not_found" }, { status: 404 });

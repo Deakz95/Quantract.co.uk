@@ -149,6 +149,28 @@ function isOfficeAllowedAdminApi(pathname: string): boolean {
   );
 }
 
+/**
+ * Accounts-only users (client role + accounts.access) can access specific /api/admin/ subtrees.
+ * GET-only, explicit whitelist. The actual capability check happens in the route handler
+ * via requireFinancialAccess() — middleware only allows the request through.
+ */
+function isAccountsAllowedAdminApi(pathname: string, method: string): boolean {
+  // Block all non-GET requests — accounts-only users are read-only
+  if (method !== "GET") return false;
+
+  // Invoices: prefix match (covers /api/admin/invoices, /api/admin/invoices/[id], /api/admin/invoices/[id]/pdf)
+  if (pathname.startsWith("/api/admin/invoices")) return true;
+
+  // Reports: exact path match only — no sub-routes
+  const ALLOWED_REPORT_PATHS = [
+    "/api/admin/reports/ar-aging",
+    "/api/admin/reports/tax-summary",
+    "/api/admin/reports/revenue",
+  ];
+
+  return ALLOWED_REPORT_PATHS.includes(pathname);
+}
+
 // ── Simple in-memory rate limiter for Edge runtime ──
 const rlBuckets = new Map<string, { count: number; resetAt: number }>();
 function edgeRateLimit(ip: string, key: string, limit: number, windowMs: number) {
@@ -263,6 +285,18 @@ export async function middleware(req: NextRequest) {
     });
   }
 
+  // Redirect old role-specific register pages to unified invite page
+  if (
+    (pathname === "/admin/register" || pathname === "/client/register" || pathname === "/engineer/register") &&
+    req.nextUrl.searchParams.get("token")
+  ) {
+    const token = req.nextUrl.searchParams.get("token")!;
+    const url = req.nextUrl.clone();
+    url.pathname = `/invite/${encodeURIComponent(token)}`;
+    url.searchParams.delete("token");
+    return NextResponse.redirect(url, 302);
+  }
+
   if (isPublicPath(pathname)) return res;
 
   const needed = requiredRoleForPath(pathname);
@@ -304,7 +338,9 @@ export async function middleware(req: NextRequest) {
 
   // Non-admin, non-office roles are restricted to their portals
   if (role !== "office") {
-    if (needed === "admin" && role !== "admin") {
+    if (needed === "admin" && role === "client" && isAccountsAllowedAdminApi(pathname, req.method)) {
+      // Allow through — route handler will verify accounts.access capability via requireFinancialAccess()
+    } else if (needed === "admin" && role !== "admin") {
       const url = req.nextUrl.clone();
       url.pathname = loginUrlForRole("admin");
       url.searchParams.set("next", pathname);

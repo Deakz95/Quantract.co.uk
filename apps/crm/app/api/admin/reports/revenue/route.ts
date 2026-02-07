@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireRoles, requireCompanyId } from "@/lib/serverAuth";
+import { requireFinancialAccess } from "@/lib/serverAuth";
 import { getPrisma } from "@/lib/server/prisma";
 import { withRequestLogging } from "@/lib/server/observability";
 
@@ -14,8 +14,8 @@ function jsonErr(error: unknown, status = 400) {
 
 export const GET = withRequestLogging(async function GET(req: Request) {
   try {
-    await requireRoles("admin");
-    const companyId = await requireCompanyId();
+    const ctx = await requireFinancialAccess();
+    const companyId = ctx.companyId;
 
     const db = getPrisma();
     if (!db) {

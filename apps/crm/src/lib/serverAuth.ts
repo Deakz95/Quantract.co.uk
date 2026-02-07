@@ -612,6 +612,50 @@ export async function getUserEmail(): Promise<string | null> {
 
 
 /**
+ * Require one of the listed roles OR the accounts.access capability.
+ * This allows external accountants (role=client + accounts.access) to
+ * access financial routes alongside admin/office/finance users.
+ *
+ * Returns CompanyAuthContext on success.
+ * Throws structured 403 with code + meta for audit/debugging.
+ */
+export async function requireFinancialAccess(): Promise<CompanyAuthContext> {
+  const ctx = await requireCompanyContext();
+  const effectiveRole = getEffectiveRole(ctx);
+
+  // Admin/finance always pass
+  if (effectiveRole === "admin" || effectiveRole === "finance") return ctx;
+
+  // Office with invoices.view passes
+  if (effectiveRole === "office") return ctx;
+
+  // Check for explicit accounts.access capability (external accountant)
+  const prisma = p();
+  const grant = await prisma.userPermission.findFirst({
+    where: {
+      companyId: ctx.companyId,
+      userId: ctx.userId,
+      key: "accounts.access",
+      enabled: true,
+    },
+    select: { id: true },
+  });
+
+  if (grant) return ctx;
+
+  const err: any = new Error("Financial access denied");
+  err.status = 403;
+  err.code = "FINANCIAL_ACCESS_DENIED";
+  err.meta = {
+    effectiveRole,
+    userId: ctx.userId,
+    companyId: ctx.companyId,
+    reason: "Role not in [admin, finance, office] and no accounts.access capability",
+  };
+  throw err;
+}
+
+/**
  * Require a specific capability for the current user.
  * Uses membership role (authoritative) if available, otherwise falls back to User.role.
  *

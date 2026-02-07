@@ -343,6 +343,8 @@ model Company {
   themeAccent                 String                       @default("#22d3ee")
   themeBg                     String                       @default("#0f1115")
   themeText                   String                       @default("#f8fafc")
+  pdfPrimaryColour            String?
+  pdfAccentColour             String?
   pdfFooterLine1              String?
   pdfFooterLine2              String?
   pdfContactDetails           String?

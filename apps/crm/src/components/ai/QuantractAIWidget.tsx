@@ -23,6 +23,16 @@ interface Message {
   suggestedActions?: Array<{ type: string; label: string; payload?: Record<string, unknown> }>;
   missingData?: string[];
   error?: string;
+  mode?: string;
+  explain?: {
+    mode: string;
+    effectiveRole: string;
+    accessReason: string;
+    dataScope: string;
+    canSeeFinancials: boolean;
+    restrictionCount: number;
+    strictness: string;
+  };
 }
 
 interface QuantractAIWidgetProps {
@@ -41,6 +51,12 @@ const defaultPrompts: Record<string, string[]> = {
   ENGINEER: ["What job am I on today?", "Log 7.5 hours for today", "What certs are needed?", "Show my job stages"],
   client: ["Explain my latest invoice", "What variations have I approved?", "Show my job status", "Find my certificates"],
   CLIENT: ["Explain my latest invoice", "What variations have I approved?", "Show my job status", "Find my certificates"],
+};
+
+const modePrompts: Record<string, string[]> = {
+  ops: ["What jobs are scheduled today?", "Any unassigned jobs?", "Unapproved variations?", "Missing certificates?"],
+  finance: ["Which invoices are overdue?", "Show outstanding receivables", "Aged debt report?", "Monthly revenue summary?"],
+  client: ["What's my job status?", "Explain my latest invoice", "Show my certificates", "What variations need approval?"],
 };
 
 function formatPct(n: number) {
@@ -227,6 +243,15 @@ function IconAlertCircle(props: IconProps) {
   );
 }
 
+function IconInfo(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={props.className} aria-hidden="true">
+      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+      <path d="M12 16v-4M12 8h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function IconSparkles(props: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" className={props.className} aria-hidden="true">
@@ -238,6 +263,63 @@ function IconSparkles(props: IconProps) {
 }
 
 /** ---------------------------------------------------------------- */
+
+function ExplainPanel({ explain, messageId }: {
+  explain: NonNullable<Message["explain"]>;
+  messageId: string;
+}) {
+  const [open, setOpen] = useState(false);
+
+  const modeLabel = explain.mode === "ops" ? "Operations"
+    : explain.mode === "finance" ? "Finance"
+    : "Client";
+
+  return (
+    <div className="mt-2 pt-2 border-t border-[var(--border)]">
+      <button
+        onClick={() => setOpen(!open)}
+        className="text-[10px] text-[var(--muted-foreground)] hover:text-[var(--foreground)] flex items-center gap-1 transition-colors"
+        aria-expanded={open}
+        aria-controls={`explain-${messageId}`}
+      >
+        <IconInfo className="h-3 w-3" />
+        Details {open ? "\u25BE" : "\u25B8"}
+      </button>
+      {open && (
+        <div id={`explain-${messageId}`} className="mt-1.5 space-y-1 text-[10px] text-[var(--muted-foreground)]">
+          <div className="flex items-center gap-2">
+            <span className="font-medium">Mode:</span>
+            <span className="px-1.5 py-0.5 rounded bg-[var(--muted)] text-[9px]">{modeLabel}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="font-medium">Access:</span>
+            <span>{explain.accessReason}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="font-medium">Scope:</span>
+            <span>{explain.dataScope}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="font-medium">Financials:</span>
+            <span>{explain.canSeeFinancials ? "visible" : "hidden"}</span>
+          </div>
+          {explain.restrictionCount > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="font-medium">Restrictions:</span>
+              <span>{explain.restrictionCount} topic{explain.restrictionCount !== 1 ? "s" : ""} blocked</span>
+            </div>
+          )}
+          {explain.strictness === "high" && (
+            <div className="flex items-center gap-1 text-amber-400">
+              <IconAlertTriangle className="h-3 w-3" />
+              <span>High strictness — ambiguous queries declined</span>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function QuantractAIWidget(props: QuantractAIWidgetProps) {
   return (
@@ -335,6 +417,8 @@ function QuantractAIWidgetInner({
   const [applyingAction, setApplyingAction] = useState<string | null>(null);
   const [appliedActions, setAppliedActions] = useState<Set<string>>(new Set());
   const [applyError, setApplyError] = useState<string | null>(null);
+  const [allowedModes, setAllowedModes] = useState<string[]>([]);
+  const [currentMode, setCurrentMode] = useState<string>("auto");
 
   async function handleApplyAction(actionId: string) {
     setApplyingAction(actionId);
@@ -369,7 +453,11 @@ function QuantractAIWidgetInner({
     fetch(`${apiBaseUrl}/ai/session`, { credentials: "include" })
       .then((r) => r.json())
       .then((data) => {
-        if (data?.authenticated && data?.session) setSession(data.session);
+        if (data?.authenticated && data?.session) {
+          setSession(data.session);
+          if (data.allowedModes) setAllowedModes(data.allowedModes);
+          if (data.defaultMode) setCurrentMode(data.defaultMode);
+        }
       })
       .catch(() => null);
   }, [externalSession, apiBaseUrl]);
@@ -448,10 +536,14 @@ function QuantractAIWidgetInner({
 
   useEffect(() => {
     if (customPrompts?.length) return setPrompts(customPrompts);
+    // If we have a mode, use mode-specific prompts
+    if (currentMode && currentMode !== "auto" && modePrompts[currentMode]) {
+      return setPrompts(modePrompts[currentMode]);
+    }
     const role = session?.role;
     if (role) return setPrompts(defaultPrompts[role] ?? []);
     setPrompts([]);
-  }, [session?.role, customPrompts]);
+  }, [session?.role, customPrompts, currentMode]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -489,14 +581,15 @@ function QuantractAIWidgetInner({
     setIsLoading(true);
 
     try {
-      const res = await fetch(`${apiBaseUrl}/ai/chat`, {
+      const res = await fetch(`${apiBaseUrl}/ai/ask`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
           message: content,
+          mode: currentMode,
           history: nextMessages
-            .slice(-12)
+            .slice(-6)
             .map((m) => ({ role: m.role, content: m.content, timestamp: m.timestamp.toISOString() })),
         }),
       });
@@ -517,6 +610,8 @@ function QuantractAIWidgetInner({
         suggestedActions: Array.isArray(data?.suggestedActions) ? data.suggestedActions : undefined,
         missingData: Array.isArray(data?.missingData) ? data.missingData : undefined,
         error: typeof data?.error === "string" ? data.error : undefined,
+        mode: typeof data?.mode === "string" ? data.mode : undefined,
+        explain: data?._explain ?? undefined,
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
@@ -563,7 +658,26 @@ function QuantractAIWidgetInner({
               </div>
               <div>
                 <CardTitle className="text-white">Quantract AI</CardTitle>
-                <p className="text-xs text-white/70">{session?.role ? `${session.role} Assistant` : "Operations Assistant"}</p>
+                {allowedModes.length > 1 ? (
+                  <div className="flex gap-1 mt-1">
+                    {allowedModes.map((mode) => (
+                      <button
+                        key={mode}
+                        onClick={() => setCurrentMode(mode)}
+                        className={cn(
+                          "px-2 py-0.5 rounded text-[10px] font-medium transition-colors",
+                          currentMode === mode
+                            ? "bg-white/30 text-white"
+                            : "bg-white/10 text-white/60 hover:bg-white/20 hover:text-white/80"
+                        )}
+                      >
+                        {mode === "ops" ? "Ops" : mode === "finance" ? "Finance" : "Client"}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-white/70">{session?.role ? `${session.role} Assistant` : "Operations Assistant"}</p>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-1">
@@ -890,6 +1004,10 @@ function QuantractAIWidgetInner({
                           ))}
                         </div>
                       ) : null}
+
+                      {m.explain && (
+                        <ExplainPanel explain={m.explain} messageId={m.id} />
+                      )}
 
                       {m.error ? (
                         <div className="mt-2 flex items-center gap-1 text-red-300 text-[10px]">
