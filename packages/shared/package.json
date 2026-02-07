@@ -11,7 +11,8 @@
     "./money": "./src/money.ts",
     "./pdfTemplateConstants": "./src/pdfTemplateConstants.ts",
     "./certificate-types": "./src/certificate-types.ts",
-    "./certificate-workflow": "./src/certificate-workflow.ts"
+    "./certificate-workflow": "./src/certificate-workflow.ts",
+    "./certificate-defaults": "./src/certificate-defaults.ts"
   },
   "scripts": {
     "lint": "eslint src/",

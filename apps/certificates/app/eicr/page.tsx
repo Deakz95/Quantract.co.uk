@@ -4,6 +4,9 @@ import { useState, useEffect, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button, Input, Label, NativeSelect, Textarea } from "@quantract/ui";
 import { getCertificateTemplate, type EICRCertificate, type BoardData as BoardDataType, migrateCircuit } from "@quantract/shared/certificate-types";
+import { applyDefaults } from "@quantract/shared/certificate-defaults";
+import { useTemplateStore } from "../../lib/templateStore";
+import { getLastUsedDefaults } from "../../lib/getLastUsedDefaults";
 import { generateCertificatePDF } from "../../lib/pdf-generator";
 import { EICRBoardSchedule } from "../../components/EICRBoardSchedule";
 import {
@@ -81,7 +84,17 @@ function EICRPageContent() {
 
   const { addCertificate, updateCertificate, getCertificate } = useCertificateStore();
 
-  const [data, setData] = useState<EICRCertificate>(getCertificateTemplate("EICR") as EICRCertificate);
+  const [data, setData] = useState<EICRCertificate>(() => {
+    const rawTemplate = getCertificateTemplate("EICR");
+    if (!certificateId) {
+      const withDefaults = applyDefaults("EICR", rawTemplate as Record<string, unknown>, {
+        companyProfile: useTemplateStore.getState().companyDefaults,
+        lastUsedValues: getLastUsedDefaults("EICR"),
+      });
+      return withDefaults as EICRCertificate;
+    }
+    return rawTemplate as EICRCertificate;
+  });
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentCertId, setCurrentCertId] = useState<string | null>(certificateId);
   const [activeSection, setActiveSection] = useState<SectionId>("contractor");
@@ -319,6 +332,13 @@ function EICRPageContent() {
     },
   });
 
+  const handleApplyTemplate = (mergedData: Record<string, unknown>) => {
+    setData(mergedData as EICRCertificate);
+  };
+  const handleCopyFrom = (mergedData: Record<string, unknown>) => {
+    setData(mergedData as EICRCertificate);
+  };
+
   const handleDownload = async () => {
     triggerSave();
 
@@ -484,6 +504,9 @@ function EICRPageContent() {
       isGenerating={isGenerating}
       conflict={conflict}
       readOnly={!!conflict}
+      onApplyTemplate={handleApplyTemplate}
+      onCopyFrom={handleCopyFrom}
+      currentData={data as unknown as Record<string, unknown>}
     >
       {/* 1. Contractor Details */}
       {activeSection === "contractor" && (

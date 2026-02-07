@@ -3,6 +3,10 @@
 import { useState, useEffect, useRef, useCallback, type ReactNode } from "react";
 import Link from "next/link";
 import type { SaveStatus, ConflictState } from "../lib/saveTypes";
+import { ApplyTemplateDialog } from "./ApplyTemplateDialog";
+import { CopyFromCertDialog } from "./CopyFromCertDialog";
+import { SaveAsTemplateDialog } from "./SaveAsTemplateDialog";
+import type { CertificateType } from "@quantract/shared/certificate-types";
 
 // ── Types ──
 
@@ -57,6 +61,10 @@ interface CertificateLayoutProps {
   conflict?: ConflictState | null;
   /** When true, form content is non-interactive */
   readOnly?: boolean;
+  /** Template/copy callbacks and current data for template system */
+  onApplyTemplate?: (mergedData: Record<string, unknown>) => void;
+  onCopyFrom?: (mergedData: Record<string, unknown>) => void;
+  currentData?: Record<string, unknown>;
 }
 
 // ── Constants ──
@@ -238,10 +246,16 @@ export function CertificateLayout({
   onValidateStep,
   conflict,
   readOnly,
+  onApplyTemplate,
+  onCopyFrom,
+  currentData,
 }: CertificateLayoutProps) {
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [stepErrors, setStepErrors] = useState<string[]>([]);
+  const [showTemplateDialog, setShowTemplateDialog] = useState(false);
+  const [showCopyDialog, setShowCopyDialog] = useState(false);
+  const [showSaveTemplateDialog, setShowSaveTemplateDialog] = useState(false);
   const rightPanelRef = useRef<HTMLDivElement>(null);
 
   const meta = CERT_META[certType];
@@ -379,6 +393,26 @@ export function CertificateLayout({
               <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wider bg-amber-500/15 text-amber-400 border border-amber-500/20">
                 Read only
               </span>
+            )}
+            {!isFormLocked && onApplyTemplate && currentData && (
+              <button
+                onClick={() => setShowTemplateDialog(true)}
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-[var(--muted)] hover:bg-[var(--accent)] text-[var(--foreground)] transition-colors"
+                title="Apply template"
+              >
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect width="18" height="18" x="3" y="3" rx="2" ry="2" /><line x1="3" y1="9" x2="21" y2="9" /><line x1="9" y1="21" x2="9" y2="9" /></svg>
+                Templates
+              </button>
+            )}
+            {!isFormLocked && onCopyFrom && currentData && (
+              <button
+                onClick={() => setShowCopyDialog(true)}
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-[var(--muted)] hover:bg-[var(--accent)] text-[var(--foreground)] transition-colors"
+                title="Copy from another certificate"
+              >
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect width="14" height="14" x="8" y="8" rx="2" ry="2" /><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" /></svg>
+                Copy
+              </button>
             )}
             <button
               onClick={onSave}
@@ -531,6 +565,21 @@ export function CertificateLayout({
                 ))}
               </div>
             </div>
+
+            {/* Save as Template */}
+            {!isFormLocked && currentData && (
+              <button
+                onClick={() => setShowSaveTemplateDialog(true)}
+                className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium bg-[var(--muted)]/60 hover:bg-[var(--muted)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
+              >
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                  <polyline points="17 21 17 13 7 13 7 21" />
+                  <polyline points="7 3 7 8 15 8" />
+                </svg>
+                Save as Template
+              </button>
+            )}
           </div>
         </aside>
 
@@ -634,6 +683,34 @@ export function CertificateLayout({
 
       {/* Shortcut overlay */}
       {showShortcuts && <ShortcutOverlay onClose={() => setShowShortcuts(false)} />}
+
+      {/* Template / Copy / Save-as-Template dialogs */}
+      {showTemplateDialog && onApplyTemplate && currentData && (
+        <ApplyTemplateDialog
+          open={showTemplateDialog}
+          onClose={() => setShowTemplateDialog(false)}
+          certType={certType as CertificateType}
+          currentData={currentData}
+          onApply={onApplyTemplate}
+        />
+      )}
+      {showCopyDialog && onCopyFrom && currentData && (
+        <CopyFromCertDialog
+          open={showCopyDialog}
+          onClose={() => setShowCopyDialog(false)}
+          certType={certType as CertificateType}
+          currentData={currentData}
+          onCopy={onCopyFrom}
+        />
+      )}
+      {showSaveTemplateDialog && currentData && (
+        <SaveAsTemplateDialog
+          open={showSaveTemplateDialog}
+          onClose={() => setShowSaveTemplateDialog(false)}
+          certType={certType as CertificateType}
+          currentData={currentData}
+        />
+      )}
     </div>
   );
 }

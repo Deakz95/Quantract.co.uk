@@ -4,6 +4,9 @@ import { useState, useEffect, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Input, Label, NativeSelect, Textarea } from "@quantract/ui";
 import { getCertificateTemplate, type EICCertificate, type BoardData as BoardDataType } from "@quantract/shared/certificate-types";
+import { applyDefaults } from "@quantract/shared/certificate-defaults";
+import { useTemplateStore } from "../../lib/templateStore";
+import { getLastUsedDefaults } from "../../lib/getLastUsedDefaults";
 import { generateCertificatePDF } from "../../lib/pdf-generator";
 import BoardViewer, { type BoardData } from "../../components/BoardViewer";
 import {
@@ -31,7 +34,17 @@ function EICPageContent() {
 
   const { addCertificate, updateCertificate, getCertificate } = useCertificateStore();
 
-  const [data, setData] = useState<EICCertificate>(getCertificateTemplate("EIC") as EICCertificate);
+  const [data, setData] = useState<EICCertificate>(() => {
+    const rawTemplate = getCertificateTemplate("EIC");
+    if (!certificateId) {
+      const withDefaults = applyDefaults("EIC", rawTemplate as Record<string, unknown>, {
+        companyProfile: useTemplateStore.getState().companyDefaults,
+        lastUsedValues: getLastUsedDefaults("EIC"),
+      });
+      return withDefaults as EICCertificate;
+    }
+    return rawTemplate as EICCertificate;
+  });
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentCertId, setCurrentCertId] = useState<string | null>(certificateId);
   const [activeSection, setActiveSection] = useState<SectionId>("contractor");
@@ -136,6 +149,13 @@ function EICPageContent() {
       boards: [...prev.boards, newBoard],
     }));
 
+  };
+
+  const handleApplyTemplate = (mergedData: Record<string, unknown>) => {
+    setData(mergedData as EICCertificate);
+  };
+  const handleCopyFrom = (mergedData: Record<string, unknown>) => {
+    setData(mergedData as EICCertificate);
   };
 
   // ── Autosave hook ──
@@ -307,6 +327,9 @@ function EICPageContent() {
       isGenerating={isGenerating}
       conflict={conflict}
       readOnly={!!conflict}
+      onApplyTemplate={handleApplyTemplate}
+      onCopyFrom={handleCopyFrom}
+      currentData={data as unknown as Record<string, unknown>}
     >
       {/* 1. Contractor Details */}
       {activeSection === "contractor" && (

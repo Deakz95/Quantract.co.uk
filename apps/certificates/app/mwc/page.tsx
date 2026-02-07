@@ -4,6 +4,9 @@ import { useState, useEffect, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Input, Label, NativeSelect, Textarea } from "@quantract/ui";
 import { getCertificateTemplate, type MWCCertificate } from "@quantract/shared/certificate-types";
+import { applyDefaults } from "@quantract/shared/certificate-defaults";
+import { useTemplateStore } from "../../lib/templateStore";
+import { getLastUsedDefaults } from "../../lib/getLastUsedDefaults";
 import { generateCertificatePDF } from "../../lib/pdf-generator";
 import {
   useCertificateStore,
@@ -28,7 +31,17 @@ function MWCPageContent() {
 
   const { addCertificate, updateCertificate, getCertificate } = useCertificateStore();
 
-  const [data, setData] = useState<MWCCertificate>(getCertificateTemplate("MWC") as MWCCertificate);
+  const [data, setData] = useState<MWCCertificate>(() => {
+    const rawTemplate = getCertificateTemplate("MWC");
+    if (!certificateId) {
+      const withDefaults = applyDefaults("MWC", rawTemplate as Record<string, unknown>, {
+        companyProfile: useTemplateStore.getState().companyDefaults,
+        lastUsedValues: getLastUsedDefaults("MWC"),
+      });
+      return withDefaults as MWCCertificate;
+    }
+    return rawTemplate as MWCCertificate;
+  });
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentCertId, setCurrentCertId] = useState<string | null>(certificateId);
   const [activeSection, setActiveSection] = useState<SectionId>("contractor");
@@ -86,6 +99,13 @@ function MWCPageContent() {
       testResults: { ...prev.testResults, [field]: value },
     }));
 
+  };
+
+  const handleApplyTemplate = (mergedData: Record<string, unknown>) => {
+    setData(mergedData as MWCCertificate);
+  };
+  const handleCopyFrom = (mergedData: Record<string, unknown>) => {
+    setData(mergedData as MWCCertificate);
   };
 
   // ── Autosave hook ──
@@ -245,6 +265,9 @@ function MWCPageContent() {
       isGenerating={isGenerating}
       conflict={conflict}
       readOnly={!!conflict}
+      onApplyTemplate={handleApplyTemplate}
+      onCopyFrom={handleCopyFrom}
+      currentData={data as unknown as Record<string, unknown>}
     >
       {/* 1. Contractor Details */}
       {activeSection === "contractor" && (
