@@ -133,7 +133,7 @@ export default function SettingsPage() {
                 <div className="space-y-1">
                   <label className="text-sm font-medium text-[var(--muted-foreground)]">Current Plan</label>
                   <div className="flex items-center gap-2">
-                    <span className="text-[var(--foreground)] font-semibold text-lg">{data.plan || 'Free'}</span>
+                    <span className="text-[var(--foreground)] font-semibold text-lg capitalize">{data.plan || 'Free'}</span>
                     <Badge variant={data.subscriptionStatus === 'active' || data.subscriptionStatus === 'trialing' ? 'success' : 'secondary'}>
                       {data.subscriptionStatus === 'active' ? 'Active' : data.subscriptionStatus === 'trialing' ? 'Trial' : data.plan ? 'Inactive' : 'Free Tier'}
                     </Badge>

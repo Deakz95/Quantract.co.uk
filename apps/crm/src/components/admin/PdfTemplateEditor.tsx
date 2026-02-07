@@ -506,6 +506,7 @@ export function PdfTemplateEditor({
                     borderStyle: el.type === "rect" ? "solid" : undefined,
                   }}
                   onMouseDown={e => handleMouseDown(e, el.id)}
+                  onClick={e => e.stopPropagation()}
                 >
                   {/* Element content preview */}
                   <div className="w-full h-full overflow-hidden pointer-events-none flex items-center" style={{ padding: "0 2px" }}>
