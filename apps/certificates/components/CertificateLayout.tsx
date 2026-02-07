@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, type ReactNode } from "react";
 import Link from "next/link";
+import type { SaveStatus, ConflictState } from "../lib/saveTypes";
 
 // ── Types ──
 
@@ -43,7 +44,7 @@ interface CertificateLayoutProps {
   onSectionChange: (id: string) => void;
   quickInfo: QuickInfo;
   observationCounts?: ObservationCounts;
-  saveStatus: "idle" | "saving" | "saved" | "error";
+  saveStatus: SaveStatus;
   lastSaved: Date | null;
   onSave: () => void;
   onDownload: () => void;
@@ -52,6 +53,10 @@ interface CertificateLayoutProps {
   children: ReactNode;
   /** Workflow: validate before advancing to next step. Return null to allow, or errors to block. */
   onValidateStep?: (sectionId: string) => StepValidationFeedback | null;
+  /** Conflict state from autosave — shows banner and locks form */
+  conflict?: ConflictState | null;
+  /** When true, form content is non-interactive */
+  readOnly?: boolean;
 }
 
 // ── Constants ──
@@ -231,6 +236,8 @@ export function CertificateLayout({
   isGenerating,
   children,
   onValidateStep,
+  conflict,
+  readOnly,
 }: CertificateLayoutProps) {
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -247,8 +254,11 @@ export function CertificateLayout({
   const completedCount = sections.filter((s) => s.getStatus() === "complete").length;
   const completionPercent = Math.round((completedCount / sections.length) * 100);
 
+  const isFormLocked = readOnly || !!conflict;
+
   // Auto-save indicator text
   const saveIndicator = (() => {
+    if (saveStatus === "offline") return "Offline \u2014 will sync";
     if (saveStatus === "saving") return "Saving\u2026";
     if (saveStatus === "saved" && lastSaved) {
       const ago = Math.round((Date.now() - lastSaved.getTime()) / 1000);
@@ -257,6 +267,7 @@ export function CertificateLayout({
       return `Auto-saved ${lastSaved.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`;
     }
     if (saveStatus === "error") return "Save failed";
+    if (saveStatus === "dirty") return "Unsaved changes";
     return "Unsaved changes";
   })();
 
@@ -357,16 +368,21 @@ export function CertificateLayout({
               </div>
               <p className="text-[11px] text-[var(--muted-foreground)] truncate">
                 <span className="hidden sm:inline">{meta.standard} &middot; </span>
-                <span className={saveStatus === "error" ? "text-red-400" : saveStatus === "saved" ? "text-emerald-400" : "text-[var(--muted-foreground)]"}>
+                <span className={saveStatus === "error" ? "text-red-400" : saveStatus === "saved" ? "text-emerald-400" : saveStatus === "offline" ? "text-amber-400" : "text-[var(--muted-foreground)]"}>
                   {saveIndicator}
                 </span>
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
+            {isFormLocked && (
+              <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wider bg-amber-500/15 text-amber-400 border border-amber-500/20">
+                Read only
+              </span>
+            )}
             <button
               onClick={onSave}
-              disabled={isSaving}
+              disabled={isSaving || isFormLocked}
               className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-[var(--muted)] hover:bg-[var(--accent)] text-[var(--foreground)] transition-colors disabled:opacity-50"
             >
               {saveStatus === "saving" ? (
@@ -533,6 +549,21 @@ export function CertificateLayout({
               <div className="ml-7 h-0.5 w-12 rounded-full bg-[var(--primary)]/40" />
             </div>
 
+            {/* Conflict banner */}
+            {conflict && (
+              <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 p-4">
+                <div className="flex items-start gap-3">
+                  <svg className="w-5 h-5 text-red-400 shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                  </svg>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-red-300">This certificate was updated elsewhere</p>
+                    <p className="text-sm text-red-200/80 mt-0.5">{conflict.message || "Reload to continue."}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Step validation errors */}
             {stepErrors.length > 0 && (
               <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
@@ -562,7 +593,7 @@ export function CertificateLayout({
             )}
 
             {/* Form content */}
-            <div className="min-h-[60vh]">
+            <div className={`min-h-[60vh]${isFormLocked ? " pointer-events-none opacity-60" : ""}`}>
               {children}
             </div>
 

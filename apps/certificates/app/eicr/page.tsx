@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback, useMemo, Suspense } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button, Input, Label, NativeSelect, Textarea } from "@quantract/ui";
 import { getCertificateTemplate, type EICRCertificate, type BoardData as BoardDataType, migrateCircuit } from "@quantract/shared/certificate-types";
@@ -11,7 +11,10 @@ import {
   useStoreHydration,
   createNewCertificate,
   generateCertificateNumber,
+  isCertificateEditable,
 } from "../../lib/certificateStore";
+import { useAutosave } from "../../lib/useAutosave";
+import { getNextIncompleteStep } from "@quantract/shared/certificate-workflow";
 import { CertificateLayout, SECTION_ICONS, type SectionConfig, type SectionStatus } from "../../components/CertificateLayout";
 import { PhotoCapture } from "../../components/PhotoCapture";
 import { ContractorDetails } from "../../components/ContractorDetails";
@@ -80,10 +83,7 @@ function EICRPageContent() {
 
   const [data, setData] = useState<EICRCertificate>(getCertificateTemplate("EICR") as EICRCertificate);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [currentCertId, setCurrentCertId] = useState<string | null>(certificateId);
-  const [lastSaved, setLastSaved] = useState<Date | null>(null);
-  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [activeSection, setActiveSection] = useState<SectionId>("contractor");
   const [engineerSig, setEngineerSig] = useState<string | null>(null);
   const [customerSig, setCustomerSig] = useState<string | null>(null);
@@ -139,7 +139,28 @@ function EICRPageContent() {
         }
         setData(loaded);
         setCurrentCertId(certificateId);
-        setLastSaved(new Date(existing.updated_at));
+
+        // Resume at first incomplete section
+        const nextStep = getNextIncompleteStep("EICR", loaded as unknown as Record<string, unknown>);
+        if (nextStep && isCertificateEditable(existing)) {
+          const sectionMap: Record<string, SectionId> = {
+            contractorDetails: "contractor",
+            overview: "installation",
+            extentAndLimitations: "extent",
+            supply: "supply",
+            earthing: "earthing",
+            generalInspection: "inspection",
+            boards: "boards",
+            observations: "observations",
+            summaryOfCondition: "summary",
+            overallAssessment: "assessment",
+            declaration: "declaration",
+            clientAcknowledgement: "acknowledgement",
+            photos: "photos",
+          };
+          const mapped = sectionMap[nextStep];
+          if (mapped) setActiveSection(mapped);
+        }
       }
     }
   }, [certificateId, getCertificate, hydrated]);
@@ -182,7 +203,7 @@ function EICRPageContent() {
       ...prev,
       overview: { ...prev.overview, [field]: value },
     }));
-    setSaveStatus("idle");
+
   };
 
   const updateSupply = (field: string, value: string | boolean) => {
@@ -190,7 +211,7 @@ function EICRPageContent() {
       ...prev,
       supplyCharacteristics: { ...prev.supplyCharacteristics, [field]: value },
     }));
-    setSaveStatus("idle");
+
   };
 
   const updateEarthing = (field: string, value: string | boolean) => {
@@ -198,7 +219,7 @@ function EICRPageContent() {
       ...prev,
       earthingArrangements: { ...prev.earthingArrangements, [field]: value },
     }));
-    setSaveStatus("idle");
+
   };
 
   // Board management
@@ -232,7 +253,7 @@ function EICRPageContent() {
       ...prev,
       boards: [...prev.boards, newBoard],
     }));
-    setSaveStatus("idle");
+
   };
 
   const updateBoard = (index: number, updated: BoardDataType) => {
@@ -241,7 +262,7 @@ function EICRPageContent() {
       newBoards[index] = updated;
       return { ...prev, boards: newBoards };
     });
-    setSaveStatus("idle");
+
   };
 
   const deleteBoard = (index: number) => {
@@ -250,7 +271,7 @@ function EICRPageContent() {
       ...prev,
       boards: prev.boards.filter((_, i) => i !== index),
     }));
-    setSaveStatus("idle");
+
   };
 
   const copyBoard = (index: number) => {
@@ -265,7 +286,7 @@ function EICRPageContent() {
       ...prev,
       boards: [...prev.boards, copied],
     }));
-    setSaveStatus("idle");
+
   };
 
   const updateTestInstruments = (field: string, value: string) => {
@@ -273,65 +294,33 @@ function EICRPageContent() {
       ...prev,
       testInstruments: { ...prev.testInstruments, [field]: value },
     }));
-    setSaveStatus("idle");
+
   };
 
-  // Auto-save (5s debounce)
-  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const dataRef = useRef(data);
-  dataRef.current = data;
-
-  const doAutoSave = useCallback(() => {
-    if (!currentCertId) return;
-    updateCertificate(currentCertId, {
-      client_name: dataRef.current.overview.clientName,
-      installation_address: dataRef.current.overview.installationAddress,
-      data: dataRef.current as unknown as Record<string, unknown>,
-    });
-    setLastSaved(new Date());
-  }, [currentCertId, updateCertificate]);
-
-  useEffect(() => {
-    if (!currentCertId || saveStatus !== "idle") return;
-    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
-    autoSaveTimer.current = setTimeout(doAutoSave, 5000);
-    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
-  }, [data, currentCertId, saveStatus, doAutoSave]);
-
-  const handleSave = async () => {
-    setIsSaving(true);
-    setSaveStatus("saving");
-
-    try {
-      if (currentCertId) {
-        updateCertificate(currentCertId, {
-          client_name: data.overview.clientName,
-          installation_address: data.overview.installationAddress,
-          data: data as unknown as Record<string, unknown>,
-        });
-      } else {
-        const newCert = createNewCertificate("EICR", data as unknown as Record<string, unknown>);
-        newCert.client_name = data.overview.clientName;
-        newCert.installation_address = data.overview.installationAddress;
-        newCert.certificate_number = data.overview.jobReference || generateCertificateNumber("EICR");
-        addCertificate(newCert);
-        setCurrentCertId(newCert.id);
-        window.history.replaceState({}, "", `/eicr?id=${newCert.id}`);
-      }
-
-      setLastSaved(new Date());
-      setSaveStatus("saved");
-      setTimeout(() => setSaveStatus("idle"), 2000);
-    } catch (error) {
-      console.error("Error saving certificate:", error);
-      setSaveStatus("error");
-    } finally {
-      setIsSaving(false);
-    }
-  };
+  // ── Autosave hook ──
+  const { saveStatus, isSaving, lastSaved, triggerSave, conflict } = useAutosave({
+    certId: currentCertId,
+    certType: "EICR",
+    data: data as unknown as Record<string, unknown>,
+    onSaveToStore: (id, d) => updateCertificate(id, {
+      client_name: (d as any).overview?.clientName,
+      installation_address: (d as any).overview?.installationAddress,
+      data: d,
+    }),
+    onCreateCert: () => {
+      const newCert = createNewCertificate("EICR", data as unknown as Record<string, unknown>);
+      newCert.client_name = data.overview.clientName;
+      newCert.installation_address = data.overview.installationAddress;
+      newCert.certificate_number = data.overview.jobReference || generateCertificateNumber("EICR");
+      addCertificate(newCert);
+      setCurrentCertId(newCert.id);
+      window.history.replaceState({}, "", `/eicr?id=${newCert.id}`);
+      return newCert.id;
+    },
+  });
 
   const handleDownload = async () => {
-    await handleSave();
+    triggerSave();
 
     setIsGenerating(true);
     try {
@@ -489,10 +478,12 @@ function EICRPageContent() {
       }}
       saveStatus={saveStatus}
       lastSaved={lastSaved}
-      onSave={handleSave}
+      onSave={triggerSave}
       onDownload={handleDownload}
       isSaving={isSaving}
       isGenerating={isGenerating}
+      conflict={conflict}
+      readOnly={!!conflict}
     >
       {/* 1. Contractor Details */}
       {activeSection === "contractor" && (
@@ -501,7 +492,7 @@ function EICRPageContent() {
             data={data.contractorDetails}
             onChange={(contractorDetails) => {
               setData((prev) => ({ ...prev, contractorDetails }));
-              setSaveStatus("idle");
+          
             }}
           />
         </div>
@@ -593,7 +584,7 @@ function EICRPageContent() {
             data={data.extentAndLimitations}
             onChange={(extentAndLimitations) => {
               setData((prev) => ({ ...prev, extentAndLimitations }));
-              setSaveStatus("idle");
+          
             }}
           />
         </div>
@@ -768,7 +759,7 @@ function EICRPageContent() {
             items={data.generalInspection}
             onChange={(generalInspection) => {
               setData((prev) => ({ ...prev, generalInspection: generalInspection as typeof prev.generalInspection }));
-              setSaveStatus("idle");
+          
             }}
           />
         </div>
@@ -848,7 +839,7 @@ function EICRPageContent() {
             observations={data.observations}
             onChange={(observations) => {
               setData((prev) => ({ ...prev, observations }));
-              setSaveStatus("idle");
+          
             }}
           />
         </div>
@@ -897,7 +888,7 @@ function EICRPageContent() {
           </div>
           <div>
             <Label htmlFor="inspectorComments">Inspector Comments</Label>
-            <Textarea id="inspectorComments" value={data.inspectorComments} onChange={(e) => { setData((prev) => ({ ...prev, inspectorComments: e.target.value })); setSaveStatus("idle"); }} placeholder="Any additional comments by the inspector..." className="min-h-[100px]" />
+            <Textarea id="inspectorComments" value={data.inspectorComments} onChange={(e) => { setData((prev) => ({ ...prev, inspectorComments: e.target.value })); }} placeholder="Any additional comments by the inspector..." className="min-h-[100px]" />
           </div>
         </div>
       )}
@@ -910,7 +901,7 @@ function EICRPageContent() {
             data={data.declarationDetails}
             onChange={(declarationDetails) => {
               setData((prev) => ({ ...prev, declarationDetails }));
-              setSaveStatus("idle");
+          
             }}
             signatureValue={engineerSig}
             onSignatureChange={setEngineerSig}
@@ -925,7 +916,7 @@ function EICRPageContent() {
             data={data.clientAcknowledgement}
             onChange={(clientAcknowledgement) => {
               setData((prev) => ({ ...prev, clientAcknowledgement }));
-              setSaveStatus("idle");
+          
             }}
             signatureValue={customerSig}
             onSignatureChange={setCustomerSig}

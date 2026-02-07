@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback, useMemo, Suspense } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Input, Label, NativeSelect, Textarea } from "@quantract/ui";
 import { getCertificateTemplate, type EICCertificate, type BoardData as BoardDataType } from "@quantract/shared/certificate-types";
@@ -11,7 +11,10 @@ import {
   useStoreHydration,
   createNewCertificate,
   generateCertificateNumber,
+  isCertificateEditable,
 } from "../../lib/certificateStore";
+import { useAutosave } from "../../lib/useAutosave";
+import { getNextIncompleteStep } from "@quantract/shared/certificate-workflow";
 import { CertificateLayout, SECTION_ICONS, type SectionConfig, type SectionStatus } from "../../components/CertificateLayout";
 import { PhotoCapture } from "../../components/PhotoCapture";
 import { ContractorDetails } from "../../components/ContractorDetails";
@@ -30,10 +33,7 @@ function EICPageContent() {
 
   const [data, setData] = useState<EICCertificate>(getCertificateTemplate("EIC") as EICCertificate);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [currentCertId, setCurrentCertId] = useState<string | null>(certificateId);
-  const [lastSaved, setLastSaved] = useState<Date | null>(null);
-  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [activeSection, setActiveSection] = useState<SectionId>("contractor");
   const [designSig, setDesignSig] = useState<string | null>(null);
   const [constructionSig, setConstructionSig] = useState<string | null>(null);
@@ -47,7 +47,27 @@ function EICPageContent() {
       if (existing && existing.data) {
         setData(existing.data as EICCertificate);
         setCurrentCertId(certificateId);
-        setLastSaved(new Date(existing.updated_at));
+
+        // Resume at first incomplete section
+        const nextStep = getNextIncompleteStep("EIC", existing.data as Record<string, unknown>);
+        if (nextStep && isCertificateEditable(existing)) {
+          const sectionMap: Record<string, SectionId> = {
+            contractorDetails: "contractor",
+            overview: "installation",
+            installationType: "type",
+            supply: "supply",
+            earthing: "earthing",
+            origin: "origin",
+            boards: "boards",
+            tests: "tests",
+            observations: "observations",
+            signatories: "signatories",
+            nextInspection: "nextInspection",
+            photos: "photos",
+          };
+          const mapped = sectionMap[nextStep];
+          if (mapped) setActiveSection(mapped);
+        }
       }
     }
   }, [certificateId, getCertificate, hydrated]);
@@ -57,7 +77,7 @@ function EICPageContent() {
       ...prev,
       overview: { ...prev.overview, [field]: value },
     }));
-    setSaveStatus("idle");
+
   };
 
   const updateSupply = (field: string, value: string | boolean) => {
@@ -65,7 +85,7 @@ function EICPageContent() {
       ...prev,
       supplyCharacteristics: { ...prev.supplyCharacteristics, [field]: value },
     }));
-    setSaveStatus("idle");
+
   };
 
   const updateEarthing = (field: string, value: string | boolean) => {
@@ -73,7 +93,7 @@ function EICPageContent() {
       ...prev,
       earthingArrangements: { ...prev.earthingArrangements, [field]: value },
     }));
-    setSaveStatus("idle");
+
   };
 
   const updateTests = (field: string, value: string | boolean) => {
@@ -81,7 +101,7 @@ function EICPageContent() {
       ...prev,
       testResults: { ...prev.testResults, [field]: value },
     }));
-    setSaveStatus("idle");
+
   };
 
   // Board management
@@ -115,65 +135,33 @@ function EICPageContent() {
       ...prev,
       boards: [...prev.boards, newBoard],
     }));
-    setSaveStatus("idle");
+
   };
 
-  // Auto-save: debounce 5s after any state change
-  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const dataRef = useRef(data);
-  dataRef.current = data;
-
-  const doAutoSave = useCallback(() => {
-    if (!currentCertId) return;
-    updateCertificate(currentCertId, {
-      client_name: dataRef.current.overview.clientName,
-      installation_address: dataRef.current.overview.installationAddress,
-      data: dataRef.current as unknown as Record<string, unknown>,
-    });
-    setLastSaved(new Date());
-  }, [currentCertId, updateCertificate]);
-
-  useEffect(() => {
-    if (!currentCertId || saveStatus !== "idle") return;
-    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
-    autoSaveTimer.current = setTimeout(doAutoSave, 5000);
-    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
-  }, [data, currentCertId, saveStatus, doAutoSave]);
-
-  const handleSave = async () => {
-    setIsSaving(true);
-    setSaveStatus("saving");
-
-    try {
-      if (currentCertId) {
-        updateCertificate(currentCertId, {
-          client_name: data.overview.clientName,
-          installation_address: data.overview.installationAddress,
-          data: data as unknown as Record<string, unknown>,
-        });
-      } else {
-        const newCert = createNewCertificate("EIC", data as unknown as Record<string, unknown>);
-        newCert.client_name = data.overview.clientName;
-        newCert.installation_address = data.overview.installationAddress;
-        newCert.certificate_number = data.overview.jobReference || generateCertificateNumber("EIC");
-        addCertificate(newCert);
-        setCurrentCertId(newCert.id);
-        window.history.replaceState({}, "", `/eic?id=${newCert.id}`);
-      }
-
-      setLastSaved(new Date());
-      setSaveStatus("saved");
-      setTimeout(() => setSaveStatus("idle"), 2000);
-    } catch (error) {
-      console.error("Error saving certificate:", error);
-      setSaveStatus("error");
-    } finally {
-      setIsSaving(false);
-    }
-  };
+  // ── Autosave hook ──
+  const { saveStatus, isSaving, lastSaved, triggerSave, conflict } = useAutosave({
+    certId: currentCertId,
+    certType: "EIC",
+    data: data as unknown as Record<string, unknown>,
+    onSaveToStore: (id, d) => updateCertificate(id, {
+      client_name: (d as any).overview?.clientName,
+      installation_address: (d as any).overview?.installationAddress,
+      data: d,
+    }),
+    onCreateCert: () => {
+      const newCert = createNewCertificate("EIC", data as unknown as Record<string, unknown>);
+      newCert.client_name = data.overview.clientName;
+      newCert.installation_address = data.overview.installationAddress;
+      newCert.certificate_number = data.overview.jobReference || generateCertificateNumber("EIC");
+      addCertificate(newCert);
+      setCurrentCertId(newCert.id);
+      window.history.replaceState({}, "", `/eic?id=${newCert.id}`);
+      return newCert.id;
+    },
+  });
 
   const handleDownload = async () => {
-    await handleSave();
+    triggerSave();
 
     setIsGenerating(true);
     try {
@@ -313,10 +301,12 @@ function EICPageContent() {
       }}
       saveStatus={saveStatus}
       lastSaved={lastSaved}
-      onSave={handleSave}
+      onSave={triggerSave}
       onDownload={handleDownload}
       isSaving={isSaving}
       isGenerating={isGenerating}
+      conflict={conflict}
+      readOnly={!!conflict}
     >
       {/* 1. Contractor Details */}
       {activeSection === "contractor" && (
@@ -324,7 +314,7 @@ function EICPageContent() {
           data={data.contractorDetails}
           onChange={(contractorDetails) => {
             setData((prev) => ({ ...prev, contractorDetails }));
-            setSaveStatus("idle");
+        
           }}
         />
       )}
@@ -395,7 +385,7 @@ function EICPageContent() {
           commentsOnExistingInstallation={data.commentsOnExistingInstallation}
           onChange={(field, value) => {
             setData((prev) => ({ ...prev, [field]: value }));
-            setSaveStatus("idle");
+        
           }}
         />
       )}
@@ -579,21 +569,21 @@ function EICPageContent() {
           <div className="grid md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="originMainSwitchType">Main Switch Type</Label>
-              <Input id="originMainSwitchType" value={data.originMainSwitchType} onChange={(e) => { setData((prev) => ({ ...prev, originMainSwitchType: e.target.value })); setSaveStatus("idle"); }} placeholder="e.g. Isolator, RCD, RCBO" />
+              <Input id="originMainSwitchType" value={data.originMainSwitchType} onChange={(e) => { setData((prev) => ({ ...prev, originMainSwitchType: e.target.value })); }} placeholder="e.g. Isolator, RCD, RCBO" />
             </div>
             <div>
               <Label htmlFor="originMainSwitchRating">Main Switch Rating (A)</Label>
-              <Input id="originMainSwitchRating" value={data.originMainSwitchRating} onChange={(e) => { setData((prev) => ({ ...prev, originMainSwitchRating: e.target.value })); setSaveStatus("idle"); }} placeholder="e.g. 100" />
+              <Input id="originMainSwitchRating" value={data.originMainSwitchRating} onChange={(e) => { setData((prev) => ({ ...prev, originMainSwitchRating: e.target.value })); }} placeholder="e.g. 100" />
             </div>
           </div>
           <div className="grid md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="originMainSwitchBsEn">BS EN Number</Label>
-              <Input id="originMainSwitchBsEn" value={data.originMainSwitchBsEn} onChange={(e) => { setData((prev) => ({ ...prev, originMainSwitchBsEn: e.target.value })); setSaveStatus("idle"); }} placeholder="e.g. BS EN 60947-3" />
+              <Input id="originMainSwitchBsEn" value={data.originMainSwitchBsEn} onChange={(e) => { setData((prev) => ({ ...prev, originMainSwitchBsEn: e.target.value })); }} placeholder="e.g. BS EN 60947-3" />
             </div>
             <div>
               <Label htmlFor="originMainSwitchPoles">Number of Poles</Label>
-              <NativeSelect id="originMainSwitchPoles" value={data.originMainSwitchPoles} onChange={(e) => { setData((prev) => ({ ...prev, originMainSwitchPoles: e.target.value })); setSaveStatus("idle"); }}>
+              <NativeSelect id="originMainSwitchPoles" value={data.originMainSwitchPoles} onChange={(e) => { setData((prev) => ({ ...prev, originMainSwitchPoles: e.target.value })); }}>
                 <option value="">Select...</option>
                 <option value="SP">Single Pole (SP)</option>
                 <option value="DP">Double Pole (DP)</option>
@@ -605,7 +595,7 @@ function EICPageContent() {
           </div>
           <div>
             <Label htmlFor="originMainSwitchLocation">Location</Label>
-            <Input id="originMainSwitchLocation" value={data.originMainSwitchLocation} onChange={(e) => { setData((prev) => ({ ...prev, originMainSwitchLocation: e.target.value })); setSaveStatus("idle"); }} placeholder="e.g. Hallway cupboard, Meter cabinet" />
+            <Input id="originMainSwitchLocation" value={data.originMainSwitchLocation} onChange={(e) => { setData((prev) => ({ ...prev, originMainSwitchLocation: e.target.value })); }} placeholder="e.g. Hallway cupboard, Meter cabinet" />
           </div>
         </div>
       )}
@@ -676,7 +666,7 @@ function EICPageContent() {
             value={data.observations}
             onChange={(e) => {
               setData((prev) => ({ ...prev, observations: e.target.value }));
-              setSaveStatus("idle");
+          
             }}
             placeholder="Enter any observations, departures from BS 7671, or recommendations..."
             className="min-h-[200px]"
@@ -696,19 +686,19 @@ function EICPageContent() {
           inspectionSignature={inspectionSig}
           onDesignChange={(designSection) => {
             setData((prev) => ({ ...prev, designSection }));
-            setSaveStatus("idle");
+        
           }}
           onConstructionChange={(constructionSection) => {
             setData((prev) => ({ ...prev, constructionSection }));
-            setSaveStatus("idle");
+        
           }}
           onInspectionChange={(inspectionSection) => {
             setData((prev) => ({ ...prev, inspectionSection }));
-            setSaveStatus("idle");
+        
           }}
           onSameAsDesignerChange={(sameAsDesigner) => {
             setData((prev) => ({ ...prev, sameAsDesigner }));
-            setSaveStatus("idle");
+        
           }}
           onDesignSignatureChange={setDesignSig}
           onConstructionSignatureChange={setConstructionSig}
@@ -722,11 +712,11 @@ function EICPageContent() {
           <div className="grid md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="nextInspectionDate">Next Inspection Date</Label>
-              <Input id="nextInspectionDate" type="date" value={data.nextInspectionDate} onChange={(e) => { setData((prev) => ({ ...prev, nextInspectionDate: e.target.value })); setSaveStatus("idle"); }} />
+              <Input id="nextInspectionDate" type="date" value={data.nextInspectionDate} onChange={(e) => { setData((prev) => ({ ...prev, nextInspectionDate: e.target.value })); }} />
             </div>
             <div>
               <Label htmlFor="retestInterval">Retest Interval</Label>
-              <NativeSelect id="retestInterval" value={data.retestInterval} onChange={(e) => { setData((prev) => ({ ...prev, retestInterval: e.target.value })); setSaveStatus("idle"); }}>
+              <NativeSelect id="retestInterval" value={data.retestInterval} onChange={(e) => { setData((prev) => ({ ...prev, retestInterval: e.target.value })); }}>
                 <option value="">Select...</option>
                 <option value="1">1 year</option>
                 <option value="2">2 years</option>

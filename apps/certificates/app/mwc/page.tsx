@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback, useMemo, Suspense } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Input, Label, NativeSelect, Textarea } from "@quantract/ui";
 import { getCertificateTemplate, type MWCCertificate } from "@quantract/shared/certificate-types";
@@ -10,7 +10,10 @@ import {
   useStoreHydration,
   createNewCertificate,
   generateCertificateNumber,
+  isCertificateEditable,
 } from "../../lib/certificateStore";
+import { useAutosave } from "../../lib/useAutosave";
+import { getNextIncompleteStep } from "@quantract/shared/certificate-workflow";
 import { CertificateLayout, SECTION_ICONS, type SectionConfig, type SectionStatus } from "../../components/CertificateLayout";
 import { PhotoCapture } from "../../components/PhotoCapture";
 import { ContractorDetails } from "../../components/ContractorDetails";
@@ -27,10 +30,7 @@ function MWCPageContent() {
 
   const [data, setData] = useState<MWCCertificate>(getCertificateTemplate("MWC") as MWCCertificate);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [currentCertId, setCurrentCertId] = useState<string | null>(certificateId);
-  const [lastSaved, setLastSaved] = useState<Date | null>(null);
-  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [activeSection, setActiveSection] = useState<SectionId>("contractor");
   const [engineerSig, setEngineerSig] = useState<string | null>(null);
   const [photos, setPhotos] = useState<string[]>([]);
@@ -42,7 +42,24 @@ function MWCPageContent() {
       if (existing && existing.data) {
         setData(existing.data as MWCCertificate);
         setCurrentCertId(certificateId);
-        setLastSaved(new Date(existing.updated_at));
+
+        // Resume at first incomplete section
+        const nextStep = getNextIncompleteStep("MWC", existing.data as Record<string, unknown>);
+        if (nextStep && isCertificateEditable(existing)) {
+          const sectionMap: Record<string, SectionId> = {
+            contractorDetails: "contractor",
+            overview: "installation",
+            workDescription: "work",
+            circuitDetails: "circuit",
+            tests: "tests",
+            observations: "observations",
+            declaration: "declaration",
+            nextInspection: "nextInspection",
+            photos: "photos",
+          };
+          const mapped = sectionMap[nextStep];
+          if (mapped) setActiveSection(mapped);
+        }
       }
     }
   }, [certificateId, getCertificate, hydrated]);
@@ -52,7 +69,7 @@ function MWCPageContent() {
       ...prev,
       overview: { ...prev.overview, [field]: value },
     }));
-    setSaveStatus("idle");
+
   };
 
   const updateCircuit = (field: string, value: string) => {
@@ -60,7 +77,7 @@ function MWCPageContent() {
       ...prev,
       circuitDetails: { ...prev.circuitDetails, [field]: value },
     }));
-    setSaveStatus("idle");
+
   };
 
   const updateTests = (field: string, value: string | boolean) => {
@@ -68,65 +85,33 @@ function MWCPageContent() {
       ...prev,
       testResults: { ...prev.testResults, [field]: value },
     }));
-    setSaveStatus("idle");
+
   };
 
-  // Auto-save: debounce 5s after any state change
-  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const dataRef = useRef(data);
-  dataRef.current = data;
-
-  const doAutoSave = useCallback(() => {
-    if (!currentCertId) return;
-    updateCertificate(currentCertId, {
-      client_name: dataRef.current.overview.clientName,
-      installation_address: dataRef.current.overview.installationAddress,
-      data: dataRef.current as unknown as Record<string, unknown>,
-    });
-    setLastSaved(new Date());
-  }, [currentCertId, updateCertificate]);
-
-  useEffect(() => {
-    if (!currentCertId || saveStatus !== "idle") return;
-    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
-    autoSaveTimer.current = setTimeout(doAutoSave, 5000);
-    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
-  }, [data, currentCertId, saveStatus, doAutoSave]);
-
-  const handleSave = async () => {
-    setIsSaving(true);
-    setSaveStatus("saving");
-
-    try {
-      if (currentCertId) {
-        updateCertificate(currentCertId, {
-          client_name: data.overview.clientName,
-          installation_address: data.overview.installationAddress,
-          data: data as unknown as Record<string, unknown>,
-        });
-      } else {
-        const newCert = createNewCertificate("MWC", data as unknown as Record<string, unknown>);
-        newCert.client_name = data.overview.clientName;
-        newCert.installation_address = data.overview.installationAddress;
-        newCert.certificate_number = data.overview.jobReference || generateCertificateNumber("MWC");
-        addCertificate(newCert);
-        setCurrentCertId(newCert.id);
-        window.history.replaceState({}, "", `/mwc?id=${newCert.id}`);
-      }
-
-      setLastSaved(new Date());
-      setSaveStatus("saved");
-      setTimeout(() => setSaveStatus("idle"), 2000);
-    } catch (error) {
-      console.error("Error saving certificate:", error);
-      setSaveStatus("error");
-    } finally {
-      setIsSaving(false);
-    }
-  };
+  // ── Autosave hook ──
+  const { saveStatus, isSaving, lastSaved, triggerSave, conflict } = useAutosave({
+    certId: currentCertId,
+    certType: "MWC",
+    data: data as unknown as Record<string, unknown>,
+    onSaveToStore: (id, d) => updateCertificate(id, {
+      client_name: (d as any).overview?.clientName,
+      installation_address: (d as any).overview?.installationAddress,
+      data: d,
+    }),
+    onCreateCert: () => {
+      const newCert = createNewCertificate("MWC", data as unknown as Record<string, unknown>);
+      newCert.client_name = data.overview.clientName;
+      newCert.installation_address = data.overview.installationAddress;
+      newCert.certificate_number = data.overview.jobReference || generateCertificateNumber("MWC");
+      addCertificate(newCert);
+      setCurrentCertId(newCert.id);
+      window.history.replaceState({}, "", `/mwc?id=${newCert.id}`);
+      return newCert.id;
+    },
+  });
 
   const handleDownload = async () => {
-    await handleSave();
+    triggerSave();
 
     setIsGenerating(true);
     try {
@@ -254,10 +239,12 @@ function MWCPageContent() {
       }}
       saveStatus={saveStatus}
       lastSaved={lastSaved}
-      onSave={handleSave}
+      onSave={triggerSave}
       onDownload={handleDownload}
       isSaving={isSaving}
       isGenerating={isGenerating}
+      conflict={conflict}
+      readOnly={!!conflict}
     >
       {/* 1. Contractor Details */}
       {activeSection === "contractor" && (
@@ -265,7 +252,7 @@ function MWCPageContent() {
           data={data.contractorDetails}
           onChange={(contractorDetails) => {
             setData((prev) => ({ ...prev, contractorDetails }));
-            setSaveStatus("idle");
+        
           }}
         />
       )}
@@ -315,7 +302,7 @@ function MWCPageContent() {
             </div>
             <div>
               <Label htmlFor="partOfInstallation">Part of Installation Covered</Label>
-              <Input id="partOfInstallation" value={data.partOfInstallation} onChange={(e) => { setData((prev) => ({ ...prev, partOfInstallation: e.target.value })); setSaveStatus("idle"); }} placeholder="e.g. Ground floor kitchen circuit" />
+              <Input id="partOfInstallation" value={data.partOfInstallation} onChange={(e) => { setData((prev) => ({ ...prev, partOfInstallation: e.target.value })); }} placeholder="e.g. Ground floor kitchen circuit" />
             </div>
           </div>
         </div>
@@ -326,7 +313,7 @@ function MWCPageContent() {
         <div className="space-y-5">
           <div>
             <Label htmlFor="extentOfWork">Extent of Work</Label>
-            <NativeSelect id="extentOfWork" value={data.extentOfWork} onChange={(e) => { setData((prev) => ({ ...prev, extentOfWork: e.target.value as MWCCertificate["extentOfWork"] })); setSaveStatus("idle"); }}>
+            <NativeSelect id="extentOfWork" value={data.extentOfWork} onChange={(e) => { setData((prev) => ({ ...prev, extentOfWork: e.target.value as MWCCertificate["extentOfWork"] })); }}>
               <option value="">Select...</option>
               <option value="addition_to_circuit">Addition to an existing circuit</option>
               <option value="repair">Repair to an existing circuit</option>
@@ -341,7 +328,7 @@ function MWCPageContent() {
               value={data.workDescription}
               onChange={(e) => {
                 setData((prev) => ({ ...prev, workDescription: e.target.value }));
-                setSaveStatus("idle");
+            
               }}
               placeholder="Describe the work carried out, e.g. Installation of additional socket outlet, replacement of light fitting..."
               className="min-h-[150px]"
@@ -515,7 +502,7 @@ function MWCPageContent() {
             value={data.observations}
             onChange={(e) => {
               setData((prev) => ({ ...prev, observations: e.target.value }));
-              setSaveStatus("idle");
+          
             }}
             placeholder="Enter any observations or comments about the work carried out..."
             className="min-h-[150px]"
@@ -530,7 +517,7 @@ function MWCPageContent() {
           data={data.declarationDetails}
           onChange={(declarationDetails) => {
             setData((prev) => ({ ...prev, declarationDetails }));
-            setSaveStatus("idle");
+        
           }}
           signatureValue={engineerSig}
           onSignatureChange={setEngineerSig}
@@ -542,7 +529,7 @@ function MWCPageContent() {
         <div className="space-y-5">
           <div>
             <Label htmlFor="nextInspectionDate">Recommended Next Inspection Date</Label>
-            <Input id="nextInspectionDate" type="date" value={data.nextInspectionDate} onChange={(e) => { setData((prev) => ({ ...prev, nextInspectionDate: e.target.value })); setSaveStatus("idle"); }} />
+            <Input id="nextInspectionDate" type="date" value={data.nextInspectionDate} onChange={(e) => { setData((prev) => ({ ...prev, nextInspectionDate: e.target.value })); }} />
           </div>
           <p className="text-xs text-[var(--muted-foreground)]">
             This should be consistent with the periodic inspection interval for the installation
