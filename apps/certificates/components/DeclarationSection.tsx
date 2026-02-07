@@ -136,6 +136,7 @@ export function DeclarationSection({
             label={`${ROLE_LABELS[role]} Signature`}
             value={signatureValue ?? null}
             onChange={onSignatureChange}
+            role={role}
           />
         )}
       </CardContent>

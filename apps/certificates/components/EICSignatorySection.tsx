@@ -3,6 +3,8 @@
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, Input, Label } from "@quantract/ui";
 import { SignatureCapture } from "./SignatureCapture";
 
+import type { SignatureRole } from "../lib/signatureAssets";
+
 interface SignatoryBlock {
   name: string;
   qualifications: string;
@@ -37,6 +39,7 @@ function SignatoryBlockForm({
   signatureValue,
   onSignatureChange,
   disabled,
+  signatureRole,
 }: {
   title: string;
   description: string;
@@ -46,6 +49,7 @@ function SignatoryBlockForm({
   signatureValue: string | null;
   onSignatureChange: (value: string | null) => void;
   disabled?: boolean;
+  signatureRole?: SignatureRole;
 }) {
   const update = (field: keyof SignatoryBlock, value: string | boolean) => {
     onChange({ ...data, [field]: value });
@@ -107,6 +111,7 @@ function SignatoryBlockForm({
           label={`${title} Signature`}
           value={signatureValue}
           onChange={onSignatureChange}
+          role={signatureRole}
         />
       </CardContent>
     </Card>
@@ -184,6 +189,7 @@ export function EICSignatorySection({
             onInspectionSignatureChange(sig);
           }
         }}
+        signatureRole="designer"
       />
 
       <SignatoryBlockForm
@@ -195,6 +201,7 @@ export function EICSignatorySection({
         signatureValue={constructionSignature}
         onSignatureChange={onConstructionSignatureChange}
         disabled={sameAsDesigner}
+        signatureRole="installer"
       />
 
       <SignatoryBlockForm
@@ -206,6 +213,7 @@ export function EICSignatorySection({
         signatureValue={inspectionSignature}
         onSignatureChange={onInspectionSignatureChange}
         disabled={sameAsDesigner}
+        signatureRole="inspector"
       />
     </div>
   );

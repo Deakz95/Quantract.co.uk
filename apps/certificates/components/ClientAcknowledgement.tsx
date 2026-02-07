@@ -86,6 +86,7 @@ export function ClientAcknowledgement({
             label="Client Signature"
             value={signatureValue ?? null}
             onChange={onSignatureChange}
+            role="client"
           />
         )}
       </CardContent>

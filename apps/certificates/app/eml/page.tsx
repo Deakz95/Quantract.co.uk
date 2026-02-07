@@ -686,8 +686,8 @@ function EmergencyLightingPageContent() {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="grid md:grid-cols-2 gap-6">
-              <SignatureCapture label="Engineer Signature" value={engineerSig} onChange={setEngineerSig} />
-              <SignatureCapture label="Customer Signature" value={customerSig} onChange={setCustomerSig} />
+              <SignatureCapture label="Engineer Signature" value={engineerSig} onChange={setEngineerSig} role="engineer" />
+              <SignatureCapture label="Customer Signature" value={customerSig} onChange={setCustomerSig} role="client" />
             </div>
             <PhotoCapture photos={photos} onChange={setPhotos} />
           </CardContent>
