@@ -3,9 +3,9 @@
 import { useState, useEffect, useRef, useCallback, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button, Input, Label, NativeSelect, Textarea } from "@quantract/ui";
-import { getCertificateTemplate, type EICRCertificate, type BoardData as BoardDataType } from "@quantract/shared/certificate-types";
+import { getCertificateTemplate, type EICRCertificate, type BoardData as BoardDataType, migrateCircuit } from "@quantract/shared/certificate-types";
 import { generateCertificatePDF } from "../../lib/pdf-generator";
-import BoardViewer, { type BoardData } from "../../components/BoardViewer";
+import { EICRBoardSchedule } from "../../components/EICRBoardSchedule";
 import {
   useCertificateStore,
   useStoreHydration,
@@ -67,7 +67,7 @@ const DEFAULT_INSPECTION_ITEMS = [
   { category: "special_locations", itemCode: "E.4", description: "Solar PV / generator installation compliant (Section 712/551)", outcome: "" as const },
 ];
 
-type SectionId = "contractor" | "installation" | "extent" | "supply" | "earthing" | "inspection" | "boards" | "tests" | "observations" | "summary" | "assessment" | "declaration" | "acknowledgement" | "photos";
+type SectionId = "contractor" | "installation" | "extent" | "supply" | "earthing" | "inspection" | "boards" | "observations" | "summary" | "assessment" | "declaration" | "acknowledgement" | "photos";
 
 const hasStr = (v: unknown) => typeof v === "string" && v.trim().length > 0;
 
@@ -105,12 +105,41 @@ function EICRPageContent() {
       const existing = getCertificate(certificateId);
       if (existing && existing.data) {
         const loaded = existing.data as EICRCertificate;
+        // Ensure testInstruments exists (backward compat)
+        if (!loaded.testInstruments) {
+          (loaded as Record<string, unknown>).testInstruments = {
+            instrumentSet: "", multiFunctionalSerial: "", insulationResistanceSerial: "",
+            continuitySerial: "", earthFaultLoopSerial: "", rcdSerial: "",
+          };
+        }
+        // Migrate legacy board circuits to new format
+        if (loaded.boards) {
+          loaded.boards = loaded.boards.map((b) => ({
+            ...b,
+            suppliedFrom: b.suppliedFrom ?? "",
+            ocpdBsEn: b.ocpdBsEn ?? "",
+            ocpdType: b.ocpdType ?? "",
+            ocpdRating: b.ocpdRating ?? "",
+            spdType: b.spdType ?? "",
+            spdStatusChecked: b.spdStatusChecked ?? false,
+            supplyPolarityConfirmed: b.supplyPolarityConfirmed ?? false,
+            phaseSequenceConfirmed: b.phaseSequenceConfirmed ?? false,
+            zsAtDb: b.zsAtDb ?? "",
+            ipfAtDb: b.ipfAtDb ?? "",
+            typeOfWiringOther: b.typeOfWiringOther ?? "",
+            circuits: (b.circuits || []).map((c) =>
+              c.circuitNumber !== undefined ? c : migrateCircuit(c as unknown as Record<string, unknown>)
+            ),
+          }));
+        }
+        // Log warning if old testResults data exists
+        const tr = loaded.testResults;
+        if (tr && (tr.continuityOfProtectiveConductors || tr.insulationResistance || tr.earthFaultLoopImpedance)) {
+          console.warn("[EICR] Legacy testResults data found — test results are now captured per-circuit in distribution board schedules.");
+        }
         setData(loaded);
         setCurrentCertId(certificateId);
         setLastSaved(new Date(existing.updated_at));
-        if (loaded.boards && loaded.boards.length > 0) {
-          // Boards are stored in the data
-        }
       }
     }
   }, [certificateId, getCertificate, hydrated]);
@@ -172,14 +201,6 @@ function EICRPageContent() {
     setSaveStatus("idle");
   };
 
-  const updateTests = (field: string, value: string | boolean) => {
-    setData((prev) => ({
-      ...prev,
-      testResults: { ...prev.testResults, [field]: value },
-    }));
-    setSaveStatus("idle");
-  };
-
   // Board management
   const addBoard = () => {
     const newBoard: BoardDataType = {
@@ -194,11 +215,63 @@ function EICRPageContent() {
       ipRating: "",
       mainSwitch: { rating: "", type: "" },
       rcdDetails: "",
+      suppliedFrom: "",
+      ocpdBsEn: "",
+      ocpdType: "",
+      ocpdRating: "",
+      spdType: "",
+      spdStatusChecked: false,
+      supplyPolarityConfirmed: false,
+      phaseSequenceConfirmed: false,
+      zsAtDb: "",
+      ipfAtDb: "",
+      typeOfWiringOther: "",
       circuits: [],
     };
     setData((prev) => ({
       ...prev,
       boards: [...prev.boards, newBoard],
+    }));
+    setSaveStatus("idle");
+  };
+
+  const updateBoard = (index: number, updated: BoardDataType) => {
+    setData((prev) => {
+      const newBoards = [...prev.boards];
+      newBoards[index] = updated;
+      return { ...prev, boards: newBoards };
+    });
+    setSaveStatus("idle");
+  };
+
+  const deleteBoard = (index: number) => {
+    if (!confirm("Delete this distribution board and all its circuits?")) return;
+    setData((prev) => ({
+      ...prev,
+      boards: prev.boards.filter((_, i) => i !== index),
+    }));
+    setSaveStatus("idle");
+  };
+
+  const copyBoard = (index: number) => {
+    const source = data.boards[index];
+    const copied: BoardDataType = {
+      ...source,
+      id: crypto.randomUUID(),
+      name: `${source.name} (Copy)`,
+      circuits: source.circuits.map((c) => ({ ...c, id: crypto.randomUUID() })),
+    };
+    setData((prev) => ({
+      ...prev,
+      boards: [...prev.boards, copied],
+    }));
+    setSaveStatus("idle");
+  };
+
+  const updateTestInstruments = (field: string, value: string) => {
+    setData((prev) => ({
+      ...prev,
+      testInstruments: { ...prev.testInstruments, [field]: value },
     }));
     setSaveStatus("idle");
   };
@@ -340,25 +413,10 @@ function EICRPageContent() {
       id: "boards",
       label: "Distribution Boards",
       icon: SECTION_ICONS.layoutGrid,
-      getStatus: (): SectionStatus => data.boards.length > 0 ? "complete" : "empty",
-    },
-    {
-      id: "tests",
-      label: "Test Results",
-      icon: SECTION_ICONS.barChart,
       getStatus: (): SectionStatus => {
-        const tr = data.testResults;
-        const vals = [
-          tr.continuityOfProtectiveConductors,
-          tr.insulationResistance,
-          tr.earthFaultLoopImpedance,
-          tr.rcdOperatingTime,
-          tr.rcdOperatingCurrent,
-        ];
-        const filled = vals.filter((v) => hasStr(v));
-        if (filled.length === 0) return "empty";
-        if (filled.length === vals.length) return "complete";
-        return "partial";
+        if (data.boards.length === 0) return "empty";
+        const hasCircuits = data.boards.some(b => b.circuits.length > 0);
+        return hasCircuits ? "complete" : "partial";
       },
     },
     {
@@ -406,7 +464,6 @@ function EICRPageContent() {
     data.earthingArrangements.meansOfEarthing,
     data.generalInspection,
     data.boards,
-    data.testResults,
     data.overallCondition,
     engineerSig,
     customerSig,
@@ -717,11 +774,11 @@ function EICRPageContent() {
         </div>
       )}
 
-      {/* 7. Distribution Boards */}
+      {/* 7. Distribution Boards & Test Results */}
       {activeSection === "boards" && (
         <div className="space-y-5">
           <div className="flex items-center justify-between">
-            <p className="text-[var(--muted-foreground)]">Visual and table views of circuit schedules and test results</p>
+            <p className="text-[var(--muted-foreground)]">Circuit schedules and test results per BS 7671:2018+A2:2022</p>
             <Button variant="secondary" onClick={addBoard}>+ Add Board</Button>
           </div>
 
@@ -731,48 +788,60 @@ function EICRPageContent() {
               <p className="text-sm">Click &quot;+ Add Board&quot; to add a consumer unit or distribution board</p>
             </div>
           ) : (
-            data.boards.map((board) => (
-              <BoardViewer key={board.id} board={board as unknown as BoardData} />
+            data.boards.map((board, index) => (
+              <EICRBoardSchedule
+                key={board.id}
+                board={board}
+                allBoardNames={data.boards.map(b => b.name)}
+                onBoardChange={(updated) => updateBoard(index, updated)}
+                onDeleteBoard={() => deleteBoard(index)}
+                onCopyBoard={() => copyBoard(index)}
+              />
             ))
           )}
+
+          {/* Details of Test Instruments */}
+          <details className="border border-[var(--border)] rounded-xl overflow-hidden">
+            <summary className="bg-[var(--muted)] px-4 py-3 cursor-pointer text-sm font-semibold text-[var(--foreground)] hover:bg-[var(--muted)]/80 transition-colors select-none">
+              Details of Test Instruments
+            </summary>
+            <div className="p-4 space-y-3">
+              <div className="grid md:grid-cols-2 gap-3">
+                <div>
+                  <Label htmlFor="instrumentSet">Instrument Set</Label>
+                  <Input id="instrumentSet" value={data.testInstruments.instrumentSet} onChange={(e) => updateTestInstruments("instrumentSet", e.target.value)} placeholder="e.g. MFT1741+" />
+                </div>
+                <div>
+                  <Label htmlFor="multiFunctionalSerial">Multi-functional Tester Serial No.</Label>
+                  <Input id="multiFunctionalSerial" value={data.testInstruments.multiFunctionalSerial} onChange={(e) => updateTestInstruments("multiFunctionalSerial", e.target.value)} placeholder="Serial number" />
+                </div>
+              </div>
+              <div className="grid md:grid-cols-2 gap-3">
+                <div>
+                  <Label htmlFor="insulationResistanceSerial">Insulation Resistance Tester Serial No.</Label>
+                  <Input id="insulationResistanceSerial" value={data.testInstruments.insulationResistanceSerial} onChange={(e) => updateTestInstruments("insulationResistanceSerial", e.target.value)} placeholder="Serial number" />
+                </div>
+                <div>
+                  <Label htmlFor="continuitySerial">Continuity Tester Serial No.</Label>
+                  <Input id="continuitySerial" value={data.testInstruments.continuitySerial} onChange={(e) => updateTestInstruments("continuitySerial", e.target.value)} placeholder="Serial number" />
+                </div>
+              </div>
+              <div className="grid md:grid-cols-2 gap-3">
+                <div>
+                  <Label htmlFor="earthFaultLoopSerial">Earth Fault Loop Impedance Tester Serial No.</Label>
+                  <Input id="earthFaultLoopSerial" value={data.testInstruments.earthFaultLoopSerial} onChange={(e) => updateTestInstruments("earthFaultLoopSerial", e.target.value)} placeholder="Serial number" />
+                </div>
+                <div>
+                  <Label htmlFor="rcdSerial">RCD Tester Serial No.</Label>
+                  <Input id="rcdSerial" value={data.testInstruments.rcdSerial} onChange={(e) => updateTestInstruments("rcdSerial", e.target.value)} placeholder="Serial number" />
+                </div>
+              </div>
+            </div>
+          </details>
         </div>
       )}
 
-      {/* 8. Test Results */}
-      {activeSection === "tests" && (
-        <div className="space-y-5">
-          <div className="grid md:grid-cols-3 gap-4">
-            <div>
-              <Label htmlFor="continuityOfProtectiveConductors">Continuity R1+R2 (Ohm)</Label>
-              <Input id="continuityOfProtectiveConductors" value={data.testResults.continuityOfProtectiveConductors} onChange={(e) => updateTests("continuityOfProtectiveConductors", e.target.value)} placeholder="e.g. 0.25" />
-            </div>
-            <div>
-              <Label htmlFor="insulationResistance">Insulation Resistance (MOhm)</Label>
-              <Input id="insulationResistance" value={data.testResults.insulationResistance} onChange={(e) => updateTests("insulationResistance", e.target.value)} placeholder="e.g. >200" />
-            </div>
-            <div>
-              <Label htmlFor="earthFaultLoopImpedance">Zs (Ohm)</Label>
-              <Input id="earthFaultLoopImpedance" value={data.testResults.earthFaultLoopImpedance} onChange={(e) => updateTests("earthFaultLoopImpedance", e.target.value)} placeholder="e.g. 0.45" />
-            </div>
-          </div>
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="rcdOperatingTime">RCD Operating Time (ms)</Label>
-              <Input id="rcdOperatingTime" value={data.testResults.rcdOperatingTime} onChange={(e) => updateTests("rcdOperatingTime", e.target.value)} placeholder="e.g. 25" />
-            </div>
-            <div>
-              <Label htmlFor="rcdOperatingCurrent">RCD Operating Current (mA)</Label>
-              <Input id="rcdOperatingCurrent" value={data.testResults.rcdOperatingCurrent} onChange={(e) => updateTests("rcdOperatingCurrent", e.target.value)} placeholder="e.g. 30" />
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <input type="checkbox" id="polarityConfirmed" checked={data.testResults.polarityConfirmed} onChange={(e) => updateTests("polarityConfirmed", e.target.checked)} className="w-5 h-5 rounded accent-[var(--primary)]" />
-            <Label htmlFor="polarityConfirmed" className="mb-0">Polarity confirmed</Label>
-          </div>
-        </div>
-      )}
-
-      {/* 9. Observations */}
+      {/* 8. Observations */}
       {activeSection === "observations" && (
         <div className="space-y-5">
           <ObservationsList
@@ -785,7 +854,7 @@ function EICRPageContent() {
         </div>
       )}
 
-      {/* 10. Summary of Condition */}
+      {/* 9. Summary of Condition */}
       {activeSection === "summary" && (
         <div className="space-y-5">
           <SummaryOfCondition
@@ -797,7 +866,7 @@ function EICRPageContent() {
         </div>
       )}
 
-      {/* 11. Overall Assessment */}
+      {/* 10. Overall Assessment */}
       {activeSection === "assessment" && (
         <div className="space-y-5">
           <div className="grid md:grid-cols-2 gap-4">
@@ -833,7 +902,7 @@ function EICRPageContent() {
         </div>
       )}
 
-      {/* 12. Declaration */}
+      {/* 11. Declaration */}
       {activeSection === "declaration" && (
         <div className="space-y-5">
           <DeclarationSection
@@ -849,7 +918,7 @@ function EICRPageContent() {
         </div>
       )}
 
-      {/* 13. Client Acknowledgement */}
+      {/* 12. Client Acknowledgement */}
       {activeSection === "acknowledgement" && (
         <div className="space-y-5">
           <ClientAcknowledgement
@@ -864,7 +933,7 @@ function EICRPageContent() {
         </div>
       )}
 
-      {/* 14. Site Photos */}
+      {/* 13. Site Photos */}
       {activeSection === "photos" && (
         <div className="space-y-5">
           <PhotoCapture photos={photos} onChange={setPhotos} />

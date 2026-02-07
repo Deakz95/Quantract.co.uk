@@ -98,6 +98,17 @@ function EICPageContent() {
       ipRating: "",
       mainSwitch: { rating: "", type: "" },
       rcdDetails: "",
+      suppliedFrom: "",
+      ocpdBsEn: "",
+      ocpdType: "",
+      ocpdRating: "",
+      spdType: "",
+      spdStatusChecked: false,
+      supplyPolarityConfirmed: false,
+      phaseSequenceConfirmed: false,
+      zsAtDb: "",
+      ipfAtDb: "",
+      typeOfWiringOther: "",
       circuits: [],
     };
     setData((prev) => ({

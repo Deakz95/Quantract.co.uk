@@ -204,31 +204,74 @@ export const clientAcknowledgementSchema = z.object({
   clientSignature: z.custom<CertificateSignature>().optional(),
 });
 
-// Board data schema (Zod version of BoardData interface)
+// Board circuit schema — BS 7671:2018+A2:2022 full schedule (33 columns)
 export const boardCircuitSchema = z.object({
   id: z.string().optional().default(""),
-  num: z.union([z.number(), z.string()]).optional().default(""),
+  // Core identity
+  circuitNumber: z.union([z.number(), z.string()]).optional().default(""),
   description: z.string().optional().default(""),
-  type: z.string().optional().default(""),
-  rating: z.string().optional().default(""),
-  phase: z.enum(["L1", "L2", "L3", "TPN", "single", ""]).optional().default(""),
-  bsen: z.string().optional().default(""),
-  cableMm2: z.string().optional().default(""),
-  cpcMm2: z.string().optional().default(""),
-  cableType: z.string().optional().default(""),
-  maxZs: z.string().optional().default(""),
-  zs: z.string().optional().default(""),
-  r1r2: z.string().optional().default(""),
-  r2: z.string().optional().default(""),
-  insMohm: z.string().optional().default(""),
-  rcdMa: z.string().optional().default(""),
-  rcdMs: z.string().optional().default(""),
-  rcdType: z.enum(["AC", "A", "B", "F", ""]).optional().default(""),
-  status: z.enum(["pass", "fail", "warning", "untested", ""]).optional().default(""),
-  code: z.string().optional().default(""),
+  phase: z.enum(["L1", "L2", "L3", "TPN", "3P", "single", ""]).optional().default(""),
   isEmpty: z.boolean().optional().default(false),
+  // Conductor details
+  typeOfWiring: z.string().optional().default(""),
+  referenceMethod: z.string().optional().default(""),
+  numberOfPoints: z.union([z.number(), z.string()]).optional().default(""),
+  liveCsa: z.string().optional().default(""),
+  cpcCsa: z.string().optional().default(""),
+  // Overcurrent protective device
+  ocpdNumberAndSize: z.string().optional().default(""),
+  maxDisconnectionTime: z.string().optional().default(""),
+  ocpdBsEn: z.string().optional().default(""),
+  ocpdType: z.string().optional().default(""),
+  ocpdRating: z.string().optional().default(""),
+  breakingCapacity: z.string().optional().default(""),
+  maxPermittedZs: z.string().optional().default(""),
+  // RCD
+  rcdBsEn: z.string().optional().default(""),
+  rcdType: z.string().optional().default(""),
+  rcdRatedCurrent: z.string().optional().default(""),
+  rcdRating: z.string().optional().default(""),
+  // Continuity — Ring final circuit
+  ringR1: z.string().optional().default(""),
+  ringRn: z.string().optional().default(""),
+  ringR2: z.string().optional().default(""),
+  // Continuity — Radial
+  r1PlusR2: z.string().optional().default(""),
+  // Insulation resistance
+  irTestVoltage: z.string().optional().default(""),
+  irLiveLive: z.string().optional().default(""),
+  irLiveEarth: z.string().optional().default(""),
+  // Zs
+  polarityConfirmed: z.boolean().optional().default(false),
+  zsMaximum: z.string().optional().default(""),
+  zsMeasured: z.string().optional().default(""),
+  // RCD test
+  rcdDisconnectionTime: z.string().optional().default(""),
+  // AFDD
+  afddTestButton: z.boolean().optional().default(false),
+  afddManualTest: z.boolean().optional().default(false),
+  // Status & observations
+  status: z.string().optional().default(""),
+  observationCode: z.string().optional().default(""),
+  // Legacy field aliases (backward compat with EIC/MWC old-format boards)
+  num: z.union([z.number(), z.string()]).optional(),
+  type: z.string().optional(),
+  rating: z.string().optional(),
+  bsen: z.string().optional(),
+  cableMm2: z.string().optional(),
+  cpcMm2: z.string().optional(),
+  cableType: z.string().optional(),
+  maxZs: z.string().optional(),
+  zs: z.string().optional(),
+  r1r2: z.string().optional(),
+  r2: z.string().optional(),
+  insMohm: z.string().optional(),
+  rcdMa: z.string().optional(),
+  rcdMs: z.string().optional(),
+  code: z.string().optional(),
 });
 
+// Board data schema — expanded with DB header fields (BS 7671)
 export const boardDataSchema = z.object({
   id: z.string().optional().default(""),
   name: z.string().optional().default(""),
@@ -245,8 +288,76 @@ export const boardDataSchema = z.object({
     type: z.string().optional().default(""),
   }).optional().default({ rating: "", type: "" }),
   rcdDetails: z.string().optional().default(""),
+  // DB header fields (BS 7671)
+  suppliedFrom: z.string().optional().default(""),
+  ocpdBsEn: z.string().optional().default(""),
+  ocpdType: z.string().optional().default(""),
+  ocpdRating: z.string().optional().default(""),
+  spdType: z.string().optional().default(""),
+  spdStatusChecked: z.boolean().optional().default(false),
+  supplyPolarityConfirmed: z.boolean().optional().default(false),
+  phaseSequenceConfirmed: z.boolean().optional().default(false),
+  zsAtDb: z.string().optional().default(""),
+  ipfAtDb: z.string().optional().default(""),
+  typeOfWiringOther: z.string().optional().default(""),
   circuits: z.array(boardCircuitSchema).optional().default([]),
 });
+
+// Test instruments schema (certificate-level, not per-board)
+export const testInstrumentsSchema = z.object({
+  instrumentSet: z.string().optional().default(""),
+  multiFunctionalSerial: z.string().optional().default(""),
+  insulationResistanceSerial: z.string().optional().default(""),
+  continuitySerial: z.string().optional().default(""),
+  earthFaultLoopSerial: z.string().optional().default(""),
+  rcdSerial: z.string().optional().default(""),
+});
+
+// Migrate legacy circuit data (old 15-column format) to BS 7671 33-column format
+export function migrateCircuit(c: Record<string, unknown>): BoardCircuit {
+  const s = (v: unknown) => (v != null ? String(v) : "");
+  const sn = (a: unknown, b: unknown) => (a != null && a !== "" ? String(a) : b != null && b !== "" ? String(b) : "");
+  const circNum = c.circuitNumber ?? c.num;
+  const nPts = c.numberOfPoints;
+  return {
+    id: s(c.id) || crypto.randomUUID(),
+    circuitNumber: (typeof circNum === "number" ? circNum : s(circNum)) as string | number,
+    description: s(c.description),
+    phase: (s(c.phase) || "") as BoardCircuit["phase"],
+    isEmpty: Boolean(c.isEmpty ?? false),
+    typeOfWiring: s(c.typeOfWiring),
+    referenceMethod: s(c.referenceMethod),
+    numberOfPoints: (typeof nPts === "number" ? nPts : s(nPts)) as string | number,
+    liveCsa: sn(c.liveCsa, c.cableMm2),
+    cpcCsa: sn(c.cpcCsa, c.cpcMm2),
+    ocpdNumberAndSize: s(c.ocpdNumberAndSize),
+    maxDisconnectionTime: s(c.maxDisconnectionTime),
+    ocpdBsEn: sn(c.ocpdBsEn, c.bsen),
+    ocpdType: sn(c.ocpdType, c.type),
+    ocpdRating: sn(c.ocpdRating, c.rating),
+    breakingCapacity: s(c.breakingCapacity),
+    maxPermittedZs: sn(c.maxPermittedZs, c.maxZs),
+    rcdBsEn: s(c.rcdBsEn),
+    rcdType: s(c.rcdType),
+    rcdRatedCurrent: sn(c.rcdRatedCurrent, c.rcdMa),
+    rcdRating: s(c.rcdRating),
+    ringR1: s(c.ringR1),
+    ringRn: s(c.ringRn),
+    ringR2: s(c.ringR2),
+    r1PlusR2: sn(c.r1PlusR2, c.r1r2),
+    irTestVoltage: s(c.irTestVoltage) || (c.insMohm ? "500" : ""),
+    irLiveLive: s(c.irLiveLive),
+    irLiveEarth: sn(c.irLiveEarth, c.insMohm),
+    polarityConfirmed: Boolean(c.polarityConfirmed ?? false),
+    zsMaximum: s(c.zsMaximum),
+    zsMeasured: sn(c.zsMeasured, c.zs),
+    rcdDisconnectionTime: sn(c.rcdDisconnectionTime, c.rcdMs),
+    afddTestButton: Boolean(c.afddTestButton ?? false),
+    afddManualTest: Boolean(c.afddManualTest ?? false),
+    status: s(c.status),
+    observationCode: sn(c.observationCode, c.code),
+  };
+}
 
 // ── EIC-specific signatory section ──
 
@@ -309,6 +420,8 @@ export const eicrCertificateSchema = z.object({
   generalInspection: z.array(generalInspectionItemSchema).optional().default([]),
   // Distribution boards
   boards: z.array(boardDataSchema).optional().default([]),
+  // Test instruments (certificate-level)
+  testInstruments: testInstrumentsSchema.optional().default({}),
   // Observations
   observations: z.array(eicrObservationSchema).optional().default([]),
   // Summary of condition (auto-calculated)
@@ -495,6 +608,7 @@ export type FireAlarmCertificate = z.infer<typeof fireAlarmCertificateSchema>;
 export type EmergencyLightingCertificate = z.infer<typeof emergencyLightingCertificateSchema>;
 export type BoardData = z.infer<typeof boardDataSchema>;
 export type BoardCircuit = z.infer<typeof boardCircuitSchema>;
+export type TestInstruments = z.infer<typeof testInstrumentsSchema>;
 
 // Get empty template for a certificate type
 export function getCertificateTemplate(type: CertificateType): CertificateData {
@@ -530,6 +644,7 @@ export function getCertificateTemplate(type: CertificateType): CertificateData {
         scheduleOfCircuits: [],
         generalInspection: [],
         boards: [],
+        testInstruments: {},
         observations: [],
         summaryOfCondition: {},
         overallCondition: "",

@@ -1,5 +1,55 @@
 import type { BoardData, BoardCircuit } from "@quantract/shared/certificate-types";
 
+/** Default empty values for the expanded BS 7671 circuit fields */
+const EMPTY_CIRCUIT_DEFAULTS: Omit<BoardCircuit, "id" | "circuitNumber" | "description" | "phase" | "isEmpty"> = {
+  typeOfWiring: "",
+  referenceMethod: "",
+  numberOfPoints: "",
+  liveCsa: "",
+  cpcCsa: "",
+  ocpdNumberAndSize: "",
+  maxDisconnectionTime: "",
+  ocpdBsEn: "",
+  ocpdType: "",
+  ocpdRating: "",
+  breakingCapacity: "",
+  maxPermittedZs: "",
+  rcdBsEn: "",
+  rcdType: "",
+  rcdRatedCurrent: "",
+  rcdRating: "",
+  ringR1: "",
+  ringRn: "",
+  ringR2: "",
+  r1PlusR2: "",
+  irTestVoltage: "",
+  irLiveLive: "",
+  irLiveEarth: "",
+  polarityConfirmed: false,
+  zsMaximum: "",
+  zsMeasured: "",
+  rcdDisconnectionTime: "",
+  afddTestButton: false,
+  afddManualTest: false,
+  status: "",
+  observationCode: "",
+};
+
+/** Default empty values for the expanded BS 7671 board header fields */
+const EMPTY_BOARD_DEFAULTS = {
+  suppliedFrom: "",
+  ocpdBsEn: "",
+  ocpdType: "",
+  ocpdRating: "",
+  spdType: "",
+  spdStatusChecked: false,
+  supplyPolarityConfirmed: false,
+  phaseSequenceConfirmed: false,
+  zsAtDb: "",
+  ipfAtDb: "",
+  typeOfWiringOther: "",
+};
+
 /**
  * Create a default board with empty spare slots
  */
@@ -20,26 +70,11 @@ export function createDefaultBoard(
   for (let i = 1; i <= numWays; i++) {
     circuits.push({
       id: crypto.randomUUID(),
-      num: String(i),
+      circuitNumber: i,
       description: "",
-      type: "",
-      rating: "",
       phase: type === "three-phase" ? (["L1", "L2", "L3"] as const)[(i - 1) % 3] : "single",
-      bsen: "",
-      cableMm2: "",
-      cpcMm2: "",
-      cableType: "",
-      maxZs: "",
-      zs: "",
-      r1r2: "",
-      r2: "",
-      insMohm: "",
-      rcdMa: "",
-      rcdMs: "",
-      rcdType: "",
-      status: "",
-      code: "",
       isEmpty: true,
+      ...EMPTY_CIRCUIT_DEFAULTS,
     });
   }
 
@@ -59,6 +94,7 @@ export function createDefaultBoard(
       type: options?.mainSwitchType || "Isolator",
     },
     rcdDetails: "",
+    ...EMPTY_BOARD_DEFAULTS,
     circuits,
   };
 }
@@ -68,32 +104,17 @@ export function createDefaultBoard(
  */
 export function addCircuit(board: BoardData, phase?: string): BoardData {
   const maxNum = board.circuits.reduce((max, c) => {
-    const n = parseInt(String(c.num), 10);
+    const n = parseInt(String(c.circuitNumber ?? c.num), 10);
     return isNaN(n) ? max : Math.max(max, n);
   }, 0);
 
   const newCircuit: BoardCircuit = {
     id: crypto.randomUUID(),
-    num: String(maxNum + 1),
+    circuitNumber: maxNum + 1,
     description: "",
-    type: "",
-    rating: "",
     phase: (phase as BoardCircuit["phase"]) || (board.type === "three-phase" ? "L1" : "single"),
-    bsen: "",
-    cableMm2: "",
-    cpcMm2: "",
-    cableType: "",
-    maxZs: "",
-    zs: "",
-    r1r2: "",
-    r2: "",
-    insMohm: "",
-    rcdMa: "",
-    rcdMs: "",
-    rcdType: "",
-    status: "",
-    code: "",
     isEmpty: false,
+    ...EMPTY_CIRCUIT_DEFAULTS,
   };
 
   return {
@@ -139,34 +160,34 @@ export function updateCircuit(board: BoardData, circuitId: string, updates: Part
  */
 export function boardToCSV(board: BoardData): string {
   const headers = [
-    "Circuit", "Phase", "Description", "Type", "Rating",
-    "BS EN", "Cable mm2", "CPC mm2", "Cable Type",
-    "Max Zs", "Zs", "R1+R2", "R2", "Ins MOhm",
-    "RCD mA", "RCD ms", "RCD Type", "Status", "Code"
+    "Circuit", "Phase", "Description", "Wiring", "Ref Method",
+    "Points", "Live mm2", "CPC mm2", "OCPD Type", "OCPD Rating",
+    "BS EN", "Max Zs", "Zs", "R1+R2", "IR L-E",
+    "RCD mA", "RCD ms", "Status", "Code"
   ];
 
   const rows = board.circuits
     .filter((c) => !c.isEmpty)
     .map((c) => [
-      c.num,
+      c.circuitNumber ?? c.num ?? "",
       c.phase || "",
       `"${(c.description || "").replace(/"/g, '""')}"`,
-      c.type || "",
-      c.rating || "",
-      c.bsen || "",
-      c.cableMm2 || "",
-      c.cpcMm2 || "",
-      c.cableType || "",
-      c.maxZs || "",
-      c.zs || "",
-      c.r1r2 || "",
-      c.r2 || "",
-      c.insMohm || "",
-      c.rcdMa || "",
-      c.rcdMs || "",
-      c.rcdType || "",
+      c.typeOfWiring || "",
+      c.referenceMethod || "",
+      c.numberOfPoints || "",
+      c.liveCsa || c.cableMm2 || "",
+      c.cpcCsa || c.cpcMm2 || "",
+      c.ocpdType || c.type || "",
+      c.ocpdRating || c.rating || "",
+      c.ocpdBsEn || c.bsen || "",
+      c.maxPermittedZs || c.maxZs || "",
+      c.zsMeasured || c.zs || "",
+      c.r1PlusR2 || c.r1r2 || "",
+      c.irLiveEarth || c.insMohm || "",
+      c.rcdRatedCurrent || c.rcdMa || "",
+      c.rcdDisconnectionTime || c.rcdMs || "",
       c.status || "",
-      c.code || "",
+      c.observationCode || c.code || "",
     ].join(","));
 
   return [headers.join(","), ...rows].join("\n");
