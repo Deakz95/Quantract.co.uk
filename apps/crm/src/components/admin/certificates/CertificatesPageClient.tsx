@@ -11,7 +11,7 @@ import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 import { useToast } from "@/components/ui/useToast";
 import { apiRequest, getApiErrorMessage, requireOk } from "@/lib/apiClient";
 import { getStatusBadgeProps } from "@/lib/statusConfig";
-import { BadgeCheck, Plus, ExternalLink, FileText, Briefcase, Download, BarChart3, AlertTriangle } from "lucide-react";
+import { BadgeCheck, Plus, ExternalLink, FileText, Briefcase, Download, BarChart3, AlertTriangle, Search, Filter, RefreshCw } from "lucide-react";
 import { CERTIFICATE_TYPES } from "@/lib/certificates";
 
 type Job = {
@@ -33,6 +33,23 @@ type Certificate = {
   certificateNumber?: string;
   issuedAtISO?: string;
   completedAtISO?: string;
+};
+
+type CertificateListItem = {
+  id: string;
+  type: string;
+  status: string;
+  certificateNumber?: string;
+  issuedAt?: string;
+  issuedAtISO?: string;
+  completedAt?: string;
+  completedAtISO?: string;
+  createdAt: string;
+  inspectorName?: string;
+  outcome?: string;
+  clientName?: string;
+  siteAddress?: string;
+  jobNumber?: string;
 };
 
 export default function CertificatesPageClient() {
@@ -68,6 +85,82 @@ export default function CertificatesPageClient() {
   const [analyticsPeriod, setAnalyticsPeriod] = useState<"7" | "30" | "90">("30");
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
+
+  // All certificates list state
+  const [allCerts, setAllCerts] = useState<CertificateListItem[]>([]);
+  const [allCertsLoading, setAllCertsLoading] = useState(false);
+  const allCertsLoadedRef = useRef(false);
+
+  // Filter states
+  const [filterType, setFilterType] = useState<string>("");
+  const [filterStatus, setFilterStatus] = useState<string>("");
+  const [filterDateFrom, setFilterDateFrom] = useState("");
+  const [filterDateTo, setFilterDateTo] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Load all certificates (independent of job selection)
+  const loadAllCertificates = useCallback(async () => {
+    setAllCertsLoading(true);
+    try {
+      const data = await apiRequest<{ ok: boolean; certificates: CertificateListItem[] }>(
+        "/api/admin/certificates",
+        { cache: "no-store" }
+      );
+      requireOk(data);
+      setAllCerts(Array.isArray(data.certificates) ? data.certificates : []);
+    } catch (error) {
+      console.error("Failed to load all certificates:", error);
+      setAllCerts([]);
+    } finally {
+      setAllCertsLoading(false);
+    }
+  }, []);
+
+  // Load all certificates on mount
+  useEffect(() => {
+    if (allCertsLoadedRef.current) return;
+    allCertsLoadedRef.current = true;
+    loadAllCertificates();
+  }, [loadAllCertificates]);
+
+  // Filtered and searched certificates (client-side)
+  const filteredCerts = useMemo(() => {
+    let result = allCerts;
+
+    if (filterType) {
+      result = result.filter((c) => c.type === filterType);
+    }
+    if (filterStatus) {
+      result = result.filter((c) => c.status === filterStatus);
+    }
+    if (filterDateFrom) {
+      const from = new Date(filterDateFrom);
+      result = result.filter((c) => {
+        const d = new Date(c.createdAt);
+        return d >= from;
+      });
+    }
+    if (filterDateTo) {
+      const to = new Date(filterDateTo);
+      to.setHours(23, 59, 59, 999);
+      result = result.filter((c) => {
+        const d = new Date(c.createdAt);
+        return d <= to;
+      });
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      result = result.filter(
+        (c) =>
+          (c.certificateNumber && c.certificateNumber.toLowerCase().includes(q)) ||
+          (c.clientName && c.clientName.toLowerCase().includes(q)) ||
+          (c.siteAddress && c.siteAddress.toLowerCase().includes(q)) ||
+          (c.inspectorName && c.inspectorName.toLowerCase().includes(q))
+      );
+    }
+
+    return result;
+  }, [allCerts, filterType, filterStatus, filterDateFrom, filterDateTo, searchQuery]);
 
   // Fetch analytics
   useEffect(() => {
@@ -200,6 +293,8 @@ export default function CertificatesPageClient() {
       requireOk(data);
       toast({ title: "Certificate created", variant: "success" });
       await loadCertificates(jobId);
+      // Also refresh the unified "all certificates" list
+      loadAllCertificates();
     } catch (error) {
       toast({ title: "Could not create certificate", description: getApiErrorMessage(error), variant: "destructive" });
     } finally {
@@ -439,6 +534,199 @@ export default function CertificatesPageClient() {
           )}
         </CardContent>
       </Card>
+
+    {/* All Certificates Table */}
+    <Card>
+      <CardHeader>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="w-4 h-4" />
+            All Certificates
+          </CardTitle>
+          <Button
+            variant="secondary"
+            size="sm"
+            type="button"
+            onClick={loadAllCertificates}
+            disabled={allCertsLoading}
+          >
+            <RefreshCw className={`w-4 h-4 mr-1.5 ${allCertsLoading ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {/* Filters row */}
+        <div className="flex flex-wrap items-end gap-3 mb-4">
+          <label className="grid gap-1 min-w-[130px]">
+            <span className="text-xs font-semibold text-[var(--muted-foreground)]">Type</span>
+            <select
+              className="w-full rounded-2xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value)}
+            >
+              <option value="">All types</option>
+              {CERTIFICATE_TYPES.map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+          </label>
+          <label className="grid gap-1 min-w-[130px]">
+            <span className="text-xs font-semibold text-[var(--muted-foreground)]">Status</span>
+            <select
+              className="w-full rounded-2xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+            >
+              <option value="">All statuses</option>
+              <option value="draft">Draft</option>
+              <option value="completed">Completed</option>
+              <option value="issued">Issued</option>
+              <option value="void">Void</option>
+            </select>
+          </label>
+          <label className="grid gap-1 min-w-[130px]">
+            <span className="text-xs font-semibold text-[var(--muted-foreground)]">From</span>
+            <input
+              type="date"
+              value={filterDateFrom}
+              onChange={(e) => setFilterDateFrom(e.target.value)}
+              className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="grid gap-1 min-w-[130px]">
+            <span className="text-xs font-semibold text-[var(--muted-foreground)]">To</span>
+            <input
+              type="date"
+              value={filterDateTo}
+              onChange={(e) => setFilterDateTo(e.target.value)}
+              className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="grid gap-1 min-w-[200px] flex-1">
+            <span className="text-xs font-semibold text-[var(--muted-foreground)]">Search</span>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--muted-foreground)]" />
+              <input
+                type="text"
+                placeholder="Reference, client, site, inspector..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full rounded-2xl border border-[var(--border)] bg-[var(--background)] pl-9 pr-3 py-2 text-sm"
+              />
+            </div>
+          </label>
+          {(filterType || filterStatus || filterDateFrom || filterDateTo || searchQuery) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              type="button"
+              onClick={() => {
+                setFilterType("");
+                setFilterStatus("");
+                setFilterDateFrom("");
+                setFilterDateTo("");
+                setSearchQuery("");
+              }}
+            >
+              <Filter className="w-4 h-4 mr-1" />
+              Clear
+            </Button>
+          )}
+        </div>
+
+        {/* Table */}
+        {allCertsLoading && allCerts.length === 0 ? (
+          <div className="space-y-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4">
+                <LoadingSkeleton className="h-4 w-40" />
+                <LoadingSkeleton className="mt-2 h-3 w-full" />
+              </div>
+            ))}
+          </div>
+        ) : filteredCerts.length === 0 ? (
+          <EmptyState
+            icon={FileText}
+            title={allCerts.length === 0 ? "No certificates yet" : "No certificates match filters"}
+            description={
+              allCerts.length === 0
+                ? "Create a certificate from the section below to get started."
+                : "Try adjusting your filters or search terms."
+            }
+          />
+        ) : (
+          <div className="rounded-xl border border-[var(--border)] overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-[var(--border)] bg-[var(--accent)]">
+                    <th className="px-3 py-2.5 text-left text-xs font-semibold text-[var(--muted-foreground)]">Reference</th>
+                    <th className="px-3 py-2.5 text-left text-xs font-semibold text-[var(--muted-foreground)]">Type</th>
+                    <th className="px-3 py-2.5 text-left text-xs font-semibold text-[var(--muted-foreground)]">Client</th>
+                    <th className="px-3 py-2.5 text-left text-xs font-semibold text-[var(--muted-foreground)]">Site</th>
+                    <th className="px-3 py-2.5 text-left text-xs font-semibold text-[var(--muted-foreground)]">Status</th>
+                    <th className="px-3 py-2.5 text-left text-xs font-semibold text-[var(--muted-foreground)]">Date</th>
+                    <th className="px-3 py-2.5 text-left text-xs font-semibold text-[var(--muted-foreground)]">Inspector</th>
+                    <th className="px-3 py-2.5 text-right text-xs font-semibold text-[var(--muted-foreground)]">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredCerts.map((cert) => {
+                    const statusBadge = getStatusBadgeProps("certificate", cert.status);
+                    const dateStr = cert.issuedAtISO
+                      ? new Date(cert.issuedAtISO).toLocaleDateString("en-GB")
+                      : cert.completedAtISO
+                        ? new Date(cert.completedAtISO).toLocaleDateString("en-GB")
+                        : new Date(cert.createdAt).toLocaleDateString("en-GB");
+                    return (
+                      <tr key={cert.id} className="border-b border-[var(--border)] last:border-0 hover:bg-[var(--accent)]/50 transition-colors">
+                        <td className="px-3 py-2.5 font-mono text-xs">
+                          {cert.certificateNumber || `C-${cert.id.slice(0, 8)}`}
+                          {cert.jobNumber && (
+                            <span className="block text-[var(--muted-foreground)] font-sans">{cert.jobNumber}</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-2.5">
+                          <Badge variant="secondary">{cert.type}</Badge>
+                        </td>
+                        <td className="px-3 py-2.5 max-w-[180px] truncate" title={cert.clientName || "—"}>
+                          {cert.clientName || "—"}
+                        </td>
+                        <td className="px-3 py-2.5 max-w-[200px] truncate" title={cert.siteAddress || "—"}>
+                          {cert.siteAddress || "—"}
+                        </td>
+                        <td className="px-3 py-2.5">
+                          <Badge variant={statusBadge.variant}>{statusBadge.label}</Badge>
+                        </td>
+                        <td className="px-3 py-2.5 text-[var(--muted-foreground)] whitespace-nowrap">
+                          {dateStr}
+                        </td>
+                        <td className="px-3 py-2.5 max-w-[140px] truncate" title={cert.inspectorName || "—"}>
+                          {cert.inspectorName || "—"}
+                        </td>
+                        <td className="px-3 py-2.5 text-right">
+                          <Link href={`/admin/certificates/${cert.id}`}>
+                            <Button variant="secondary" size="sm" type="button">
+                              Open
+                            </Button>
+                          </Link>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            {allCerts.length > 0 && (
+              <div className="px-3 py-2 border-t border-[var(--border)] bg-[var(--accent)] text-xs text-[var(--muted-foreground)]">
+                Showing {filteredCerts.length} of {allCerts.length} certificate{allCerts.length !== 1 ? "s" : ""}
+              </div>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
 
     <div className="grid gap-6 lg:grid-cols-12">
       <div className="lg:col-span-8">

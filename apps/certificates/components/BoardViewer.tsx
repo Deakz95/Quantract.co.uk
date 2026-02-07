@@ -10,11 +10,20 @@ const PHASE_COLORS = {
 };
 
 // Status colors reference CSS variables
-const STATUS_COLORS = {
+const STATUS_COLORS: Record<string, string> = {
   pass: "var(--success)",
   fail: "var(--error)",
   warning: "var(--warning)",
   untested: "var(--muted-foreground)",
+  "": "var(--muted-foreground)",
+};
+
+// Code-specific colors for C1 and FI
+const CODE_COLORS: Record<string, string> = {
+  C1: "#991B1B",   // dark red
+  C2: "var(--error)",
+  C3: "var(--warning)",
+  FI: "#2563EB",   // blue
 };
 
 export interface Circuit {
@@ -54,17 +63,29 @@ export interface BoardData {
 interface BoardViewerProps {
   board: BoardData;
   onCircuitClick?: (circuit: Circuit) => void;
+  onAddCircuit?: () => void;
+  onExportCSV?: () => void;
+  onSettingsClick?: () => void;
+  onSaveAsTemplate?: () => void;
+  onLoadTemplate?: () => void;
+  selectedCircuitId?: string | null;
 }
 
-export function BoardViewer({ board, onCircuitClick }: BoardViewerProps) {
+export function BoardViewer({ board, onCircuitClick, onAddCircuit, onExportCSV, onSettingsClick, onSaveAsTemplate, onLoadTemplate, selectedCircuitId }: BoardViewerProps) {
   const [viewMode, setViewMode] = useState<"visual" | "table">("visual");
 
+  const activeCircuits = board.circuits.filter((c) => !c.isEmpty);
+  const totalCircuits = board.circuits.length;
   const stats = {
-    pass: board.circuits.filter((c) => c.status === "pass" && !c.isEmpty).length,
-    warning: board.circuits.filter((c) => c.status === "warning").length,
-    fail: board.circuits.filter((c) => c.status === "fail").length,
+    pass: activeCircuits.filter((c) => c.status === "pass").length,
+    warning: activeCircuits.filter((c) => c.status === "warning").length,
+    fail: activeCircuits.filter((c) => c.status === "fail").length,
+    c1: activeCircuits.filter((c) => c.code === "C1").length,
+    fi: activeCircuits.filter((c) => c.code === "FI").length,
     spare: board.circuits.filter((c) => c.isEmpty).length,
   };
+  const testedCount = stats.pass + stats.warning + stats.fail;
+  const testedPercent = activeCircuits.length > 0 ? Math.round((testedCount / activeCircuits.length) * 100) : 0;
 
   return (
     <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-8 mb-8">
@@ -81,23 +102,55 @@ export function BoardViewer({ board, onCircuitClick }: BoardViewerProps) {
           </div>
           <div className="text-[var(--muted-foreground)] text-sm mt-1">{board.description}</div>
         </div>
-        <div className="flex bg-[var(--muted)] rounded-xl p-1">
-          <button
-            className={`px-4 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all border-none ${
-              viewMode === "visual" ? "bg-[var(--primary)] text-white" : "bg-transparent text-[var(--muted-foreground)]"
-            }`}
-            onClick={() => setViewMode("visual")}
-          >
-            Visual
-          </button>
-          <button
-            className={`px-4 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all border-none ${
-              viewMode === "table" ? "bg-[var(--primary)] text-white" : "bg-transparent text-[var(--muted-foreground)]"
-            }`}
-            onClick={() => setViewMode("table")}
-          >
-            Table
-          </button>
+        <div className="flex items-center gap-2">
+          {onSettingsClick && (
+            <button onClick={onSettingsClick} className="p-2 rounded-lg text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors" title="Board Settings">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </button>
+          )}
+          {onExportCSV && (
+            <button onClick={onExportCSV} className="p-2 rounded-lg text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors" title="Export CSV">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </button>
+          )}
+          {onSaveAsTemplate && (
+            <button onClick={onSaveAsTemplate} className="p-2 rounded-lg text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors" title="Save as Template">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 7v6m3-3H9" />
+              </svg>
+            </button>
+          )}
+          {onLoadTemplate && (
+            <button onClick={onLoadTemplate} className="p-2 rounded-lg text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors" title="Load Template">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z" />
+              </svg>
+            </button>
+          )}
+          <div className="flex bg-[var(--muted)] rounded-xl p-1">
+            <button
+              className={`px-4 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all border-none ${
+                viewMode === "visual" ? "bg-[var(--primary)] text-white" : "bg-transparent text-[var(--muted-foreground)]"
+              }`}
+              onClick={() => setViewMode("visual")}
+            >
+              Visual
+            </button>
+            <button
+              className={`px-4 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all border-none ${
+                viewMode === "table" ? "bg-[var(--primary)] text-white" : "bg-transparent text-[var(--muted-foreground)]"
+              }`}
+              onClick={() => setViewMode("table")}
+            >
+              Table
+            </button>
+          </div>
         </div>
       </div>
 
@@ -151,24 +204,44 @@ export function BoardViewer({ board, onCircuitClick }: BoardViewerProps) {
 
           {/* Circuits Grid */}
           {board.type === "single-phase" ? (
-            <SinglePhaseGrid circuits={board.circuits} onCircuitClick={onCircuitClick} />
+            <SinglePhaseGrid circuits={board.circuits} onCircuitClick={onCircuitClick} selectedCircuitId={selectedCircuitId} />
           ) : (
-            <ThreePhaseGrid circuits={board.circuits} onCircuitClick={onCircuitClick} />
+            <ThreePhaseGrid circuits={board.circuits} onCircuitClick={onCircuitClick} selectedCircuitId={selectedCircuitId} />
+          )}
+
+          {/* Add Circuit Button */}
+          {onAddCircuit && (
+            <div className="flex justify-center mt-4">
+              <button
+                onClick={onAddCircuit}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-dashed border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--primary)] hover:text-[var(--primary)] transition-colors text-sm font-medium"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Add Circuit
+              </button>
+            </div>
           )}
 
           {/* Stats Bar */}
-          <div className="flex gap-6 mt-6 py-4 px-6 bg-[var(--card)] rounded-xl justify-center">
+          <div className="flex gap-4 mt-6 py-4 px-6 bg-[var(--card)] rounded-xl justify-center flex-wrap">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-bold text-[var(--primary)]">{testedPercent}%</span>
+              <span className="text-xs text-[var(--muted-foreground)]">tested</span>
+            </div>
+            <div className="w-px h-5 bg-[var(--border)]" />
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-[var(--success)]" />
               <span className="text-sm text-[var(--muted-foreground)]">
                 <strong className="text-[var(--foreground)]">{stats.pass}</strong> Pass
               </span>
             </div>
-            {stats.warning > 0 && (
+            {stats.c1 > 0 && (
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-[var(--warning)]" />
+                <div className="w-3 h-3 rounded-full" style={{ background: "#991B1B" }} />
                 <span className="text-sm text-[var(--muted-foreground)]">
-                  <strong className="text-[var(--foreground)]">{stats.warning}</strong> C3
+                  <strong className="text-[var(--foreground)]">{stats.c1}</strong> C1
                 </span>
               </div>
             )}
@@ -177,6 +250,22 @@ export function BoardViewer({ board, onCircuitClick }: BoardViewerProps) {
                 <div className="w-3 h-3 rounded-full bg-[var(--error)]" />
                 <span className="text-sm text-[var(--muted-foreground)]">
                   <strong className="text-[var(--foreground)]">{stats.fail}</strong> C2
+                </span>
+              </div>
+            )}
+            {stats.warning > 0 && (
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-[var(--warning)]" />
+                <span className="text-sm text-[var(--muted-foreground)]">
+                  <strong className="text-[var(--foreground)]">{stats.warning}</strong> C3
+                </span>
+              </div>
+            )}
+            {stats.fi > 0 && (
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full" style={{ background: "#2563EB" }} />
+                <span className="text-sm text-[var(--muted-foreground)]">
+                  <strong className="text-[var(--foreground)]">{stats.fi}</strong> FI
                 </span>
               </div>
             )}
@@ -260,6 +349,23 @@ export function BoardViewer({ board, onCircuitClick }: BoardViewerProps) {
                     </tr>
                   ))}
               </tbody>
+              {onAddCircuit && (
+                <tfoot>
+                  <tr>
+                    <td colSpan={board.type === "three-phase" ? 16 : 15} className="p-3 text-center">
+                      <button
+                        onClick={onAddCircuit}
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-dashed border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--primary)] hover:text-[var(--primary)] transition-colors text-xs font-medium"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        Add Circuit
+                      </button>
+                    </td>
+                  </tr>
+                </tfoot>
+              )}
             </table>
           </div>
         </div>
@@ -272,9 +378,11 @@ export function BoardViewer({ board, onCircuitClick }: BoardViewerProps) {
 function SinglePhaseGrid({
   circuits,
   onCircuitClick,
+  selectedCircuitId,
 }: {
   circuits: Circuit[];
   onCircuitClick?: (circuit: Circuit) => void;
+  selectedCircuitId?: string | null;
 }) {
   return (
     <div className="flex gap-2 flex-wrap justify-center">
@@ -283,12 +391,12 @@ function SinglePhaseGrid({
           key={circuit.id}
           className={`w-[72px] bg-[var(--card)] border-2 rounded-xl p-2.5 text-center cursor-pointer transition-all ${
             circuit.isEmpty ? "border-dashed border-[var(--border)] opacity-50" : ""
-          }`}
+          } ${selectedCircuitId === circuit.id ? "ring-2 ring-[var(--primary)] ring-offset-2 ring-offset-[var(--muted)]" : ""}`}
           style={{
-            borderColor: circuit.isEmpty ? undefined : STATUS_COLORS[circuit.status],
+            borderColor: circuit.isEmpty ? undefined : STATUS_COLORS[circuit.status] || STATUS_COLORS[""],
             borderStyle: circuit.isEmpty ? "dashed" : "solid",
           }}
-          onClick={() => !circuit.isEmpty && onCircuitClick?.(circuit)}
+          onClick={() => onCircuitClick?.(circuit)}
         >
           <div className="font-mono text-base font-bold text-[var(--foreground)]">{circuit.isEmpty ? "-" : circuit.rating}</div>
           <div className="text-xs text-[var(--muted-foreground)] font-semibold mb-1.5">{circuit.isEmpty ? "-" : circuit.type}</div>
@@ -311,9 +419,11 @@ function SinglePhaseGrid({
 function ThreePhaseGrid({
   circuits,
   onCircuitClick,
+  selectedCircuitId,
 }: {
   circuits: Circuit[];
   onCircuitClick?: (circuit: Circuit) => void;
+  selectedCircuitId?: string | null;
 }) {
   const l1Circuits = circuits.filter((c) => c.phase === "L1");
   const l2Circuits = circuits.filter((c) => c.phase === "L2");
@@ -455,7 +565,7 @@ function CodeBadge({ code }: { code?: string }) {
     );
   }
 
-  const bgColor = code === "C1" || code === "C2" ? "var(--error)" : code === "C3" ? "var(--warning)" : "var(--muted)";
+  const bgColor = code === "C1" ? "#991B1B" : code === "C2" ? "var(--error)" : code === "C3" ? "var(--warning)" : code === "FI" ? "#2563EB" : "var(--muted)";
   const textColor = code === "C3" ? "#000" : "#fff";
 
   return (

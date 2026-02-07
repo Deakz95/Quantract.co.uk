@@ -1,4 +1,4 @@
-import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
+import { PDFDocument, rgb, StandardFonts, degrees } from "pdf-lib";
 import type { CertificateData, EICCertificate, EICRCertificate, MWCCertificate } from "@quantract/shared/certificate-types";
 import { CERTIFICATE_INFO } from "@quantract/shared/certificate-types";
 import type { LayoutElement } from "../components/TemplateEditor";
@@ -26,12 +26,17 @@ function hexToRgb(hex: string) {
 }
 
 const COLORS = {
-  primary: rgb(0.231, 0.51, 0.965), // #3b82f6
+  primary: rgb(0.231, 0.51, 0.965),
   text: rgb(0.1, 0.1, 0.1),
   muted: rgb(0.4, 0.4, 0.4),
   border: rgb(0.8, 0.8, 0.8),
-  success: rgb(0.063, 0.725, 0.506), // #10b981
-  error: rgb(0.937, 0.267, 0.267), // #ef4444
+  success: rgb(0.063, 0.725, 0.506),
+  error: rgb(0.937, 0.267, 0.267),
+  warning: rgb(0.961, 0.620, 0.043),
+  c1: rgb(0.6, 0.106, 0.106),
+  fi: rgb(0.145, 0.388, 0.922),
+  white: rgb(1, 1, 1),
+  lightGray: rgb(0.95, 0.95, 0.95),
 };
 
 const FONT_SIZES = {
@@ -39,14 +44,15 @@ const FONT_SIZES = {
   heading: 14,
   normal: 10,
   small: 8,
+  tiny: 7,
 };
 
 export type GeneratePDFOptions = {
   brand?: BrandContext;
   templateLayout?: LayoutElement[];
-  photos?: string[]; // data URI strings (JPEG/PNG)
-  engineerSignature?: string | null; // data URI (PNG)
-  customerSignature?: string | null; // data URI (PNG)
+  photos?: string[];
+  engineerSignature?: string | null;
+  customerSignature?: string | null;
 };
 
 export async function generateCertificatePDF(
@@ -57,48 +63,52 @@ export async function generateCertificatePDF(
   const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-  const pageWidth = 595.28; // A4 width in points
-  const pageHeight = 841.89; // A4 height in points
-  const margin = 50;
+  const pageWidth = 595.28;
+  const pageHeight = 841.89;
+  const margin = 40;
   const contentWidth = pageWidth - margin * 2;
 
   let page = pdfDoc.addPage([pageWidth, pageHeight]);
   let y = pageHeight - margin;
+  let pageNum = 1;
 
-  const drawText = (text: string, x: number, yPos: number, options: { font?: typeof helvetica; size?: number; color?: typeof COLORS.text } = {}) => {
-    const { font = helvetica, size = FONT_SIZES.normal, color = COLORS.text } = options;
+  const ensureSpace = (needed: number) => {
+    if (y < needed + margin) {
+      drawFooter();
+      page = pdfDoc.addPage([pageWidth, pageHeight]);
+      y = pageHeight - margin;
+      pageNum++;
+    }
+  };
+
+  const drawText = (text: string, x: number, yPos: number, opts: { font?: typeof helvetica; size?: number; color?: ReturnType<typeof rgb> } = {}) => {
+    const { font = helvetica, size = FONT_SIZES.normal, color = COLORS.text } = opts;
     page.drawText(text, { x, y: yPos, font, size, color });
   };
 
   const drawLine = (x1: number, y1: number, x2: number, y2: number, thickness = 0.5) => {
-    page.drawLine({
-      start: { x: x1, y: y1 },
-      end: { x: x2, y: y2 },
-      thickness,
-      color: COLORS.border,
-    });
+    page.drawLine({ start: { x: x1, y: y1 }, end: { x: x2, y: y2 }, thickness, color: COLORS.border });
   };
 
   const drawSection = (title: string): number => {
-    y -= 25;
-    if (y < 100) {
-      page = pdfDoc.addPage([pageWidth, pageHeight]);
-      y = pageHeight - margin;
-    }
-    drawText(title, margin, y, { font: helveticaBold, size: FONT_SIZES.heading, color: COLORS.primary });
-    drawLine(margin, y - 5, pageWidth - margin, y - 5);
+    ensureSpace(40);
     y -= 20;
+    drawText(title, margin, y, { font: helveticaBold, size: FONT_SIZES.heading, color: brandPrimary });
+    drawLine(margin, y - 4, pageWidth - margin, y - 4, 1);
+    y -= 18;
     return y;
   };
 
-  const drawField = (label: string, value: string, x: number, width: number): void => {
+  const drawField = (label: string, value: string, x: number): void => {
+    ensureSpace(30);
     drawText(label + ":", x, y, { size: FONT_SIZES.small, color: COLORS.muted });
     y -= 12;
-    drawText(value || "—", x, y, { size: FONT_SIZES.normal });
-    y -= 18;
+    drawText(value || "\u2014", x, y, { size: FONT_SIZES.normal });
+    y -= 16;
   };
 
   const drawFieldRow = (fields: { label: string; value: string }[]): void => {
+    ensureSpace(30);
     const fieldWidth = contentWidth / fields.length;
     fields.forEach((field, i) => {
       const x = margin + i * fieldWidth;
@@ -107,16 +117,50 @@ export async function generateCertificatePDF(
     y -= 12;
     fields.forEach((field, i) => {
       const x = margin + i * fieldWidth;
-      drawText(field.value || "—", x, y, { size: FONT_SIZES.normal });
+      drawText(field.value || "\u2014", x, y, { size: FONT_SIZES.normal });
     });
-    y -= 18;
+    y -= 16;
   };
 
-  // Header — use brand context if provided
+  const drawFooter = () => {
+    const footerY = 25;
+    drawLine(margin, footerY + 10, pageWidth - margin, footerY + 10);
+    if (brand?.footerLine1 || brand?.footerLine2) {
+      if (brand?.footerLine1) drawText(brand.footerLine1, margin, footerY, { size: FONT_SIZES.tiny, color: COLORS.muted });
+      if (brand?.footerLine2) drawText(brand.footerLine2, margin, footerY - 9, { size: FONT_SIZES.tiny, color: COLORS.muted });
+    } else {
+      drawText(`Generated by ${brand?.name || "Quantract Certificates"}`, margin, footerY, { size: FONT_SIZES.tiny, color: COLORS.muted });
+    }
+    const refText = data.overview.jobReference || data.type;
+    drawText(`${refText} | Page ${pageNum}`, pageWidth - margin - 100, footerY, { size: FONT_SIZES.tiny, color: COLORS.muted });
+  };
+
+  // DRAFT watermark for unsigned certificates
+  const drawDraftWatermark = () => {
+    const hasSignature = options?.engineerSignature || options?.customerSignature;
+    const declaration = (data as Record<string, unknown>).declaration as Record<string, unknown> | undefined;
+    const hasDeclSig = declaration && Object.values(declaration).some((v) => v && typeof v === "object" && (v as Record<string, unknown>).name);
+    if (!hasSignature && !hasDeclSig) {
+      const pages = pdfDoc.getPages();
+      for (const p of pages) {
+        p.drawText("DRAFT", {
+          x: 150,
+          y: 350,
+          size: 80,
+          font: helveticaBold,
+          color: rgb(0.9, 0.9, 0.9),
+          rotate: degrees(45),
+        });
+      }
+    }
+  };
+
+  // Brand setup
   const certInfo = CERTIFICATE_INFO[data.type];
   const brand = options?.brand;
   const brandPrimary = brand?.primaryColor ? hexToRgb(brand.primaryColor) ?? COLORS.primary : COLORS.primary;
 
+  // ── COVER / HEADER ──
   if (brand?.logoPngBytes && brand.logoPngBytes.length > 0) {
     try {
       const logoImg = await pdfDoc.embedPng(brand.logoPngBytes);
@@ -125,298 +169,583 @@ export async function generateCertificatePDF(
       page.drawImage(logoImg, { x: margin, y: y - logoH + 10, width: logoW, height: logoH });
       y -= logoH + 6;
     } catch {
-      // logo embed failure — fall through to text
+      // logo embed failure
     }
   }
 
   const headerName = brand?.name || "QUANTRACT";
   drawText(headerName.toUpperCase(), margin, y, { font: helveticaBold, size: 18, color: brandPrimary });
-  const taglineText = brand?.tagline || "Electrical Certificates";
-  drawText(taglineText, margin + headerName.length * 11 + 10, y, { size: 12, color: COLORS.muted });
-  y -= 40;
+  drawText(brand?.tagline || "Electrical Certificates", margin + headerName.length * 11 + 10, y, { size: 12, color: COLORS.muted });
+  y -= 35;
 
   drawText(certInfo.name, margin, y, { font: helveticaBold, size: FONT_SIZES.title });
-  y -= 20;
+  y -= 18;
   drawText(certInfo.description, margin, y, { size: FONT_SIZES.normal, color: COLORS.muted });
-  y -= 10;
+  y -= 8;
 
-  // Overview section
+  // ── CONTRACTOR DETAILS (if v2) ──
+  const contractorDetails = (data as Record<string, unknown>).contractorDetails as Record<string, string> | undefined;
+  if (contractorDetails && contractorDetails.companyName) {
+    drawSection("Contractor Details");
+    drawFieldRow([
+      { label: "Company", value: contractorDetails.companyName || "" },
+      { label: "Scheme", value: `${contractorDetails.schemeName || ""} ${contractorDetails.schemeNumber || ""}`.trim() },
+    ]);
+    if (contractorDetails.address) drawField("Address", contractorDetails.address, margin);
+    drawFieldRow([
+      { label: "Phone", value: contractorDetails.phone || "" },
+      { label: "Email", value: contractorDetails.email || "" },
+    ]);
+  }
+
+  // ── INSTALLATION DETAILS ──
   drawSection("Installation Details");
   const overview = data.overview;
   drawFieldRow([
     { label: "Reference", value: overview.jobReference || "" },
     { label: "Date", value: overview.dateOfInspection || "" },
   ]);
-  drawField("Client Name", overview.clientName || "", margin, contentWidth);
-  drawField("Site Name", overview.siteName || "", margin, contentWidth);
-  drawField("Installation Address", overview.installationAddress || "", margin, contentWidth);
-  if (overview.occupier) {
-    drawField("Occupier", overview.occupier, margin, contentWidth);
-  }
-  drawField("Description of Work", overview.jobDescription || "", margin, contentWidth);
+  drawField("Client Name", overview.clientName || "", margin);
+  if (overview.siteName) drawField("Site Name", overview.siteName, margin);
+  drawField("Installation Address", overview.installationAddress || "", margin);
+  if (overview.occupier) drawField("Occupier", overview.occupier, margin);
+  if (overview.descriptionOfPremises) drawFieldRow([
+    { label: "Premises Type", value: overview.descriptionOfPremises },
+    { label: "Age of Wiring", value: overview.estimatedAgeOfWiring || "" },
+  ]);
+  if (overview.jobDescription) drawField("Description of Work", overview.jobDescription, margin);
 
-  // Type-specific sections
-  if (data.type === "EIC" || data.type === "EICR") {
-    const typedData = data as EICCertificate | EICRCertificate;
+  // ── TYPE-SPECIFIC SECTIONS ──
 
-    // Supply Characteristics
+  if (data.type === "EIC") {
+    const eic = data as EICCertificate;
+
+    // Installation type
+    if (eic.installationType) {
+      drawSection("Type of Installation");
+      const typeLabels: Record<string, string> = { new: "New Installation", addition: "Addition to Existing", alteration: "Alteration to Existing" };
+      drawField("Type", typeLabels[eic.installationType] || eic.installationType, margin);
+      if (eic.commentsOnExistingInstallation) drawField("Comments on Existing", eic.commentsOnExistingInstallation, margin);
+    }
+
+    // Supply
     drawSection("Supply Characteristics");
-    const supply = typedData.supplyCharacteristics;
     drawFieldRow([
-      { label: "System Type", value: supply.systemType || "" },
-      { label: "Supply Voltage", value: supply.supplyVoltage ? `${supply.supplyVoltage}V` : "" },
-      { label: "Frequency", value: supply.frequency ? `${supply.frequency}Hz` : "" },
+      { label: "System Type", value: eic.supplyCharacteristics.systemType || "" },
+      { label: "Phases", value: eic.supplyCharacteristics.numberOfPhases || "" },
+      { label: "Frequency", value: eic.supplyCharacteristics.frequency ? `${eic.supplyCharacteristics.frequency}Hz` : "" },
     ]);
     drawFieldRow([
-      { label: "Prospective Fault Current (kA)", value: supply.prospectiveFaultCurrent || "" },
-      { label: "External Ze (Ω)", value: supply.externalLoopImpedance || "" },
+      { label: "Voltage to Earth", value: eic.supplyCharacteristics.nominalVoltageToEarth ? `${eic.supplyCharacteristics.nominalVoltageToEarth}V` : "" },
+      { label: "Voltage Between Phases", value: eic.supplyCharacteristics.nominalVoltageBetweenPhases ? `${eic.supplyCharacteristics.nominalVoltageBetweenPhases}V` : "" },
     ]);
     drawFieldRow([
-      { label: "Supply Protective Device", value: supply.supplyProtectiveDevice || "" },
-      { label: "Rated Current (A)", value: supply.ratedCurrent || "" },
+      { label: "PFC (kA)", value: eic.supplyCharacteristics.prospectiveFaultCurrent || "" },
+      { label: "Ze (\u03A9)", value: eic.supplyCharacteristics.externalLoopImpedance || "" },
     ]);
 
-    // Earthing Arrangements
+    // Earthing
     drawSection("Earthing Arrangements");
-    const earthing = typedData.earthingArrangements;
     drawFieldRow([
-      { label: "Earth Electrode Type", value: earthing.earthElectrode ? "Yes" : "No" },
-      { label: "Electrode Resistance (Ω)", value: earthing.earthElectrodeResistance || "" },
+      { label: "Means of Earthing", value: eic.earthingArrangements.meansOfEarthing || "" },
+      { label: "Ze Measured (\u03A9)", value: eic.earthingArrangements.zeMeasured || "" },
     ]);
     drawFieldRow([
-      { label: "Earthing Conductor", value: `${earthing.earthingConductorType || ""} ${earthing.earthingConductorSize ? earthing.earthingConductorSize + "mm²" : ""}`.trim() },
-      { label: "Main Bonding", value: `${earthing.mainProtectiveBondingType || ""} ${earthing.mainProtectiveBondingSize ? earthing.mainProtectiveBondingSize + "mm²" : ""}`.trim() },
+      { label: "Earthing Conductor", value: `${eic.earthingArrangements.earthingConductorType || ""} ${eic.earthingArrangements.earthingConductorSize ? eic.earthingArrangements.earthingConductorSize + "mm\u00B2" : ""}`.trim() },
+      { label: "Main Bonding", value: `${eic.earthingArrangements.mainProtectiveBondingType || ""} ${eic.earthingArrangements.mainProtectiveBondingSize ? eic.earthingArrangements.mainProtectiveBondingSize + "mm\u00B2" : ""}`.trim() },
     ]);
+
+    // Particulars at Origin
+    if (eic.originMainSwitchType || eic.originMainSwitchRating) {
+      drawSection("Particulars at Origin");
+      drawFieldRow([
+        { label: "Main Switch Type", value: eic.originMainSwitchType || "" },
+        { label: "Rating", value: eic.originMainSwitchRating || "" },
+        { label: "BS EN", value: eic.originMainSwitchBsEn || "" },
+      ]);
+      drawFieldRow([
+        { label: "Poles", value: eic.originMainSwitchPoles || "" },
+        { label: "Location", value: eic.originMainSwitchLocation || "" },
+      ]);
+    }
 
     // Test Results
     drawSection("Test Results Summary");
-    const tests = typedData.testResults;
     drawFieldRow([
-      { label: "Continuity (Ω)", value: tests.continuityOfProtectiveConductors || "" },
-      { label: "Insulation (MΩ)", value: tests.insulationResistance || "" },
-      { label: "Polarity", value: tests.polarityConfirmed ? "Confirmed ✓" : "—" },
+      { label: "Continuity (\u03A9)", value: eic.testResults.continuityOfProtectiveConductors || "" },
+      { label: "Insulation (M\u03A9)", value: eic.testResults.insulationResistance || "" },
+      { label: "Polarity", value: eic.testResults.polarityConfirmed ? "Confirmed \u2713" : "\u2014" },
     ]);
     drawFieldRow([
-      { label: "Zs (Ω)", value: tests.earthFaultLoopImpedance || "" },
-      { label: "RCD Time (ms)", value: tests.rcdOperatingTime || "" },
-      { label: "RCD Current (mA)", value: tests.rcdOperatingCurrent || "" },
+      { label: "Zs (\u03A9)", value: eic.testResults.earthFaultLoopImpedance || "" },
+      { label: "RCD Time (ms)", value: eic.testResults.rcdOperatingTime || "" },
+      { label: "RCD Current (mA)", value: eic.testResults.rcdOperatingCurrent || "" },
     ]);
+
+    // Distribution boards
+    if (eic.boards && eic.boards.length > 0) {
+      drawBoardSchedules(eic.boards);
+    }
+
+    // Observations
+    if (eic.observations) {
+      drawSection("Observations");
+      drawText(eic.observations || "None", margin, y, { size: FONT_SIZES.normal });
+      y -= 15;
+    }
+
+    // EIC Signatory sections
+    drawSection("Design, Construction & Inspection");
+    const sections = [
+      { title: "Designer", data: eic.designSection },
+      { title: "Constructor", data: eic.constructionSection },
+      { title: "Inspector", data: eic.inspectionSection },
+    ];
+    for (const s of sections) {
+      if (s.data?.name) {
+        ensureSpace(50);
+        drawText(s.title + ":", margin, y, { font: helveticaBold, size: FONT_SIZES.normal, color: brandPrimary });
+        y -= 14;
+        drawFieldRow([
+          { label: "Name", value: s.data.name || "" },
+          { label: "Qualifications", value: s.data.qualifications || "" },
+        ]);
+        drawFieldRow([
+          { label: "Registration", value: s.data.registrationNumber || "" },
+          { label: "Date Signed", value: s.data.dateSigned || "" },
+        ]);
+      }
+    }
+
+    // Next Inspection
+    if (eic.nextInspectionDate) {
+      drawSection("Next Inspection");
+      drawFieldRow([
+        { label: "Date", value: eic.nextInspectionDate },
+        { label: "Interval", value: eic.retestInterval ? `${eic.retestInterval} years` : "" },
+      ]);
+    }
+  }
+
+  if (data.type === "EICR") {
+    const eicr = data as EICRCertificate;
+
+    // Extent & Limitations
+    if (eicr.extentAndLimitations) {
+      drawSection("Extent and Limitations");
+      if (eicr.extentAndLimitations.extentCovered) drawField("Extent Covered", eicr.extentAndLimitations.extentCovered, margin);
+      if (eicr.extentAndLimitations.agreedLimitations) drawField("Agreed Limitations", eicr.extentAndLimitations.agreedLimitations, margin);
+      if (eicr.extentAndLimitations.operationalLimitations) drawField("Operational Limitations", eicr.extentAndLimitations.operationalLimitations, margin);
+    }
+
+    // Supply
+    drawSection("Supply Characteristics");
+    drawFieldRow([
+      { label: "System Type", value: eicr.supplyCharacteristics.systemType || "" },
+      { label: "Phases", value: eicr.supplyCharacteristics.numberOfPhases || "" },
+      { label: "Nature", value: eicr.supplyCharacteristics.natureOfSupply || "" },
+    ]);
+    drawFieldRow([
+      { label: "Voltage to Earth", value: eicr.supplyCharacteristics.nominalVoltageToEarth ? `${eicr.supplyCharacteristics.nominalVoltageToEarth}V` : "" },
+      { label: "PFC (kA)", value: eicr.supplyCharacteristics.prospectiveFaultCurrent || "" },
+      { label: "Ze (\u03A9)", value: eicr.supplyCharacteristics.externalLoopImpedance || "" },
+    ]);
+
+    // Earthing
+    drawSection("Earthing Arrangements");
+    drawFieldRow([
+      { label: "Means of Earthing", value: eicr.earthingArrangements.meansOfEarthing || "" },
+      { label: "Ze Measured (\u03A9)", value: eicr.earthingArrangements.zeMeasured || "" },
+    ]);
+    drawFieldRow([
+      { label: "Earthing Conductor", value: `${eicr.earthingArrangements.earthingConductorType || ""} ${eicr.earthingArrangements.earthingConductorSize || ""}`.trim() },
+      { label: "Main Bonding", value: `${eicr.earthingArrangements.mainProtectiveBondingType || ""} ${eicr.earthingArrangements.mainProtectiveBondingSize || ""}`.trim() },
+    ]);
+
+    // General Inspection (condensed table)
+    if (eicr.generalInspection && eicr.generalInspection.length > 0) {
+      const inspected = eicr.generalInspection.filter((i) => i.outcome && String(i.outcome) !== "");
+      if (inspected.length > 0) {
+        drawSection("General Inspection");
+        for (const item of inspected) {
+          ensureSpace(14);
+          const outcomeColor = item.outcome === "C1" ? COLORS.c1 : item.outcome === "C2" ? COLORS.error : item.outcome === "C3" ? COLORS.warning : item.outcome === "pass" ? COLORS.success : COLORS.muted;
+          drawText(`${item.itemCode || ""}`, margin, y, { size: FONT_SIZES.small, font: helveticaBold });
+          drawText(item.description || "", margin + 30, y, { size: FONT_SIZES.small });
+          drawText(item.outcome?.toUpperCase() || "", pageWidth - margin - 30, y, { size: FONT_SIZES.small, font: helveticaBold, color: outcomeColor });
+          y -= 12;
+        }
+      }
+    }
+
+    // Test Results
+    drawSection("Test Results Summary");
+    drawFieldRow([
+      { label: "Continuity (\u03A9)", value: eicr.testResults.continuityOfProtectiveConductors || "" },
+      { label: "Insulation (M\u03A9)", value: eicr.testResults.insulationResistance || "" },
+      { label: "Polarity", value: eicr.testResults.polarityConfirmed ? "Confirmed \u2713" : "\u2014" },
+    ]);
+    drawFieldRow([
+      { label: "Zs (\u03A9)", value: eicr.testResults.earthFaultLoopImpedance || "" },
+      { label: "RCD Time (ms)", value: eicr.testResults.rcdOperatingTime || "" },
+      { label: "RCD Current (mA)", value: eicr.testResults.rcdOperatingCurrent || "" },
+    ]);
+
+    // Distribution boards
+    if (eicr.boards && eicr.boards.length > 0) {
+      drawBoardSchedules(eicr.boards);
+    }
+
+    // Observations
+    if (eicr.observations && eicr.observations.length > 0) {
+      drawSection("Observations");
+      for (const obs of eicr.observations) {
+        ensureSpace(30);
+        const codeColor = obs.code === "C1" ? COLORS.c1 : obs.code === "C2" ? COLORS.error : obs.code === "C3" ? COLORS.warning : obs.code === "FI" ? COLORS.fi : COLORS.muted;
+        drawText(`[${obs.code || "\u2014"}]`, margin, y, { size: FONT_SIZES.normal, font: helveticaBold, color: codeColor });
+        drawText(obs.observation || "", margin + 30, y, { size: FONT_SIZES.normal });
+        y -= 12;
+        if (obs.location) {
+          drawText(`Location: ${obs.location}`, margin + 30, y, { size: FONT_SIZES.small, color: COLORS.muted });
+          y -= 10;
+        }
+        if (obs.regulationReference) {
+          drawText(`Reg: ${obs.regulationReference}`, margin + 30, y, { size: FONT_SIZES.small, color: COLORS.muted });
+          y -= 10;
+        }
+        if (obs.actionRecommended || obs.recommendation) {
+          drawText(`Action: ${obs.actionRecommended || obs.recommendation}`, margin + 30, y, { size: FONT_SIZES.small, color: COLORS.muted });
+          y -= 10;
+        }
+        y -= 4;
+      }
+    }
+
+    // Summary of Condition
+    if (eicr.summaryOfCondition) {
+      drawSection("Summary of Condition");
+      const s = eicr.summaryOfCondition;
+      drawFieldRow([
+        { label: "C1 (Danger)", value: String(s.c1Count || 0) },
+        { label: "C2 (Potentially Dangerous)", value: String(s.c2Count || 0) },
+        { label: "C3 (Improvement)", value: String(s.c3Count || 0) },
+        { label: "FI (Further Investigation)", value: String(s.fiCount || 0) },
+      ]);
+    }
+
+    // Overall Assessment
+    drawSection("Overall Assessment");
+    const conditionLabels: Record<string, string> = {
+      satisfactory: "SATISFACTORY",
+      unsatisfactory: "UNSATISFACTORY",
+      further_investigation: "FURTHER INVESTIGATION REQUIRED",
+    };
+    const conditionColor = eicr.overallCondition === "satisfactory" ? COLORS.success : eicr.overallCondition === "unsatisfactory" ? COLORS.error : COLORS.warning;
+    drawText("Overall Condition:", margin, y, { size: FONT_SIZES.normal, color: COLORS.muted });
+    drawText(conditionLabels[eicr.overallCondition] || "\u2014", margin + 110, y, { font: helveticaBold, size: 14, color: conditionColor });
+    y -= 20;
+    if (eicr.recommendedRetestDate) drawFieldRow([
+      { label: "Retest Date", value: eicr.recommendedRetestDate },
+      { label: "Interval", value: eicr.retestInterval ? `${eicr.retestInterval} years` : "" },
+    ]);
+    if (eicr.inspectorComments) drawField("Inspector Comments", eicr.inspectorComments, margin);
+
+    // Declaration
+    if (eicr.declarationDetails?.inspectorName) {
+      drawSection("Declaration");
+      drawFieldRow([
+        { label: "Inspector", value: eicr.declarationDetails.inspectorName || "" },
+        { label: "Qualifications", value: eicr.declarationDetails.inspectorQualifications || "" },
+      ]);
+      drawFieldRow([
+        { label: "Position", value: eicr.declarationDetails.inspectorPosition || "" },
+        { label: "Date Signed", value: eicr.declarationDetails.inspectorDateSigned || "" },
+      ]);
+    }
+
+    // Client Acknowledgement
+    if (eicr.clientAcknowledgement?.clientName) {
+      drawSection("Client Acknowledgement");
+      drawFieldRow([
+        { label: "Client Name", value: eicr.clientAcknowledgement.clientName || "" },
+        { label: "Date", value: eicr.clientAcknowledgement.clientDateSigned || "" },
+      ]);
+    }
   }
 
   if (data.type === "MWC") {
     const mwc = data as MWCCertificate;
 
     // Work Description
-    drawSection("Work Carried Out");
-    drawField("Description", mwc.workDescription || "", margin, contentWidth);
+    drawSection("Description of Minor Works");
+    if (mwc.extentOfWork) {
+      const extentLabels: Record<string, string> = {
+        addition_to_circuit: "Addition to existing circuit",
+        repair: "Repair",
+        replacement: "Like-for-like replacement",
+        other: "Other",
+      };
+      drawField("Extent", extentLabels[mwc.extentOfWork] || mwc.extentOfWork, margin);
+    }
+    drawField("Work Description", mwc.workDescription || "", margin);
 
     // Circuit Details
     drawSection("Circuit Details");
     const circuit = mwc.circuitDetails;
     drawFieldRow([
-      { label: "Circuit Affected", value: circuit?.circuitAffected || "" },
-      { label: "Location", value: circuit?.location || "" },
+      { label: "Circuit", value: circuit.circuitAffected || "" },
+      { label: "Reference", value: circuit.circuitReference || "" },
+      { label: "Location", value: circuit.location || "" },
     ]);
     drawFieldRow([
-      { label: "Protective Device", value: circuit?.protectiveDevice || "" },
-      { label: "Rating (A)", value: circuit?.rating || "" },
+      { label: "Protective Device", value: circuit.protectiveDevice || "" },
+      { label: "Rating (A)", value: circuit.rating || "" },
+      { label: "Means of Protection", value: circuit.meansOfProtection || "" },
     ]);
+    if (circuit.bsEnNumber || circuit.cableReference) {
+      drawFieldRow([
+        { label: "BS EN", value: circuit.bsEnNumber || "" },
+        { label: "Cable Ref", value: circuit.cableReference || "" },
+      ]);
+    }
+    if (circuit.cableCsaLive || circuit.cableCsaCpc) {
+      drawFieldRow([
+        { label: "Cable CSA Live (mm\u00B2)", value: circuit.cableCsaLive || "" },
+        { label: "Cable CSA CPC (mm\u00B2)", value: circuit.cableCsaCpc || "" },
+      ]);
+    }
 
     // Test Results
     drawSection("Test Results");
-    const tests = mwc.testResults;
     drawFieldRow([
-      { label: "Continuity (Ω)", value: tests?.continuity || "" },
-      { label: "Insulation (MΩ)", value: tests?.insulationResistance || "" },
+      { label: "Continuity (\u03A9)", value: mwc.testResults.continuity || "" },
+      { label: "R2 (\u03A9)", value: mwc.testResults.r2 || "" },
     ]);
     drawFieldRow([
-      { label: "Polarity", value: tests?.polarityConfirmed ? "Confirmed ✓" : "—" },
-      { label: "Zs (Ω)", value: tests?.earthFaultLoopImpedance || "" },
-      { label: "RCD Time (ms)", value: tests?.rcdOperatingTime || "" },
+      { label: "Insulation L-E (M\u03A9)", value: mwc.testResults.insulationResistanceLE || "" },
+      { label: "Insulation L-N (M\u03A9)", value: mwc.testResults.insulationResistanceLN || "" },
     ]);
-  }
-
-  // EICR specific - Overall condition
-  if (data.type === "EICR") {
-    const eicr = data as EICRCertificate;
-    drawSection("Overall Assessment");
-    const conditionText = eicr.overallCondition === "satisfactory" ? "SATISFACTORY" : eicr.overallCondition === "unsatisfactory" ? "UNSATISFACTORY" : "—";
-    const conditionColor = eicr.overallCondition === "satisfactory" ? COLORS.success : eicr.overallCondition === "unsatisfactory" ? COLORS.error : COLORS.muted;
-    drawText("Overall Condition:", margin, y, { size: FONT_SIZES.normal, color: COLORS.muted });
-    drawText(conditionText, margin + 120, y, { font: helveticaBold, size: 14, color: conditionColor });
-    y -= 20;
-    if (eicr.recommendedRetestDate) {
-      drawField("Recommended Retest Date", eicr.recommendedRetestDate, margin, contentWidth);
+    drawFieldRow([
+      { label: "Zs (\u03A9)", value: mwc.testResults.earthFaultLoopImpedance || "" },
+      { label: "Polarity", value: mwc.testResults.polarityConfirmed ? "Confirmed \u2713" : "\u2014" },
+    ]);
+    drawFieldRow([
+      { label: "RCD Time (ms)", value: mwc.testResults.rcdOperatingTime || "" },
+      { label: "RCD Current (mA)", value: mwc.testResults.rcdOperatingCurrent || "" },
+      { label: "RCD Type", value: mwc.testResults.rcdType || "" },
+    ]);
+    if (mwc.testResults.testButtonOperates) {
+      drawText("RCD test button operates correctly: Yes", margin, y, { size: FONT_SIZES.normal });
+      y -= 14;
     }
-  }
+    if (mwc.testResults.ringContinuityR1 || mwc.testResults.ringContinuityRn || mwc.testResults.ringContinuityR2) {
+      drawFieldRow([
+        { label: "Ring R1 (\u03A9)", value: mwc.testResults.ringContinuityR1 || "" },
+        { label: "Ring Rn (\u03A9)", value: mwc.testResults.ringContinuityRn || "" },
+        { label: "Ring R2 (\u03A9)", value: mwc.testResults.ringContinuityR2 || "" },
+      ]);
+    }
 
-  // Observations
-  if ("observations" in data && data.observations) {
-    drawSection("Observations & Recommendations");
-    if (typeof data.observations === "string") {
-      drawText(data.observations || "None", margin, y, { size: FONT_SIZES.normal });
+    // Observations
+    if (mwc.observations) {
+      drawSection("Observations");
+      drawText(mwc.observations || "None", margin, y, { size: FONT_SIZES.normal });
       y -= 15;
-    } else if (Array.isArray(data.observations)) {
-      (data.observations as { code: string; observation: string; recommendation: string }[]).forEach((obs, i) => {
-        if (y < 100) {
-          page = pdfDoc.addPage([pageWidth, pageHeight]);
-          y = pageHeight - margin;
-        }
-        drawText(`${i + 1}. [${obs.code || "—"}] ${obs.observation || ""}`, margin, y, { size: FONT_SIZES.normal });
-        y -= 12;
-        if (obs.recommendation) {
-          drawText(`   Recommendation: ${obs.recommendation}`, margin, y, { size: FONT_SIZES.small, color: COLORS.muted });
-          y -= 15;
-        }
-      });
+    }
+
+    // Declaration
+    if (mwc.declarationDetails?.inspectorName) {
+      drawSection("Declaration");
+      drawFieldRow([
+        { label: "Installer", value: mwc.declarationDetails.inspectorName || "" },
+        { label: "Qualifications", value: mwc.declarationDetails.inspectorQualifications || "" },
+      ]);
+      drawFieldRow([
+        { label: "Position", value: mwc.declarationDetails.inspectorPosition || "" },
+        { label: "Date", value: mwc.declarationDetails.inspectorDateSigned || "" },
+      ]);
+    }
+
+    // Next Inspection
+    if (mwc.nextInspectionDate) {
+      drawSection("Next Inspection");
+      drawField("Recommended Date", mwc.nextInspectionDate, margin);
     }
   }
 
-  // Photos & Signatures
-  const sigs = options?.engineerSignature || options?.customerSignature;
-  const photoList = options?.photos;
-
-  if (sigs || (photoList && photoList.length > 0)) {
-    // New page for media if running low on space
-    if (y < 250) {
-      page = pdfDoc.addPage([pageWidth, pageHeight]);
-      y = pageHeight - margin;
-    }
-
-    // Helper: convert data URI to Uint8Array
-    const dataUriToBytes = (dataUri: string): Uint8Array => {
-      const base64 = dataUri.split(",")[1];
-      if (!base64) return new Uint8Array(0);
-      const binary = atob(base64);
-      const bytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-      return bytes;
-    };
-
-    // Embed and draw a signature image
-    const drawSignatureImage = async (label: string, dataUri: string) => {
-      if (y < 100) {
-        page = pdfDoc.addPage([pageWidth, pageHeight]);
-        y = pageHeight - margin;
+  // ── Board Schedule Table (shared helper) ──
+  function drawBoardSchedules(boards: EICCertificate["boards"] | EICRCertificate["boards"]) {
+    for (const board of boards) {
+      ensureSpace(80);
+      drawSection(`Board: ${board.name || board.designation || "Unnamed"}`);
+      if (board.manufacturer || board.model) {
+        drawFieldRow([
+          { label: "Manufacturer", value: board.manufacturer || "" },
+          { label: "Model", value: board.model || "" },
+          { label: "Location", value: board.location || "" },
+        ]);
       }
-      const bytes = dataUriToBytes(dataUri);
-      if (bytes.length === 0) return;
+      if (board.mainSwitch) {
+        drawFieldRow([
+          { label: "Main Switch", value: `${board.mainSwitch.type || ""} ${board.mainSwitch.rating || ""}`.trim() },
+          { label: "Type", value: board.type === "three-phase" ? "3-Phase TP&N" : "Single Phase" },
+        ]);
+      }
+
+      // Circuit table
+      const activeCircuits = (board.circuits || []).filter((c) => !c.isEmpty);
+      if (activeCircuits.length > 0) {
+        ensureSpace(40);
+        y -= 5;
+        // Table header
+        const cols = [
+          { label: "Cct", w: 25 },
+          { label: "Description", w: 90 },
+          { label: "Type", w: 25 },
+          { label: "Rating", w: 35 },
+          { label: "Cable", w: 30 },
+          { label: "Zs", w: 30 },
+          { label: "R1+R2", w: 35 },
+          { label: "Ins", w: 30 },
+          { label: "RCD", w: 35 },
+          { label: "Status", w: 35 },
+          { label: "Code", w: 30 },
+        ];
+        let cx = margin;
+        for (const col of cols) {
+          drawText(col.label, cx, y, { size: FONT_SIZES.tiny, font: helveticaBold, color: COLORS.muted });
+          cx += col.w;
+        }
+        y -= 8;
+        drawLine(margin, y, pageWidth - margin, y);
+        y -= 10;
+
+        // Table rows
+        for (const circuit of activeCircuits) {
+          ensureSpace(12);
+          cx = margin;
+          const rowData = [
+            String(circuit.num || ""),
+            circuit.description || "",
+            circuit.type || "",
+            circuit.rating || "",
+            circuit.cableMm2 || "",
+            circuit.zs || "",
+            circuit.r1r2 || "",
+            circuit.insMohm || "",
+            circuit.rcdMa ? `${circuit.rcdMa}/${circuit.rcdMs || ""}` : "",
+            circuit.status || "",
+            circuit.code || "",
+          ];
+          for (let i = 0; i < cols.length; i++) {
+            const val = rowData[i].length > (cols[i].w / 4) ? rowData[i].substring(0, Math.floor(cols[i].w / 4)) + ".." : rowData[i];
+            const color = i === cols.length - 1 && circuit.code
+              ? (circuit.code === "C1" ? COLORS.c1 : circuit.code === "C2" ? COLORS.error : circuit.code === "C3" ? COLORS.warning : circuit.code === "FI" ? COLORS.fi : COLORS.text)
+              : COLORS.text;
+            drawText(val, cx, y, { size: FONT_SIZES.tiny, color });
+            cx += cols[i].w;
+          }
+          y -= 10;
+        }
+        y -= 5;
+      }
+    }
+  }
+
+  // ── FIRE / EML fallback ──
+  if (data.type === "FIRE" || data.type === "EML") {
+    drawSection("Details");
+    drawText("See attached schedule for full details.", margin, y, { size: FONT_SIZES.normal });
+    y -= 15;
+  }
+
+  // ── SIGNATURES & PHOTOS ──
+  const dataUriToBytes = (dataUri: string): Uint8Array => {
+    const base64 = dataUri.split(",")[1];
+    if (!base64) return new Uint8Array(0);
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return bytes;
+  };
+
+  const drawSignatureImage = async (label: string, dataUri: string) => {
+    ensureSpace(80);
+    const bytes = dataUriToBytes(dataUri);
+    if (bytes.length === 0) return;
+    try {
+      const img = dataUri.includes("image/jpeg")
+        ? await pdfDoc.embedJpg(bytes)
+        : await pdfDoc.embedPng(bytes);
+      drawText(label, margin, y, { size: FONT_SIZES.small, color: COLORS.muted });
+      y -= 14;
+      const maxW = 150;
+      const maxH = 60;
+      const aspect = img.height / img.width;
+      let drawW = maxW;
+      let drawH = drawW * aspect;
+      if (drawH > maxH) { drawH = maxH; drawW = drawH / aspect; }
+      page.drawImage(img, { x: margin, y: y - drawH, width: drawW, height: drawH });
+      y -= drawH + 10;
+    } catch {
+      // skip failed image embed
+    }
+  };
+
+  if (options?.engineerSignature || options?.customerSignature) {
+    drawSection("Signatures");
+    if (options?.engineerSignature) await drawSignatureImage("Engineer Signature:", options.engineerSignature);
+    if (options?.customerSignature) await drawSignatureImage("Customer Signature:", options.customerSignature);
+  }
+
+  if (options?.photos && options.photos.length > 0) {
+    drawSection("Site Photos");
+    for (let i = 0; i < options.photos.length; i++) {
+      ensureSpace(120);
+      const bytes = dataUriToBytes(options.photos[i]);
+      if (bytes.length === 0) continue;
       try {
-        const img = dataUri.includes("image/jpeg")
+        const img = options.photos[i].includes("image/jpeg")
           ? await pdfDoc.embedJpg(bytes)
           : await pdfDoc.embedPng(bytes);
-        drawText(label, margin, y, { size: FONT_SIZES.small, color: COLORS.muted });
+        drawText(`Photo ${i + 1}`, margin, y, { size: FONT_SIZES.small, color: COLORS.muted });
         y -= 14;
-        const maxW = 150;
-        const maxH = 60;
+        const maxW = contentWidth;
+        const maxH = 200;
         const aspect = img.height / img.width;
         let drawW = maxW;
         let drawH = drawW * aspect;
         if (drawH > maxH) { drawH = maxH; drawW = drawH / aspect; }
         page.drawImage(img, { x: margin, y: y - drawH, width: drawW, height: drawH });
-        y -= drawH + 10;
+        y -= drawH + 15;
       } catch {
         // skip failed image embed
       }
-    };
-
-    if (options?.engineerSignature || options?.customerSignature) {
-      drawSection("Signatures");
-      if (options?.engineerSignature) {
-        await drawSignatureImage("Engineer Signature:", options.engineerSignature);
-      }
-      if (options?.customerSignature) {
-        await drawSignatureImage("Customer Signature:", options.customerSignature);
-      }
-    }
-
-    if (photoList && photoList.length > 0) {
-      drawSection("Site Photos");
-      for (let i = 0; i < photoList.length; i++) {
-        if (y < 120) {
-          page = pdfDoc.addPage([pageWidth, pageHeight]);
-          y = pageHeight - margin;
-        }
-        const bytes = dataUriToBytes(photoList[i]);
-        if (bytes.length === 0) continue;
-        try {
-          const img = photoList[i].includes("image/jpeg")
-            ? await pdfDoc.embedJpg(bytes)
-            : await pdfDoc.embedPng(bytes);
-          drawText(`Photo ${i + 1}`, margin, y, { size: FONT_SIZES.small, color: COLORS.muted });
-          y -= 14;
-          const maxW = contentWidth;
-          const maxH = 200;
-          const aspect = img.height / img.width;
-          let drawW = maxW;
-          let drawH = drawW * aspect;
-          if (drawH > maxH) { drawH = maxH; drawW = drawH / aspect; }
-          page.drawImage(img, { x: margin, y: y - drawH, width: drawW, height: drawH });
-          y -= drawH + 15;
-        } catch {
-          // skip failed image embed
-        }
-      }
     }
   }
 
-  // Declaration
-  if (y < 150) {
-    page = pdfDoc.addPage([pageWidth, pageHeight]);
-    y = pageHeight - margin;
-  }
-  drawSection("Declaration");
-  drawText("I/We certify that this installation has been designed, constructed, inspected, and tested", margin, y, { size: FONT_SIZES.normal });
-  y -= 12;
-  drawText("in accordance with BS 7671 (IET Wiring Regulations).", margin, y, { size: FONT_SIZES.normal });
-  y -= 30;
-
-  const declaration = (data as any).declaration || {};
-
-  if (declaration.designerSignature || declaration.installerSignature || declaration.inspectorSignature) {
-    const signatures = [
-      { label: "Designer", sig: declaration.designerSignature },
-      { label: "Installer", sig: declaration.installerSignature },
-      { label: "Inspector", sig: declaration.inspectorSignature },
-    ].filter((s) => s.sig?.name || s.sig?.signedAtISO);
-
-    signatures.forEach((s) => {
-      drawText(`${s.label}: ${s.sig?.name || "—"}`, margin, y, { size: FONT_SIZES.normal });
-      if (s.sig?.signedAtISO) {
-        drawText(`Signed: ${new Date(s.sig.signedAtISO).toLocaleDateString()}`, margin + 200, y, { size: FONT_SIZES.small, color: COLORS.muted });
-      }
-      y -= 20;
-    });
-  } else {
-    drawLine(margin, y, margin + 200, y);
-    drawText("Signature", margin, y - 12, { size: FONT_SIZES.small, color: COLORS.muted });
-    drawLine(margin + 250, y, margin + 400, y);
-    drawText("Date", margin + 250, y - 12, { size: FONT_SIZES.small, color: COLORS.muted });
-  }
-
-  // Footer — use brand footer lines if provided
-  y = 40;
-  drawLine(margin, y + 10, pageWidth - margin, y + 10);
-
-  if (brand?.footerLine1 || brand?.footerLine2 || brand?.contactDetails) {
-    const footerLines: string[] = [];
-    if (brand.footerLine1) footerLines.push(brand.footerLine1);
-    if (brand.footerLine2) footerLines.push(brand.footerLine2);
-    if (brand.contactDetails) {
-      for (const seg of brand.contactDetails.split("\n")) {
-        const trimmed = seg.trim();
-        if (trimmed) footerLines.push(trimmed);
-      }
+  // ── GENERIC DECLARATION (fallback for EIC without specific signatory data) ──
+  if (data.type === "EIC") {
+    const eic = data as EICCertificate;
+    if (!eic.designSection?.name && !eic.constructionSection?.name && !eic.inspectionSection?.name) {
+      ensureSpace(60);
+      drawSection("Declaration");
+      drawText("I/We certify that this installation has been designed, constructed, inspected, and tested", margin, y, { size: FONT_SIZES.normal });
+      y -= 12;
+      drawText("in accordance with BS 7671:2018+A2:2022 (IET Wiring Regulations).", margin, y, { size: FONT_SIZES.normal });
+      y -= 25;
+      drawLine(margin, y, margin + 200, y);
+      drawText("Signature", margin, y - 12, { size: FONT_SIZES.small, color: COLORS.muted });
+      drawLine(margin + 250, y, margin + 400, y);
+      drawText("Date", margin + 250, y - 12, { size: FONT_SIZES.small, color: COLORS.muted });
     }
-    let footerY = y;
-    for (const line of footerLines) {
-      drawText(line, margin, footerY, { size: FONT_SIZES.small, color: COLORS.muted });
-      footerY -= 10;
-    }
-  } else {
-    drawText(`Generated by ${brand?.name || "Quantract Certificates"}`, margin, y, { size: FONT_SIZES.small, color: COLORS.muted });
-    drawText(`certificates.quantract.co.uk • ${new Date().toLocaleDateString()}`, pageWidth - margin - 180, y, { size: FONT_SIZES.small, color: COLORS.muted });
   }
+
+  // Final footer on last page
+  drawFooter();
+
+  // Apply DRAFT watermark if unsigned
+  drawDraftWatermark();
 
   return pdfDoc.save();
 }

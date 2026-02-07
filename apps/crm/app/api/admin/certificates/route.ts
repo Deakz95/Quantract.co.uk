@@ -24,17 +24,41 @@ export const GET = withRequestLogging(async function GET(req: Request) {
 
     const url = new URL(req.url);
     const jobId = String(url.searchParams.get("jobId") ?? "").trim();
-    if (!jobId) return NextResponse.json({ ok: true, certificates: [] });
+
+    // When jobId is provided, scope to that job; otherwise return all certificates
+    const where: Record<string, unknown> = { companyId: authCtx.companyId };
+    if (jobId) where.jobId = jobId;
 
     const certificates = await client.certificate.findMany({
-      where: { jobId, companyId: authCtx.companyId },
+      where,
       orderBy: { createdAt: "desc" },
       include: {
-        job: { select: { id: true, title: true } },
+        job: { select: { id: true, title: true, jobNumber: true } },
+        client: { select: { id: true, name: true } },
+        site: { select: { id: true, name: true, address1: true, city: true } },
       },
+      ...(!jobId ? { take: 500 } : {}),
     });
 
-    return NextResponse.json({ ok: true, certificates: certificates || [] });
+    // Flatten related data for the client
+    const mapped = (certificates || []).map((cert: any) => ({
+      ...cert,
+      clientName:
+        cert.client?.name ||
+        (cert.data as any)?.overview?.clientName ||
+        undefined,
+      siteAddress:
+        [cert.site?.address1, cert.site?.city].filter(Boolean).join(", ") ||
+        (cert.data as any)?.overview?.installationAddress ||
+        undefined,
+      jobNumber:
+        cert.job?.jobNumber ||
+        (cert.job?.title ? `J-${cert.job.id.slice(0, 8)}` : undefined),
+      issuedAtISO: cert.issuedAt?.toISOString() ?? undefined,
+      completedAtISO: cert.completedAt?.toISOString() ?? undefined,
+    }));
+
+    return NextResponse.json({ ok: true, certificates: mapped });
   } catch (error) {
     if (error instanceof PrismaClientKnownRequestError) {
       logError(error, { route: "/api/admin/certificates", action: "list" });
@@ -79,15 +103,20 @@ export const POST = withRequestLogging(async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "job_not_found" }, { status: 404 });
     }
 
-    // Get or generate certificate number
+    // Get or generate certificate number using {TYPE}-{YEAR}-{SEQ} format
+    // Falls back to legacy prefix format if company has a custom prefix set
     const company = await client.company.findUnique({
       where: { id: authCtx.companyId },
-      select: { certificateNumberPrefix: true, nextCertificateNumber: true },
+      select: { certificateNumberPrefix: true, nextCertificateNumber: true, legalEntities: { where: { isDefault: true }, select: { certificateNumberPrefix: true, nextCertificateNumber: true }, take: 1 } },
     });
 
-    const prefix = company?.certificateNumberPrefix || "CERT-";
     const num = company?.nextCertificateNumber || 1;
-    const certificateNumber = `${prefix}${String(num).padStart(5, "0")}`;
+    const year = new Date().getFullYear();
+    const prefix = company?.certificateNumberPrefix || "CERT-";
+    const isDefaultPrefix = !company?.certificateNumberPrefix || company.certificateNumberPrefix === "CERT-";
+    const certificateNumber = isDefaultPrefix
+      ? `${type}-${year}-${String(num).padStart(3, "0")}`
+      : `${prefix}${String(num).padStart(5, "0")}`;
 
     // Increment next certificate number
     await client.company.update({

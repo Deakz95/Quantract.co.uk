@@ -9,31 +9,72 @@ export type ChecklistItem = {
   section: string;
   question: string;
   sortOrder: number;
+  itemCode?: string;
 };
 
-function items(section: string, questions: string[]): ChecklistItem[] {
-  return questions.map((q, i) => ({ section, question: q, sortOrder: i }));
+function items(section: string, questions: string[], codePrefix?: string): ChecklistItem[] {
+  return questions.map((q, i) => ({
+    section,
+    question: q,
+    sortOrder: i,
+    itemCode: codePrefix ? `${codePrefix}.${i + 1}` : undefined,
+  }));
 }
 
-// ── Electrical (BS 7671) ──
+// ── BS 7671:2018+A2:2022 Inspection Categories ──
 
-const ELECTRICAL_VISUAL = items("visual_inspection", [
-  "Consumer unit / distribution board correctly labelled",
-  "Circuits correctly identified and labelled",
-  "Adequate access and working space provided",
-  "Protective conductors visible and connected",
-  "Main earthing conductor and bonding conductors satisfactory",
-  "Main protective bonding conductors present (gas, water, oil)",
-  "Supplementary bonding conductors where required",
-  "Basic and fault protection measures adequate",
-  "RCD protection provided where required",
-  "Wiring in satisfactory condition (no damage, deterioration)",
-  "Enclosures, accessories, and switchgear in satisfactory condition",
-  "Correct type of lamp / luminaire installed",
-  "No signs of overheating or thermal damage",
-  "IP rating appropriate for location",
-  "Fire barriers and sealing in place",
-]);
+const BS7671_SECTION_A = items("cu_distribution_board", [
+  "Consumer unit/distribution board correctly identified and labelled",
+  "Adequacy of working space and accessibility",
+  "Security of fixing",
+  "Condition of enclosure (no damage, appropriate IP rating)",
+  "Suitability for the environment (IP rating)",
+  "Presence of main switch/circuit breakers",
+  "Correct type and rating of protective devices",
+  "RCD protection where required by BS 7671",
+  "SPD (Surge Protection Device) where required",
+  "Adequacy of cable connections and terminations",
+  "Presence of danger notices and warning labels",
+], "A");
+
+const BS7671_SECTION_B = items("wiring_systems", [
+  "Identification of conductors",
+  "Cables correctly supported and protected",
+  "Condition of insulation of live parts",
+  "Non-sheathed cables enclosed in conduit/trunking",
+  "Correct selection of cable for current-carrying capacity and voltage drop",
+  "Presence of fire barriers, seals and protection",
+  "Cable routes do not compromise building structural integrity",
+  "Cables concealed under floors/above ceilings correctly supported",
+  "Condition of flexible cables and cord sets",
+  "Adequacy of cables against external influences",
+], "B");
+
+const BS7671_SECTION_C = items("protection", [
+  "Protection against direct contact (basic protection)",
+  "Protection against indirect contact (fault protection)",
+  "Protection against overcurrent",
+  "SELV / PELV systems correctly installed",
+  "Coordination between overcurrent protective devices",
+  "Prospective fault current does not exceed device capability",
+], "C");
+
+const BS7671_SECTION_D = items("accessories_switchgear", [
+  "Condition of accessories (socket-outlets, switches, etc.)",
+  "Suitability of accessories for their environment",
+  "Single-pole switching in line conductor only",
+  "Adequacy of connections at accessories",
+  "Provision of earthing and bonding at accessories",
+], "D");
+
+const BS7671_SECTION_E = items("special_locations", [
+  "Bathroom/shower room zones correctly applied (BS 7671 Section 701)",
+  "Swimming pool/spa requirements met (Section 702)",
+  "Exterior lighting and power installations adequate (Section 714)",
+  "Solar PV / generator installation compliant (Section 712/551)",
+], "E");
+
+// ── Electrical Testing ──
 
 const ELECTRICAL_TESTING = items("testing", [
   "Continuity of protective conductors (R1 + R2)",
@@ -273,9 +314,31 @@ const SOLAR_GRID_COMPLIANCE = items("grid_compliance", [
 
 const TEMPLATES: Record<string, ChecklistItem[]> = {
   // Electrical
-  EIC: [...ELECTRICAL_VISUAL, ...ELECTRICAL_TESTING],
-  EICR: [...ELECTRICAL_VISUAL, ...ELECTRICAL_TESTING, ...EICR_ASSESSMENT],
-  MWC: [...ELECTRICAL_VISUAL, ...ELECTRICAL_TESTING],
+  EIC: [
+    ...BS7671_SECTION_A,
+    ...BS7671_SECTION_B,
+    ...BS7671_SECTION_C,
+    ...BS7671_SECTION_D,
+    ...BS7671_SECTION_E,
+    ...ELECTRICAL_TESTING,
+  ],
+  EICR: [
+    ...BS7671_SECTION_A,
+    ...BS7671_SECTION_B,
+    ...BS7671_SECTION_C,
+    ...BS7671_SECTION_D,
+    ...BS7671_SECTION_E,
+    ...ELECTRICAL_TESTING,
+    ...EICR_ASSESSMENT,
+  ],
+  MWC: [
+    ...BS7671_SECTION_A,
+    ...BS7671_SECTION_B,
+    ...BS7671_SECTION_C,
+    ...BS7671_SECTION_D,
+    ...BS7671_SECTION_E,
+    ...ELECTRICAL_TESTING,
+  ],
   // Fire
   FIRE_DESIGN: [...FIRE_DESIGN, ...FIRE_ZONE_PLAN, ...FIRE_DEVICE_SCHEDULE],
   FIRE_INSTALLATION: [...FIRE_INSTALLATION_CHECKS, ...FIRE_WIRING, ...FIRE_DEVICE_MOUNTING],

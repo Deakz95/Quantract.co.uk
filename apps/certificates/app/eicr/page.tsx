@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback, Suspense } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Button, Card, CardHeader, CardTitle, CardContent, CardDescription, Input, Label, NativeSelect, Textarea } from "@quantract/ui";
-import { getCertificateTemplate, type EICRCertificate } from "@quantract/shared/certificate-types";
+import { getCertificateTemplate, type EICRCertificate, type BoardData as BoardDataType } from "@quantract/shared/certificate-types";
 import { generateCertificatePDF } from "../../lib/pdf-generator";
 import BoardViewer, { type BoardData, type Circuit } from "../../components/BoardViewer";
 import {
@@ -14,67 +14,78 @@ import {
   generateCertificateNumber,
 } from "../../lib/certificateStore";
 import { StickyActionBar } from "../../components/StickyActionBar";
-import { SignatureCapture } from "../../components/SignatureCapture";
 import { PhotoCapture } from "../../components/PhotoCapture";
+import { ContractorDetails } from "../../components/ContractorDetails";
+import { ExtentAndLimitations } from "../../components/ExtentAndLimitations";
+import { InspectionChecklist } from "../../components/InspectionChecklist";
+import { ObservationsList } from "../../components/ObservationsList";
+import { SummaryOfCondition } from "../../components/SummaryOfCondition";
+import { DeclarationSection } from "../../components/DeclarationSection";
+import { ClientAcknowledgement } from "../../components/ClientAcknowledgement";
 
-// Example board data - in production this would come from form input
-const EXAMPLE_BOARD: BoardData = {
-  id: "db1",
-  name: "DB 1 - Main Consumer Unit",
-  description: "Hager 12-Way Split Load | 100A Main Switch | 2x 63A RCDs",
-  type: "single-phase",
-  mainSwitch: { rating: "100A", type: "Switch" },
-  circuits: [
-    { id: "c1", num: 1, description: "Cooker", type: "B", rating: "32A", bsen: "60898", cableMm2: "6.0", cpcMm2: "2.5", maxZs: "1.37", zs: "0.42", r1r2: "0.28", r2: "0.14", insMohm: ">200", rcdMa: "30", rcdMs: "18", status: "pass" },
-    { id: "c2", num: 2, description: "Shower", type: "B", rating: "32A", bsen: "60898", cableMm2: "6.0", cpcMm2: "2.5", maxZs: "1.37", zs: "0.38", r1r2: "0.25", r2: "0.12", insMohm: ">200", rcdMa: "30", rcdMs: "22", status: "pass" },
-    { id: "c3", num: 3, description: "Ring 1 (GF)", type: "B", rating: "32A", bsen: "60898", cableMm2: "2.5", cpcMm2: "1.5", maxZs: "1.37", zs: "0.65", r1r2: "0.41", r2: "0.24", insMohm: ">200", rcdMa: "30", rcdMs: "24", status: "pass" },
-    { id: "c4", num: 4, description: "Ring 2 (FF)", type: "B", rating: "32A", bsen: "60898", cableMm2: "2.5", cpcMm2: "1.5", maxZs: "1.37", zs: "0.72", r1r2: "0.48", r2: "0.28", insMohm: ">200", rcdMa: "30", rcdMs: "21", status: "pass" },
-    { id: "c5", num: 5, description: "Immersion", type: "B", rating: "16A", bsen: "60898", cableMm2: "2.5", cpcMm2: "1.5", maxZs: "2.73", zs: "0.85", r1r2: "0.52", r2: "0.31", insMohm: ">200", status: "pass" },
-    { id: "c6", num: 6, description: "Lights GF", type: "B", rating: "6A", bsen: "60898", cableMm2: "1.5", cpcMm2: "1.0", maxZs: "7.28", zs: "1.12", r1r2: "0.68", r2: "0.44", insMohm: ">200", status: "pass" },
-    { id: "c7", num: 7, description: "Lights FF", type: "B", rating: "6A", bsen: "60898", cableMm2: "1.5", cpcMm2: "1.0", maxZs: "7.28", zs: "1.45", r1r2: "0.92", r2: "0.58", insMohm: "185", status: "warning", code: "C3" },
-    { id: "c8", num: 8, description: "Smoke Det", type: "B", rating: "6A", bsen: "60898", cableMm2: "1.5", cpcMm2: "1.0", maxZs: "7.28", zs: "2.35", r1r2: "1.85", r2: "1.12", insMohm: "45", status: "fail", code: "C2" },
-    { id: "c9", num: 9, description: "Garage", type: "B", rating: "20A", bsen: "60898", cableMm2: "4.0", cpcMm2: "2.5", maxZs: "2.19", zs: "0.95", r1r2: "0.62", r2: "0.38", insMohm: ">200", rcdMa: "30", rcdMs: "19", status: "pass" },
-    { id: "c10", num: 10, description: "Spare", type: "-", rating: "-", status: "untested", isEmpty: true },
-    { id: "c11", num: 11, description: "Spare", type: "-", rating: "-", status: "untested", isEmpty: true },
-    { id: "c12", num: 12, description: "Spare", type: "-", rating: "-", status: "untested", isEmpty: true },
-  ],
-};
+// BS 7671 default inspection items
+const DEFAULT_INSPECTION_ITEMS = [
+  // Section A - Consumer Unit / Distribution Board
+  { category: "cu_distribution_board", itemCode: "A.1", description: "Consumer unit/distribution board correctly identified and labelled", outcome: "" as const },
+  { category: "cu_distribution_board", itemCode: "A.2", description: "Adequacy of working space and accessibility", outcome: "" as const },
+  { category: "cu_distribution_board", itemCode: "A.3", description: "Security of fixing", outcome: "" as const },
+  { category: "cu_distribution_board", itemCode: "A.4", description: "Condition of enclosure (no damage, appropriate IP rating)", outcome: "" as const },
+  { category: "cu_distribution_board", itemCode: "A.5", description: "Suitability for the environment (IP rating)", outcome: "" as const },
+  { category: "cu_distribution_board", itemCode: "A.6", description: "Presence of main switch/circuit breakers", outcome: "" as const },
+  { category: "cu_distribution_board", itemCode: "A.7", description: "Correct type and rating of protective devices", outcome: "" as const },
+  { category: "cu_distribution_board", itemCode: "A.8", description: "RCD protection where required by BS 7671", outcome: "" as const },
+  { category: "cu_distribution_board", itemCode: "A.9", description: "SPD (Surge Protection Device) where required", outcome: "" as const },
+  { category: "cu_distribution_board", itemCode: "A.10", description: "Adequacy of cable connections and terminations", outcome: "" as const },
+  { category: "cu_distribution_board", itemCode: "A.11", description: "Presence of danger notices and warning labels", outcome: "" as const },
+  // Section B - Wiring Systems
+  { category: "wiring_systems", itemCode: "B.1", description: "Identification of conductors", outcome: "" as const },
+  { category: "wiring_systems", itemCode: "B.2", description: "Cables correctly supported and protected", outcome: "" as const },
+  { category: "wiring_systems", itemCode: "B.3", description: "Condition of insulation of live parts", outcome: "" as const },
+  { category: "wiring_systems", itemCode: "B.4", description: "Non-sheathed cables enclosed in conduit/trunking", outcome: "" as const },
+  { category: "wiring_systems", itemCode: "B.5", description: "Correct selection of cable for current-carrying capacity and voltage drop", outcome: "" as const },
+  { category: "wiring_systems", itemCode: "B.6", description: "Presence of fire barriers, seals and protection", outcome: "" as const },
+  { category: "wiring_systems", itemCode: "B.7", description: "Cable routes do not compromise building structural integrity", outcome: "" as const },
+  { category: "wiring_systems", itemCode: "B.8", description: "Cables concealed under floors/above ceilings correctly supported", outcome: "" as const },
+  { category: "wiring_systems", itemCode: "B.9", description: "Condition of flexible cables and cord sets", outcome: "" as const },
+  { category: "wiring_systems", itemCode: "B.10", description: "Adequacy of cables against external influences", outcome: "" as const },
+  // Section C - Protection
+  { category: "protection", itemCode: "C.1", description: "Protection against direct contact (basic protection)", outcome: "" as const },
+  { category: "protection", itemCode: "C.2", description: "Protection against indirect contact (fault protection)", outcome: "" as const },
+  { category: "protection", itemCode: "C.3", description: "Protection against overcurrent", outcome: "" as const },
+  { category: "protection", itemCode: "C.4", description: "SELV / PELV systems correctly installed", outcome: "" as const },
+  { category: "protection", itemCode: "C.5", description: "Coordination between overcurrent protective devices", outcome: "" as const },
+  { category: "protection", itemCode: "C.6", description: "Prospective fault current does not exceed device capability", outcome: "" as const },
+  // Section D - Accessories and Switchgear
+  { category: "accessories_switchgear", itemCode: "D.1", description: "Condition of accessories (socket-outlets, switches, etc.)", outcome: "" as const },
+  { category: "accessories_switchgear", itemCode: "D.2", description: "Suitability of accessories for their environment", outcome: "" as const },
+  { category: "accessories_switchgear", itemCode: "D.3", description: "Single-pole switching in line conductor only", outcome: "" as const },
+  { category: "accessories_switchgear", itemCode: "D.4", description: "Adequacy of connections at accessories", outcome: "" as const },
+  { category: "accessories_switchgear", itemCode: "D.5", description: "Provision of earthing and bonding at accessories", outcome: "" as const },
+  // Section E - Special Locations
+  { category: "special_locations", itemCode: "E.1", description: "Bathroom/shower room zones correctly applied (BS 7671 Section 701)", outcome: "" as const },
+  { category: "special_locations", itemCode: "E.2", description: "Swimming pool/spa requirements met (Section 702)", outcome: "" as const },
+  { category: "special_locations", itemCode: "E.3", description: "Exterior lighting and power installations adequate (Section 714)", outcome: "" as const },
+  { category: "special_locations", itemCode: "E.4", description: "Solar PV / generator installation compliant (Section 712/551)", outcome: "" as const },
+];
 
-const EXAMPLE_3PHASE_BOARD: BoardData = {
-  id: "db2",
-  name: "DB 2 - 3-Phase Distribution Board",
-  description: "Schneider Acti9 24-Way TP&N | 125A Triple Pole Isolator | 400V",
-  type: "three-phase",
-  mainSwitch: { rating: "125A", type: "TP&N Isolator" },
-  circuits: [
-    // L1 circuits
-    { id: "3p-1", num: 1, description: "Sockets A", type: "C", rating: "32A", phase: "L1", bsen: "60898", cableMm2: "4.0", cpcMm2: "2.5", maxZs: "0.92", zs: "0.38", r1r2: "0.22", insMohm: ">200", rcdMa: "30", rcdMs: "18", status: "pass" },
-    { id: "3p-2", num: 2, description: "Lights 1", type: "B", rating: "20A", phase: "L1", bsen: "60898", cableMm2: "2.5", cpcMm2: "1.5", maxZs: "2.19", zs: "0.85", r1r2: "0.52", insMohm: ">200", status: "pass" },
-    { id: "3p-3", num: 3, description: "AC Unit 1", type: "C", rating: "16A", phase: "L1", bsen: "60898", cableMm2: "2.5", cpcMm2: "1.5", maxZs: "1.37", zs: "0.52", r1r2: "0.31", insMohm: ">200", status: "pass" },
-    { id: "3p-4", num: 4, description: "Emergency", type: "B", rating: "10A", phase: "L1", bsen: "60898", cableMm2: "1.5", cpcMm2: "1.0", maxZs: "4.36", zs: "1.85", r1r2: "1.42", insMohm: "165", status: "warning", code: "C3" },
-    { id: "3p-5", num: 5, description: "Fire Alarm", type: "B", rating: "6A", phase: "L1", bsen: "60898", cableMm2: "1.5", cpcMm2: "1.0", maxZs: "7.28", zs: "0.95", r1r2: "0.62", insMohm: ">200", status: "pass" },
-    { id: "3p-6", num: 6, description: "Spare", type: "-", rating: "-", phase: "L1", status: "untested", isEmpty: true },
-    // L2 circuits
-    { id: "3p-7", num: 7, description: "Sockets B", type: "C", rating: "32A", phase: "L2", bsen: "60898", cableMm2: "4.0", cpcMm2: "2.5", maxZs: "0.92", zs: "0.41", r1r2: "0.25", insMohm: ">200", rcdMa: "30", rcdMs: "21", status: "pass" },
-    { id: "3p-8", num: 8, description: "Lights 2", type: "B", rating: "20A", phase: "L2", bsen: "60898", cableMm2: "2.5", cpcMm2: "1.5", maxZs: "2.19", zs: "0.92", r1r2: "0.58", insMohm: ">200", status: "pass" },
-    { id: "3p-9", num: 9, description: "AC Unit 2", type: "C", rating: "16A", phase: "L2", bsen: "60898", cableMm2: "2.5", cpcMm2: "1.5", maxZs: "1.37", zs: "1.65", r1r2: "1.28", insMohm: "85", status: "fail", code: "C2" },
-    { id: "3p-10", num: 10, description: "Security", type: "B", rating: "10A", phase: "L2", bsen: "60898", cableMm2: "1.5", cpcMm2: "1.0", maxZs: "4.36", zs: "0.95", r1r2: "0.62", insMohm: ">200", status: "pass" },
-    { id: "3p-11", num: 11, description: "Water Htr", type: "C", rating: "32A", phase: "L2", bsen: "60898", cableMm2: "6.0", cpcMm2: "2.5", maxZs: "0.92", zs: "0.45", r1r2: "0.28", insMohm: ">200", status: "pass" },
-    { id: "3p-12", num: 12, description: "Kitchen", type: "B", rating: "20A", phase: "L2", bsen: "60898", cableMm2: "2.5", cpcMm2: "1.5", maxZs: "2.19", zs: "0.78", r1r2: "0.45", insMohm: ">200", status: "pass" },
-    // L3 circuits
-    { id: "3p-13", num: 13, description: "Sockets C", type: "C", rating: "32A", phase: "L3", bsen: "60898", cableMm2: "4.0", cpcMm2: "2.5", maxZs: "0.92", zs: "0.35", r1r2: "0.19", insMohm: ">200", rcdMa: "30", rcdMs: "19", status: "pass" },
-    { id: "3p-14", num: 14, description: "Lights 3", type: "B", rating: "20A", phase: "L3", bsen: "60898", cableMm2: "2.5", cpcMm2: "1.5", maxZs: "2.19", zs: "0.78", r1r2: "0.45", insMohm: ">200", status: "pass" },
-    { id: "3p-15", num: 15, description: "AC Unit 3", type: "C", rating: "16A", phase: "L3", bsen: "60898", cableMm2: "2.5", cpcMm2: "1.5", maxZs: "1.37", zs: "0.48", r1r2: "0.28", insMohm: ">200", status: "pass" },
-    { id: "3p-16", num: 16, description: "Server Rm", type: "C", rating: "16A", phase: "L3", bsen: "60898", cableMm2: "2.5", cpcMm2: "1.5", maxZs: "1.37", zs: "0.42", r1r2: "0.25", insMohm: ">200", rcdMa: "30", rcdMs: "16", status: "pass" },
-    { id: "3p-17", num: 17, description: "CCTV", type: "B", rating: "6A", phase: "L3", bsen: "60898", cableMm2: "1.5", cpcMm2: "1.0", maxZs: "7.28", zs: "0.88", r1r2: "0.55", insMohm: ">200", status: "pass" },
-    { id: "3p-18", num: 18, description: "Spare", type: "-", rating: "-", phase: "L3", status: "untested", isEmpty: true },
-    // TPN circuits
-    { id: "tpn-1", num: "TP1", description: "Compressor", type: "C", rating: "63A", phase: "TPN", bsen: "60898", cableMm2: "16.0", cpcMm2: "6.0", maxZs: "0.47", zs: "0.18", r1r2: "0.09", insMohm: ">200", status: "pass" },
-    { id: "tpn-2", num: "TP2", description: "Motor 1", type: "D", rating: "32A", phase: "TPN", bsen: "60898", cableMm2: "6.0", cpcMm2: "4.0", maxZs: "0.46", zs: "0.22", r1r2: "0.12", insMohm: ">200", status: "pass" },
-    { id: "tpn-3", num: "TP3", description: "Motor 2", type: "D", rating: "32A", phase: "TPN", bsen: "60898", cableMm2: "6.0", cpcMm2: "4.0", maxZs: "0.46", zs: "0.25", r1r2: "0.14", insMohm: ">200", status: "pass" },
-    { id: "tpn-4", num: "TP4", description: "Sub-DB", type: "C", rating: "40A", phase: "TPN", bsen: "60898", cableMm2: "10.0", cpcMm2: "6.0", maxZs: "0.73", zs: "0.28", r1r2: "0.15", insMohm: ">200", status: "pass" },
-  ],
-};
+type SectionId = "contractor" | "installation" | "extent" | "supply" | "earthing" | "inspection" | "boards" | "tests" | "observations" | "summary" | "assessment" | "declaration" | "acknowledgement" | "photos";
+
+const SECTIONS: { id: SectionId; label: string }[] = [
+  { id: "contractor", label: "1. Contractor Details" },
+  { id: "installation", label: "2. Installation Details" },
+  { id: "extent", label: "3. Extent & Limitations" },
+  { id: "supply", label: "4. Supply Characteristics" },
+  { id: "earthing", label: "5. Earthing Arrangements" },
+  { id: "inspection", label: "6. General Inspection" },
+  { id: "boards", label: "7. Distribution Boards" },
+  { id: "tests", label: "8. Test Results" },
+  { id: "observations", label: "9. Observations" },
+  { id: "summary", label: "10. Summary of Condition" },
+  { id: "assessment", label: "11. Overall Assessment" },
+  { id: "declaration", label: "12. Declaration" },
+  { id: "acknowledgement", label: "13. Client Acknowledgement" },
+  { id: "photos", label: "14. Site Photos" },
+];
 
 function EICRPageContent() {
   const searchParams = useSearchParams();
@@ -89,25 +100,71 @@ function EICRPageContent() {
   const [currentCertId, setCurrentCertId] = useState<string | null>(certificateId);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
-  const [activeTab, setActiveTab] = useState<"details" | "boards">("boards");
-  const [boards, setBoards] = useState<BoardData[]>([EXAMPLE_BOARD, EXAMPLE_3PHASE_BOARD]);
+  const [activeSection, setActiveSection] = useState<SectionId>("contractor");
   const [engineerSig, setEngineerSig] = useState<string | null>(null);
   const [customerSig, setCustomerSig] = useState<string | null>(null);
   const [photos, setPhotos] = useState<string[]>([]);
 
-  // Load existing certificate if ID is provided (only after hydration)
+  // Initialize inspection items if empty
+  useEffect(() => {
+    if (data.generalInspection.length === 0) {
+      setData((prev) => ({
+        ...prev,
+        generalInspection: DEFAULT_INSPECTION_ITEMS,
+      }));
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Load existing certificate if ID is provided
   useEffect(() => {
     if (hydrated && certificateId) {
       const existing = getCertificate(certificateId);
       if (existing && existing.data) {
-        setData(existing.data as EICRCertificate);
+        const loaded = existing.data as EICRCertificate;
+        setData(loaded);
         setCurrentCertId(certificateId);
         setLastSaved(new Date(existing.updated_at));
+        if (loaded.boards && loaded.boards.length > 0) {
+          // Boards are stored in the data
+        }
       }
     }
   }, [certificateId, getCertificate, hydrated]);
 
-  const updateOverview = (field: keyof EICRCertificate["overview"], value: string) => {
+  // Auto-calculated summary of condition
+  const summaryOfCondition = useMemo(() => {
+    let c1 = 0, c2 = 0, c3 = 0, fi = 0;
+    // Count from observations
+    for (const obs of data.observations) {
+      if (obs.code === "C1") c1++;
+      else if (obs.code === "C2") c2++;
+      else if (obs.code === "C3") c3++;
+      else if (obs.code === "FI") fi++;
+    }
+    // Count from inspection items
+    for (const item of data.generalInspection) {
+      if (item.outcome === "C1") c1++;
+      else if (item.outcome === "C2") c2++;
+      else if (item.outcome === "C3") c3++;
+    }
+    // Count from board circuits
+    for (const board of data.boards) {
+      for (const circuit of board.circuits) {
+        if (circuit.code === "C1") c1++;
+        else if (circuit.code === "C2") c2++;
+        else if (circuit.code === "C3") c3++;
+        else if (circuit.code === "FI") fi++;
+      }
+    }
+    return { c1Count: c1, c2Count: c2, c3Count: c3, fiCount: fi };
+  }, [data.observations, data.generalInspection, data.boards]);
+
+  // Update summary in data when it changes
+  useEffect(() => {
+    setData((prev) => ({ ...prev, summaryOfCondition: summaryOfCondition }));
+  }, [summaryOfCondition]);
+
+  const updateOverview = (field: string, value: string | boolean) => {
     setData((prev) => ({
       ...prev,
       overview: { ...prev.overview, [field]: value },
@@ -115,7 +172,7 @@ function EICRPageContent() {
     setSaveStatus("idle");
   };
 
-  const updateSupply = (field: keyof EICRCertificate["supplyCharacteristics"], value: string) => {
+  const updateSupply = (field: string, value: string | boolean) => {
     setData((prev) => ({
       ...prev,
       supplyCharacteristics: { ...prev.supplyCharacteristics, [field]: value },
@@ -123,7 +180,7 @@ function EICRPageContent() {
     setSaveStatus("idle");
   };
 
-  const updateEarthing = (field: keyof EICRCertificate["earthingArrangements"], value: string) => {
+  const updateEarthing = (field: string, value: string | boolean) => {
     setData((prev) => ({
       ...prev,
       earthingArrangements: { ...prev.earthingArrangements, [field]: value },
@@ -131,7 +188,7 @@ function EICRPageContent() {
     setSaveStatus("idle");
   };
 
-  const updateTests = (field: keyof EICRCertificate["testResults"], value: string | boolean) => {
+  const updateTests = (field: string, value: string | boolean) => {
     setData((prev) => ({
       ...prev,
       testResults: { ...prev.testResults, [field]: value },
@@ -139,33 +196,30 @@ function EICRPageContent() {
     setSaveStatus("idle");
   };
 
-  const addObservation = () => {
+  // Board management
+  const addBoard = () => {
+    const newBoard: BoardDataType = {
+      id: crypto.randomUUID(),
+      name: `DB ${data.boards.length + 1}`,
+      description: "",
+      designation: `DB${data.boards.length + 1}`,
+      type: "single-phase",
+      manufacturer: "",
+      model: "",
+      location: "",
+      ipRating: "",
+      mainSwitch: { rating: "", type: "" },
+      rcdDetails: "",
+      circuits: [],
+    };
     setData((prev) => ({
       ...prev,
-      observations: [...prev.observations, { code: "", observation: "", recommendation: "", location: "" }],
+      boards: [...prev.boards, newBoard],
     }));
     setSaveStatus("idle");
   };
 
-  const updateObservation = (index: number, field: string, value: string) => {
-    setData((prev) => ({
-      ...prev,
-      observations: prev.observations.map((obs, i) =>
-        i === index ? { ...obs, [field]: value } : obs
-      ),
-    }));
-    setSaveStatus("idle");
-  };
-
-  const removeObservation = (index: number) => {
-    setData((prev) => ({
-      ...prev,
-      observations: prev.observations.filter((_, i) => i !== index),
-    }));
-    setSaveStatus("idle");
-  };
-
-  // Auto-save: debounce 2s after any state change
+  // Auto-save
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dataRef = useRef(data);
   dataRef.current = data;
@@ -265,31 +319,22 @@ function EICRPageContent() {
                 BS 7671:2018+A2:2022 | EICR
                 {currentCertId && (
                   <span className="ml-2 text-[var(--primary)]">
-                    • {lastSaved ? `Last saved ${lastSaved.toLocaleTimeString()}` : "Not saved"}
+                    {lastSaved ? `Last saved ${lastSaved.toLocaleTimeString()}` : "Not saved"}
                   </span>
                 )}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button
-              variant="secondary"
-              onClick={handleSave}
-              disabled={isSaving}
-              className="relative"
-            >
-              {saveStatus === "saving" ? (
-                "Saving..."
-              ) : saveStatus === "saved" ? (
+            <Button variant="secondary" onClick={handleSave} disabled={isSaving} className="relative">
+              {saveStatus === "saving" ? "Saving..." : saveStatus === "saved" ? (
                 <span className="flex items-center gap-1">
                   <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                   Saved
                 </span>
-              ) : (
-                "Save"
-              )}
+              ) : "Save"}
             </Button>
             <Button onClick={handleDownload} disabled={isGenerating}>
               {isGenerating ? "Generating..." : "Download PDF"}
@@ -298,29 +343,22 @@ function EICRPageContent() {
         </div>
       </header>
 
-      {/* Tab Navigation */}
-      <div className="max-w-[1600px] mx-auto px-6 pt-6">
-        <div className="flex gap-1 bg-[var(--muted)] p-1 rounded-xl w-fit">
-          <button
-            onClick={() => setActiveTab("boards")}
-            className={`px-5 py-2.5 rounded-lg font-semibold text-sm transition-all ${
-              activeTab === "boards"
-                ? "bg-[var(--primary)] text-white"
-                : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
-            }`}
-          >
-            Distribution Boards
-          </button>
-          <button
-            onClick={() => setActiveTab("details")}
-            className={`px-5 py-2.5 rounded-lg font-semibold text-sm transition-all ${
-              activeTab === "details"
-                ? "bg-[var(--primary)] text-white"
-                : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
-            }`}
-          >
-            Certificate Details
-          </button>
+      {/* Section Navigation */}
+      <div className="max-w-[1600px] mx-auto px-6 pt-4">
+        <div className="flex gap-1 overflow-x-auto pb-2 scrollbar-none">
+          {SECTIONS.map((section) => (
+            <button
+              key={section.id}
+              onClick={() => setActiveSection(section.id)}
+              className={`px-3 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
+                activeSection === section.id
+                  ? "bg-[var(--primary)] text-white"
+                  : "text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
+              }`}
+            >
+              {section.label}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -335,27 +373,22 @@ function EICRPageContent() {
           </div>
         )}
 
-        {/* Boards Tab */}
-        {activeTab === "boards" && (
-          <div className="flex flex-col gap-8">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold mb-2">Distribution Boards</h2>
-                <p className="text-[var(--muted-foreground)]">Visual and table views of circuit schedules and test results</p>
-              </div>
-              <Button variant="secondary">+ Add Board</Button>
-            </div>
-
-            {boards.map((board) => (
-              <BoardViewer key={board.id} board={board} />
-            ))}
+        {/* 1. Contractor Details */}
+        {activeSection === "contractor" && (
+          <div className="max-w-[900px]">
+            <ContractorDetails
+              data={data.contractorDetails}
+              onChange={(contractorDetails) => {
+                setData((prev) => ({ ...prev, contractorDetails }));
+                setSaveStatus("idle");
+              }}
+            />
           </div>
         )}
 
-        {/* Details Tab */}
-        {activeTab === "details" && (
+        {/* 2. Installation Details */}
+        {activeSection === "installation" && (
           <div className="max-w-[900px] flex flex-col gap-6">
-            {/* Overview Section */}
             <Card>
               <CardHeader>
                 <CardTitle>Installation Details</CardTitle>
@@ -365,80 +398,107 @@ function EICRPageContent() {
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="jobReference">Report Reference</Label>
-                    <Input
-                      id="jobReference"
-                      value={data.overview.jobReference}
-                      onChange={(e) => updateOverview("jobReference", e.target.value)}
-                      placeholder="e.g. EICR-2024-001"
-                    />
+                    <Input id="jobReference" value={data.overview.jobReference} onChange={(e) => updateOverview("jobReference", e.target.value)} placeholder="e.g. EICR-2026-001" />
                   </div>
                   <div>
                     <Label htmlFor="dateOfInspection">Date of Inspection</Label>
-                    <Input
-                      id="dateOfInspection"
-                      type="date"
-                      value={data.overview.dateOfInspection}
-                      onChange={(e) => updateOverview("dateOfInspection", e.target.value)}
-                    />
+                    <Input id="dateOfInspection" type="date" value={data.overview.dateOfInspection} onChange={(e) => updateOverview("dateOfInspection", e.target.value)} />
                   </div>
                 </div>
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="clientName">Client Name</Label>
-                    <Input
-                      id="clientName"
-                      value={data.overview.clientName}
-                      onChange={(e) => updateOverview("clientName", e.target.value)}
-                      placeholder="Client or company name"
-                    />
+                    <Input id="clientName" value={data.overview.clientName} onChange={(e) => updateOverview("clientName", e.target.value)} placeholder="Client or company name" />
                   </div>
                   <div>
                     <Label htmlFor="occupier">Occupier</Label>
-                    <Input
-                      id="occupier"
-                      value={data.overview.occupier}
-                      onChange={(e) => updateOverview("occupier", e.target.value)}
-                      placeholder="Occupier name (if different)"
-                    />
+                    <Input id="occupier" value={data.overview.occupier} onChange={(e) => updateOverview("occupier", e.target.value)} placeholder="Occupier name (if different)" />
                   </div>
                 </div>
                 <div>
                   <Label htmlFor="installationAddress">Installation Address</Label>
-                  <Textarea
-                    id="installationAddress"
-                    value={data.overview.installationAddress}
-                    onChange={(e) => updateOverview("installationAddress", e.target.value)}
-                    placeholder="Full address of the installation"
-                    className="min-h-[80px]"
-                  />
+                  <Textarea id="installationAddress" value={data.overview.installationAddress} onChange={(e) => updateOverview("installationAddress", e.target.value)} placeholder="Full address of the installation" className="min-h-[80px]" />
+                </div>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="descriptionOfPremises">Description of Premises</Label>
+                    <NativeSelect id="descriptionOfPremises" value={data.overview.descriptionOfPremises} onChange={(e) => updateOverview("descriptionOfPremises", e.target.value)}>
+                      <option value="">Select...</option>
+                      <option value="domestic">Domestic</option>
+                      <option value="commercial">Commercial</option>
+                      <option value="industrial">Industrial</option>
+                      <option value="agricultural">Agricultural</option>
+                      <option value="public">Public</option>
+                      <option value="residential">Residential</option>
+                      <option value="educational">Educational</option>
+                      <option value="healthcare">Healthcare</option>
+                      <option value="other">Other</option>
+                    </NativeSelect>
+                  </div>
+                  <div>
+                    <Label htmlFor="estimatedAgeOfWiring">Estimated Age of Wiring</Label>
+                    <Input id="estimatedAgeOfWiring" value={data.overview.estimatedAgeOfWiring} onChange={(e) => updateOverview("estimatedAgeOfWiring", e.target.value)} placeholder="e.g. 15 years" />
+                  </div>
+                </div>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="dateOfLastInspection">Date of Last Inspection</Label>
+                    <Input id="dateOfLastInspection" type="date" value={data.overview.dateOfLastInspection} onChange={(e) => updateOverview("dateOfLastInspection", e.target.value)} />
+                  </div>
+                  <div>
+                    <Label htmlFor="previousReportReference">Previous Report Reference</Label>
+                    <Input id="previousReportReference" value={data.overview.previousReportReference} onChange={(e) => updateOverview("previousReportReference", e.target.value)} placeholder="Reference of previous report" />
+                  </div>
                 </div>
                 <div>
-                  <Label htmlFor="jobDescription">Purpose of Report</Label>
-                  <Input
-                    id="jobDescription"
-                    value={data.overview.jobDescription}
-                    onChange={(e) => updateOverview("jobDescription", e.target.value)}
-                    placeholder="e.g. Periodic inspection, Change of tenancy"
-                  />
+                  <Label htmlFor="purposeOfReport">Purpose of Report</Label>
+                  <Input id="purposeOfReport" value={data.overview.purposeOfReport} onChange={(e) => updateOverview("purposeOfReport", e.target.value)} placeholder="e.g. Periodic inspection, Change of tenancy, Mortgage survey" />
+                </div>
+                <div className="flex items-center gap-3">
+                  <input type="checkbox" id="evidenceOfAlterations" checked={data.overview.evidenceOfAlterations} onChange={(e) => updateOverview("evidenceOfAlterations", e.target.checked)} className="w-5 h-5 rounded accent-[var(--primary)]" />
+                  <Label htmlFor="evidenceOfAlterations" className="mb-0">Evidence of alterations or additions</Label>
+                </div>
+                {data.overview.evidenceOfAlterations && (
+                  <div>
+                    <Label htmlFor="alterationsDetails">Details of Alterations</Label>
+                    <Textarea id="alterationsDetails" value={data.overview.alterationsDetails} onChange={(e) => updateOverview("alterationsDetails", e.target.value)} placeholder="Describe any alterations or additions observed..." className="min-h-[60px]" />
+                  </div>
+                )}
+                <div className="flex items-center gap-3">
+                  <input type="checkbox" id="recordsAvailable" checked={data.overview.recordsAvailable} onChange={(e) => updateOverview("recordsAvailable", e.target.checked)} className="w-5 h-5 rounded accent-[var(--primary)]" />
+                  <Label htmlFor="recordsAvailable" className="mb-0">Previous records available</Label>
                 </div>
               </CardContent>
             </Card>
+          </div>
+        )}
 
-            {/* Supply Characteristics */}
+        {/* 3. Extent & Limitations */}
+        {activeSection === "extent" && (
+          <div className="max-w-[900px]">
+            <ExtentAndLimitations
+              data={data.extentAndLimitations}
+              onChange={(extentAndLimitations) => {
+                setData((prev) => ({ ...prev, extentAndLimitations }));
+                setSaveStatus("idle");
+              }}
+            />
+          </div>
+        )}
+
+        {/* 4. Supply Characteristics */}
+        {activeSection === "supply" && (
+          <div className="max-w-[900px]">
             <Card>
               <CardHeader>
                 <CardTitle>Supply Characteristics</CardTitle>
-                <CardDescription>Details of the electrical supply</CardDescription>
+                <CardDescription>Details of the electrical supply per BS 7671</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid md:grid-cols-3 gap-4">
                   <div>
-                    <Label htmlFor="systemType">System Type</Label>
-                    <NativeSelect
-                      id="systemType"
-                      value={data.supplyCharacteristics.systemType}
-                      onChange={(e) => updateSupply("systemType", e.target.value)}
-                    >
+                    <Label htmlFor="systemType">System Type (Earthing)</Label>
+                    <NativeSelect id="systemType" value={data.supplyCharacteristics.systemType} onChange={(e) => updateSupply("systemType", e.target.value)}>
                       <option value="">Select...</option>
                       <option value="TN-C-S">TN-C-S (PME)</option>
                       <option value="TN-S">TN-S</option>
@@ -447,240 +507,270 @@ function EICRPageContent() {
                     </NativeSelect>
                   </div>
                   <div>
-                    <Label htmlFor="supplyVoltage">Supply Voltage (V)</Label>
-                    <Input
-                      id="supplyVoltage"
-                      value={data.supplyCharacteristics.supplyVoltage}
-                      onChange={(e) => updateSupply("supplyVoltage", e.target.value)}
-                      placeholder="230"
-                    />
+                    <Label htmlFor="numberOfPhases">Number of Phases</Label>
+                    <NativeSelect id="numberOfPhases" value={data.supplyCharacteristics.numberOfPhases} onChange={(e) => updateSupply("numberOfPhases", e.target.value)}>
+                      <option value="">Select...</option>
+                      <option value="single">Single Phase</option>
+                      <option value="three">Three Phase</option>
+                    </NativeSelect>
+                  </div>
+                  <div>
+                    <Label htmlFor="natureOfSupply">Nature of Supply</Label>
+                    <NativeSelect id="natureOfSupply" value={data.supplyCharacteristics.natureOfSupply} onChange={(e) => updateSupply("natureOfSupply", e.target.value)}>
+                      <option value="">Select...</option>
+                      <option value="AC">AC</option>
+                      <option value="DC">DC</option>
+                    </NativeSelect>
+                  </div>
+                </div>
+                <div className="grid md:grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="nominalVoltageToEarth">Nominal Voltage to Earth (V)</Label>
+                    <Input id="nominalVoltageToEarth" value={data.supplyCharacteristics.nominalVoltageToEarth} onChange={(e) => updateSupply("nominalVoltageToEarth", e.target.value)} placeholder="230" />
+                  </div>
+                  <div>
+                    <Label htmlFor="nominalVoltageBetweenPhases">Voltage Between Phases (V)</Label>
+                    <Input id="nominalVoltageBetweenPhases" value={data.supplyCharacteristics.nominalVoltageBetweenPhases} onChange={(e) => updateSupply("nominalVoltageBetweenPhases", e.target.value)} placeholder="400" />
                   </div>
                   <div>
                     <Label htmlFor="frequency">Frequency (Hz)</Label>
-                    <Input
-                      id="frequency"
-                      value={data.supplyCharacteristics.frequency}
-                      onChange={(e) => updateSupply("frequency", e.target.value)}
-                      placeholder="50"
-                    />
+                    <Input id="frequency" value={data.supplyCharacteristics.frequency} onChange={(e) => updateSupply("frequency", e.target.value)} placeholder="50" />
                   </div>
                 </div>
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="prospectiveFaultCurrent">Prospective Fault Current (kA)</Label>
-                    <Input
-                      id="prospectiveFaultCurrent"
-                      value={data.supplyCharacteristics.prospectiveFaultCurrent}
-                      onChange={(e) => updateSupply("prospectiveFaultCurrent", e.target.value)}
-                      placeholder="e.g. 16"
-                    />
+                    <Input id="prospectiveFaultCurrent" value={data.supplyCharacteristics.prospectiveFaultCurrent} onChange={(e) => updateSupply("prospectiveFaultCurrent", e.target.value)} placeholder="e.g. 16" />
                   </div>
                   <div>
                     <Label htmlFor="externalLoopImpedance">External Ze (Ohm)</Label>
-                    <Input
-                      id="externalLoopImpedance"
-                      value={data.supplyCharacteristics.externalLoopImpedance}
-                      onChange={(e) => updateSupply("externalLoopImpedance", e.target.value)}
-                      placeholder="e.g. 0.35"
-                    />
+                    <Input id="externalLoopImpedance" value={data.supplyCharacteristics.externalLoopImpedance} onChange={(e) => updateSupply("externalLoopImpedance", e.target.value)} placeholder="e.g. 0.35" />
                   </div>
                 </div>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="supplyProtectiveDeviceType">Supply Protective Device Type</Label>
+                    <Input id="supplyProtectiveDeviceType" value={data.supplyCharacteristics.supplyProtectiveDeviceType} onChange={(e) => updateSupply("supplyProtectiveDeviceType", e.target.value)} placeholder="e.g. BS 88 Fuse" />
+                  </div>
+                  <div>
+                    <Label htmlFor="supplyProtectiveDeviceRating">Supply Protective Device Rating (A)</Label>
+                    <Input id="supplyProtectiveDeviceRating" value={data.supplyCharacteristics.supplyProtectiveDeviceRating} onChange={(e) => updateSupply("supplyProtectiveDeviceRating", e.target.value)} placeholder="e.g. 100" />
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <input type="checkbox" id="otherSourcesOfSupply" checked={data.supplyCharacteristics.otherSourcesOfSupply} onChange={(e) => updateSupply("otherSourcesOfSupply", e.target.checked)} className="w-5 h-5 rounded accent-[var(--primary)]" />
+                  <Label htmlFor="otherSourcesOfSupply" className="mb-0">Other sources of supply (e.g. generator, solar PV)</Label>
+                </div>
+                {data.supplyCharacteristics.otherSourcesOfSupply && (
+                  <div>
+                    <Label htmlFor="otherSourcesDetails">Other Sources Details</Label>
+                    <Input id="otherSourcesDetails" value={data.supplyCharacteristics.otherSourcesDetails} onChange={(e) => updateSupply("otherSourcesDetails", e.target.value)} placeholder="Describe other sources of supply" />
+                  </div>
+                )}
               </CardContent>
             </Card>
+          </div>
+        )}
 
-            {/* Earthing Arrangements */}
+        {/* 5. Earthing Arrangements */}
+        {activeSection === "earthing" && (
+          <div className="max-w-[900px]">
             <Card>
               <CardHeader>
                 <CardTitle>Earthing Arrangements</CardTitle>
-                <CardDescription>Details of earthing and bonding</CardDescription>
+                <CardDescription>Details of earthing and bonding per BS 7671</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
+                    <Label htmlFor="meansOfEarthing">Means of Earthing</Label>
+                    <NativeSelect id="meansOfEarthing" value={data.earthingArrangements.meansOfEarthing} onChange={(e) => updateEarthing("meansOfEarthing", e.target.value)}>
+                      <option value="">Select...</option>
+                      <option value="supply_distributor">Supply Distributor</option>
+                      <option value="earth_electrode">Earth Electrode</option>
+                      <option value="other">Other</option>
+                    </NativeSelect>
+                  </div>
+                  <div>
+                    <Label htmlFor="earthElectrodeType">Earth Electrode Type</Label>
+                    <NativeSelect id="earthElectrodeType" value={data.earthingArrangements.earthElectrodeType} onChange={(e) => updateEarthing("earthElectrodeType", e.target.value)}>
+                      <option value="">Select...</option>
+                      <option value="rod">Rod</option>
+                      <option value="tape">Tape</option>
+                      <option value="plate">Plate</option>
+                      <option value="ring">Ring</option>
+                      <option value="foundation">Foundation</option>
+                      <option value="other">Other</option>
+                    </NativeSelect>
+                  </div>
+                </div>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
                     <Label htmlFor="earthingConductorType">Earthing Conductor Type</Label>
-                    <Input
-                      id="earthingConductorType"
-                      value={data.earthingArrangements.earthingConductorType}
-                      onChange={(e) => updateEarthing("earthingConductorType", e.target.value)}
-                      placeholder="e.g. Copper"
-                    />
+                    <Input id="earthingConductorType" value={data.earthingArrangements.earthingConductorType} onChange={(e) => updateEarthing("earthingConductorType", e.target.value)} placeholder="e.g. Copper" />
                   </div>
                   <div>
                     <Label htmlFor="earthingConductorSize">Earthing Conductor Size (mm2)</Label>
-                    <Input
-                      id="earthingConductorSize"
-                      value={data.earthingArrangements.earthingConductorSize}
-                      onChange={(e) => updateEarthing("earthingConductorSize", e.target.value)}
-                      placeholder="e.g. 16"
-                    />
+                    <Input id="earthingConductorSize" value={data.earthingArrangements.earthingConductorSize} onChange={(e) => updateEarthing("earthingConductorSize", e.target.value)} placeholder="e.g. 16" />
                   </div>
                 </div>
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="mainProtectiveBondingType">Main Bonding Type</Label>
-                    <Input
-                      id="mainProtectiveBondingType"
-                      value={data.earthingArrangements.mainProtectiveBondingType}
-                      onChange={(e) => updateEarthing("mainProtectiveBondingType", e.target.value)}
-                      placeholder="e.g. Copper"
-                    />
+                    <Input id="mainProtectiveBondingType" value={data.earthingArrangements.mainProtectiveBondingType} onChange={(e) => updateEarthing("mainProtectiveBondingType", e.target.value)} placeholder="e.g. Copper" />
                   </div>
                   <div>
                     <Label htmlFor="mainProtectiveBondingSize">Main Bonding Size (mm2)</Label>
-                    <Input
-                      id="mainProtectiveBondingSize"
-                      value={data.earthingArrangements.mainProtectiveBondingSize}
-                      onChange={(e) => updateEarthing("mainProtectiveBondingSize", e.target.value)}
-                      placeholder="e.g. 10"
-                    />
+                    <Input id="mainProtectiveBondingSize" value={data.earthingArrangements.mainProtectiveBondingSize} onChange={(e) => updateEarthing("mainProtectiveBondingSize", e.target.value)} placeholder="e.g. 10" />
                   </div>
+                </div>
+                <div>
+                  <Label htmlFor="zeMeasured">Ze Measured (Ohm)</Label>
+                  <Input id="zeMeasured" value={data.earthingArrangements.zeMeasured} onChange={(e) => updateEarthing("zeMeasured", e.target.value)} placeholder="e.g. 0.35" />
+                </div>
+
+                {/* Bonding checklist */}
+                <div className="border border-[var(--border)] rounded-xl p-4 space-y-3">
+                  <p className="text-sm font-semibold text-[var(--foreground)]">Main Protective Bonding Connected To:</p>
+                  <div className="grid md:grid-cols-3 gap-3">
+                    {[
+                      { key: "bondingToWater", label: "Water" },
+                      { key: "bondingToGas", label: "Gas" },
+                      { key: "bondingToOil", label: "Oil" },
+                      { key: "bondingToStructuralSteel", label: "Structural Steel" },
+                      { key: "bondingToLightningProtection", label: "Lightning Protection" },
+                      { key: "bondingToOther", label: "Other" },
+                    ].map(({ key, label }) => (
+                      <div key={key} className="flex items-center gap-2">
+                        <input type="checkbox" id={key} checked={(data.earthingArrangements as Record<string, unknown>)[key] as boolean} onChange={(e) => updateEarthing(key, e.target.checked)} className="w-4 h-4 rounded accent-[var(--primary)]" />
+                        <Label htmlFor={key} className="mb-0 text-sm">{label}</Label>
+                      </div>
+                    ))}
+                  </div>
+                  {data.earthingArrangements.bondingToOther && (
+                    <div>
+                      <Label htmlFor="bondingToOtherDetails">Other Bonding Details</Label>
+                      <Input id="bondingToOtherDetails" value={data.earthingArrangements.bondingToOtherDetails} onChange={(e) => updateEarthing("bondingToOtherDetails", e.target.value)} placeholder="Specify other bonding" />
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <input type="checkbox" id="supplementaryBondingPresent" checked={data.earthingArrangements.supplementaryBondingPresent} onChange={(e) => updateEarthing("supplementaryBondingPresent", e.target.checked)} className="w-5 h-5 rounded accent-[var(--primary)]" />
+                  <Label htmlFor="supplementaryBondingPresent" className="mb-0">Supplementary bonding present</Label>
                 </div>
               </CardContent>
             </Card>
+          </div>
+        )}
 
-            {/* Test Results */}
+        {/* 6. General Inspection */}
+        {activeSection === "inspection" && (
+          <div className="max-w-[1200px]">
+            <InspectionChecklist
+              items={data.generalInspection}
+              onChange={(generalInspection) => {
+                setData((prev) => ({ ...prev, generalInspection: generalInspection as typeof prev.generalInspection }));
+                setSaveStatus("idle");
+              }}
+            />
+          </div>
+        )}
+
+        {/* 7. Distribution Boards */}
+        {activeSection === "boards" && (
+          <div className="flex flex-col gap-8">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold mb-2">Distribution Boards</h2>
+                <p className="text-[var(--muted-foreground)]">Visual and table views of circuit schedules and test results</p>
+              </div>
+              <Button variant="secondary" onClick={addBoard}>+ Add Board</Button>
+            </div>
+
+            {data.boards.length === 0 ? (
+              <div className="text-center py-12 text-[var(--muted-foreground)]">
+                <p className="text-lg mb-2">No distribution boards added yet</p>
+                <p className="text-sm">Click &quot;+ Add Board&quot; to add a consumer unit or distribution board</p>
+              </div>
+            ) : (
+              data.boards.map((board) => (
+                <BoardViewer key={board.id} board={board as unknown as BoardData} />
+              ))
+            )}
+          </div>
+        )}
+
+        {/* 8. Test Results */}
+        {activeSection === "tests" && (
+          <div className="max-w-[900px]">
             <Card>
               <CardHeader>
                 <CardTitle>Test Results Summary</CardTitle>
-                <CardDescription>Key test measurements</CardDescription>
+                <CardDescription>Key test measurements at the origin of the installation</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid md:grid-cols-3 gap-4">
                   <div>
                     <Label htmlFor="continuityOfProtectiveConductors">Continuity R1+R2 (Ohm)</Label>
-                    <Input
-                      id="continuityOfProtectiveConductors"
-                      value={data.testResults.continuityOfProtectiveConductors}
-                      onChange={(e) => updateTests("continuityOfProtectiveConductors", e.target.value)}
-                      placeholder="e.g. 0.25"
-                    />
+                    <Input id="continuityOfProtectiveConductors" value={data.testResults.continuityOfProtectiveConductors} onChange={(e) => updateTests("continuityOfProtectiveConductors", e.target.value)} placeholder="e.g. 0.25" />
                   </div>
                   <div>
                     <Label htmlFor="insulationResistance">Insulation Resistance (MOhm)</Label>
-                    <Input
-                      id="insulationResistance"
-                      value={data.testResults.insulationResistance}
-                      onChange={(e) => updateTests("insulationResistance", e.target.value)}
-                      placeholder="e.g. >200"
-                    />
+                    <Input id="insulationResistance" value={data.testResults.insulationResistance} onChange={(e) => updateTests("insulationResistance", e.target.value)} placeholder="e.g. >200" />
                   </div>
                   <div>
                     <Label htmlFor="earthFaultLoopImpedance">Zs (Ohm)</Label>
-                    <Input
-                      id="earthFaultLoopImpedance"
-                      value={data.testResults.earthFaultLoopImpedance}
-                      onChange={(e) => updateTests("earthFaultLoopImpedance", e.target.value)}
-                      placeholder="e.g. 0.45"
-                    />
+                    <Input id="earthFaultLoopImpedance" value={data.testResults.earthFaultLoopImpedance} onChange={(e) => updateTests("earthFaultLoopImpedance", e.target.value)} placeholder="e.g. 0.45" />
                   </div>
                 </div>
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="rcdOperatingTime">RCD Operating Time (ms)</Label>
-                    <Input
-                      id="rcdOperatingTime"
-                      value={data.testResults.rcdOperatingTime}
-                      onChange={(e) => updateTests("rcdOperatingTime", e.target.value)}
-                      placeholder="e.g. 25"
-                    />
+                    <Input id="rcdOperatingTime" value={data.testResults.rcdOperatingTime} onChange={(e) => updateTests("rcdOperatingTime", e.target.value)} placeholder="e.g. 25" />
                   </div>
                   <div>
                     <Label htmlFor="rcdOperatingCurrent">RCD Operating Current (mA)</Label>
-                    <Input
-                      id="rcdOperatingCurrent"
-                      value={data.testResults.rcdOperatingCurrent}
-                      onChange={(e) => updateTests("rcdOperatingCurrent", e.target.value)}
-                      placeholder="e.g. 30"
-                    />
+                    <Input id="rcdOperatingCurrent" value={data.testResults.rcdOperatingCurrent} onChange={(e) => updateTests("rcdOperatingCurrent", e.target.value)} placeholder="e.g. 30" />
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <input
-                    type="checkbox"
-                    id="polarityConfirmed"
-                    checked={data.testResults.polarityConfirmed}
-                    onChange={(e) => updateTests("polarityConfirmed", e.target.checked)}
-                    className="w-5 h-5 rounded border-[var(--border)] bg-[var(--background)] accent-[var(--primary)]"
-                  />
+                  <input type="checkbox" id="polarityConfirmed" checked={data.testResults.polarityConfirmed} onChange={(e) => updateTests("polarityConfirmed", e.target.checked)} className="w-5 h-5 rounded accent-[var(--primary)]" />
                   <Label htmlFor="polarityConfirmed" className="mb-0">Polarity confirmed</Label>
                 </div>
               </CardContent>
             </Card>
+          </div>
+        )}
 
-            {/* Observations */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Observations</CardTitle>
-                    <CardDescription>Record any defects or observations (C1, C2, C3, FI codes)</CardDescription>
-                  </div>
-                  <Button variant="secondary" size="sm" onClick={addObservation}>
-                    Add Observation
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {data.observations.length === 0 ? (
-                  <p className="text-sm text-[var(--muted-foreground)]">No observations recorded. Click &quot;Add Observation&quot; to add one.</p>
-                ) : (
-                  data.observations.map((obs, index) => (
-                    <div key={index} className="p-4 border border-[var(--border)] rounded-xl space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-semibold">Observation {index + 1}</span>
-                        <button
-                          onClick={() => removeObservation(index)}
-                          className="text-[var(--error)] text-sm hover:underline"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                      <div className="grid md:grid-cols-4 gap-3">
-                        <div>
-                          <Label>Code</Label>
-                          <NativeSelect
-                            value={obs.code}
-                            onChange={(e) => updateObservation(index, "code", e.target.value)}
-                          >
-                            <option value="">Select...</option>
-                            <option value="C1">C1 - Danger present</option>
-                            <option value="C2">C2 - Potentially dangerous</option>
-                            <option value="C3">C3 - Improvement recommended</option>
-                            <option value="FI">FI - Further investigation</option>
-                          </NativeSelect>
-                        </div>
-                        <div className="md:col-span-3">
-                          <Label>Location</Label>
-                          <Input
-                            value={obs.location}
-                            onChange={(e) => updateObservation(index, "location", e.target.value)}
-                            placeholder="Location of defect"
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <Label>Observation</Label>
-                        <Input
-                          value={obs.observation}
-                          onChange={(e) => updateObservation(index, "observation", e.target.value)}
-                          placeholder="Describe the observation"
-                        />
-                      </div>
-                      <div>
-                        <Label>Recommendation</Label>
-                        <Input
-                          value={obs.recommendation}
-                          onChange={(e) => updateObservation(index, "recommendation", e.target.value)}
-                          placeholder="Recommended action"
-                        />
-                      </div>
-                    </div>
-                  ))
-                )}
-              </CardContent>
-            </Card>
+        {/* 9. Observations */}
+        {activeSection === "observations" && (
+          <div className="max-w-[900px]">
+            <ObservationsList
+              observations={data.observations}
+              onChange={(observations) => {
+                setData((prev) => ({ ...prev, observations }));
+                setSaveStatus("idle");
+              }}
+            />
+          </div>
+        )}
 
-            {/* Overall Condition */}
+        {/* 10. Summary of Condition */}
+        {activeSection === "summary" && (
+          <div className="max-w-[900px]">
+            <SummaryOfCondition
+              c1Count={summaryOfCondition.c1Count}
+              c2Count={summaryOfCondition.c2Count}
+              c3Count={summaryOfCondition.c3Count}
+              fiCount={summaryOfCondition.fiCount}
+            />
+          </div>
+        )}
+
+        {/* 11. Overall Assessment */}
+        {activeSection === "assessment" && (
+          <div className="max-w-[900px]">
             <Card>
               <CardHeader>
                 <CardTitle>Overall Assessment</CardTitle>
@@ -690,48 +780,83 @@ function EICRPageContent() {
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="overallCondition">Overall Condition</Label>
-                    <NativeSelect
-                      id="overallCondition"
-                      value={data.overallCondition}
-                      onChange={(e) => setData((prev) => ({ ...prev, overallCondition: e.target.value as "satisfactory" | "unsatisfactory" | "" }))}
-                    >
+                    <NativeSelect id="overallCondition" value={data.overallCondition} onChange={(e) => setData((prev) => ({ ...prev, overallCondition: e.target.value as EICRCertificate["overallCondition"] }))}>
                       <option value="">Select...</option>
                       <option value="satisfactory">Satisfactory</option>
                       <option value="unsatisfactory">Unsatisfactory</option>
+                      <option value="further_investigation">Further Investigation Required</option>
                     </NativeSelect>
                   </div>
                   <div>
                     <Label htmlFor="recommendedRetestDate">Recommended Retest Date</Label>
-                    <Input
-                      id="recommendedRetestDate"
-                      type="date"
-                      value={data.recommendedRetestDate}
-                      onChange={(e) => setData((prev) => ({ ...prev, recommendedRetestDate: e.target.value }))}
-                    />
+                    <Input id="recommendedRetestDate" type="date" value={data.recommendedRetestDate} onChange={(e) => setData((prev) => ({ ...prev, recommendedRetestDate: e.target.value }))} />
                   </div>
+                </div>
+                <div>
+                  <Label htmlFor="retestInterval">Retest Interval</Label>
+                  <NativeSelect id="retestInterval" value={data.retestInterval} onChange={(e) => setData((prev) => ({ ...prev, retestInterval: e.target.value }))}>
+                    <option value="">Select...</option>
+                    <option value="1">1 year</option>
+                    <option value="2">2 years</option>
+                    <option value="3">3 years</option>
+                    <option value="5">5 years</option>
+                    <option value="10">10 years</option>
+                  </NativeSelect>
+                </div>
+                <div>
+                  <Label htmlFor="inspectorComments">Inspector Comments</Label>
+                  <Textarea id="inspectorComments" value={data.inspectorComments} onChange={(e) => { setData((prev) => ({ ...prev, inspectorComments: e.target.value })); setSaveStatus("idle"); }} placeholder="Any additional comments by the inspector..." className="min-h-[100px]" />
                 </div>
               </CardContent>
             </Card>
-
           </div>
         )}
-      </div>
 
-      {/* Signatures & Photos */}
-      <div className="max-w-[1200px] mx-auto px-6 py-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Signatures & Site Photos</CardTitle>
-            <CardDescription>Capture signatures and attach photos from site</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid md:grid-cols-2 gap-6">
-              <SignatureCapture label="Engineer Signature" value={engineerSig} onChange={setEngineerSig} />
-              <SignatureCapture label="Customer Signature" value={customerSig} onChange={setCustomerSig} />
-            </div>
-            <PhotoCapture photos={photos} onChange={setPhotos} />
-          </CardContent>
-        </Card>
+        {/* 12. Declaration */}
+        {activeSection === "declaration" && (
+          <div className="max-w-[900px]">
+            <DeclarationSection
+              role="inspector"
+              data={data.declarationDetails}
+              onChange={(declarationDetails) => {
+                setData((prev) => ({ ...prev, declarationDetails }));
+                setSaveStatus("idle");
+              }}
+              signatureValue={engineerSig}
+              onSignatureChange={setEngineerSig}
+            />
+          </div>
+        )}
+
+        {/* 13. Client Acknowledgement */}
+        {activeSection === "acknowledgement" && (
+          <div className="max-w-[900px]">
+            <ClientAcknowledgement
+              data={data.clientAcknowledgement}
+              onChange={(clientAcknowledgement) => {
+                setData((prev) => ({ ...prev, clientAcknowledgement }));
+                setSaveStatus("idle");
+              }}
+              signatureValue={customerSig}
+              onSignatureChange={setCustomerSig}
+            />
+          </div>
+        )}
+
+        {/* 14. Site Photos */}
+        {activeSection === "photos" && (
+          <div className="max-w-[1200px]">
+            <Card>
+              <CardHeader>
+                <CardTitle>Site Photos</CardTitle>
+                <CardDescription>Attach photos from the inspection</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <PhotoCapture photos={photos} onChange={setPhotos} />
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
 
       <StickyActionBar

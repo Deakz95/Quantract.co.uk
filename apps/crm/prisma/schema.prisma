@@ -148,6 +148,7 @@ model Certificate {
   attachments               CertificateAttachment[]
   invoiceCertificates       InvoiceCertificate[]
   qrAssignments             QrAssignment[]
+  distributionBoards        DistributionBoard[]
 
   @@unique([legalEntityId, certificateNumber])
   @@index([clientId])
@@ -191,6 +192,8 @@ model CertificateObservation {
   description   String
   regulation    String?
   fixGuidance   String?
+  regulationRef String?
+  itemNumber    Int?
   resolvedAt    DateTime?
   sortOrder     Int         @default(0)
   createdAt     DateTime    @default(now())
@@ -490,6 +493,9 @@ model Company {
   pdfTemplates                 PdfTemplate[]
   assets                       Asset[]
   engineerQualifications       EngineerQualification[]
+  distributionBoards           DistributionBoard[]
+  distributionBoardCircuits    DistributionBoardCircuit[]
+  boardTemplates               Json?
 }
 
 model CompanyUser {
@@ -2648,4 +2654,63 @@ model EngineerQualification {
   @@index([companyId])
   @@index([engineerId])
   @@index([expiryDate])
+}
+
+model DistributionBoard {
+  id               String   @id @default(cuid())
+  companyId        String
+  certificateId    String
+  designation      String?
+  name             String
+  description      String?
+  boardType        String
+  manufacturer     String?
+  model            String?
+  mainSwitchType   String?
+  mainSwitchRating String?
+  rcdDetails       String?
+  location         String?
+  ipRating         String?
+  numWays          Int?
+  sortOrder        Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  certificate      Certificate @relation(fields: [certificateId], references: [id])
+  company          Company     @relation(fields: [companyId], references: [id])
+  circuits         DistributionBoardCircuit[]
+  @@index([certificateId])
+  @@index([companyId])
+}
+
+model DistributionBoardCircuit {
+  id          String   @id @default(cuid())
+  companyId   String
+  boardId     String
+  circuitNum  String
+  description String?
+  phase       String?
+  deviceType  String?
+  rating      String?
+  bsen        String?
+  cableMm2    String?
+  cpcMm2      String?
+  cableType   String?
+  maxZs       String?
+  measuredZs  String?
+  r1r2        String?
+  r2          String?
+  insMohm     String?
+  rcdMa       String?
+  rcdMs       String?
+  rcdType     String?
+  status      String?
+  code        String?
+  isEmpty     Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  board       DistributionBoard @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  company     Company           @relation(fields: [companyId], references: [id])
+  @@index([boardId])
+  @@index([companyId])
 }

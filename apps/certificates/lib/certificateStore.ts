@@ -18,20 +18,33 @@ export interface StoredCertificate {
   data: Record<string, unknown>;
 }
 
+export interface SyncQueueItem {
+  id: string;
+  action: 'create' | 'update' | 'delete';
+  certificateId: string;
+  data?: Record<string, unknown>;
+  timestamp: string;
+}
+
 interface CertificateStore {
   certificates: StoredCertificate[];
+  syncQueue: SyncQueueItem[];
   _hasHydrated: boolean;
   setHasHydrated: (state: boolean) => void;
   addCertificate: (cert: StoredCertificate) => void;
   updateCertificate: (id: string, data: Partial<StoredCertificate>) => void;
   deleteCertificate: (id: string) => void;
   getCertificate: (id: string) => StoredCertificate | undefined;
+  pushToSync: (certificateId: string, action: 'create' | 'update' | 'delete') => void;
+  clearSyncItem: (id: string) => void;
+  getSyncQueueLength: () => number;
 }
 
 export const useCertificateStore = create<CertificateStore>()(
   persist(
     (set, get) => ({
       certificates: [],
+      syncQueue: [],
       _hasHydrated: false,
 
       setHasHydrated: (state) => {
@@ -41,6 +54,16 @@ export const useCertificateStore = create<CertificateStore>()(
       addCertificate: (cert) =>
         set((state) => ({
           certificates: [cert, ...state.certificates],
+          syncQueue: [
+            ...state.syncQueue,
+            {
+              id: crypto.randomUUID(),
+              action: 'create' as const,
+              certificateId: cert.id,
+              data: cert.data,
+              timestamp: new Date().toISOString(),
+            },
+          ],
         })),
 
       updateCertificate: (id, data) =>
@@ -50,14 +73,53 @@ export const useCertificateStore = create<CertificateStore>()(
               ? { ...c, ...data, updated_at: new Date().toISOString() }
               : c
           ),
+          syncQueue: [
+            ...state.syncQueue,
+            {
+              id: crypto.randomUUID(),
+              action: 'update' as const,
+              certificateId: id,
+              data: data as Record<string, unknown>,
+              timestamp: new Date().toISOString(),
+            },
+          ],
         })),
 
       deleteCertificate: (id) =>
         set((state) => ({
           certificates: state.certificates.filter((c) => c.id !== id),
+          syncQueue: [
+            ...state.syncQueue,
+            {
+              id: crypto.randomUUID(),
+              action: 'delete' as const,
+              certificateId: id,
+              timestamp: new Date().toISOString(),
+            },
+          ],
         })),
 
       getCertificate: (id) => get().certificates.find((c) => c.id === id),
+
+      pushToSync: (certificateId, action) =>
+        set((state) => ({
+          syncQueue: [
+            ...state.syncQueue,
+            {
+              id: crypto.randomUUID(),
+              action,
+              certificateId,
+              timestamp: new Date().toISOString(),
+            },
+          ],
+        })),
+
+      clearSyncItem: (id) =>
+        set((state) => ({
+          syncQueue: state.syncQueue.filter((item) => item.id !== id),
+        })),
+
+      getSyncQueueLength: () => get().syncQueue.length,
     }),
     {
       name: 'quantract-certificates-storage',
@@ -94,14 +156,34 @@ export const useStoreHydration = () => {
   return hydrated;
 };
 
-// Helper to generate certificate number
+// Hook to track online/offline status
+export function useOnlineStatus(): boolean {
+  const [isOnline, setIsOnline] = useState(
+    typeof navigator !== 'undefined' ? navigator.onLine : true
+  );
+
+  useEffect(() => {
+    const goOnline = () => setIsOnline(true);
+    const goOffline = () => setIsOnline(false);
+    window.addEventListener('online', goOnline);
+    window.addEventListener('offline', goOffline);
+    return () => {
+      window.removeEventListener('online', goOnline);
+      window.removeEventListener('offline', goOffline);
+    };
+  }, []);
+
+  return isOnline;
+}
+
+// Helper to generate certificate number using {TYPE}-{YEAR}-{SEQ} format
 export function generateCertificateNumber(type: CertificateType): string {
-  const prefix = type;
-  const date = new Date();
-  const year = date.getFullYear().toString().slice(-2);
-  const month = (date.getMonth() + 1).toString().padStart(2, '0');
-  const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-  return `${prefix}-${year}${month}-${random}`;
+  const fullYear = new Date().getFullYear();
+  const existingOfType = useCertificateStore
+    .getState()
+    .certificates.filter((c) => c.certificate_type === type);
+  const seq = (existingOfType.length + 1).toString().padStart(3, '0');
+  return `${type}-${fullYear}-${seq}`;
 }
 
 // Helper to create a new certificate
