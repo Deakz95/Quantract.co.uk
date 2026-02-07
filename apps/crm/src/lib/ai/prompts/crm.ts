@@ -214,6 +214,77 @@ export const CRM_SUGGESTED_PROMPTS: Record<AIRole, string[]> = {
   ],
 };
 
+// ── AI Mode Prompts (V2 gateway) ─────────────────────────────────────
+
+import type { AIMode, AIPermissionContext } from "@/lib/ai/aiPermissionContext";
+
+/**
+ * Map AI modes to base system prompts.
+ * Mode controls focus/tone — authorization comes from AIPermissionContext.
+ */
+export const AI_MODE_PROMPTS: Record<AIMode, string> = {
+  ops: CRM_SYSTEM_PROMPTS.office,     // ops = scheduling, jobs, quotes
+  finance: CRM_SYSTEM_PROMPTS.finance, // finance = invoices, billing
+  client: CRM_SYSTEM_PROMPTS.client,   // client = own data, simple language
+};
+
+// ── Restriction block templates ──────────────────────────────────────
+
+const ADMIN_PREAMBLE = `ADMIN CONTEXT: You have full company-wide access. You can see all entities, financial data,
+and team information. The mode below determines your focus area, not your authorization level.`;
+
+const ENGINEER_OPS_RESTRICTION = `RESTRICTION: You are in engineer ops mode. You can only see jobs assigned to you.
+Do NOT reference jobs, time entries, or data outside your assignment scope.`;
+
+const EXTERNAL_ACCOUNTANT_RESTRICTION = `RESTRICTION [STRICT]: You are an external accountant with finance-only access.
+You can see invoices and billing data for the entire company.
+You CANNOT see job details, engineer assignments, quotes, certificates, or client contact
+details beyond what appears on invoices. If asked about these topics, decline clearly.
+Any ambiguous query that might touch forbidden topics must be declined.`;
+
+/**
+ * Build the full system prompt for the V2 AI gateway.
+ * Combines mode prompt + role preamble + restriction blocks + forbidden topics.
+ */
+export function buildV2SystemPrompt(permCtx: AIPermissionContext): string {
+  const mode = permCtx.resolvedMode;
+  let prompt = AI_MODE_PROMPTS[mode];
+
+  // Admin preamble — prepend to whichever mode prompt they're using
+  if (permCtx.effectiveRole === "admin") {
+    prompt = `${ADMIN_PREAMBLE}\n\n${prompt}`;
+  }
+
+  // Engineer in ops mode
+  if (permCtx.effectiveRole === "engineer" && mode === "ops") {
+    prompt += `\n\n${ENGINEER_OPS_RESTRICTION}`;
+  }
+
+  // External accountant (client + accounts.access) in finance mode
+  if (permCtx.effectiveRole === "client" && permCtx.hasAccountsAccess) {
+    prompt += `\n\n${EXTERNAL_ACCOUNTANT_RESTRICTION}`;
+  }
+
+  // Forbidden topics block
+  if (permCtx.restrictions.forbiddenTopics.length > 0) {
+    prompt += `\n\nFORBIDDEN TOPICS (you must refuse queries about these):\n- ${permCtx.restrictions.forbiddenTopics.join(", ")}`;
+  }
+
+  // Strictness level
+  if (permCtx.restrictions.strictness === "high") {
+    prompt += `\n\nSTRICTNESS: HIGH — If a query is ambiguous or could touch forbidden topics, decline and explain what you can help with instead.`;
+  } else {
+    prompt += `\n\nSTRICTNESS: STANDARD — If a query is ambiguous, interpret it in the context of your allowed data.`;
+  }
+
+  // Financial visibility note
+  if (!permCtx.canSeeFinancials) {
+    prompt += `\n\nFINANCIAL DATA: You do NOT have access to financial fields (subtotal, vat, total). Do not reference monetary amounts.`;
+  }
+
+  return prompt;
+}
+
 /**
  * Intent keywords for detecting marketing-related queries in CRM
  */
