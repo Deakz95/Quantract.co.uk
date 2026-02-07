@@ -15,25 +15,46 @@ type InviteInfo = {
   company: { id: string; name: string; slug: string };
 };
 
-const FormSchema = z
-  .object({
-    name: z.string().trim().min(1, "Name is required").max(120, "Name is too long"),
-    phone: z.string().trim().max(40, "Phone is too long").optional().or(z.literal("")),
-    password: z.string().optional().or(z.literal("")),
-    confirmPassword: z.string().optional().or(z.literal("")),
-  })
-  .refine(
-    (v) => {
-      const p = v.password || "";
-      const c = v.confirmPassword || "";
-      if (!p && !c) return true;
-      return p.length >= 6 && p === c;
-    },
-    { message: "Passwords must match and be at least 6 characters", path: ["confirmPassword"] }
-  );
+function makeFormSchema(requirePassword: boolean) {
+  return z
+    .object({
+      name: z.string().trim().min(1, "Name is required").max(120, "Name is too long"),
+      phone: z.string().trim().max(40, "Phone is too long").optional().or(z.literal("")),
+      password: requirePassword
+        ? z.string().min(8, "Password must be at least 8 characters")
+        : z.string().optional().or(z.literal("")),
+      confirmPassword: z.string().optional().or(z.literal("")),
+    })
+    .refine(
+      (v) => {
+        const p = v.password || "";
+        const c = v.confirmPassword || "";
+        if (!requirePassword && !p && !c) return true;
+        return p === c;
+      },
+      {
+        message: requirePassword
+          ? "Passwords must match"
+          : "Passwords must match and be at least 6 characters",
+        path: ["confirmPassword"],
+      }
+    )
+    .refine(
+      (v) => {
+        if (!requirePassword) {
+          const p = v.password || "";
+          if (p && p.length < 6) return false;
+        }
+        return true;
+      },
+      { message: "Password must be at least 6 characters", path: ["password"] }
+    );
+}
 
 function roleLabel(role: string) {
   const r = String(role).toLowerCase();
+  if (r === "admin") return "Admin";
+  if (r === "office") return "Office Staff";
   if (r === "client") return "Client";
   if (r === "engineer") return "Engineer";
   return r;
@@ -82,9 +103,11 @@ export default function InviteAcceptPage() {
     };
   }, [token]);
 
+  const isAdminOrOffice = invite ? ["admin", "office"].includes(String(invite.role).toLowerCase()) : false;
+
   const validation = useMemo(() => {
-    return FormSchema.safeParse({ name, phone, password, confirmPassword });
-  }, [name, phone, password, confirmPassword]);
+    return makeFormSchema(isAdminOrOffice).safeParse({ name, phone, password, confirmPassword });
+  }, [name, phone, password, confirmPassword, isAdminOrOffice]);
 
   async function onAccept(e: React.FormEvent) {
     e.preventDefault();
@@ -118,6 +141,8 @@ export default function InviteAcceptPage() {
   const postAcceptHref = useMemo(() => {
     if (!invite) return "/";
     const r = String(invite.role).toLowerCase();
+    const email = encodeURIComponent(invite.email);
+    if (r === "admin" || r === "office") return `/admin/login?registered=1&email=${email}&next=${encodeURIComponent(next || "/admin/dashboard")}`;
     if (r === "client") return `/client/login?next=${encodeURIComponent(next || "/client")}`;
     if (r === "engineer") return `/engineer/login?next=${encodeURIComponent(next || "/engineer")}`;
     return "/";
@@ -150,7 +175,10 @@ export default function InviteAcceptPage() {
                 </div>
               ) : error.includes("used") || error.includes("Already used") ? (
                 <div className="text-sm text-[var(--muted-foreground)]">
-                  This invitation has already been accepted. You can <Link href="/client/login" className="underline text-blue-600">sign in here</Link>.
+                  This invitation has already been accepted. Sign in at:{" "}
+                  <Link href="/admin/login" className="underline text-blue-600">Admin</Link>{" / "}
+                  <Link href="/client/login" className="underline text-blue-600">Client</Link>{" / "}
+                  <Link href="/engineer/login" className="underline text-blue-600">Engineer</Link>
                 </div>
               ) : (
                 <div className="text-sm text-[var(--muted-foreground)]">
@@ -230,8 +258,14 @@ export default function InviteAcceptPage() {
                 </div>
 
                 <div className="rounded-md bg-[var(--muted)] border border-[var(--border)] p-3">
-                  <div className="text-sm font-medium text-[var(--foreground)]">Set a password (optional)</div>
-                  <div className="text-xs text-[var(--muted-foreground)]">You can also sign in via magic link later.</div>
+                  <div className="text-sm font-medium text-[var(--foreground)]">
+                    Set a password {isAdminOrOffice ? "(required)" : "(optional)"}
+                  </div>
+                  <div className="text-xs text-[var(--muted-foreground)]">
+                    {isAdminOrOffice
+                      ? "Admin and office accounts require a password (minimum 8 characters)."
+                      : "You can also sign in via magic link later."}
+                  </div>
                   <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="text-sm font-medium text-[var(--muted-foreground)]">Password</label>

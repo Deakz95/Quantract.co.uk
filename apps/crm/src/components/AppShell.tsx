@@ -129,7 +129,7 @@ const ADMIN_SECTIONS: NavSection[] = [
     dividerBefore: true,
     items: [
       { label: "Settings", href: "/admin/settings", icon: Settings },
-      { label: "Roles", href: "/admin/roles", icon: Shield },
+      { label: "Staff", href: "/admin/staff", icon: Shield },
       { label: "Audit Log", href: "/admin/audit", icon: FileBarChart },
       { label: "Import", href: "/admin/import", icon: Upload },
       { label: "Invites", href: "/admin/invites", icon: Mail },

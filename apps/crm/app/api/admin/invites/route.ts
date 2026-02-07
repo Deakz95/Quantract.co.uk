@@ -90,13 +90,7 @@ export const POST = withRequestLogging(async function POST(req: Request) {
     });
     const companyName = company?.brandName || company?.name || "Quantract";
 
-    const registerPaths: Record<string, string> = {
-      client: `/client/register?token=${token}`,
-      engineer: `/engineer/register?token=${token}`,
-      admin: `/admin/register?token=${token}`,
-      office: `/admin/register?token=${token}`,
-    };
-    const registerPath = registerPaths[role] || `/admin/register?token=${token}`;
+    const registerPath = `/invite/${token}`;
     const registerLink = absoluteUrl(registerPath);
 
     // Send invite email

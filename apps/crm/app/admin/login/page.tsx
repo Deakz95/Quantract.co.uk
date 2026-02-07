@@ -31,9 +31,11 @@ function AdminLogin() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") || "/admin/dashboard";
-  const [mode, setMode] = useState<"magic" | "password">("magic");
+  const registered = searchParams.get("registered") === "1";
+  const prefillEmail = searchParams.get("email") || "";
+  const [mode, setMode] = useState<"magic" | "password">(registered ? "password" : "magic");
   const [checkingAuth, setCheckingAuth] = useState(true);
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(prefillEmail);
   const [password, setPassword] = useState("");
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -143,6 +145,19 @@ function AdminLogin() {
           </CardHeader>
           <CardContent>
             <form onSubmit={onSubmit} className="space-y-4">
+              {/* Registration Success Banner */}
+              {registered && (
+                <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-4 flex items-start gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-emerald-700">Registration successful!</p>
+                    <p className="text-xs text-emerald-600/80 mt-0.5">
+                      Your account has been created. Sign in with your password below.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Mode Toggle */}
               <div className="flex rounded-xl bg-[var(--muted)] p-1">
                 <button
