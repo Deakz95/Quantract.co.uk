@@ -3,6 +3,8 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import type { BoardData, BoardCircuit } from "@quantract/shared/certificate-types";
 import { migrateCircuit } from "@quantract/shared/certificate-types";
+import { STATUS_BG, STATUS_TEXT } from "../lib/boardVisualConstants";
+import { VisualBoardView } from "./visual-board/VisualBoardView";
 
 // ── Column definition ──
 
@@ -121,29 +123,6 @@ function computeSubGroups(): SubGroupSpan[] {
   return subs;
 }
 const SUB_GROUP_HEADERS = computeSubGroups();
-
-// ── Status colours ──
-
-const STATUS_BG: Record<string, string> = {
-  Pass: "rgba(16,185,129,0.15)",
-  C1: "rgba(153,27,27,0.2)",
-  C2: "rgba(239,68,68,0.15)",
-  C3: "rgba(245,158,11,0.15)",
-  FI: "rgba(37,99,235,0.15)",
-  LIM: "rgba(100,116,139,0.15)",
-  "N/V": "rgba(100,116,139,0.1)",
-  "N/A": "rgba(100,116,139,0.1)",
-};
-const STATUS_TEXT: Record<string, string> = {
-  Pass: "var(--success)",
-  C1: "#991B1B",
-  C2: "var(--error)",
-  C3: "var(--warning)",
-  FI: "#2563EB",
-  LIM: "var(--muted-foreground)",
-  "N/V": "var(--muted-foreground)",
-  "N/A": "var(--muted-foreground)",
-};
 
 // ── Location options ──
 
@@ -913,66 +892,14 @@ export function EICRBoardSchedule({
 
       {/* ── VISUAL VIEW ── */}
       {viewMode === "visual" && (
-        <div className="p-6">
-          <div className="bg-[var(--muted)] border-2 border-[var(--border)] rounded-2xl p-6 relative">
-            <div className="absolute -top-3 left-6 bg-[var(--card)] px-3 py-1 text-xs font-semibold text-[var(--warning)] rounded-md border border-[var(--border)]">
-              {board.type === "three-phase" ? "400V 3-PHASE TP&N" : "230V SINGLE PHASE"}
-              {board.location ? ` \u2014 ${board.location}` : ""}
-              {board.suppliedFrom ? ` (from ${board.suppliedFrom})` : ""}
-            </div>
-
-            {/* Main switch */}
-            {(board.mainSwitch?.rating || board.ocpdRating) && (
-              <div className="flex justify-center mb-6 pb-6 border-b-2 border-dashed border-[var(--border)]">
-                <div className="bg-[var(--card)] border-[3px] border-[var(--warning)] rounded-xl px-8 py-4 text-center shadow-[0_0_20px_rgba(245,158,11,0.3)]">
-                  <div className="text-[10px] text-[var(--warning)] font-semibold uppercase tracking-wider mb-2">
-                    Main {board.ocpdType || board.mainSwitch?.type || "Switch"}
-                  </div>
-                  <div className="font-mono text-[28px] font-bold text-[var(--foreground)]">
-                    {board.ocpdRating || board.mainSwitch?.rating || "?"}A
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Circuit cards */}
-            <div className="flex gap-2 flex-wrap justify-center">
-              {circuits.filter(c => !c.isEmpty).map((circuit) => {
-                const statusColor = STATUS_TEXT[circuit.status] || "var(--muted-foreground)";
-                const rating = circuit.ocpdRating || circuit.rating || "";
-                const devType = circuit.ocpdType || circuit.type || "";
-                return (
-                  <div
-                    key={circuit.id}
-                    className="w-[72px] bg-[var(--card)] border-2 rounded-xl p-2.5 text-center transition-all"
-                    style={{ borderColor: statusColor }}
-                  >
-                    <div className="font-mono text-base font-bold text-[var(--foreground)]">{rating}A</div>
-                    <div className="text-xs text-[var(--muted-foreground)] font-semibold mb-1.5">{devType}</div>
-                    {circuit.status && (
-                      <div
-                        className="w-5 h-5 rounded-full mx-auto mb-1.5 flex items-center justify-center text-[10px] font-bold text-white"
-                        style={{ background: statusColor }}
-                      >
-                        {circuit.status === "Pass" ? "\u2713" : circuit.status}
-                      </div>
-                    )}
-                    <div className="text-[9px] text-[var(--muted-foreground)] font-medium leading-tight">{circuit.description}</div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Stats */}
-            <div className="flex gap-4 mt-6 py-3 px-6 bg-[var(--card)] rounded-xl justify-center flex-wrap text-sm">
-              <span className="text-[var(--muted-foreground)]"><strong className="text-[var(--primary)]">{stats.total}</strong> circuits</span>
-              {stats.pass > 0 && <span className="text-[var(--muted-foreground)]"><strong className="text-[var(--success)]">{stats.pass}</strong> Pass</span>}
-              {stats.c1 > 0 && <span className="text-[var(--muted-foreground)]"><strong style={{ color: "#991B1B" }}>{stats.c1}</strong> C1</span>}
-              {stats.c2 > 0 && <span className="text-[var(--muted-foreground)]"><strong className="text-[var(--error)]">{stats.c2}</strong> C2</span>}
-              {stats.c3 > 0 && <span className="text-[var(--muted-foreground)]"><strong className="text-[var(--warning)]">{stats.c3}</strong> C3</span>}
-            </div>
-          </div>
-        </div>
+        <VisualBoardView
+          board={board}
+          circuits={circuits}
+          stats={stats}
+          updateCircuit={updateCircuit}
+          addCircuits={addCircuits}
+          onBoardChange={onBoardChange}
+        />
       )}
     </div>
   );
