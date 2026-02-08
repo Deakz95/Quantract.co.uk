@@ -48,7 +48,7 @@ export function SignaturePadDialog({
       onClick={onCancel}
     >
       <div
-        className="w-full max-w-[520px] bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-lg"
+        className="w-full max-w-[520px] bg-[var(--card)] border border-[var(--border)] rounded shadow-lg"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="px-6 py-4 border-b border-[var(--border)]">

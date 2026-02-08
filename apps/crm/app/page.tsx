@@ -187,7 +187,7 @@ export default function LandingPage() {
           {/* Hero Image/Dashboard Preview */}
           <div className="mt-16 relative">
             <div className="absolute inset-0 bg-gradient-to-t from-[var(--background)] to-transparent z-10 h-32 bottom-0 top-auto" />
-            <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-2xl overflow-hidden">
+            <div className="rounded border border-[var(--border)] bg-[var(--card)] shadow-2xl overflow-hidden">
               <div className="bg-[var(--muted)] px-4 py-3 flex items-center gap-2 border-b border-[var(--border)]">
                 <div className="w-3 h-3 rounded-full bg-rose-500" />
                 <div className="w-3 h-3 rounded-full bg-amber-500" />

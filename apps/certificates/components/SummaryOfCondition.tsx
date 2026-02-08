@@ -28,7 +28,7 @@ export function SummaryOfCondition({ c1Count, c2Count, c3Count, fiCount }: Summa
           {CODES.map(({ key, label, desc, bg, border }) => (
             <div
               key={key}
-              className={`rounded-lg border ${border} bg-[#0f1115] p-3 text-center`}
+              className={`rounded-sm border ${border} bg-[#0f1115] p-3 text-center`}
             >
               <div className={`inline-flex items-center justify-center w-10 h-10 rounded-full ${bg} text-white font-bold text-lg mb-1`}>
                 {counts[key]}

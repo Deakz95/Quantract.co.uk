@@ -26,28 +26,32 @@ export function InspectionGroup({
   onMarkAllNA,
   summary,
 }: InspectionGroupProps) {
+  const markedCount = rows.filter((r) => r.value).length;
+
   return (
-    <div className="rounded-xl overflow-hidden">
+    <div className="rounded overflow-hidden">
       {/* Sticky group header */}
-      <div className="sticky top-0 z-10 bg-[#232a3b] px-4 py-2.5 flex items-center justify-between">
+      <div className="sticky top-0 z-10 bg-[#232a3b] px-4 py-2.5 flex items-center justify-between border-b border-white/[0.03]">
         <div className="flex items-center gap-3">
-          <span className="text-sm font-semibold text-[#e2e8f0]">{title}</span>
-          <span className="text-xs text-gray-400 bg-white/5 px-2 py-0.5 rounded-full">
-            {rows.length} items
-          </span>
+          <span className="text-[11px] font-semibold uppercase tracking-[1.5px] text-cyan-400">{title}</span>
           {summary && (
             <span className="text-xs text-gray-500 hidden sm:inline">&mdash; {summary}</span>
           )}
         </div>
-        {onMarkAllNA && (
-          <button
-            type="button"
-            onClick={onMarkAllNA}
-            className="text-xs text-gray-400 hover:text-gray-200 bg-white/5 hover:bg-white/10 px-2.5 py-1 rounded-lg transition-colors"
-          >
-            Mark All N/A
-          </button>
-        )}
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-gray-400">
+            {rows.length} Items{markedCount > 0 ? ` \u00B7 ${markedCount} Marked` : ""}
+          </span>
+          {onMarkAllNA && (
+            <button
+              type="button"
+              onClick={onMarkAllNA}
+              className="text-xs text-gray-400 hover:text-gray-200 bg-white/5 hover:bg-white/10 px-2.5 py-1 rounded-sm transition-colors"
+            >
+              Mark All N/A
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Inspection rows */}
@@ -55,14 +59,14 @@ export function InspectionGroup({
         {rows.map((row, idx) => (
           <div
             key={row.id}
-            className={`flex items-center gap-3 px-4 py-2 ${
-              idx % 2 === 0 ? "bg-white/[0.02]" : ""
+            className={`flex items-center gap-3 px-4 py-2 border-b border-white/[0.03] ${
+              idx % 2 === 1 ? "bg-white/[0.016]" : ""
             }`}
           >
-            <span className="font-mono text-xs font-bold text-blue-400 w-10 shrink-0">
+            <span className="font-mono text-xs font-bold text-cyan-400 w-9 shrink-0">
               {row.code}
             </span>
-            <span className="text-sm text-[#e2e8f0] flex-1 min-w-0">{row.label}</span>
+            <span className="text-[13px] text-[#e2e8f0] flex-1 min-w-0">{row.label}</span>
             <PillSelector
               options={options}
               value={row.value}

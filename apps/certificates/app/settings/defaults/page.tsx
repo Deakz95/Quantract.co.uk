@@ -51,12 +51,12 @@ export default function CertificateDefaultsPage() {
 
       <main className="max-w-3xl mx-auto px-4 md:px-8 py-6 space-y-6">
         {/* Type tabs */}
-        <div className="flex flex-wrap gap-1.5 p-1 bg-[var(--muted)]/50 rounded-xl">
+        <div className="flex flex-wrap gap-1.5 p-1 bg-[var(--muted)]/50 rounded-sm">
           {CERT_TYPES.map(({ type, label }) => (
             <button
               key={type}
               onClick={() => setActiveType(type)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              className={`px-3 py-1.5 rounded-sm text-xs font-medium transition-colors ${
                 activeType === type
                   ? "bg-[var(--card)] text-[var(--foreground)] shadow-sm"
                   : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
@@ -72,7 +72,7 @@ export default function CertificateDefaultsPage() {
         </div>
 
         {/* Defaults form */}
-        <div className="border border-[var(--border)] rounded-xl p-5 bg-[var(--card)] space-y-5">
+        <div className="border border-[var(--border)] rounded-sm p-5 bg-[var(--card)] space-y-5">
           <div className="grid md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="inspectionInterval">Default Inspection Interval (years)</Label>
@@ -150,13 +150,13 @@ export default function CertificateDefaultsPage() {
         </div>
 
         {/* Standard intervals reference */}
-        <details className="border border-[var(--border)] rounded-xl overflow-hidden">
+        <details className="border border-[var(--border)] rounded-sm overflow-hidden">
           <summary className="bg-[var(--muted)]/50 px-4 py-3 cursor-pointer text-sm font-medium text-[var(--foreground)] select-none">
             BS 7671 Standard Intervals Reference
           </summary>
           <div className="p-4 grid grid-cols-2 md:grid-cols-3 gap-2">
             {Object.entries(STANDARD_INTERVALS).map(([type, years]) => (
-              <div key={type} className="flex items-center justify-between text-xs p-2 rounded-lg bg-[var(--muted)]/30">
+              <div key={type} className="flex items-center justify-between text-xs p-2 rounded-sm bg-[var(--muted)]/30">
                 <span className="text-[var(--foreground)] capitalize">{type.replace(/-/g, " ")}</span>
                 <span className="text-[var(--muted-foreground)] font-mono">{years}yr</span>
               </div>

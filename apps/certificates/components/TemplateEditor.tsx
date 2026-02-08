@@ -332,11 +332,11 @@ export function TemplateEditor({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={handlePreview} disabled={previewing} className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[var(--border)] text-sm hover:bg-[var(--card)] transition disabled:opacity-50">
+          <button onClick={handlePreview} disabled={previewing} className="flex items-center gap-2 px-3 py-1.5 rounded-sm border border-[var(--border)] text-sm hover:bg-[var(--card)] transition disabled:opacity-50">
             {previewing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
             Preview
           </button>
-          <button onClick={handleSave} disabled={saving || !dirty} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--primary)] text-white text-sm font-medium hover:opacity-90 transition disabled:opacity-50">
+          <button onClick={handleSave} disabled={saving || !dirty} className="flex items-center gap-2 px-3 py-1.5 rounded-sm bg-[var(--primary)] text-white text-sm font-medium hover:opacity-90 transition disabled:opacity-50">
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Save
           </button>
@@ -365,7 +365,7 @@ export function TemplateEditor({
       {/* Preview modal */}
       {previewUrl && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => { URL.revokeObjectURL(previewUrl); setPreviewUrl(null); }}>
-          <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-sm shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between p-3 border-b">
               <span className="text-sm font-medium">Preview</span>
               <button onClick={() => { URL.revokeObjectURL(previewUrl); setPreviewUrl(null); }} className="text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)]">Close</button>
@@ -382,7 +382,7 @@ export function TemplateEditor({
           {(["text", "line", "rect", "table", "image", "signature", "photo"] as const).map(type => {
             const Icon = ELEMENT_ICONS[type];
             return (
-              <button key={type} onClick={() => addElement(type)} className="flex items-center gap-2 w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--card)] text-sm hover:border-[var(--primary)]/50 transition">
+              <button key={type} onClick={() => addElement(type)} className="flex items-center gap-2 w-full px-3 py-2 rounded-sm border border-[var(--border)] bg-[var(--card)] text-sm hover:border-[var(--primary)]/50 transition">
                 <Icon className="w-4 h-4 text-[var(--muted-foreground)]" />
                 <span className="capitalize">{type}</span>
               </button>

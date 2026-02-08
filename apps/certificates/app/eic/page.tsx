@@ -583,7 +583,7 @@ function EICPageContent() {
           <div className="flex items-center justify-end">
             <button
               onClick={addBoard}
-              className="px-3 py-1.5 rounded-lg text-sm font-medium bg-[var(--muted)] hover:bg-[var(--accent)] text-[var(--foreground)] transition-colors"
+              className="px-3 py-1.5 rounded-sm text-sm font-medium bg-[var(--muted)] hover:bg-[var(--accent)] text-[var(--foreground)] transition-colors"
             >
               + Add Board
             </button>

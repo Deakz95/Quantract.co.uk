@@ -63,7 +63,7 @@ export default function SettingsPage() {
           <Link
             key={href}
             href={href}
-            className="flex items-center gap-4 p-4 rounded-xl border border-[var(--border)] hover:border-[var(--primary)]/30 hover:bg-[var(--primary)]/5 transition-colors"
+            className="flex items-center gap-4 p-4 rounded-sm border border-[var(--border)] hover:border-[var(--primary)]/30 hover:bg-[var(--primary)]/5 transition-colors"
           >
             <div className="shrink-0 text-[var(--muted-foreground)]">{icon}</div>
             <div className="min-w-0 flex-1">

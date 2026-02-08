@@ -129,7 +129,7 @@ export function EarthingSection({ data, onChange }: EarthingSectionProps) {
       </div>
 
       {/* Bonding checklist */}
-      <div className="border border-[var(--border)] rounded-xl p-4 space-y-3">
+      <div className="border border-[var(--border)] rounded-sm p-4 space-y-3">
         <p className="text-sm font-semibold text-[var(--foreground)]">
           Main Protective Bonding Connected To:
         </p>

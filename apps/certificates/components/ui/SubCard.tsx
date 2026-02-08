@@ -12,7 +12,7 @@ interface SubCardProps {
 export function SubCard({ title, accentColor = "#3b82f6", children, className = "" }: SubCardProps) {
   return (
     <div
-      className={`bg-[#1a1f2e] rounded-lg border-l-2 p-4 ${className}`}
+      className={`bg-[#1a1f2e] rounded-sm border-l-2 p-4 ${className}`}
       style={{ borderLeftColor: accentColor }}
     >
       {title && (

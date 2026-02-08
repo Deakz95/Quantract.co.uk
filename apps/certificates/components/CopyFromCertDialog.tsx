@@ -89,7 +89,7 @@ export function CopyFromCertDialog({
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div
-        className="bg-[var(--card)] border border-[var(--border)] rounded-2xl w-full max-w-[600px] max-h-[90vh] flex flex-col"
+        className="bg-[var(--card)] border border-[var(--border)] rounded w-full max-w-[600px] max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -121,7 +121,7 @@ export function CopyFromCertDialog({
                   <button
                     key={cert.id}
                     onClick={() => handleSelectCert(cert)}
-                    className="w-full text-left p-3 rounded-xl border border-[var(--border)] hover:bg-[var(--muted)]/50 transition-colors"
+                    className="w-full text-left p-3 rounded-sm border border-[var(--border)] hover:bg-[var(--muted)]/50 transition-colors"
                   >
                     <div className="flex items-center justify-between gap-2">
                       <div className="min-w-0 flex-1">
@@ -182,7 +182,7 @@ export function CopyFromCertDialog({
                   return (
                     <label
                       key={sectionId}
-                      className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                      className={`flex items-center gap-3 px-3 py-2 rounded-sm transition-colors ${
                         isSignature
                           ? "opacity-40 cursor-not-allowed"
                           : "cursor-pointer hover:bg-[var(--muted)]/50"

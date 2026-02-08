@@ -8,6 +8,7 @@ import { SectionHeading } from "../../components/ui/SectionHeading";
 import { SubCard } from "../../components/ui/SubCard";
 import { FloatingInput } from "../../components/ui/FloatingInput";
 import { FloatingSelect } from "../../components/ui/FloatingSelect";
+import { PillSelector } from "../../components/ui/PillSelector";
 import { getCertificateTemplate, type FireAlarmCertificate, getSignature, setSignature, clearSignature, migrateAllLegacySignatures } from "@quantract/shared/certificate-types";
 import type { SignatureValue } from "@quantract/shared/certificate-types";
 import {
@@ -54,6 +55,14 @@ function FireAlarmPageContent() {
         const loaded = existing.data as FireAlarmCertificate;
         const withMigratedSigs = migrateAllLegacySignatures("FIRE", loaded as unknown as Record<string, unknown>);
         Object.assign(loaded, { _signatures: (withMigratedSigs as Record<string, unknown>)._signatures });
+        // Migrate boolean test results → string pill values
+        const boolFields = ["panelFunctional", "soundersAudible", "allDevicesTested", "faultIndicatorsTested", "zonesLabelled", "logBookAvailable"] as const;
+        for (const f of boolFields) {
+          const v = loaded.testResults[f];
+          if (typeof v === "boolean") {
+            (loaded.testResults as Record<string, unknown>)[f] = v ? "pass" : "";
+          }
+        }
         setData(loaded);
         setCurrentCertId(certificateId);
         setLastSaved(new Date(existing.updated_at));
@@ -238,7 +247,7 @@ function FireAlarmPageContent() {
       <div className="max-w-[1200px] mx-auto px-6 py-6">
         {/* Save Status Banner */}
         {!currentCertId && (
-          <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl text-sm text-amber-400 flex items-center gap-3">
+          <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/30 rounded-sm text-sm text-amber-400 flex items-center gap-3">
             <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
@@ -408,7 +417,7 @@ function FireAlarmPageContent() {
                   {data.devices.map((device, index) => (
                     <div
                       key={index}
-                      className={`grid grid-cols-[1fr_140px_80px_100px_1fr_auto] gap-3 p-3 bg-[var(--muted)] rounded-lg items-end border-l-[3px] ${
+                      className={`grid grid-cols-[1fr_140px_80px_100px_1fr_auto] gap-3 p-3 bg-[var(--muted)] rounded-sm items-end border-l-[3px] ${
                         device.status === "pass" ? "border-l-[var(--success)]" : device.status === "fail" ? "border-l-[var(--error)]" : "border-l-[var(--border)]"
                       }`}
                     >
@@ -484,66 +493,27 @@ function FireAlarmPageContent() {
               <div className="grid md:grid-cols-2 gap-4">
                 <SubCard title="Functional Checks">
                   <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="checkbox"
-                        id="panelFunctional"
-                        checked={data.testResults.panelFunctional}
-                        onChange={(e) => updateTestResults("panelFunctional", e.target.checked)}
-                        className="w-5 h-5 rounded border-[var(--border)] bg-[var(--background)] accent-[var(--primary)]"
-                      />
-                      <Label htmlFor="panelFunctional" className="mb-0">Panel functional and fault-free</Label>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="checkbox"
-                        id="soundersAudible"
-                        checked={data.testResults.soundersAudible}
-                        onChange={(e) => updateTestResults("soundersAudible", e.target.checked)}
-                        className="w-5 h-5 rounded border-[var(--border)] bg-[var(--background)] accent-[var(--primary)]"
-                      />
-                      <Label htmlFor="soundersAudible" className="mb-0">All sounders audible</Label>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="checkbox"
-                        id="allDevicesTested"
-                        checked={data.testResults.allDevicesTested}
-                        onChange={(e) => updateTestResults("allDevicesTested", e.target.checked)}
-                        className="w-5 h-5 rounded border-[var(--border)] bg-[var(--background)] accent-[var(--primary)]"
-                      />
-                      <Label htmlFor="allDevicesTested" className="mb-0">All devices tested</Label>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="checkbox"
-                        id="faultIndicatorsTested"
-                        checked={data.testResults.faultIndicatorsTested}
-                        onChange={(e) => updateTestResults("faultIndicatorsTested", e.target.checked)}
-                        className="w-5 h-5 rounded border-[var(--border)] bg-[var(--background)] accent-[var(--primary)]"
-                      />
-                      <Label htmlFor="faultIndicatorsTested" className="mb-0">Fault indicators tested</Label>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="checkbox"
-                        id="zonesLabelled"
-                        checked={data.testResults.zonesLabelled}
-                        onChange={(e) => updateTestResults("zonesLabelled", e.target.checked)}
-                        className="w-5 h-5 rounded border-[var(--border)] bg-[var(--background)] accent-[var(--primary)]"
-                      />
-                      <Label htmlFor="zonesLabelled" className="mb-0">All zones correctly labelled</Label>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="checkbox"
-                        id="logBookAvailable"
-                        checked={data.testResults.logBookAvailable}
-                        onChange={(e) => updateTestResults("logBookAvailable", e.target.checked)}
-                        className="w-5 h-5 rounded border-[var(--border)] bg-[var(--background)] accent-[var(--primary)]"
-                      />
-                      <Label htmlFor="logBookAvailable" className="mb-0">Log book available and up to date</Label>
-                    </div>
+                    {([
+                      ["panelFunctional", "Panel functional and fault-free"],
+                      ["soundersAudible", "All sounders audible"],
+                      ["allDevicesTested", "All devices tested"],
+                      ["faultIndicatorsTested", "Fault indicators tested"],
+                      ["zonesLabelled", "All zones correctly labelled"],
+                      ["logBookAvailable", "Log book available and up to date"],
+                    ] as const).map(([field, label]) => (
+                      <div key={field} className="flex items-center justify-between gap-3">
+                        <span className="text-sm text-[var(--foreground)]">{label}</span>
+                        <PillSelector
+                          options={[
+                            { label: "Pass", value: "pass" },
+                            { label: "Fail", value: "fail" },
+                            { label: "N/A", value: "na" },
+                          ]}
+                          value={String(data.testResults[field] ?? "")}
+                          onChange={(v) => updateTestResults(field, v)}
+                        />
+                      </div>
+                    ))}
                   </div>
                 </SubCard>
                 <SubCard title="Battery">
@@ -602,7 +572,7 @@ function FireAlarmPageContent() {
           {/* Sidebar */}
           <div className="flex flex-col gap-4">
             {/* Device Stats */}
-            <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5">
+            <div className="bg-[var(--card)] border border-[var(--border)] rounded-sm p-5">
               <h3 className="text-sm font-semibold mb-4 text-[var(--muted-foreground)]">
                 Device Summary
               </h3>
@@ -627,7 +597,7 @@ function FireAlarmPageContent() {
             </div>
 
             {/* Quick Reference */}
-            <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5">
+            <div className="bg-[var(--card)] border border-[var(--border)] rounded-sm p-5">
               <h3 className="text-sm font-semibold mb-3 text-[var(--muted-foreground)]">
                 BS 5839 Categories
               </h3>

@@ -473,7 +473,7 @@ export function EICRBoardSchedule({
   const suppliedFromOptions = ["Origin", "Sub-main", ...allBoardNames.filter(n => n !== board.name)];
 
   return (
-    <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl mb-6 overflow-hidden">
+    <div className="bg-[var(--card)] border border-[var(--border)] rounded mb-6 overflow-hidden">
       {/* ── DISTRIBUTION BOARD DETAILS header ── */}
       <div className="border-b border-[var(--border)]">
         <div className="bg-[var(--primary)]/10 px-4 py-2 flex items-center justify-between">
@@ -481,7 +481,7 @@ export function EICRBoardSchedule({
             Distribution Board Details
           </span>
           <div className="flex items-center gap-2">
-            <div className="flex bg-[var(--muted)] rounded-lg p-0.5">
+            <div className="flex bg-[var(--muted)] rounded-sm p-0.5">
               <button
                 className={`px-3 py-1 rounded-md text-xs font-medium cursor-pointer transition-all border-none ${
                   viewMode === "table" ? "bg-[var(--primary)] text-white" : "bg-transparent text-[var(--muted-foreground)]"
@@ -515,7 +515,7 @@ export function EICRBoardSchedule({
               <input
                 value={board.name}
                 onChange={(e) => updateHeader("name", e.target.value)}
-                className="w-full bg-[var(--muted)] text-[var(--foreground)] border border-[var(--border)] rounded-lg px-2.5 py-1.5 text-sm outline-none focus:border-[var(--primary)] transition-colors"
+                className="w-full bg-[var(--muted)] text-[var(--foreground)] border border-[var(--border)] rounded-sm px-2.5 py-1.5 text-sm outline-none focus:border-[var(--primary)] transition-colors"
                 placeholder="e.g. DB 1"
               />
             </div>
@@ -524,7 +524,7 @@ export function EICRBoardSchedule({
               <select
                 value={board.location}
                 onChange={(e) => updateHeader("location", e.target.value)}
-                className="w-full bg-[var(--muted)] text-[var(--foreground)] border border-[var(--border)] rounded-lg px-2.5 py-1.5 text-sm outline-none focus:border-[var(--primary)] transition-colors"
+                className="w-full bg-[var(--muted)] text-[var(--foreground)] border border-[var(--border)] rounded-sm px-2.5 py-1.5 text-sm outline-none focus:border-[var(--primary)] transition-colors"
               >
                 <option value="">Select...</option>
                 {LOCATION_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
@@ -535,7 +535,7 @@ export function EICRBoardSchedule({
               <select
                 value={board.suppliedFrom}
                 onChange={(e) => updateHeader("suppliedFrom", e.target.value)}
-                className="w-full bg-[var(--muted)] text-[var(--foreground)] border border-[var(--border)] rounded-lg px-2.5 py-1.5 text-sm outline-none focus:border-[var(--primary)] transition-colors"
+                className="w-full bg-[var(--muted)] text-[var(--foreground)] border border-[var(--border)] rounded-sm px-2.5 py-1.5 text-sm outline-none focus:border-[var(--primary)] transition-colors"
               >
                 <option value="">Select...</option>
                 {suppliedFromOptions.map(o => <option key={o} value={o}>{o}</option>)}
@@ -549,7 +549,7 @@ export function EICRBoardSchedule({
               <input
                 value={board.ocpdBsEn}
                 onChange={(e) => updateHeader("ocpdBsEn", e.target.value)}
-                className="w-full bg-[var(--muted)] text-[var(--foreground)] border border-[var(--border)] rounded-lg px-2.5 py-1.5 text-sm outline-none focus:border-[var(--primary)] transition-colors"
+                className="w-full bg-[var(--muted)] text-[var(--foreground)] border border-[var(--border)] rounded-sm px-2.5 py-1.5 text-sm outline-none focus:border-[var(--primary)] transition-colors"
                 placeholder="e.g. 60898"
               />
             </div>
@@ -558,7 +558,7 @@ export function EICRBoardSchedule({
               <select
                 value={board.ocpdType}
                 onChange={(e) => updateHeader("ocpdType", e.target.value)}
-                className="w-full bg-[var(--muted)] text-[var(--foreground)] border border-[var(--border)] rounded-lg px-2.5 py-1.5 text-sm outline-none focus:border-[var(--primary)] transition-colors"
+                className="w-full bg-[var(--muted)] text-[var(--foreground)] border border-[var(--border)] rounded-sm px-2.5 py-1.5 text-sm outline-none focus:border-[var(--primary)] transition-colors"
               >
                 <option value="">Select...</option>
                 <option value="B">B</option>
@@ -575,7 +575,7 @@ export function EICRBoardSchedule({
               <input
                 value={board.ocpdRating}
                 onChange={(e) => updateHeader("ocpdRating", e.target.value)}
-                className="w-full bg-[var(--muted)] text-[var(--foreground)] border border-[var(--border)] rounded-lg px-2.5 py-1.5 text-sm outline-none focus:border-[var(--primary)] transition-colors"
+                className="w-full bg-[var(--muted)] text-[var(--foreground)] border border-[var(--border)] rounded-sm px-2.5 py-1.5 text-sm outline-none focus:border-[var(--primary)] transition-colors"
                 placeholder="e.g. 100"
               />
             </div>
@@ -584,7 +584,7 @@ export function EICRBoardSchedule({
               <select
                 value={board.type === "three-phase" ? "3" : "1"}
                 onChange={(e) => updateHeader("type", e.target.value === "3" ? "three-phase" : "single-phase")}
-                className="w-full bg-[var(--muted)] text-[var(--foreground)] border border-[var(--border)] rounded-lg px-2.5 py-1.5 text-sm outline-none focus:border-[var(--primary)] transition-colors"
+                className="w-full bg-[var(--muted)] text-[var(--foreground)] border border-[var(--border)] rounded-sm px-2.5 py-1.5 text-sm outline-none focus:border-[var(--primary)] transition-colors"
               >
                 <option value="1">1 Phase</option>
                 <option value="3">3 Phase</option>
@@ -598,7 +598,7 @@ export function EICRBoardSchedule({
               <select
                 value={board.spdType}
                 onChange={(e) => updateHeader("spdType", e.target.value)}
-                className="w-full bg-[var(--muted)] text-[var(--foreground)] border border-[var(--border)] rounded-lg px-2.5 py-1.5 text-sm outline-none focus:border-[var(--primary)] transition-colors"
+                className="w-full bg-[var(--muted)] text-[var(--foreground)] border border-[var(--border)] rounded-sm px-2.5 py-1.5 text-sm outline-none focus:border-[var(--primary)] transition-colors"
               >
                 <option value="">Select...</option>
                 <option value="T1">T1</option>
@@ -624,7 +624,7 @@ export function EICRBoardSchedule({
               <input
                 value={board.zsAtDb}
                 onChange={(e) => updateHeader("zsAtDb", e.target.value)}
-                className="w-full bg-[var(--muted)] text-[var(--foreground)] border border-[var(--border)] rounded-lg px-2.5 py-1.5 text-sm outline-none focus:border-[var(--primary)] transition-colors"
+                className="w-full bg-[var(--muted)] text-[var(--foreground)] border border-[var(--border)] rounded-sm px-2.5 py-1.5 text-sm outline-none focus:border-[var(--primary)] transition-colors"
                 placeholder="e.g. 0.35"
               />
             </div>
@@ -633,7 +633,7 @@ export function EICRBoardSchedule({
               <input
                 value={board.ipfAtDb}
                 onChange={(e) => updateHeader("ipfAtDb", e.target.value)}
-                className="w-full bg-[var(--muted)] text-[var(--foreground)] border border-[var(--border)] rounded-lg px-2.5 py-1.5 text-sm outline-none focus:border-[var(--primary)] transition-colors"
+                className="w-full bg-[var(--muted)] text-[var(--foreground)] border border-[var(--border)] rounded-sm px-2.5 py-1.5 text-sm outline-none focus:border-[var(--primary)] transition-colors"
                 placeholder="e.g. 16"
               />
             </div>
@@ -676,7 +676,7 @@ export function EICRBoardSchedule({
                 Add
               </button>
               {addCountOpen && (
-                <div className="absolute top-full left-0 mt-1 bg-[var(--card)] border border-[var(--border)] rounded-lg shadow-lg z-20 py-1 min-w-[100px]">
+                <div className="absolute top-full left-0 mt-1 bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-lg z-20 py-1 min-w-[100px]">
                   {[1, 5, 10].map(n => (
                     <button key={n} onClick={() => addCircuits(n)} className="w-full px-3 py-1.5 text-xs text-left hover:bg-[var(--muted)] text-[var(--foreground)]">
                       Add {n} circuit{n > 1 ? "s" : ""}
@@ -713,7 +713,7 @@ export function EICRBoardSchedule({
                 Auto Fill &#x25BE;
               </button>
               {autoFillOpen && (
-                <div className="absolute top-full left-0 mt-1 bg-[var(--card)] border border-[var(--border)] rounded-lg shadow-lg z-20 py-1 min-w-[160px]">
+                <div className="absolute top-full left-0 mt-1 bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-lg z-20 py-1 min-w-[160px]">
                   <button onClick={fillDown} disabled={selectedRows.size < 2} className="w-full px-3 py-1.5 text-xs text-left hover:bg-[var(--muted)] text-[var(--foreground)] disabled:opacity-40">
                     Fill Down
                   </button>
@@ -883,7 +883,7 @@ export function EICRBoardSchedule({
             <input
               value={board.typeOfWiringOther}
               onChange={(e) => updateHeader("typeOfWiringOther", e.target.value)}
-              className="flex-1 bg-[var(--muted)] text-[var(--foreground)] border border-[var(--border)] rounded-lg px-2.5 py-1 text-sm outline-none focus:border-[var(--primary)] max-w-md transition-colors"
+              className="flex-1 bg-[var(--muted)] text-[var(--foreground)] border border-[var(--border)] rounded-sm px-2.5 py-1 text-sm outline-none focus:border-[var(--primary)] max-w-md transition-colors"
               placeholder="Specify non-standard wiring types..."
             />
           </div>

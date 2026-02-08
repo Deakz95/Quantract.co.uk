@@ -100,7 +100,7 @@ export default function InstrumentsSettingsPage() {
       <main className="max-w-3xl mx-auto px-4 md:px-8 py-6 space-y-6">
         {/* Add / Edit form */}
         {showForm ? (
-          <div className="border border-[var(--border)] rounded-xl p-5 bg-[var(--card)] space-y-4">
+          <div className="border border-[var(--border)] rounded-sm p-5 bg-[var(--card)] space-y-4">
             <h2 className="text-base font-semibold">
               {editingId ? "Edit Instrument" : "Add Test Instrument"}
             </h2>
@@ -181,7 +181,7 @@ export default function InstrumentsSettingsPage() {
 
         {/* Preset list */}
         {presets.length === 0 && !showForm ? (
-          <div className="border border-dashed border-[var(--border)] rounded-xl p-8 text-center text-sm text-[var(--muted-foreground)]">
+          <div className="border border-dashed border-[var(--border)] rounded-sm p-8 text-center text-sm text-[var(--muted-foreground)]">
             <p className="mb-2">No test instruments saved yet</p>
             <p>Add your MFT and other test instruments for quick selection when filling certificates</p>
           </div>
@@ -190,7 +190,7 @@ export default function InstrumentsSettingsPage() {
             {presets.map((preset) => (
               <div
                 key={preset.id}
-                className={`flex items-center gap-4 p-4 rounded-xl border transition-colors ${
+                className={`flex items-center gap-4 p-4 rounded-sm border transition-colors ${
                   preset.isDefault
                     ? "border-[var(--primary)]/30 bg-[var(--primary)]/5"
                     : "border-[var(--border)]"
@@ -237,7 +237,7 @@ export default function InstrumentsSettingsPage() {
                   {!preset.isDefault && (
                     <button
                       onClick={() => setDefault(preset.id)}
-                      className="p-1.5 rounded-lg text-[var(--muted-foreground)] hover:text-[var(--primary)] hover:bg-[var(--primary)]/10 transition-colors"
+                      className="p-1.5 rounded-sm text-[var(--muted-foreground)] hover:text-[var(--primary)] hover:bg-[var(--primary)]/10 transition-colors"
                       title="Set as default"
                     >
                       <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
@@ -247,7 +247,7 @@ export default function InstrumentsSettingsPage() {
                   )}
                   <button
                     onClick={() => handleEdit(preset)}
-                    className="p-1.5 rounded-lg text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]/50 transition-colors"
+                    className="p-1.5 rounded-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]/50 transition-colors"
                     title="Edit"
                   >
                     <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
@@ -257,7 +257,7 @@ export default function InstrumentsSettingsPage() {
                   </button>
                   <button
                     onClick={() => handleDelete(preset.id)}
-                    className="p-1.5 rounded-lg text-[var(--muted-foreground)] hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                    className="p-1.5 rounded-sm text-[var(--muted-foreground)] hover:text-red-400 hover:bg-red-500/10 transition-colors"
                     title="Delete"
                   >
                     <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>

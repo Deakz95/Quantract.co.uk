@@ -41,7 +41,7 @@ export function BoardSettingsDialog({ board, onSave, onDelete, onClose }: BoardS
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl w-full max-w-[520px] max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-[var(--card)] border border-[var(--border)] rounded w-full max-w-[520px] max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="p-6 border-b border-[var(--border)]">
           <h2 className="text-xl font-bold text-[var(--foreground)]">Board Settings</h2>
           <p className="text-sm text-[var(--muted-foreground)] mt-1">Edit board properties or delete this board</p>
@@ -95,7 +95,7 @@ export function BoardSettingsDialog({ board, onSave, onDelete, onClose }: BoardS
           </div>
 
           {/* Main Switch */}
-          <div className="border border-[var(--border)] rounded-xl p-4 space-y-3">
+          <div className="border border-[var(--border)] rounded-sm p-4 space-y-3">
             <p className="text-xs font-semibold text-[var(--muted-foreground)] uppercase tracking-wider">Main Switch</p>
             <div className="grid grid-cols-2 gap-4">
               <div>

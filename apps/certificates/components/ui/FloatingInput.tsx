@@ -38,20 +38,20 @@ export function FloatingInput({
         onChange={onChange}
         placeholder={placeholder ?? " "}
         disabled={disabled}
-        className={`peer w-full bg-[#0f1115] border border-white/10 rounded-lg px-3 pt-5 pb-1.5 text-sm text-[#e2e8f0] placeholder-transparent focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-500/50 transition-colors disabled:opacity-50 ${unit ? "pr-10" : ""}`}
+        className={`peer w-full bg-[#0f1115] border border-white/10 rounded-sm px-3 pt-5 pb-1.5 text-sm text-[#e2e8f0] placeholder-transparent focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-500/50 transition-colors disabled:opacity-50 ${unit ? "pr-10" : ""}`}
       />
       <label
         htmlFor={id}
-        className={`absolute left-3 transition-all duration-150 pointer-events-none ${
+        className={`absolute left-3 z-[2] transition-all duration-150 pointer-events-none font-semibold uppercase tracking-wider ${
           hasValue
-            ? "top-1 text-[10px] text-cyan-400"
-            : "top-3.5 text-sm text-gray-400 peer-focus:top-1 peer-focus:text-[10px] peer-focus:text-cyan-400"
+            ? "top-1 text-[9px] text-cyan-400"
+            : "top-3.5 text-xs text-gray-400 normal-case tracking-normal font-normal peer-focus:top-1 peer-focus:text-[9px] peer-focus:text-cyan-400 peer-focus:font-semibold peer-focus:uppercase peer-focus:tracking-wider"
         }`}
       >
         {label}
       </label>
       {unit && (
-        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 pointer-events-none">
+        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-[#94a3b8] pointer-events-none z-[2]">
           {unit}
         </span>
       )}

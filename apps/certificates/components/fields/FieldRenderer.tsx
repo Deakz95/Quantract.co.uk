@@ -156,7 +156,7 @@ export function FieldRenderer({ field, value, onChange, allData }: FieldRenderer
           {field.options?.map((opt) => (
             <label
               key={opt.value}
-              className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+              className={`flex items-start gap-3 p-3 rounded-sm border cursor-pointer transition-colors ${
                 value === opt.value
                   ? "border-[var(--primary)] bg-[var(--primary)]/5"
                   : "border-[var(--border)] hover:border-[var(--muted-foreground)]"

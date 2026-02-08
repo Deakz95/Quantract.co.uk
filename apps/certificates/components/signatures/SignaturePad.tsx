@@ -149,7 +149,7 @@ export function SignaturePad({ onSave, onCancel, initialValue }: SignaturePadPro
 
   return (
     <div className="space-y-3">
-      <div className="border-2 border-dashed border-[var(--border)] rounded-xl bg-white relative overflow-hidden">
+      <div className="border-2 border-dashed border-[var(--border)] rounded-sm bg-white relative overflow-hidden">
         <canvas
           ref={canvasRef}
           className="w-full cursor-crosshair"

@@ -26,7 +26,7 @@ export function InstallationTypeSelector({ installationType, commentsOnExistingI
           {options.map((option) => (
             <label
               key={option.value}
-              className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+              className={`flex items-start gap-3 p-3 rounded-sm border cursor-pointer transition-colors ${
                 installationType === option.value
                   ? "border-[var(--primary)] bg-[var(--primary)]/5"
                   : "border-[var(--border)] hover:border-[var(--muted-foreground)]"

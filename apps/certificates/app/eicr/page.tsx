@@ -745,7 +745,7 @@ function EICRPageContent() {
           </div>
 
           {/* Bonding checklist */}
-          <div className="border border-[var(--border)] rounded-xl p-4 space-y-3">
+          <div className="border border-[var(--border)] rounded-sm p-4 space-y-3">
             <p className="text-sm font-semibold text-[var(--foreground)]">Main Protective Bonding Connected To:</p>
             <div className="grid md:grid-cols-3 gap-3">
               {[
@@ -819,7 +819,7 @@ function EICRPageContent() {
           )}
 
           {/* Details of Test Instruments */}
-          <details className="border border-[var(--border)] rounded-xl overflow-hidden">
+          <details className="border border-[var(--border)] rounded-sm overflow-hidden">
             <summary className="bg-[var(--muted)] px-4 py-3 cursor-pointer text-sm font-semibold text-[var(--foreground)] hover:bg-[var(--muted)]/80 transition-colors select-none">
               Details of Test Instruments
             </summary>

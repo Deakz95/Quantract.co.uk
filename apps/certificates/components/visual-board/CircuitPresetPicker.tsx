@@ -36,7 +36,7 @@ export function CircuitPresetPicker({ isOpen, onClose, onSelect, anchorRef }: Ci
   return (
     <div
       ref={panelRef}
-      className="bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-xl z-30 p-3 absolute"
+      className="bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-xl z-30 p-3 absolute"
       style={{ bottom: "calc(100% + 8px)", left: "50%", transform: "translateX(-50%)" }}
     >
       <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)] mb-2 px-1">
@@ -51,7 +51,7 @@ export function CircuitPresetPicker({ isOpen, onClose, onSelect, anchorRef }: Ci
             <button
               key={preset.id}
               onClick={() => onSelect(preset)}
-              className="flex flex-col items-center gap-1 p-2 rounded-lg bg-[var(--muted)] hover:bg-[var(--primary)]/10 border border-transparent hover:border-[var(--primary)]/30 transition-all text-center"
+              className="flex flex-col items-center gap-1 p-2 rounded-sm bg-[var(--muted)] hover:bg-[var(--primary)]/10 border border-transparent hover:border-[var(--primary)]/30 transition-all text-center"
             >
               <Icon className="w-5 h-5 text-[var(--primary)]" />
               <span className="text-[10px] font-semibold text-[var(--foreground)] leading-tight">

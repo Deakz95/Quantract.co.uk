@@ -20,24 +20,31 @@ interface ObservationBuilderProps {
 }
 
 const CODE_OPTIONS = [
-  { label: "C1", value: "C1", color: "bg-red-600 text-white" },
-  { label: "C2", value: "C2", color: "bg-amber-600 text-white" },
-  { label: "C3", value: "C3", color: "bg-yellow-600 text-white" },
-  { label: "FI", value: "FI", color: "bg-blue-600 text-white" },
+  { label: "C1", value: "C1", color: "bg-red-500/20 text-red-400 border-red-500/30" },
+  { label: "C2", value: "C2", color: "bg-red-500/15 text-red-400 border-red-500/30" },
+  { label: "C3", value: "C3", color: "bg-amber-500/15 text-amber-400 border-amber-500/30" },
+  { label: "FI", value: "FI", color: "bg-blue-500/15 text-blue-400 border-blue-500/30" },
 ];
 
 const CODE_BORDER: Record<string, string> = {
   C1: "border-l-red-500",
-  C2: "border-l-amber-500",
-  C3: "border-l-yellow-400",
+  C2: "border-l-[#ef4444]",
+  C3: "border-l-[#f59e0b]",
   FI: "border-l-blue-500",
 };
 
-const CODE_BG: Record<string, string> = {
-  C1: "bg-red-500",
-  C2: "bg-amber-500",
-  C3: "bg-yellow-400",
-  FI: "bg-blue-500",
+const CODE_BADGE_STYLE: Record<string, string> = {
+  C1: "bg-red-500/15 text-red-400",
+  C2: "bg-red-500/15 text-red-400",
+  C3: "bg-amber-500/15 text-amber-400",
+  FI: "bg-blue-500/15 text-blue-400",
+};
+
+const CODE_DOT: Record<string, string> = {
+  C1: "bg-[#10b981]",
+  C2: "bg-[#ef4444]",
+  C3: "bg-[#f59e0b]",
+  FI: "bg-[#4b5563]",
 };
 
 const EMPTY_OBSERVATION: Observation = {
@@ -89,70 +96,65 @@ export function ObservationBuilder({ observations, onChange }: ObservationBuilde
   const total = observations.length;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Summary bar */}
-      {total > 0 && (
-        <div className="flex flex-wrap items-center gap-3 rounded-xl bg-[#1a1f2e] border border-white/10 px-4 py-2.5">
-          <span className="text-sm font-semibold text-[#e2e8f0]">
-            {total} observation{total !== 1 ? "s" : ""}
-          </span>
-          <div className="h-4 w-px bg-white/10" />
-          {(["C1", "C2", "C3", "FI"] as const).map((code) => (
-            <div key={code} className="flex items-center gap-1.5">
-              <div className={`w-2.5 h-2.5 rounded-full ${CODE_BG[code]}`} />
-              <span className="text-xs text-gray-400">
-                <strong className="text-[#e2e8f0]">{counts[code]}</strong> {code}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
+      <div className="flex flex-wrap items-center gap-4 rounded-sm bg-[#1a1f2e] px-4 py-2.5">
+        <span className="text-sm font-semibold text-[#e2e8f0]">
+          {total} observation{total !== 1 ? "s" : ""}
+        </span>
+        <div className="h-4 w-px bg-white/10" />
+        {(["C1", "C2", "C3", "FI"] as const).map((code) => (
+          <div key={code} className="flex items-center gap-1.5">
+            <div className={`w-2 h-2 rounded-full ${CODE_DOT[code]}`} />
+            <span className="text-xs text-gray-400">
+              <strong className="text-[#e2e8f0]">{counts[code]}</strong> {code}
+            </span>
+          </div>
+        ))}
+      </div>
 
       {/* Observation cards */}
       {observations.map((obs, index) => {
         const isCollapsed = collapsed[index];
         const borderColor = CODE_BORDER[obs.code] || "border-l-white/10";
+        const badgeStyle = CODE_BADGE_STYLE[obs.code] || "bg-white/10 text-gray-400";
 
         return (
           <div
             key={index}
-            className={`bg-[#1a1f2e] border border-white/10 border-l-4 ${borderColor} rounded-lg overflow-hidden`}
+            className={`bg-[#1a1f2e] rounded border-l-[3px] ${borderColor} overflow-hidden`}
           >
             {/* Header row */}
-            <div
-              className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-white/[0.02] transition-colors"
-              onClick={() => toggleCollapse(index)}
-            >
-              <svg
-                className={`w-4 h-4 text-gray-400 transition-transform shrink-0 ${isCollapsed ? "" : "rotate-90"}`}
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+            <div className="flex items-center gap-3 px-4 py-3">
+              <button
+                type="button"
+                onClick={() => toggleCollapse(index)}
+                className="shrink-0 p-0.5"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-              <span className="text-sm font-semibold text-[#e2e8f0]">
+                <svg
+                  className={`w-4 h-4 text-gray-400 transition-transform ${isCollapsed ? "" : "rotate-90"}`}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+              <span className="text-xs text-gray-500">
                 #{index + 1}
               </span>
               {obs.code && (
-                <span
-                  className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                    CODE_BG[obs.code] ? `${CODE_BG[obs.code]} text-white` : "bg-white/10 text-gray-400"
-                  }`}
-                >
+                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-sm ${badgeStyle}`}>
                   {obs.code}
                 </span>
               )}
-              <span className="text-sm text-gray-400 truncate flex-1">
-                {obs.observation || obs.location || "New observation"}
+              <span className="text-sm font-semibold text-white truncate flex-1">
+                {obs.location || obs.observation || "New observation"}
               </span>
               <button
                 type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  removeObservation(index);
-                }}
-                className="text-xs text-red-400 hover:text-red-300 transition-colors shrink-0"
+                onClick={() => removeObservation(index)}
+                className="text-[11px] text-red-400/70 hover:text-red-300 transition-colors shrink-0"
               >
                 Remove
               </button>
@@ -160,7 +162,7 @@ export function ObservationBuilder({ observations, onChange }: ObservationBuilde
 
             {/* Expanded body */}
             {!isCollapsed && (
-              <div className="px-4 pb-4 space-y-3 border-t border-white/5">
+              <div className="px-4 pb-4 space-y-3 border-t border-white/[0.03]">
                 {/* Code pills */}
                 <div className="pt-3">
                   <PillSelector
@@ -177,7 +179,7 @@ export function ObservationBuilder({ observations, onChange }: ObservationBuilde
                     value={obs.location}
                     onChange={(e) => updateObservation(index, "location", e.target.value)}
                     placeholder="Location of defect"
-                    className="w-full bg-[#0f1115] border border-white/10 rounded-lg px-3 py-2 text-sm text-[#e2e8f0] placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/40"
+                    className="w-full bg-[#0f1115] border border-white/10 rounded-sm px-3 py-2 text-sm text-[#e2e8f0] placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/40"
                   />
                 </div>
 
@@ -189,7 +191,7 @@ export function ObservationBuilder({ observations, onChange }: ObservationBuilde
                     onChange={(e) => updateObservation(index, "observation", e.target.value)}
                     placeholder="Describe the observation"
                     rows={2}
-                    className="w-full bg-[#0f1115] border border-white/10 rounded-lg px-3 py-2 text-sm text-[#e2e8f0] placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 resize-y"
+                    className="w-full bg-[#0f1115] border border-white/10 rounded-sm px-3 py-2 text-sm text-[#e2e8f0] placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 resize-y min-h-12"
                   />
                 </div>
 
@@ -201,7 +203,7 @@ export function ObservationBuilder({ observations, onChange }: ObservationBuilde
                       value={obs.regulationReference}
                       onChange={(e) => updateObservation(index, "regulationReference", e.target.value)}
                       placeholder="e.g. 411.3.3"
-                      className="w-full bg-[#0f1115] border border-white/10 rounded-lg px-3 py-2 text-sm text-[#e2e8f0] placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/40"
+                      className="w-full bg-[#0f1115] border border-white/10 rounded-sm px-3 py-2 text-sm text-[#e2e8f0] placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/40"
                     />
                   </div>
                   <div>
@@ -210,7 +212,7 @@ export function ObservationBuilder({ observations, onChange }: ObservationBuilde
                       value={obs.actionRecommended}
                       onChange={(e) => updateObservation(index, "actionRecommended", e.target.value)}
                       placeholder="Recommended remedial action"
-                      className="w-full bg-[#0f1115] border border-white/10 rounded-lg px-3 py-2 text-sm text-[#e2e8f0] placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/40"
+                      className="w-full bg-[#0f1115] border border-white/10 rounded-sm px-3 py-2 text-sm text-[#e2e8f0] placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/40"
                     />
                   </div>
                 </div>
@@ -224,7 +226,7 @@ export function ObservationBuilder({ observations, onChange }: ObservationBuilde
       <button
         type="button"
         onClick={addObservation}
-        className="w-full py-3 rounded-xl border-2 border-dashed border-white/10 text-sm font-medium text-gray-400 hover:border-blue-500/50 hover:text-blue-400 hover:bg-blue-500/5 transition-all"
+        className="w-full py-3 rounded border-2 border-dashed border-[var(--border)] text-sm font-medium text-[var(--muted-foreground)] hover:border-[var(--primary)] hover:text-[var(--primary)] hover:bg-[var(--primary)]/5 transition-all"
       >
         + Add Observation
       </button>

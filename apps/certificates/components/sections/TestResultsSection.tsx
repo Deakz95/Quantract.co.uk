@@ -161,7 +161,7 @@ export function TestResultsSection({ data, onChange }: TestResultsSectionProps) 
       </div>
 
       {/* Ring circuit tests (conditional) */}
-      <details className="border border-[var(--border)] rounded-xl overflow-hidden">
+      <details className="border border-[var(--border)] rounded-sm overflow-hidden">
         <summary className="bg-[var(--muted)] px-4 py-3 cursor-pointer text-sm font-semibold text-[var(--foreground)] hover:bg-[var(--muted)]/80 transition-colors select-none">
           Ring Circuit Tests (if applicable)
         </summary>

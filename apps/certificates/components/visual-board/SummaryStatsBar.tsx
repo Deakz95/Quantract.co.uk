@@ -24,7 +24,7 @@ export function SummaryStatsBar({ stats }: SummaryStatsBarProps) {
   ];
 
   return (
-    <div className="bg-[#1a1f2e] rounded-lg py-3 px-6 flex items-center justify-center gap-4 flex-wrap">
+    <div className="bg-[#1a1f2e] rounded-sm py-3 px-6 flex items-center justify-center gap-4 flex-wrap">
       <span className="text-sm text-[var(--muted-foreground)]">
         <strong className="text-[var(--primary)]">{stats.total}</strong> circuits
       </span>

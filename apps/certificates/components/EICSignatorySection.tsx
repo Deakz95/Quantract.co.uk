@@ -97,7 +97,7 @@ function SignatoryBlockForm({
             />
           </div>
         </div>
-        <div className="flex items-start gap-3 p-3 rounded-lg border border-[var(--border)] bg-[var(--muted)]/30">
+        <div className="flex items-start gap-3 p-3 rounded-sm border border-[var(--border)] bg-[var(--muted)]/30">
           <input
             type="checkbox"
             checked={data.complianceConfirmed}
@@ -143,7 +143,7 @@ export function EICSignatorySection({
       </div>
 
       {/* Same as designer toggle */}
-      <div className="flex items-center gap-3 p-4 rounded-xl border border-[var(--border)] bg-[var(--card)]">
+      <div className="flex items-center gap-3 p-4 rounded-sm border border-[var(--border)] bg-[var(--card)]">
         <input
           type="checkbox"
           id="sameAsDesigner"

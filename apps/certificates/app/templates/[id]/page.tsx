@@ -153,7 +153,7 @@ export default function TemplateEditorPage({
           </div>
           <button
             onClick={() => setShowVersions(!showVersions)}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[var(--border)] text-sm hover:bg-[var(--card)] transition"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-sm border border-[var(--border)] text-sm hover:bg-[var(--card)] transition"
           >
             <Clock className="w-4 h-4" />
             Versions ({template.versions.length})
@@ -163,13 +163,13 @@ export default function TemplateEditorPage({
 
       <div className="max-w-7xl mx-auto px-4 py-6">
         {showVersions && (
-          <div className="mb-6 p-4 border border-[var(--border)] rounded-xl bg-[var(--card)]">
+          <div className="mb-6 p-4 border border-[var(--border)] rounded-sm bg-[var(--card)]">
             <h3 className="text-sm font-semibold mb-3">Version History</h3>
             <div className="space-y-2 max-h-60 overflow-y-auto">
               {template.versions.map((v, i) => (
                 <div
                   key={v.id}
-                  className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-[var(--background)] text-sm"
+                  className="flex items-center justify-between py-2 px-3 rounded-sm hover:bg-[var(--background)] text-sm"
                 >
                   <div>
                     <span className="font-medium">v{v.version}</span>

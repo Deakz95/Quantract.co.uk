@@ -42,7 +42,7 @@ export function InstrumentPicker({ onSelect }: InstrumentPickerProps) {
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute left-0 top-full mt-1 z-50 w-80 bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-lg overflow-hidden">
+          <div className="absolute left-0 top-full mt-1 z-50 w-80 bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-lg overflow-hidden">
             <div className="max-h-[240px] overflow-y-auto">
               {presets.map((preset) => (
                 <button

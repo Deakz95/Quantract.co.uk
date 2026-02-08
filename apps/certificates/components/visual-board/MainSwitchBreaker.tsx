@@ -16,7 +16,7 @@ export function MainSwitchBreaker({ ocpdType, ocpdRating, boardType }: MainSwitc
   return (
     <div className="flex justify-center">
       <div
-        className="w-24 h-24 rounded-xl border-[3px] border-amber-500 bg-gradient-to-b from-amber-500/10 to-transparent flex flex-col items-center justify-center bg-[var(--card)]"
+        className="w-24 h-24 rounded-sm border-[3px] border-amber-500 bg-gradient-to-b from-amber-500/10 to-transparent flex flex-col items-center justify-center bg-[var(--card)]"
         style={{ boxShadow: "0 0 20px rgba(245,158,11,0.3)" }}
       >
         <Zap className="w-6 h-6 text-amber-500 mb-1" />

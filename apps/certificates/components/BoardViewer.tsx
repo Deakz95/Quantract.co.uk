@@ -88,12 +88,12 @@ export function BoardViewer({ board, onCircuitClick, onAddCircuit, onExportCSV, 
   const testedPercent = activeCircuits.length > 0 ? Math.round((testedCount / activeCircuits.length) * 100) : 0;
 
   return (
-    <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-8 mb-8">
+    <div className="bg-[var(--card)] border border-[var(--border)] rounded p-8 mb-8">
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div>
           <div className="text-lg font-bold flex items-center gap-3 text-[var(--foreground)]">
-            <div className="w-9 h-9 bg-[var(--muted)] rounded-xl flex items-center justify-center text-[var(--warning)]">
+            <div className="w-9 h-9 bg-[var(--muted)] rounded-sm flex items-center justify-center text-[var(--warning)]">
               <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
@@ -104,7 +104,7 @@ export function BoardViewer({ board, onCircuitClick, onAddCircuit, onExportCSV, 
         </div>
         <div className="flex items-center gap-2">
           {onSettingsClick && (
-            <button onClick={onSettingsClick} className="p-2 rounded-lg text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors" title="Board Settings">
+            <button onClick={onSettingsClick} className="p-2 rounded-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors" title="Board Settings">
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -112,14 +112,14 @@ export function BoardViewer({ board, onCircuitClick, onAddCircuit, onExportCSV, 
             </button>
           )}
           {onExportCSV && (
-            <button onClick={onExportCSV} className="p-2 rounded-lg text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors" title="Export CSV">
+            <button onClick={onExportCSV} className="p-2 rounded-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors" title="Export CSV">
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
             </button>
           )}
           {onSaveAsTemplate && (
-            <button onClick={onSaveAsTemplate} className="p-2 rounded-lg text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors" title="Save as Template">
+            <button onClick={onSaveAsTemplate} className="p-2 rounded-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors" title="Save as Template">
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 7v6m3-3H9" />
@@ -127,15 +127,15 @@ export function BoardViewer({ board, onCircuitClick, onAddCircuit, onExportCSV, 
             </button>
           )}
           {onLoadTemplate && (
-            <button onClick={onLoadTemplate} className="p-2 rounded-lg text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors" title="Load Template">
+            <button onClick={onLoadTemplate} className="p-2 rounded-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors" title="Load Template">
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z" />
               </svg>
             </button>
           )}
-          <div className="flex bg-[var(--muted)] rounded-xl p-1">
+          <div className="flex bg-[var(--muted)] rounded-sm p-1">
             <button
-              className={`px-4 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all border-none ${
+              className={`px-4 py-2 rounded-sm text-sm font-medium cursor-pointer transition-all border-none ${
                 viewMode === "visual" ? "bg-[var(--primary)] text-white" : "bg-transparent text-[var(--muted-foreground)]"
               }`}
               onClick={() => setViewMode("visual")}
@@ -143,7 +143,7 @@ export function BoardViewer({ board, onCircuitClick, onAddCircuit, onExportCSV, 
               Visual
             </button>
             <button
-              className={`px-4 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all border-none ${
+              className={`px-4 py-2 rounded-sm text-sm font-medium cursor-pointer transition-all border-none ${
                 viewMode === "table" ? "bg-[var(--primary)] text-white" : "bg-transparent text-[var(--muted-foreground)]"
               }`}
               onClick={() => setViewMode("table")}
@@ -156,7 +156,7 @@ export function BoardViewer({ board, onCircuitClick, onAddCircuit, onExportCSV, 
 
       {/* Visual View */}
       {viewMode === "visual" && (
-        <div className="bg-[var(--muted)] border-2 border-[var(--border)] rounded-2xl p-6 relative">
+        <div className="bg-[var(--muted)] border-2 border-[var(--border)] rounded p-6 relative">
           <div className="absolute -top-3 left-6 bg-[var(--card)] px-3 py-1 text-xs font-semibold text-[var(--warning)] rounded-md border border-[var(--border)]">
             {board.type === "three-phase" ? "400V 3-PHASE TP&N" : "230V SINGLE PHASE"}
           </div>
@@ -182,7 +182,7 @@ export function BoardViewer({ board, onCircuitClick, onAddCircuit, onExportCSV, 
           {/* Main Incomer */}
           {board.mainSwitch && (
             <div className="flex justify-center mb-6 pb-6 border-b-2 border-dashed border-[var(--border)]">
-              <div className="bg-[var(--card)] border-[3px] border-[var(--warning)] rounded-xl px-8 py-4 text-center shadow-[0_0_20px_rgba(245,158,11,0.3)]">
+              <div className="bg-[var(--card)] border-[3px] border-[var(--warning)] rounded-sm px-8 py-4 text-center shadow-[0_0_20px_rgba(245,158,11,0.3)]">
                 <div className="text-[10px] text-[var(--warning)] font-semibold uppercase tracking-wider mb-2">
                   Main {board.mainSwitch.type}
                 </div>
@@ -214,7 +214,7 @@ export function BoardViewer({ board, onCircuitClick, onAddCircuit, onExportCSV, 
             <div className="flex justify-center mt-4">
               <button
                 onClick={onAddCircuit}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-dashed border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--primary)] hover:text-[var(--primary)] transition-colors text-sm font-medium"
+                className="flex items-center gap-2 px-4 py-2 rounded-sm border-2 border-dashed border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--primary)] hover:text-[var(--primary)] transition-colors text-sm font-medium"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -225,7 +225,7 @@ export function BoardViewer({ board, onCircuitClick, onAddCircuit, onExportCSV, 
           )}
 
           {/* Stats Bar */}
-          <div className="flex gap-4 mt-6 py-4 px-6 bg-[var(--card)] rounded-xl justify-center flex-wrap">
+          <div className="flex gap-4 mt-6 py-4 px-6 bg-[var(--card)] rounded-sm justify-center flex-wrap">
             <div className="flex items-center gap-2">
               <span className="text-sm font-bold text-[var(--primary)]">{testedPercent}%</span>
               <span className="text-xs text-[var(--muted-foreground)]">tested</span>
@@ -283,7 +283,7 @@ export function BoardViewer({ board, onCircuitClick, onAddCircuit, onExportCSV, 
 
       {/* Table View */}
       {viewMode === "table" && (
-        <div className="bg-[var(--muted)] border-2 border-[var(--border)] rounded-2xl overflow-hidden relative">
+        <div className="bg-[var(--muted)] border-2 border-[var(--border)] rounded overflow-hidden relative">
           <div className="absolute -top-3 left-6 bg-[var(--card)] px-3 py-1 text-xs font-semibold text-[var(--primary)] rounded-md border border-[var(--border)] z-[1]">
             SCHEDULE OF CIRCUIT DETAILS
           </div>
@@ -355,7 +355,7 @@ export function BoardViewer({ board, onCircuitClick, onAddCircuit, onExportCSV, 
                     <td colSpan={board.type === "three-phase" ? 16 : 15} className="p-3 text-center">
                       <button
                         onClick={onAddCircuit}
-                        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-dashed border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--primary)] hover:text-[var(--primary)] transition-colors text-xs font-medium"
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-sm border border-dashed border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--primary)] hover:text-[var(--primary)] transition-colors text-xs font-medium"
                       >
                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -389,7 +389,7 @@ function SinglePhaseGrid({
       {circuits.map((circuit) => (
         <div
           key={circuit.id}
-          className={`w-[72px] bg-[var(--card)] border-2 rounded-xl p-2.5 text-center cursor-pointer transition-all ${
+          className={`w-[72px] bg-[var(--card)] border-2 rounded-sm p-2.5 text-center cursor-pointer transition-all ${
             circuit.isEmpty ? "border-dashed border-[var(--border)] opacity-50" : ""
           } ${selectedCircuitId === circuit.id ? "ring-2 ring-[var(--primary)] ring-offset-2 ring-offset-[var(--muted)]" : ""}`}
           style={{
@@ -434,7 +434,7 @@ function ThreePhaseGrid({
     <div className="flex flex-col gap-2">
       {/* L1 Row */}
       <div className="flex items-center gap-2">
-        <div className="w-10 font-mono text-sm font-bold text-center p-2 rounded-lg shrink-0 text-white" style={{ background: PHASE_COLORS.L1 }}>L1</div>
+        <div className="w-10 font-mono text-sm font-bold text-center p-2 rounded-sm shrink-0 text-white" style={{ background: PHASE_COLORS.L1 }}>L1</div>
         <div className="flex gap-1.5 flex-1 overflow-x-auto py-1">
           {l1Circuits.map((circuit) => (
             <Circuit3P key={circuit.id} circuit={circuit} onClick={onCircuitClick} />
@@ -444,7 +444,7 @@ function ThreePhaseGrid({
 
       {/* L2 Row */}
       <div className="flex items-center gap-2">
-        <div className="w-10 font-mono text-sm font-bold text-center p-2 rounded-lg shrink-0 text-black" style={{ background: PHASE_COLORS.L2 }}>L2</div>
+        <div className="w-10 font-mono text-sm font-bold text-center p-2 rounded-sm shrink-0 text-black" style={{ background: PHASE_COLORS.L2 }}>L2</div>
         <div className="flex gap-1.5 flex-1 overflow-x-auto py-1">
           {l2Circuits.map((circuit) => (
             <Circuit3P key={circuit.id} circuit={circuit} onClick={onCircuitClick} />
@@ -454,7 +454,7 @@ function ThreePhaseGrid({
 
       {/* L3 Row */}
       <div className="flex items-center gap-2">
-        <div className="w-10 font-mono text-sm font-bold text-center p-2 rounded-lg shrink-0 text-white" style={{ background: PHASE_COLORS.L3 }}>L3</div>
+        <div className="w-10 font-mono text-sm font-bold text-center p-2 rounded-sm shrink-0 text-white" style={{ background: PHASE_COLORS.L3 }}>L3</div>
         <div className="flex gap-1.5 flex-1 overflow-x-auto py-1">
           {l3Circuits.map((circuit) => (
             <Circuit3P key={circuit.id} circuit={circuit} onClick={onCircuitClick} />
@@ -470,7 +470,7 @@ function ThreePhaseGrid({
             {tpnCircuits.map((circuit) => (
               <div
                 key={circuit.id}
-                className="bg-[var(--card)] border-2 rounded-xl p-4 text-center cursor-pointer transition-all min-w-[100px]"
+                className="bg-[var(--card)] border-2 rounded-sm p-4 text-center cursor-pointer transition-all min-w-[100px]"
                 style={{ borderColor: STATUS_COLORS[circuit.status] }}
                 onClick={() => onCircuitClick?.(circuit)}
               >
@@ -501,7 +501,7 @@ function ThreePhaseGrid({
 function Circuit3P({ circuit, onClick }: { circuit: Circuit; onClick?: (circuit: Circuit) => void }) {
   return (
     <div
-      className={`min-w-[64px] bg-[var(--card)] border-2 rounded-lg py-2 px-1 text-center cursor-pointer transition-all shrink-0 ${
+      className={`min-w-[64px] bg-[var(--card)] border-2 rounded-sm py-2 px-1 text-center cursor-pointer transition-all shrink-0 ${
         circuit.isEmpty ? "border-dashed border-[var(--border)] opacity-50" : ""
       }`}
       style={{
@@ -543,7 +543,7 @@ function StatusBadge({ status }: { status: Circuit["status"] }) {
 
   return (
     <span
-      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-2xl text-[11px] font-semibold"
+      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-semibold"
       style={{ background: bgColors[status], color: STATUS_COLORS[status] }}
     >
       <span

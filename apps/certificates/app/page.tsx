@@ -48,11 +48,11 @@ export default function CertificatesPage() {
 
       <div className="relative z-[1] py-12 px-6 max-w-[1200px] mx-auto">
         {/* CRM Upsell Banner */}
-        <div className="mb-8 rounded-2xl bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] p-[1px]">
-          <div className="rounded-2xl bg-[var(--card)] p-6">
+        <div className="mb-8 rounded bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] p-[1px]">
+          <div className="rounded bg-[var(--card)] p-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--primary)] to-[var(--accent)] flex items-center justify-center text-white shrink-0">
+                <div className="w-12 h-12 rounded-sm bg-gradient-to-br from-[var(--primary)] to-[var(--accent)] flex items-center justify-center text-white shrink-0">
                   <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                   </svg>
@@ -68,7 +68,7 @@ export default function CertificatesPage() {
               </div>
               <a
                 href="https://www.quantract.co.uk/auth/signup"
-                className="shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] text-white font-semibold text-sm hover:opacity-90 transition-opacity"
+                className="shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-sm bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] text-white font-semibold text-sm hover:opacity-90 transition-opacity"
               >
                 Try Quantract CRM Free
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -81,7 +81,7 @@ export default function CertificatesPage() {
 
         {/* Header */}
         <div className="text-center mb-12">
-          <div className="w-[72px] h-[72px] rounded-2xl bg-gradient-to-br from-[var(--primary)] to-[var(--primary-dark)] flex items-center justify-center mx-auto mb-6 shadow-[0_0_40px_rgba(59,130,246,0.3)]">
+          <div className="w-[72px] h-[72px] rounded bg-gradient-to-br from-[var(--primary)] to-[var(--primary-dark)] flex items-center justify-center mx-auto mb-6 shadow-[0_0_40px_rgba(59,130,246,0.3)]">
             <svg className="w-9 h-9 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
@@ -109,8 +109,8 @@ export default function CertificatesPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {(["EIC", "EICR", "MWC"] as const).map((type) => (
               <Link key={type} href={`/${type.toLowerCase()}`} className="no-underline">
-                <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 cursor-pointer transition-all duration-200 hover:border-[var(--primary)] hover:-translate-y-1 hover:shadow-[0_12px_40px_rgba(0,0,0,0.3)]">
-                  <div className="w-[52px] h-[52px] rounded-xl bg-gradient-to-br from-[var(--primary)] to-[var(--primary-dark)] flex items-center justify-center text-white mb-4">
+                <div className="bg-[var(--card)] border border-[var(--border)] rounded p-6 cursor-pointer transition-all duration-200 hover:border-[var(--primary)] hover:-translate-y-1 hover:shadow-[0_12px_40px_rgba(0,0,0,0.3)]">
+                  <div className="w-[52px] h-[52px] rounded-sm bg-gradient-to-br from-[var(--primary)] to-[var(--primary-dark)] flex items-center justify-center text-white mb-4">
                     {certIcons[type]}
                   </div>
                   <div className="text-xs font-semibold text-[var(--primary)] mb-1">{type}</div>
@@ -134,8 +134,8 @@ export default function CertificatesPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {(["FIRE", "EML"] as const).map((type) => (
               <Link key={type} href={`/${type.toLowerCase()}`} className="no-underline">
-                <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 cursor-pointer transition-all duration-200 hover:border-[var(--error)] hover:-translate-y-1 hover:shadow-[0_12px_40px_rgba(0,0,0,0.3)]">
-                  <div className="w-[52px] h-[52px] rounded-xl bg-gradient-to-br from-[var(--error)] to-[#B91C1C] flex items-center justify-center text-white mb-4">
+                <div className="bg-[var(--card)] border border-[var(--border)] rounded p-6 cursor-pointer transition-all duration-200 hover:border-[var(--error)] hover:-translate-y-1 hover:shadow-[0_12px_40px_rgba(0,0,0,0.3)]">
+                  <div className="w-[52px] h-[52px] rounded-sm bg-gradient-to-br from-[var(--error)] to-[#B91C1C] flex items-center justify-center text-white mb-4">
                     {certIcons[type]}
                   </div>
                   <div className="text-xs font-semibold text-[var(--error)] mb-1">{type}</div>
@@ -152,7 +152,7 @@ export default function CertificatesPage() {
         </div>
 
         {/* Certificate Insights Widget */}
-        <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-8 mb-12">
+        <div className="bg-[var(--card)] border border-[var(--border)] rounded p-8 mb-12">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-bold">Certificate Insights</h3>
             <span className="text-[10px] font-medium uppercase tracking-wider text-[var(--muted-foreground)] bg-[var(--muted)] px-2 py-0.5 rounded">Demo</span>
@@ -164,7 +164,7 @@ export default function CertificatesPage() {
               { label: "FI outstanding", value: "7" },
               { label: "Amendments created", value: "12" },
             ].map((stat) => (
-              <div key={stat.label} className="rounded-xl bg-[var(--muted)] p-4">
+              <div key={stat.label} className="rounded-sm bg-[var(--muted)] p-4">
                 <p className="text-xs text-[var(--muted-foreground)] mb-1">{stat.label}</p>
                 <p className="text-2xl font-bold text-[var(--foreground)]">{stat.value}</p>
               </div>
@@ -172,7 +172,7 @@ export default function CertificatesPage() {
           </div>
           <div>
             <p className="text-xs font-semibold text-[var(--muted-foreground)] mb-2">Top Observations</p>
-            <div className="rounded-xl border border-[var(--border)] overflow-hidden">
+            <div className="rounded-sm border border-[var(--border)] overflow-hidden">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-[var(--border)] bg-[var(--muted)]">
@@ -217,7 +217,7 @@ export default function CertificatesPage() {
         </div>
 
         {/* Features Section */}
-        <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-8 mb-12">
+        <div className="bg-[var(--card)] border border-[var(--border)] rounded p-8 mb-12">
           <h3 className="text-lg font-bold mb-6">Why Quantract Certificates?</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
@@ -259,7 +259,7 @@ export default function CertificatesPage() {
               },
             ].map((feature) => (
               <div key={feature.title}>
-                <div className="w-10 h-10 rounded-xl bg-[var(--muted)] flex items-center justify-center text-[var(--primary)] mb-3">
+                <div className="w-10 h-10 rounded-sm bg-[var(--muted)] flex items-center justify-center text-[var(--primary)] mb-3">
                   {feature.icon}
                 </div>
                 <h4 className="text-sm font-semibold mb-1 text-[var(--foreground)]">
@@ -272,7 +272,7 @@ export default function CertificatesPage() {
         </div>
 
         {/* CRM Benefits Section */}
-        <div className="mb-12 rounded-2xl border border-[var(--border)] bg-[var(--card)] overflow-hidden">
+        <div className="mb-12 rounded border border-[var(--border)] bg-[var(--card)] overflow-hidden">
           <div className="p-8 text-center border-b border-[var(--border)] bg-gradient-to-br from-[var(--primary)]/5 to-transparent">
             <h3 className="text-xl font-bold text-[var(--foreground)] mb-2">
               Ready to streamline your electrical business?
@@ -312,7 +312,7 @@ export default function CertificatesPage() {
               },
             ].map((item) => (
               <div key={item.title} className="p-6 text-center">
-                <div className="w-10 h-10 rounded-xl bg-[var(--muted)] flex items-center justify-center text-[var(--primary)] mx-auto mb-3">
+                <div className="w-10 h-10 rounded-sm bg-[var(--muted)] flex items-center justify-center text-[var(--primary)] mx-auto mb-3">
                   {item.icon}
                 </div>
                 <h4 className="text-sm font-semibold text-[var(--foreground)] mb-1">{item.title}</h4>
@@ -323,7 +323,7 @@ export default function CertificatesPage() {
           <div className="p-6 bg-[var(--muted)]/30 text-center">
             <a
               href="https://www.quantract.co.uk/auth/signup"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] text-white font-semibold text-sm hover:opacity-90 transition-opacity"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-sm bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] text-white font-semibold text-sm hover:opacity-90 transition-opacity"
             >
               Start Free Trial - No Card Required
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

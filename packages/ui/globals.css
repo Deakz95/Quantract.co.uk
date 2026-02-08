@@ -6,10 +6,10 @@
 
 :root {
   /* Core radius and spacing */
-  --radius: 16px;
-  --radius-sm: 8px;
-  --radius-lg: 24px;
-  --radius-xl: 32px;
+  --radius: 4px;
+  --radius-sm: 2px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
 
   /* Fonts */
   --font-sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;

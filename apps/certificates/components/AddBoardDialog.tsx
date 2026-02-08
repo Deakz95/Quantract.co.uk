@@ -59,7 +59,7 @@ export function AddBoardDialog({ boardCount, onAdd, onClose }: AddBoardDialogPro
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl w-full max-w-[520px] max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-[var(--card)] border border-[var(--border)] rounded w-full max-w-[520px] max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="p-6 border-b border-[var(--border)]">
           <h2 className="text-xl font-bold text-[var(--foreground)]">Add Distribution Board</h2>
           <p className="text-sm text-[var(--muted-foreground)] mt-1">Configure the new board or select a preset</p>
@@ -74,7 +74,7 @@ export function AddBoardDialog({ boardCount, onAdd, onClose }: AddBoardDialogPro
                 <button
                   key={preset.label}
                   onClick={() => applyPreset(preset.data)}
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--primary)] hover:text-[var(--primary)] transition-colors"
+                  className="px-3 py-1.5 rounded-sm text-xs font-medium border border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--primary)] hover:text-[var(--primary)] transition-colors"
                 >
                   {preset.label}
                 </button>
@@ -147,7 +147,7 @@ export function AddBoardDialog({ boardCount, onAdd, onClose }: AddBoardDialogPro
           </div>
 
           {/* Main Switch */}
-          <div className="border border-[var(--border)] rounded-xl p-4 space-y-3">
+          <div className="border border-[var(--border)] rounded-sm p-4 space-y-3">
             <p className="text-xs font-semibold text-[var(--muted-foreground)] uppercase tracking-wider">Main Switch</p>
             <div className="grid grid-cols-2 gap-4">
               <div>

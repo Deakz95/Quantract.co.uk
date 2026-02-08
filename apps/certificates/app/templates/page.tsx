@@ -70,7 +70,7 @@ export default function TemplatesPage() {
         )}
 
         {error && (
-          <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-sm text-red-400">
+          <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-sm text-sm text-red-400">
             {error}
           </div>
         )}
@@ -92,7 +92,7 @@ export default function TemplatesPage() {
                 <Card className="hover:border-[var(--primary)]/50 transition cursor-pointer">
                   <CardContent className="flex items-center justify-between py-4">
                     <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-lg bg-[var(--primary)]/10 flex items-center justify-center">
+                      <div className="w-10 h-10 rounded-sm bg-[var(--primary)]/10 flex items-center justify-center">
                         <FileText className="w-5 h-5 text-[var(--primary)]" />
                       </div>
                       <div>

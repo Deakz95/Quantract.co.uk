@@ -18,10 +18,20 @@ header {
   z-index: 10;
 }
 
-/* Limit any decorative fixed/absolute elements */
-.fixed[class*="pointer-events-none"],
-.absolute[class*="pointer-events-none"] {
+/* Limit decorative fixed/absolute overlays (exclude labels, unit suffixes, and SVG icons) */
+.fixed[class*="pointer-events-none"]:not(label):not(span):not(svg),
+.absolute[class*="pointer-events-none"]:not(label):not(span):not(svg) {
   z-index: -1 !important;
+}
+
+/* Ensure floating labels are always visible above inputs */
+label.absolute[class*="pointer-events-none"] {
+  z-index: 2 !important;
+}
+
+/* Ensure unit suffixes are visible */
+span.absolute[class*="pointer-events-none"] {
+  z-index: 2 !important;
 }
 
 /* Ensure SVGs don't overflow */

@@ -125,7 +125,7 @@ export function InspectionChecklist({ items, onChange }: InspectionChecklistProp
       ))}
 
       {/* Summary bar */}
-      <div className="flex flex-wrap items-center gap-4 rounded-xl bg-[#1a1f2e] border border-white/10 px-5 py-3 mt-4">
+      <div className="flex flex-wrap items-center gap-4 rounded-sm bg-[#1a1f2e] border border-white/10 px-5 py-3 mt-4">
         <span className="text-sm font-semibold text-[#e2e8f0]">Total: {totalItems}</span>
         <div className="h-4 w-px bg-white/10" />
         <div className="flex items-center gap-1.5">

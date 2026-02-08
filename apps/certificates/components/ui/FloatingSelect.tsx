@@ -32,16 +32,16 @@ export function FloatingSelect({
         value={value}
         onChange={onChange}
         disabled={disabled}
-        className="peer w-full bg-[#0f1115] border border-white/10 rounded-lg px-3 pt-5 pb-1.5 text-sm text-[#e2e8f0] appearance-none focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-500/50 transition-colors disabled:opacity-50 cursor-pointer"
+        className="peer w-full bg-[#0f1115] border border-white/10 rounded-sm px-3 pt-5 pb-1.5 text-sm text-[#e2e8f0] appearance-none focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-500/50 transition-colors disabled:opacity-50 cursor-pointer"
       >
         {children}
       </select>
       <label
         htmlFor={id}
-        className={`absolute left-3 transition-all duration-150 pointer-events-none ${
+        className={`absolute left-3 z-[2] transition-all duration-150 pointer-events-none font-semibold uppercase tracking-wider ${
           hasValue
-            ? "top-1 text-[10px] text-cyan-400"
-            : "top-1 text-[10px] text-cyan-400"
+            ? "top-1 text-[9px] text-cyan-400"
+            : "top-1 text-[9px] text-cyan-400"
         }`}
       >
         {label}

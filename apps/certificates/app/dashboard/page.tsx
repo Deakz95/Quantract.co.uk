@@ -126,7 +126,7 @@ export default function DashboardPage() {
           </div>
           <Link
             href="/"
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] text-white rounded-xl font-semibold text-sm hover:opacity-90 transition-opacity"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] text-white rounded-sm font-semibold text-sm hover:opacity-90 transition-opacity"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -145,7 +145,7 @@ export default function DashboardPage() {
           ].map((stat) => (
             <div
               key={stat.label}
-              className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-5 relative overflow-hidden"
+              className="bg-[var(--card)] border border-[var(--border)] rounded p-5 relative overflow-hidden"
             >
               <div className={`absolute top-0 right-0 w-20 h-20 bg-gradient-to-br ${stat.color} opacity-10 rounded-full -translate-y-1/2 translate-x-1/2`} />
               <div className="text-3xl font-bold font-mono">{stat.value}</div>
@@ -155,7 +155,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Search & Filters */}
-        <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 mb-6">
+        <div className="bg-[var(--card)] border border-[var(--border)] rounded p-4 mb-6">
           <div className="flex flex-col lg:flex-row gap-4">
             {/* Search */}
             <div className="flex-1 relative">
@@ -177,12 +177,12 @@ export default function DashboardPage() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search by certificate number, client, or address..."
-                className="w-full px-4 py-3 pl-12 bg-[var(--background)] border border-[var(--border)] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent transition-all"
+                className="w-full px-4 py-3 pl-12 bg-[var(--background)] border border-[var(--border)] rounded-sm text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent transition-all"
               />
               {searchTerm && (
                 <button
                   onClick={() => setSearchTerm("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-[var(--muted)] rounded-lg transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-[var(--muted)] rounded-sm transition-colors"
                 >
                   <svg className="w-4 h-4 text-[var(--muted-foreground)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -195,7 +195,7 @@ export default function DashboardPage() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as CertificateStatus | "all")}
-              className="px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] min-w-[160px]"
+              className="px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-sm text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] min-w-[160px]"
             >
               <option value="all">All Status</option>
               <option value="draft">Draft</option>
@@ -208,7 +208,7 @@ export default function DashboardPage() {
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value as CertificateType | "all")}
-              className="px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] min-w-[160px]"
+              className="px-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-sm text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] min-w-[160px]"
             >
               <option value="all">All Types</option>
               <option value="EIC">EIC</option>
@@ -222,7 +222,7 @@ export default function DashboardPage() {
             {(searchTerm || statusFilter !== "all" || typeFilter !== "all") && (
               <button
                 onClick={clearFilters}
-                className="px-4 py-3 bg-[var(--muted)] hover:bg-[var(--muted)]/80 rounded-xl text-sm font-medium transition-colors flex items-center gap-2"
+                className="px-4 py-3 bg-[var(--muted)] hover:bg-[var(--muted)]/80 rounded-sm text-sm font-medium transition-colors flex items-center gap-2"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -234,7 +234,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Results */}
-        <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl overflow-hidden">
+        <div className="bg-[var(--card)] border border-[var(--border)] rounded overflow-hidden">
           <div className="p-4 border-b border-[var(--border)] flex items-center justify-between">
             <span className="text-sm text-[var(--muted-foreground)]">
               Showing {filteredCertificates.length} of {certificates.length} certificates
@@ -254,7 +254,7 @@ export default function DashboardPage() {
               </p>
               <Link
                 href="/"
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] text-white rounded-xl font-semibold text-sm hover:opacity-90 transition-opacity"
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] text-white rounded-sm font-semibold text-sm hover:opacity-90 transition-opacity"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -275,7 +275,7 @@ export default function DashboardPage() {
               </p>
               <button
                 onClick={clearFilters}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--muted)] hover:bg-[var(--muted)]/80 rounded-xl text-sm font-medium transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--muted)] hover:bg-[var(--muted)]/80 rounded-sm text-sm font-medium transition-colors"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -291,7 +291,7 @@ export default function DashboardPage() {
                   className="flex items-center gap-4 p-4 hover:bg-[var(--muted)]/50 transition-colors group"
                 >
                   {/* Icon */}
-                  <div className="w-12 h-12 rounded-xl bg-[var(--muted)] flex items-center justify-center shrink-0">
+                  <div className="w-12 h-12 rounded-sm bg-[var(--muted)] flex items-center justify-center shrink-0">
                     <svg className={`w-6 h-6 ${getTypeColor(cert.certificate_type)}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
@@ -320,7 +320,7 @@ export default function DashboardPage() {
                   <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <Link
                       href={`/${cert.certificate_type.toLowerCase()}?id=${cert.id}`}
-                      className="p-2 hover:bg-[var(--primary)]/10 text-[var(--primary)] rounded-lg transition-colors"
+                      className="p-2 hover:bg-[var(--primary)]/10 text-[var(--primary)] rounded-sm transition-colors"
                       title="Edit"
                     >
                       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -331,7 +331,7 @@ export default function DashboardPage() {
                       <div className="flex items-center gap-1">
                         <button
                           onClick={() => handleDelete(cert.id)}
-                          className="p-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors"
+                          className="p-2 bg-red-500/20 text-red-400 rounded-sm hover:bg-red-500/30 transition-colors"
                           title="Confirm Delete"
                         >
                           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -340,7 +340,7 @@ export default function DashboardPage() {
                         </button>
                         <button
                           onClick={() => setDeleteConfirm(null)}
-                          className="p-2 hover:bg-[var(--muted)] rounded-lg transition-colors"
+                          className="p-2 hover:bg-[var(--muted)] rounded-sm transition-colors"
                           title="Cancel"
                         >
                           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -351,7 +351,7 @@ export default function DashboardPage() {
                     ) : (
                       <button
                         onClick={() => setDeleteConfirm(cert.id)}
-                        className="p-2 hover:bg-red-500/10 text-[var(--muted-foreground)] hover:text-red-400 rounded-lg transition-colors"
+                        className="p-2 hover:bg-red-500/10 text-[var(--muted-foreground)] hover:text-red-400 rounded-sm transition-colors"
                         title="Delete"
                       >
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -377,7 +377,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Info Banner */}
-        <div className="mt-6 p-4 bg-[var(--muted)]/50 border border-[var(--border)] rounded-xl text-sm text-[var(--muted-foreground)]">
+        <div className="mt-6 p-4 bg-[var(--muted)]/50 border border-[var(--border)] rounded-sm text-sm text-[var(--muted-foreground)]">
           <div className="flex items-start gap-3">
             <svg className="w-5 h-5 text-[var(--primary)] shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />

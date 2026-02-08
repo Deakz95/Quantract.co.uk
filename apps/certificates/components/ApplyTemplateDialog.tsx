@@ -53,7 +53,7 @@ export function ApplyTemplateDialog({
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div
-        className="bg-[var(--card)] border border-[var(--border)] rounded-2xl w-full max-w-[560px] max-h-[90vh] overflow-y-auto"
+        className="bg-[var(--card)] border border-[var(--border)] rounded w-full max-w-[560px] max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -89,7 +89,7 @@ export function ApplyTemplateDialog({
 
               {/* Apply mode toggle */}
               {selected && (
-                <div className="border border-[var(--border)] rounded-xl p-4 space-y-3">
+                <div className="border border-[var(--border)] rounded-sm p-4 space-y-3">
                   <p className="text-sm font-semibold text-[var(--foreground)]">Apply Mode</p>
                   <div className="space-y-2">
                     <label className="flex items-center gap-3 cursor-pointer">
@@ -151,7 +151,7 @@ function TemplateRow({
   return (
     <button
       onClick={onSelect}
-      className={`w-full text-left p-3 rounded-xl border transition-all ${
+      className={`w-full text-left p-3 rounded-sm border transition-all ${
         isSelected
           ? "border-[var(--primary)]/50 bg-[var(--primary)]/10"
           : "border-[var(--border)] hover:bg-[var(--muted)]/50"
@@ -181,7 +181,7 @@ function TemplateRow({
             e.stopPropagation();
             onDelete();
           }}
-          className="p-1.5 rounded-lg text-[var(--muted-foreground)] hover:text-red-400 hover:bg-red-500/10 transition-colors shrink-0"
+          className="p-1.5 rounded-sm text-[var(--muted-foreground)] hover:text-red-400 hover:bg-red-500/10 transition-colors shrink-0"
           title="Delete template"
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>

@@ -70,7 +70,7 @@ export function SaveAsTemplateDialog({
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div
-        className="bg-[var(--card)] border border-[var(--border)] rounded-2xl w-full max-w-[520px] max-h-[90vh] overflow-y-auto"
+        className="bg-[var(--card)] border border-[var(--border)] rounded w-full max-w-[520px] max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -125,11 +125,11 @@ export function SaveAsTemplateDialog({
           {/* Section selection */}
           <div className="space-y-2">
             <Label>Sections to Include ({selectedSections.size} selected)</Label>
-            <div className="border border-[var(--border)] rounded-xl p-3 space-y-1 max-h-[250px] overflow-y-auto">
+            <div className="border border-[var(--border)] rounded-sm p-3 space-y-1 max-h-[250px] overflow-y-auto">
               {sections.map((section) => (
                 <label
                   key={section.id}
-                  className="flex items-center gap-3 px-2 py-1.5 rounded-lg cursor-pointer hover:bg-[var(--muted)]/50 transition-colors"
+                  className="flex items-center gap-3 px-2 py-1.5 rounded-sm cursor-pointer hover:bg-[var(--muted)]/50 transition-colors"
                 >
                   <input
                     type="checkbox"

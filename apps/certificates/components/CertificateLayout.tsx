@@ -75,32 +75,28 @@ const CERT_META: Record<CertType, { title: string; shortTitle: string; standard:
   MWC: { title: "Minor Electrical Installation Works Certificate", shortTitle: "MWC", standard: "BS 7671:2018+A2:2022" },
 };
 
-// ── Icons ──
+const SIDEBAR_COLLAPSED_W = 56;
+const SIDEBAR_DEFAULT_W = 260;
+const SIDEBAR_MAX_W = 400;
 
-function StatusIcon({ status }: { status: SectionStatus }) {
-  switch (status) {
-    case "complete":
-      return (
-        <svg className="w-4 h-4 text-emerald-400" viewBox="0 0 20 20" fill="currentColor">
-          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
-        </svg>
-      );
-    case "partial":
-      return (
-        <svg className="w-4 h-4 text-amber-400" viewBox="0 0 20 20" fill="currentColor">
-          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM10 5a.75.75 0 01.75.75V10a.75.75 0 01-.75.75H6.5a.75.75 0 010-1.5H9.25V5.75A.75.75 0 0110 5z" clipRule="evenodd" />
-        </svg>
-      );
-    case "error":
-      return (
-        <svg className="w-4 h-4 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-        </svg>
-      );
-    default:
-      return <div className="w-4 h-4 rounded-full border-2 border-[var(--muted-foreground)]/30" />;
-  }
+// ── Status dot — replaces the old SVG-heavy StatusIcon ──
+
+const STATUS_DOT_COLOR: Record<SectionStatus, string> = {
+  complete: "bg-emerald-400",
+  partial: "bg-amber-400",
+  error: "bg-red-400",
+  empty: "bg-[var(--muted-foreground)]/30",
+};
+
+function StatusDot({ status }: { status: SectionStatus }) {
+  return (
+    <span
+      className={`w-2 h-2 rounded-full shrink-0 ${STATUS_DOT_COLOR[status]}`}
+    />
+  );
 }
+
+// ── Icons ──
 
 // Lucide-style section icons
 export const SECTION_ICONS = {
@@ -201,7 +197,7 @@ export const SECTION_ICONS = {
 function ShortcutOverlay({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-[var(--card)] border border-[var(--border)] rounded-sm w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
         <h3 className="text-lg font-bold text-[var(--foreground)] mb-4">Keyboard Shortcuts</h3>
         <div className="space-y-2 text-sm">
           {[
@@ -215,11 +211,11 @@ function ShortcutOverlay({ onClose }: { onClose: () => void }) {
           ].map(([key, desc]) => (
             <div key={key} className="flex items-center justify-between py-1.5 border-b border-[var(--border)]/50 last:border-0">
               <span className="text-[var(--muted-foreground)]">{desc}</span>
-              <kbd className="px-2 py-0.5 bg-[var(--muted)] rounded text-xs font-mono text-[var(--foreground)]">{key}</kbd>
+              <kbd className="px-2 py-0.5 bg-[var(--muted)] rounded-sm text-xs font-mono text-[var(--foreground)]">{key}</kbd>
             </div>
           ))}
         </div>
-        <button onClick={onClose} className="mt-4 w-full py-2 rounded-xl bg-[var(--muted)] text-sm font-medium text-[var(--foreground)] hover:bg-[var(--accent)] transition-colors">
+        <button onClick={onClose} className="mt-4 w-full py-2 rounded-sm bg-[var(--muted)] text-sm font-medium text-[var(--foreground)] hover:bg-[var(--accent)] transition-colors">
           Close
         </button>
       </div>
@@ -256,7 +252,10 @@ export function CertificateLayout({
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [showCopyDialog, setShowCopyDialog] = useState(false);
   const [showSaveTemplateDialog, setShowSaveTemplateDialog] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(SIDEBAR_DEFAULT_W);
   const rightPanelRef = useRef<HTMLDivElement>(null);
+  const isDraggingRef = useRef(false);
 
   const meta = CERT_META[certType];
   const activeIdx = sections.findIndex((s) => s.id === activeSection);
@@ -348,9 +347,45 @@ export function CertificateLayout({
   // Close mobile nav when section changes
   useEffect(() => { setMobileNavOpen(false); }, [activeSection]);
 
+  // Sidebar drag-resize handler
+  const handleResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    isDraggingRef.current = true;
+    const startX = e.clientX;
+    const startW = sidebarWidth;
+
+    const onMove = (ev: MouseEvent) => {
+      if (!isDraggingRef.current) return;
+      const delta = ev.clientX - startX;
+      const newW = Math.max(SIDEBAR_COLLAPSED_W, Math.min(SIDEBAR_MAX_W, startW + delta));
+      if (newW <= SIDEBAR_COLLAPSED_W + 20) {
+        setSidebarCollapsed(true);
+        setSidebarWidth(SIDEBAR_DEFAULT_W);
+      } else {
+        setSidebarCollapsed(false);
+        setSidebarWidth(newW);
+      }
+    };
+
+    const onUp = () => {
+      isDraggingRef.current = false;
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  }, [sidebarWidth]);
+
   const prevSection = activeIdx > 0 ? sections[activeIdx - 1] : null;
   const nextSection = activeIdx < sections.length - 1 ? sections[activeIdx + 1] : null;
   const isLastSection = activeIdx === sections.length - 1;
+
+  const resolvedSidebarW = sidebarCollapsed ? SIDEBAR_COLLAPSED_W : sidebarWidth;
 
   return (
     <div className="h-screen flex flex-col bg-[var(--background)] text-[var(--foreground)] overflow-hidden">
@@ -366,7 +401,7 @@ export function CertificateLayout({
             {/* Mobile nav toggle */}
             <button
               onClick={() => setMobileNavOpen((p) => !p)}
-              className="lg:hidden p-1.5 rounded-lg hover:bg-[var(--muted)] transition-colors"
+              className="lg:hidden p-1.5 rounded-sm hover:bg-[var(--muted)] transition-colors"
               title="Toggle sections"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
@@ -376,7 +411,7 @@ export function CertificateLayout({
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <span className="text-base font-bold truncate">{meta.shortTitle}</span>
-                <span className="hidden sm:inline px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wider bg-[var(--primary)]/15 text-[var(--primary)] border border-[var(--primary)]/20">
+                <span className="hidden sm:inline px-2 py-0.5 rounded-sm text-[10px] font-semibold uppercase tracking-wider bg-[var(--primary)]/15 text-[var(--primary)] border border-[var(--primary)]/20">
                   Draft
                 </span>
               </div>
@@ -390,14 +425,14 @@ export function CertificateLayout({
           </div>
           <div className="flex items-center gap-2 shrink-0">
             {isFormLocked && (
-              <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wider bg-amber-500/15 text-amber-400 border border-amber-500/20">
+              <span className="px-2 py-0.5 rounded-sm text-[10px] font-semibold uppercase tracking-wider bg-amber-500/15 text-amber-400 border border-amber-500/20">
                 Read only
               </span>
             )}
             {!isFormLocked && onApplyTemplate && currentData && (
               <button
                 onClick={() => setShowTemplateDialog(true)}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-[var(--muted)] hover:bg-[var(--accent)] text-[var(--foreground)] transition-colors"
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-sm font-medium bg-[var(--muted)] hover:bg-[var(--accent)] text-[var(--foreground)] transition-colors"
                 title="Apply template"
               >
                 <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect width="18" height="18" x="3" y="3" rx="2" ry="2" /><line x1="3" y1="9" x2="21" y2="9" /><line x1="9" y1="21" x2="9" y2="9" /></svg>
@@ -407,7 +442,7 @@ export function CertificateLayout({
             {!isFormLocked && onCopyFrom && currentData && (
               <button
                 onClick={() => setShowCopyDialog(true)}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-[var(--muted)] hover:bg-[var(--accent)] text-[var(--foreground)] transition-colors"
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-sm font-medium bg-[var(--muted)] hover:bg-[var(--accent)] text-[var(--foreground)] transition-colors"
                 title="Copy from another certificate"
               >
                 <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect width="14" height="14" x="8" y="8" rx="2" ry="2" /><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" /></svg>
@@ -417,7 +452,7 @@ export function CertificateLayout({
             <button
               onClick={onSave}
               disabled={isSaving || isFormLocked}
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-[var(--muted)] hover:bg-[var(--accent)] text-[var(--foreground)] transition-colors disabled:opacity-50"
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-sm font-medium bg-[var(--muted)] hover:bg-[var(--accent)] text-[var(--foreground)] transition-colors disabled:opacity-50"
             >
               {saveStatus === "saving" ? (
                 <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M21 12a9 9 0 11-6.219-8.56" /></svg>
@@ -429,14 +464,14 @@ export function CertificateLayout({
             <button
               onClick={onDownload}
               disabled={isGenerating}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-[var(--primary)] text-white hover:opacity-90 transition-opacity disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-sm font-medium bg-[var(--primary)] text-white hover:opacity-90 transition-opacity disabled:opacity-50"
             >
               <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
               <span className="hidden sm:inline">{isGenerating ? "Generating\u2026" : "PDF"}</span>
             </button>
             <button
               onClick={() => setShowShortcuts(true)}
-              className="p-1.5 rounded-lg text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors"
+              className="p-1.5 rounded-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors"
               title="Keyboard shortcuts"
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><circle cx="12" cy="17" r=".5" /></svg>
@@ -452,136 +487,206 @@ export function CertificateLayout({
           <div className="fixed inset-0 bg-black/50 z-30 lg:hidden" onClick={() => setMobileNavOpen(false)} />
         )}
 
-        {/* ── Left Panel ── */}
-        <aside className={`
-          ${mobileNavOpen ? "translate-x-0" : "-translate-x-full"}
-          lg:translate-x-0
-          fixed lg:static inset-y-0 left-0 z-40 lg:z-auto
-          w-72 md:w-80 lg:w-[320px] xl:w-[340px]
-          bg-[var(--card)] border-r border-[var(--border)]
-          flex flex-col overflow-hidden
-          transition-transform duration-200 ease-out
-          lg:transition-none
-          top-0 lg:top-auto
-        `}>
+        {/* ── Left Panel (collapsible sidebar) ── */}
+        <aside
+          className={`
+            ${mobileNavOpen ? "translate-x-0" : "-translate-x-full"}
+            lg:translate-x-0
+            fixed lg:static inset-y-0 left-0 z-40 lg:z-auto
+            bg-[var(--card)] border-r border-[var(--border)]
+            flex flex-col overflow-hidden
+            transition-all duration-200 ease-out
+            top-0 lg:top-auto
+          `}
+          style={{ width: mobileNavOpen ? 280 : resolvedSidebarW }}
+        >
           {/* Mobile close button */}
           <div className="lg:hidden flex items-center justify-between p-3 border-b border-[var(--border)]">
             <span className="text-sm font-semibold">Sections</span>
-            <button onClick={() => setMobileNavOpen(false)} className="p-1 rounded hover:bg-[var(--muted)]">
+            <button onClick={() => setMobileNavOpen(false)} className="p-1 rounded-sm hover:bg-[var(--muted)]">
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
           </div>
 
+          {/* Collapse toggle (desktop only) */}
+          <div className="hidden lg:flex items-center justify-between px-3 py-2 border-b border-[var(--border)]">
+            {!sidebarCollapsed && (
+              <span className="text-[10px] font-semibold uppercase tracking-[1.5px] text-[var(--muted-foreground)]">Sections</span>
+            )}
+            <button
+              onClick={() => setSidebarCollapsed((p) => !p)}
+              className={`p-1.5 rounded-sm hover:bg-[var(--muted)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors ${sidebarCollapsed ? "mx-auto" : "ml-auto"}`}
+              title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              <svg className={`w-4 h-4 transition-transform ${sidebarCollapsed ? "rotate-180" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M11 19l-7-7 7-7" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M18 19V5" />
+              </svg>
+            </button>
+          </div>
+
           {/* Section navigation */}
-          <nav className="flex-1 overflow-y-auto p-3 space-y-0.5">
+          <nav className="flex-1 overflow-y-auto py-1.5 px-1.5 space-y-0.5">
             {sections.map((section, idx) => {
               const status = section.getStatus();
               const isActive = section.id === activeSection;
+
+              if (sidebarCollapsed) {
+                // Collapsed: icon-only rail with numbered circles
+                return (
+                  <button
+                    key={section.id}
+                    onClick={() => onSectionChange(section.id)}
+                    className={`
+                      w-full flex items-center justify-center py-2 rounded-sm transition-all duration-150 relative group
+                      ${isActive
+                        ? "bg-[var(--primary)]/12 border-l-2 border-l-[var(--primary)]"
+                        : "border-l-2 border-l-transparent hover:bg-[var(--muted)]/60"
+                      }
+                    `}
+                    title={`${idx + 1}. ${section.label}`}
+                  >
+                    <div className="relative">
+                      <span className={`
+                        w-[22px] h-[22px] rounded-full text-[10px] font-bold flex items-center justify-center
+                        ${isActive
+                          ? "bg-[var(--primary)]/20 text-[var(--primary)]"
+                          : "bg-white/[0.08] text-[var(--muted-foreground)]"
+                        }
+                      `}>
+                        {idx + 1}
+                      </span>
+                      <span className={`absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full ${STATUS_DOT_COLOR[status]}`} />
+                    </div>
+                    {/* Tooltip on hover */}
+                    <div className="absolute left-full ml-2 px-2.5 py-1.5 rounded-sm bg-[#1a1f2e] border border-white/10 text-xs font-medium text-white whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 shadow-lg">
+                      {section.label}
+                    </div>
+                  </button>
+                );
+              }
+
+              // Expanded: full nav items
               return (
                 <button
                   key={section.id}
                   onClick={() => onSectionChange(section.id)}
                   className={`
-                    w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm transition-all duration-150
+                    w-full flex items-center gap-2.5 px-2.5 py-2 rounded-sm text-left text-sm transition-all duration-150
                     ${isActive
-                      ? "bg-[var(--primary)]/10 border border-[var(--primary)]/30 text-[var(--foreground)] shadow-sm shadow-[var(--primary)]/5"
-                      : "border border-transparent hover:bg-[var(--muted)]/60 text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                      ? "bg-[var(--primary)]/10 border-l-2 border-l-[var(--primary)] text-[var(--foreground)]"
+                      : "border-l-2 border-l-transparent hover:bg-[var(--muted)]/60 text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
                     }
                   `}
                 >
-                  <span className={`shrink-0 ${isActive ? "text-[var(--primary)]" : ""}`}>{section.icon}</span>
-                  <span className={`flex-1 truncate ${isActive ? "font-semibold" : "font-medium"}`}>
-                    <span className="text-[var(--muted-foreground)] mr-1.5">{idx + 1}.</span>
+                  <span className={`
+                    w-[22px] h-[22px] rounded-full text-[10px] font-bold flex items-center justify-center shrink-0
+                    ${isActive
+                      ? "bg-[var(--primary)]/20 text-[var(--primary)]"
+                      : "bg-white/[0.08] text-[var(--muted-foreground)]"
+                    }
+                  `}>
+                    {idx + 1}
+                  </span>
+                  <span className={`flex-1 truncate text-[13px] ${isActive ? "font-semibold" : "font-medium"}`}>
                     {section.label}
                   </span>
-                  <StatusIcon status={status} />
+                  <StatusDot status={status} />
                 </button>
               );
             })}
           </nav>
 
-          {/* Bottom cards */}
-          <div className="shrink-0 p-3 space-y-3 border-t border-[var(--border)]">
-            {/* Progress */}
-            <div className="rounded-xl bg-[var(--muted)]/40 p-3">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Completion</span>
-                <span className="text-xs font-bold text-[var(--foreground)]">{completionPercent}%</span>
+          {/* Bottom footer — only when expanded */}
+          {!sidebarCollapsed && (
+            <div className="shrink-0 px-3 py-3 space-y-3 border-t border-[var(--border)]">
+              {/* Progress bar */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">Progress</span>
+                  <span className="text-[11px] font-bold text-[var(--foreground)]">{completionPercent}%</span>
+                </div>
+                <div className="h-[3px] bg-[var(--muted)] rounded-sm overflow-hidden">
+                  <div
+                    className="h-full rounded-sm transition-all duration-500 ease-out"
+                    style={{
+                      width: `${completionPercent}%`,
+                      background: completionPercent === 100
+                        ? "linear-gradient(90deg, #10b981, #34d399)"
+                        : "var(--primary)",
+                    }}
+                  />
+                </div>
+                <p className="mt-1 text-[10px] text-[var(--muted-foreground)]">
+                  {completedCount} of {sections.length} sections
+                </p>
               </div>
-              <div className="h-2 bg-[var(--muted)] rounded-full overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-all duration-500 ease-out"
-                  style={{
-                    width: `${completionPercent}%`,
-                    background: completionPercent === 100
-                      ? "linear-gradient(90deg, #10b981, #34d399)"
-                      : completionPercent > 50
-                        ? "linear-gradient(90deg, #3b82f6, #60a5fa)"
-                        : "linear-gradient(90deg, var(--primary), color-mix(in srgb, var(--primary) 70%, white))",
-                  }}
-                />
-              </div>
-              <p className="mt-1.5 text-[11px] text-[var(--muted-foreground)]">
-                {completedCount} of {sections.length} sections complete
-              </p>
-            </div>
 
-            {/* Observation Summary (EICR only) */}
-            {observationCounts && (
-              <div className="rounded-xl bg-[var(--muted)]/40 p-3">
-                <p className="text-xs font-semibold text-[var(--muted-foreground)] mb-2">Observations</p>
-                <div className="flex gap-2">
+              {/* Observation Summary (EICR only) */}
+              {observationCounts && (
+                <div className="rounded-sm bg-[var(--muted)]/40 p-2.5">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)] mb-2">Observations</p>
+                  <div className="flex gap-1.5">
+                    {[
+                      { label: "C1", count: observationCounts.c1, color: "bg-red-500/20 text-red-400 border-red-500/30" },
+                      { label: "C2", count: observationCounts.c2, color: "bg-amber-500/20 text-amber-400 border-amber-500/30" },
+                      { label: "C3", count: observationCounts.c3, color: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30" },
+                      { label: "FI", count: observationCounts.fi, color: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
+                    ].map((o) => (
+                      <div key={o.label} className={`flex-1 text-center py-1 rounded-sm border text-xs font-bold ${o.color}`}>
+                        <div className="text-sm leading-none">{o.count}</div>
+                        <div className="mt-0.5 text-[9px] opacity-80">{o.label}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Quick Info */}
+              <div className="rounded-sm bg-[var(--muted)]/40 p-2.5">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)] mb-1.5">Quick Info</p>
+                <div className="space-y-0.5 text-[11px]">
                   {[
-                    { label: "C1", count: observationCounts.c1, color: "bg-red-500/20 text-red-400 border-red-500/30" },
-                    { label: "C2", count: observationCounts.c2, color: "bg-amber-500/20 text-amber-400 border-amber-500/30" },
-                    { label: "C3", count: observationCounts.c3, color: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30" },
-                    { label: "FI", count: observationCounts.fi, color: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
-                  ].map((o) => (
-                    <div key={o.label} className={`flex-1 text-center py-1.5 rounded-lg border text-xs font-bold ${o.color}`}>
-                      <div className="text-base leading-none">{o.count}</div>
-                      <div className="mt-0.5 opacity-80">{o.label}</div>
+                    { label: "Client", value: quickInfo.client },
+                    { label: "Site", value: quickInfo.site },
+                    { label: "Date", value: quickInfo.date || new Date().toLocaleDateString("en-GB") },
+                    { label: "Ref", value: quickInfo.reference },
+                  ].map((item) => (
+                    <div key={item.label} className="flex items-center gap-2">
+                      <span className="text-[var(--muted-foreground)] w-9 shrink-0">{item.label}</span>
+                      <span className={`truncate ${item.value ? "text-[var(--foreground)]" : "text-[var(--muted-foreground)]"}`}>
+                        {item.value || "\u2014"}
+                      </span>
                     </div>
                   ))}
                 </div>
               </div>
-            )}
 
-            {/* Quick Info */}
-            <div className="rounded-xl bg-[var(--muted)]/40 p-3">
-              <p className="text-xs font-semibold text-[var(--muted-foreground)] mb-1.5">Quick Info</p>
-              <div className="space-y-1 text-xs">
-                {[
-                  { label: "Client", value: quickInfo.client },
-                  { label: "Site", value: quickInfo.site },
-                  { label: "Date", value: quickInfo.date || new Date().toLocaleDateString("en-GB") },
-                  { label: "Ref", value: quickInfo.reference },
-                ].map((item) => (
-                  <div key={item.label} className="flex items-center gap-2">
-                    <span className="text-[var(--muted-foreground)] w-10 shrink-0">{item.label}</span>
-                    <span className={`truncate ${item.value ? "text-[var(--foreground)]" : "text-[var(--muted-foreground)]"}`}>
-                      {item.value || "\u2014"}
-                    </span>
-                  </div>
-                ))}
-              </div>
+              {/* Save as Template */}
+              {!isFormLocked && currentData && (
+                <button
+                  onClick={() => setShowSaveTemplateDialog(true)}
+                  className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-sm text-xs font-medium bg-[var(--muted)]/60 hover:bg-[var(--muted)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
+                >
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                    <polyline points="17 21 17 13 7 13 7 21" />
+                    <polyline points="7 3 7 8 15 8" />
+                  </svg>
+                  Save as Template
+                </button>
+              )}
             </div>
-
-            {/* Save as Template */}
-            {!isFormLocked && currentData && (
-              <button
-                onClick={() => setShowSaveTemplateDialog(true)}
-                className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium bg-[var(--muted)]/60 hover:bg-[var(--muted)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
-              >
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-                  <polyline points="17 21 17 13 7 13 7 21" />
-                  <polyline points="7 3 7 8 15 8" />
-                </svg>
-                Save as Template
-              </button>
-            )}
-          </div>
+          )}
         </aside>
+
+        {/* ── Resize handle (desktop only) ── */}
+        <div
+          className="hidden lg:flex items-center justify-center w-2 cursor-col-resize hover:bg-[var(--primary)]/10 transition-colors shrink-0 group"
+          onMouseDown={handleResizeStart}
+        >
+          <div className="w-[3px] h-8 rounded-full bg-white/10 group-hover:bg-[var(--primary)]/40 transition-colors" />
+        </div>
 
         {/* ── Right Panel ── */}
         <div ref={rightPanelRef} className="flex-1 overflow-y-auto">
@@ -600,7 +705,7 @@ export function CertificateLayout({
 
             {/* Conflict banner */}
             {conflict && (
-              <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 p-4">
+              <div className="mb-4 rounded-sm border border-red-500/30 bg-red-500/10 p-4">
                 <div className="flex items-start gap-3">
                   <svg className="w-5 h-5 text-red-400 shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
@@ -615,7 +720,7 @@ export function CertificateLayout({
 
             {/* Step validation errors */}
             {stepErrors.length > 0 && (
-              <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
+              <div className="mb-4 rounded-sm border border-amber-500/30 bg-amber-500/10 p-4">
                 <div className="flex items-start gap-3">
                   <svg className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 6a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 6zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
@@ -633,7 +738,7 @@ export function CertificateLayout({
                   </div>
                   <button
                     onClick={() => setStepErrors([])}
-                    className="p-1 rounded hover:bg-amber-500/20 text-amber-400 transition-colors shrink-0"
+                    className="p-1 rounded-sm hover:bg-amber-500/20 text-amber-400 transition-colors shrink-0"
                   >
                     <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                   </button>
@@ -651,7 +756,7 @@ export function CertificateLayout({
               {prevSection ? (
                 <button
                   onClick={goPrev}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-[var(--muted)] hover:bg-[var(--accent)] text-[var(--foreground)] transition-colors"
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-sm text-sm font-medium bg-[var(--muted)] hover:bg-[var(--accent)] text-[var(--foreground)] transition-colors"
                 >
                   <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
                   <span className="hidden sm:inline">{prevSection.label}</span>
@@ -661,7 +766,7 @@ export function CertificateLayout({
               {nextSection ? (
                 <button
                   onClick={goNext}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-[var(--primary)] text-white hover:opacity-90 transition-opacity"
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-sm text-sm font-medium bg-[var(--primary)] text-white hover:opacity-90 transition-opacity"
                 >
                   <span className="hidden sm:inline">{nextSection.label}</span>
                   <span className="sm:hidden">Next</span>
@@ -670,7 +775,7 @@ export function CertificateLayout({
               ) : isLastSection ? (
                 <button
                   onClick={onSave}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-500 transition-colors"
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-sm text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-500 transition-colors"
                 >
                   Review & Complete
                   <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>

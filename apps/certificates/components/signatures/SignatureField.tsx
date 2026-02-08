@@ -98,7 +98,7 @@ export function SignatureField({
         {isSigned ? (
           <SignedPreview value={value!} />
         ) : (
-          <div className="border border-dashed border-[var(--border)] rounded-xl p-4 text-center text-sm text-[var(--muted-foreground)]">
+          <div className="border border-dashed border-[var(--border)] rounded-sm p-4 text-center text-sm text-[var(--muted-foreground)]">
             Not signed
           </div>
         )}
@@ -237,7 +237,7 @@ function SignedPreview({ value }: { value: SignatureValue }) {
   });
 
   return (
-    <div className="border border-[var(--border)] rounded-xl p-3 bg-white">
+    <div className="border border-[var(--border)] rounded-sm p-3 bg-white">
       {value.image?.dataUrl ? (
         /* eslint-disable-next-line @next/next/no-img-element */
         <img
@@ -274,7 +274,7 @@ function PresetDropdown({
     <>
       <div className="fixed inset-0 z-40" onClick={onClose} />
       <div className="relative z-50">
-        <div className="absolute left-0 right-0 top-0 bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-lg overflow-hidden">
+        <div className="absolute left-0 right-0 top-0 bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-lg overflow-hidden">
           {assets.length > 0 && (
             <div className="max-h-[200px] overflow-y-auto">
               {assets.map((asset) => (

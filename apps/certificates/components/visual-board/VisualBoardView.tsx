@@ -232,7 +232,7 @@ export function VisualBoardView({
 
   return (
     <div ref={containerRef} className="p-6">
-      <div className="bg-[var(--muted)] border-2 border-[var(--border)] rounded-2xl p-6 relative">
+      <div className="bg-[var(--muted)] border-2 border-[var(--border)] rounded p-6 relative">
         {/* Phase label badge */}
         <div className="absolute -top-3 left-6 bg-[var(--card)] px-3 py-1 text-xs font-semibold text-[var(--warning)] rounded-md border border-[var(--border)]">
           {isThreePhase ? "400V 3-PHASE TP&N" : "230V SINGLE PHASE"}
@@ -333,7 +333,7 @@ export function VisualBoardView({
       {/* Context menu */}
       {contextMenu && (
         <div
-          className="fixed bg-[var(--card)] border border-[var(--border)] rounded-lg shadow-xl z-40 py-1 min-w-[140px]"
+          className="fixed bg-[var(--card)] border border-[var(--border)] rounded-sm shadow-xl z-40 py-1 min-w-[140px]"
           style={{ top: contextMenu.y, left: contextMenu.x }}
         >
           <button

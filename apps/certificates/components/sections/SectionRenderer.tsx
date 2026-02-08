@@ -230,7 +230,7 @@ export function SectionRenderer({
             value={String(data.observations ?? "")}
             onChange={(e) => onChange({ ...data, observations: e.target.value })}
             placeholder="Enter any observations or comments about the work carried out..."
-            className="w-full min-h-[150px] rounded-xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40"
+            className="w-full min-h-[150px] rounded-sm border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40"
           />
         </div>
       );
