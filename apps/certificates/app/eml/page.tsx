@@ -3,7 +3,11 @@
 import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Button, Card, CardHeader, CardTitle, CardContent, CardDescription, Input, Label, NativeSelect, Textarea } from "@quantract/ui";
+import { Button, Input, Label, NativeSelect, Textarea } from "@quantract/ui";
+import { SectionHeading } from "../../components/ui/SectionHeading";
+import { SubCard } from "../../components/ui/SubCard";
+import { FloatingInput } from "../../components/ui/FloatingInput";
+import { FloatingSelect } from "../../components/ui/FloatingSelect";
 import { getCertificateTemplate, type EmergencyLightingCertificate, getSignature, setSignature, clearSignature, migrateAllLegacySignatures } from "@quantract/shared/certificate-types";
 import type { SignatureValue } from "@quantract/shared/certificate-types";
 import {
@@ -245,55 +249,48 @@ function EmergencyLightingPageContent() {
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6">
           {/* Main Content */}
           <div className="flex flex-col gap-6">
-            {/* Installation Details */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Installation Details</CardTitle>
-                <CardDescription>Site and client information</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="jobReference">Certificate Reference</Label>
-                    <Input
-                      id="jobReference"
-                      value={data.overview.jobReference}
-                      onChange={(e) => updateOverview("jobReference", e.target.value)}
-                      placeholder="e.g. EML-2024-001"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="dateOfInspection">Test Date</Label>
-                    <Input
-                      id="dateOfInspection"
-                      type="date"
-                      value={data.overview.dateOfInspection}
-                      onChange={(e) => updateOverview("dateOfInspection", e.target.value)}
-                    />
-                  </div>
+            {/* 1. Installation Details */}
+            <div className="space-y-4">
+              <SectionHeading number={1} title="Installation Details" fieldCount={5} />
+              <SubCard title="Report Info">
+                <div className="grid md:grid-cols-2 gap-3">
+                  <FloatingInput
+                    id="jobReference"
+                    label="Certificate Reference"
+                    value={data.overview.jobReference}
+                    onChange={(e) => updateOverview("jobReference", e.target.value)}
+                    placeholder="e.g. EML-2024-001"
+                  />
+                  <FloatingInput
+                    id="dateOfInspection"
+                    label="Test Date"
+                    type="date"
+                    value={data.overview.dateOfInspection}
+                    onChange={(e) => updateOverview("dateOfInspection", e.target.value)}
+                  />
                 </div>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="clientName">Client Name</Label>
-                    <Input
-                      id="clientName"
-                      value={data.overview.clientName}
-                      onChange={(e) => updateOverview("clientName", e.target.value)}
-                      placeholder="Client or company name"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="siteName">Site Name</Label>
-                    <Input
-                      id="siteName"
-                      value={data.overview.siteName}
-                      onChange={(e) => updateOverview("siteName", e.target.value)}
-                      placeholder="Building or site name"
-                    />
-                  </div>
+              </SubCard>
+              <SubCard title="Client & Site">
+                <div className="grid md:grid-cols-2 gap-3">
+                  <FloatingInput
+                    id="clientName"
+                    label="Client Name"
+                    value={data.overview.clientName}
+                    onChange={(e) => updateOverview("clientName", e.target.value)}
+                    placeholder="Client or company name"
+                  />
+                  <FloatingInput
+                    id="siteName"
+                    label="Site Name"
+                    value={data.overview.siteName}
+                    onChange={(e) => updateOverview("siteName", e.target.value)}
+                    placeholder="Building or site name"
+                  />
                 </div>
+              </SubCard>
+              <SubCard title="Address">
                 <div>
-                  <Label htmlFor="installationAddress">Site Address</Label>
+                  <Label htmlFor="installationAddress" className="sr-only">Site Address</Label>
                   <Textarea
                     id="installationAddress"
                     value={data.overview.installationAddress}
@@ -302,74 +299,59 @@ function EmergencyLightingPageContent() {
                     className="min-h-[80px]"
                   />
                 </div>
-              </CardContent>
-            </Card>
+              </SubCard>
+            </div>
 
-            {/* System Details */}
-            <Card>
-              <CardHeader>
-                <CardTitle>System Details</CardTitle>
-                <CardDescription>Emergency lighting configuration</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid md:grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="systemType">System Type</Label>
-                    <NativeSelect
-                      id="systemType"
-                      value={data.systemDetails.systemType}
-                      onChange={(e) => updateSystemDetails("systemType", e.target.value)}
-                    >
-                      <option value="">Select...</option>
-                      <option value="maintained">Maintained</option>
-                      <option value="non-maintained">Non-Maintained</option>
-                      <option value="sustained">Sustained</option>
-                      <option value="combined">Combined</option>
-                    </NativeSelect>
-                  </div>
-                  <div>
-                    <Label htmlFor="designDuration">Design Duration</Label>
-                    <NativeSelect
-                      id="designDuration"
-                      value={data.systemDetails.designDuration}
-                      onChange={(e) => updateSystemDetails("designDuration", e.target.value)}
-                    >
-                      <option value="">Select...</option>
-                      <option value="1hr">1 Hour</option>
-                      <option value="3hr">3 Hours</option>
-                    </NativeSelect>
-                  </div>
-                  <div>
-                    <Label htmlFor="numberOfLuminaires">Total Luminaires</Label>
-                    <Input
-                      id="numberOfLuminaires"
-                      type="number"
-                      value={data.systemDetails.numberOfLuminaires}
-                      onChange={(e) => updateSystemDetails("numberOfLuminaires", e.target.value)}
-                      placeholder="e.g. 32"
-                    />
-                  </div>
-                </div>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="riskAssessmentRef">Risk Assessment Reference</Label>
-                    <Input
-                      id="riskAssessmentRef"
-                      value={data.systemDetails.riskAssessmentRef}
-                      onChange={(e) => updateSystemDetails("riskAssessmentRef", e.target.value)}
-                      placeholder="e.g. RA-2024-001"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="centralBatteryLocation">Central Battery Location (if applicable)</Label>
-                    <Input
-                      id="centralBatteryLocation"
-                      value={data.systemDetails.centralBatteryLocation}
-                      onChange={(e) => updateSystemDetails("centralBatteryLocation", e.target.value)}
-                      placeholder="e.g. Plant Room"
-                    />
-                  </div>
-                </div>
+            {/* 2. System Details */}
+            <div className="space-y-4">
+              <SectionHeading number={2} title="System Details" fieldCount={8} />
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                <FloatingSelect
+                  id="systemType"
+                  label="System Type"
+                  value={data.systemDetails.systemType}
+                  onChange={(e) => updateSystemDetails("systemType", e.target.value)}
+                >
+                  <option value="">Select...</option>
+                  <option value="maintained">Maintained</option>
+                  <option value="non-maintained">Non-Maintained</option>
+                  <option value="sustained">Sustained</option>
+                  <option value="combined">Combined</option>
+                </FloatingSelect>
+                <FloatingSelect
+                  id="designDuration"
+                  label="Design Duration"
+                  value={data.systemDetails.designDuration}
+                  onChange={(e) => updateSystemDetails("designDuration", e.target.value)}
+                >
+                  <option value="">Select...</option>
+                  <option value="1hr">1 Hour</option>
+                  <option value="3hr">3 Hours</option>
+                </FloatingSelect>
+                <FloatingInput
+                  id="numberOfLuminaires"
+                  label="Total Luminaires"
+                  type="number"
+                  value={data.systemDetails.numberOfLuminaires}
+                  onChange={(e) => updateSystemDetails("numberOfLuminaires", e.target.value)}
+                  placeholder="e.g. 32"
+                />
+                <FloatingInput
+                  id="riskAssessmentRef"
+                  label="Risk Assessment Reference"
+                  value={data.systemDetails.riskAssessmentRef}
+                  onChange={(e) => updateSystemDetails("riskAssessmentRef", e.target.value)}
+                  placeholder="e.g. RA-2024-001"
+                />
+                <FloatingInput
+                  id="centralBatteryLocation"
+                  label="Central Battery Location"
+                  value={data.systemDetails.centralBatteryLocation}
+                  onChange={(e) => updateSystemDetails("centralBatteryLocation", e.target.value)}
+                  placeholder="e.g. Plant Room"
+                />
+              </div>
+              <SubCard title="Coverage">
                 <div className="grid md:grid-cols-3 gap-4">
                   <div className="flex items-center gap-3">
                     <input
@@ -402,156 +384,141 @@ function EmergencyLightingPageContent() {
                     <Label htmlFor="highRiskTaskLighting" className="mb-0">High Risk Task Lighting</Label>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              </SubCard>
+            </div>
 
-            {/* Luminaire Schedule */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Luminaire Schedule</CardTitle>
-                    <CardDescription>Test results for each emergency light</CardDescription>
-                  </div>
-                  <Button variant="secondary" size="sm" onClick={addLuminaire}>
-                    + Add Luminaire
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {data.luminaires.length === 0 ? (
-                  <p className="text-sm text-[var(--muted-foreground)]">No luminaires added. Click &quot;Add Luminaire&quot; to begin.</p>
-                ) : (
-                  <div className="space-y-3">
-                    {data.luminaires.map((lum, index) => (
-                      <div
-                        key={index}
-                        className={`grid grid-cols-[1fr_120px_140px_80px_100px_auto] gap-3 p-3 bg-[var(--muted)] rounded-lg items-end border-l-[3px] ${
-                          lum.status === "pass" ? "border-l-[var(--success)]" : lum.status === "fail" ? "border-l-[var(--error)]" : "border-l-[var(--border)]"
-                        }`}
-                      >
-                        <div>
-                          <Label className="text-xs">Location</Label>
-                          <Input
-                            value={lum.location}
-                            onChange={(e) => updateLuminaire(index, "location", e.target.value)}
-                            placeholder="e.g. Corridor A"
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-xs">Type</Label>
-                          <NativeSelect
-                            value={lum.type}
-                            onChange={(e) => updateLuminaire(index, "type", e.target.value)}
-                          >
-                            <option value="">Select...</option>
-                            <option value="self-contained">Self-Contained</option>
-                            <option value="central-battery">Central Battery</option>
-                            <option value="combined">Combined</option>
-                          </NativeSelect>
-                        </div>
-                        <div>
-                          <Label className="text-xs">Luminaire Type</Label>
-                          <NativeSelect
-                            value={lum.luminaireType}
-                            onChange={(e) => updateLuminaire(index, "luminaireType", e.target.value)}
-                          >
-                            <option value="">Select...</option>
-                            <option value="Exit Sign">Exit Sign</option>
-                            <option value="Bulkhead">Bulkhead</option>
-                            <option value="Downlight">Downlight</option>
-                            <option value="Recessed">Recessed</option>
-                            <option value="Twin Spot">Twin Spot</option>
-                            <option value="Striplight">Striplight</option>
-                          </NativeSelect>
-                        </div>
-                        <div>
-                          <Label className="text-xs">Duration</Label>
-                          <NativeSelect
-                            value={lum.duration}
-                            onChange={(e) => updateLuminaire(index, "duration", e.target.value)}
-                          >
-                            <option value="">-</option>
-                            <option value="1hr">1hr</option>
-                            <option value="3hr">3hr</option>
-                          </NativeSelect>
-                        </div>
-                        <div>
-                          <Label className="text-xs">Status</Label>
-                          <NativeSelect
-                            value={lum.status}
-                            onChange={(e) => updateLuminaire(index, "status", e.target.value)}
-                          >
-                            <option value="">-</option>
-                            <option value="pass">Pass</option>
-                            <option value="fail">Fail</option>
-                          </NativeSelect>
-                        </div>
-                        <button
-                          onClick={() => removeLuminaire(index)}
-                          className="text-[var(--error)] p-2 hover:opacity-70 bg-transparent border-none cursor-pointer"
-                        >
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Test Results */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Test Results</CardTitle>
-                <CardDescription>Functional and duration test results</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="functionalTestDate">Functional Test Date</Label>
-                    <Input
-                      id="functionalTestDate"
-                      type="date"
-                      value={data.testResults.functionalTestDate}
-                      onChange={(e) => updateTestResults("functionalTestDate", e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="fullDurationTestDate">Full Duration Test Date</Label>
-                    <Input
-                      id="fullDurationTestDate"
-                      type="date"
-                      value={data.testResults.fullDurationTestDate}
-                      onChange={(e) => updateTestResults("fullDurationTestDate", e.target.value)}
-                    />
-                  </div>
-                </div>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="durationTestResult">Duration Test Result</Label>
-                    <NativeSelect
-                      id="durationTestResult"
-                      value={data.testResults.durationTestResult}
-                      onChange={(e) => updateTestResults("durationTestResult", e.target.value)}
+            {/* 3. Luminaire Schedule */}
+            <div>
+              <SectionHeading number={3} title="Luminaire Schedule">
+                <Button variant="secondary" size="sm" onClick={addLuminaire}>
+                  + Add Luminaire
+                </Button>
+              </SectionHeading>
+              {data.luminaires.length === 0 ? (
+                <p className="text-sm text-[var(--muted-foreground)]">No luminaires added. Click &quot;Add Luminaire&quot; to begin.</p>
+              ) : (
+                <div className="space-y-3">
+                  {data.luminaires.map((lum, index) => (
+                    <div
+                      key={index}
+                      className={`grid grid-cols-[1fr_120px_140px_80px_100px_auto] gap-3 p-3 bg-[var(--muted)] rounded-lg items-end border-l-[3px] ${
+                        lum.status === "pass" ? "border-l-[var(--success)]" : lum.status === "fail" ? "border-l-[var(--error)]" : "border-l-[var(--border)]"
+                      }`}
                     >
-                      <option value="">Select...</option>
-                      <option value="pass">Pass</option>
-                      <option value="fail">Fail</option>
-                    </NativeSelect>
-                  </div>
-                  <div>
-                    <Label htmlFor="actualDuration">Actual Duration Achieved</Label>
-                    <Input
-                      id="actualDuration"
-                      value={data.testResults.actualDuration}
-                      onChange={(e) => updateTestResults("actualDuration", e.target.value)}
-                      placeholder="e.g. 3hr 15min"
-                    />
-                  </div>
+                      <div>
+                        <Label className="text-xs">Location</Label>
+                        <Input
+                          value={lum.location}
+                          onChange={(e) => updateLuminaire(index, "location", e.target.value)}
+                          placeholder="e.g. Corridor A"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Type</Label>
+                        <NativeSelect
+                          value={lum.type}
+                          onChange={(e) => updateLuminaire(index, "type", e.target.value)}
+                        >
+                          <option value="">Select...</option>
+                          <option value="self-contained">Self-Contained</option>
+                          <option value="central-battery">Central Battery</option>
+                          <option value="combined">Combined</option>
+                        </NativeSelect>
+                      </div>
+                      <div>
+                        <Label className="text-xs">Luminaire Type</Label>
+                        <NativeSelect
+                          value={lum.luminaireType}
+                          onChange={(e) => updateLuminaire(index, "luminaireType", e.target.value)}
+                        >
+                          <option value="">Select...</option>
+                          <option value="Exit Sign">Exit Sign</option>
+                          <option value="Bulkhead">Bulkhead</option>
+                          <option value="Downlight">Downlight</option>
+                          <option value="Recessed">Recessed</option>
+                          <option value="Twin Spot">Twin Spot</option>
+                          <option value="Striplight">Striplight</option>
+                        </NativeSelect>
+                      </div>
+                      <div>
+                        <Label className="text-xs">Duration</Label>
+                        <NativeSelect
+                          value={lum.duration}
+                          onChange={(e) => updateLuminaire(index, "duration", e.target.value)}
+                        >
+                          <option value="">-</option>
+                          <option value="1hr">1hr</option>
+                          <option value="3hr">3hr</option>
+                        </NativeSelect>
+                      </div>
+                      <div>
+                        <Label className="text-xs">Status</Label>
+                        <NativeSelect
+                          value={lum.status}
+                          onChange={(e) => updateLuminaire(index, "status", e.target.value)}
+                        >
+                          <option value="">-</option>
+                          <option value="pass">Pass</option>
+                          <option value="fail">Fail</option>
+                        </NativeSelect>
+                      </div>
+                      <button
+                        onClick={() => removeLuminaire(index)}
+                        className="text-[var(--error)] p-2 hover:opacity-70 bg-transparent border-none cursor-pointer"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
                 </div>
+              )}
+            </div>
+
+            {/* 4. Test Results */}
+            <div className="space-y-4">
+              <SectionHeading number={4} title="Test Results" fieldCount={8} />
+              <SubCard title="Test Dates">
+                <div className="grid md:grid-cols-2 gap-3">
+                  <FloatingInput
+                    id="functionalTestDate"
+                    label="Functional Test Date"
+                    type="date"
+                    value={data.testResults.functionalTestDate}
+                    onChange={(e) => updateTestResults("functionalTestDate", e.target.value)}
+                  />
+                  <FloatingInput
+                    id="fullDurationTestDate"
+                    label="Full Duration Test Date"
+                    type="date"
+                    value={data.testResults.fullDurationTestDate}
+                    onChange={(e) => updateTestResults("fullDurationTestDate", e.target.value)}
+                  />
+                </div>
+              </SubCard>
+              <SubCard title="Duration">
+                <div className="grid md:grid-cols-2 gap-3">
+                  <FloatingSelect
+                    id="durationTestResult"
+                    label="Duration Test Result"
+                    value={data.testResults.durationTestResult}
+                    onChange={(e) => updateTestResults("durationTestResult", e.target.value)}
+                  >
+                    <option value="">Select...</option>
+                    <option value="pass">Pass</option>
+                    <option value="fail">Fail</option>
+                  </FloatingSelect>
+                  <FloatingInput
+                    id="actualDuration"
+                    label="Actual Duration Achieved"
+                    value={data.testResults.actualDuration}
+                    onChange={(e) => updateTestResults("actualDuration", e.target.value)}
+                    placeholder="e.g. 3hr 15min"
+                  />
+                </div>
+              </SubCard>
+              <SubCard title="Checks">
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-3">
                     <div className="flex items-center gap-3">
@@ -598,40 +565,34 @@ function EmergencyLightingPageContent() {
                     </div>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              </SubCard>
+            </div>
 
-            {/* Overall Assessment */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Overall Assessment</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="overallCondition">System Condition</Label>
-                    <NativeSelect
-                      id="overallCondition"
-                      value={data.overallCondition}
-                      onChange={(e) => setData((prev) => ({ ...prev, overallCondition: e.target.value as "satisfactory" | "unsatisfactory" | "" }))}
-                    >
-                      <option value="">Select...</option>
-                      <option value="satisfactory">Satisfactory</option>
-                      <option value="unsatisfactory">Unsatisfactory</option>
-                    </NativeSelect>
-                  </div>
-                  <div>
-                    <Label htmlFor="nextServiceDate">Next Test Due</Label>
-                    <Input
-                      id="nextServiceDate"
-                      type="date"
-                      value={data.nextServiceDate}
-                      onChange={(e) => setData((prev) => ({ ...prev, nextServiceDate: e.target.value }))}
-                    />
-                  </div>
+            {/* 5. Overall Assessment */}
+            <div className="space-y-4">
+              <SectionHeading number={5} title="Overall Assessment" fieldCount={2} />
+              <SubCard title="Assessment">
+                <div className="grid md:grid-cols-2 gap-3">
+                  <FloatingSelect
+                    id="overallCondition"
+                    label="System Condition"
+                    value={data.overallCondition}
+                    onChange={(e) => setData((prev) => ({ ...prev, overallCondition: e.target.value as "satisfactory" | "unsatisfactory" | "" }))}
+                  >
+                    <option value="">Select...</option>
+                    <option value="satisfactory">Satisfactory</option>
+                    <option value="unsatisfactory">Unsatisfactory</option>
+                  </FloatingSelect>
+                  <FloatingInput
+                    id="nextServiceDate"
+                    label="Next Test Due"
+                    type="date"
+                    value={data.nextServiceDate}
+                    onChange={(e) => setData((prev) => ({ ...prev, nextServiceDate: e.target.value }))}
+                  />
                 </div>
-              </CardContent>
-            </Card>
+              </SubCard>
+            </div>
           </div>
 
           {/* Sidebar */}
@@ -690,21 +651,18 @@ function EmergencyLightingPageContent() {
           </div>
         </div>
       </div>
-      {/* Signatures & Photos */}
+      {/* 6. Signatures & Photos */}
       <div className="max-w-[1200px] mx-auto px-6 py-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Signatures & Site Photos</CardTitle>
-            <CardDescription>Capture signatures and attach photos from site</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
+        <div className="space-y-4">
+          <SectionHeading number={6} title="Signatures & Photos" />
+          <div className="space-y-6">
             <div className="grid md:grid-cols-2 gap-6">
               <SignatureField signatureId="engineer" label="Engineer Signature" value={getsig("engineer")} onChange={(sig) => setSig("engineer", sig)} />
               <SignatureField signatureId="client" label="Customer Signature" value={getsig("client")} onChange={(sig) => setSig("client", sig)} />
             </div>
             <PhotoCapture photos={photos} onChange={setPhotos} />
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
       <StickyActionBar

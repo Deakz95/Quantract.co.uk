@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from "@quantract/ui";
+import { SubCard } from "./ui/SubCard";
 
 interface SummaryOfConditionProps {
   c1Count: number;
@@ -15,80 +9,58 @@ interface SummaryOfConditionProps {
   fiCount: number;
 }
 
-export function SummaryOfCondition({
-  c1Count,
-  c2Count,
-  c3Count,
-  fiCount,
-}: SummaryOfConditionProps) {
+const CODES = [
+  { key: "c1", label: "C1", desc: "Danger present", bg: "bg-red-500", border: "border-red-500" },
+  { key: "c2", label: "C2", desc: "Potentially dangerous", bg: "bg-amber-500", border: "border-amber-500" },
+  { key: "c3", label: "C3", desc: "Improvement recommended", bg: "bg-yellow-400", border: "border-yellow-400" },
+  { key: "fi", label: "FI", desc: "Further investigation", bg: "bg-blue-500", border: "border-blue-500" },
+] as const;
+
+export function SummaryOfCondition({ c1Count, c2Count, c3Count, fiCount }: SummaryOfConditionProps) {
+  const counts = { c1: c1Count, c2: c2Count, c3: c3Count, fi: fiCount };
   const total = c1Count + c2Count + c3Count + fiCount;
 
-  const badges = [
-    { label: "C1", count: c1Count, bg: "bg-red-500", text: "text-white" },
-    { label: "C2", count: c2Count, bg: "bg-amber-500", text: "text-white" },
-    { label: "C3", count: c3Count, bg: "bg-yellow-400", text: "text-gray-900" },
-    { label: "FI", count: fiCount, bg: "bg-blue-500", text: "text-white" },
-  ];
-
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Summary of Condition</CardTitle>
-        <CardDescription>
-          Observation counts by classification code
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Count badges */}
-        <div className="flex flex-wrap gap-3">
-          {badges.map((badge) => (
+    <SubCard title="Auto-generated Summary">
+      <div className="space-y-4">
+        {/* Badges */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {CODES.map(({ key, label, desc, bg, border }) => (
             <div
-              key={badge.label}
-              className={`${badge.bg} ${badge.text} rounded-xl px-4 py-2 flex items-center gap-2 min-w-[80px]`}
+              key={key}
+              className={`rounded-lg border ${border} bg-[#0f1115] p-3 text-center`}
             >
-              <span className="text-sm font-semibold">{badge.label}</span>
-              <span className="text-xl font-bold">{badge.count}</span>
+              <div className={`inline-flex items-center justify-center w-10 h-10 rounded-full ${bg} text-white font-bold text-lg mb-1`}>
+                {counts[key]}
+              </div>
+              <p className="text-sm font-semibold text-[#e2e8f0]">{label}</p>
+              <p className="text-xs text-gray-400">{desc}</p>
             </div>
           ))}
         </div>
 
-        {/* Proportional bar */}
+        {/* Proportion bar */}
         {total > 0 && (
-          <div className="w-full h-3 rounded-full overflow-hidden flex bg-[var(--muted)]">
-            {c1Count > 0 && (
-              <div
-                className="bg-red-500 h-full transition-all duration-300"
-                style={{ width: `${(c1Count / total) * 100}%` }}
-              />
-            )}
-            {c2Count > 0 && (
-              <div
-                className="bg-amber-500 h-full transition-all duration-300"
-                style={{ width: `${(c2Count / total) * 100}%` }}
-              />
-            )}
-            {c3Count > 0 && (
-              <div
-                className="bg-yellow-400 h-full transition-all duration-300"
-                style={{ width: `${(c3Count / total) * 100}%` }}
-              />
-            )}
-            {fiCount > 0 && (
-              <div
-                className="bg-blue-500 h-full transition-all duration-300"
-                style={{ width: `${(fiCount / total) * 100}%` }}
-              />
-            )}
+          <div className="space-y-1.5">
+            <div className="flex rounded-full h-3 overflow-hidden bg-[#0f1115]">
+              {c1Count > 0 && <div className="bg-red-500 transition-all" style={{ width: `${(c1Count / total) * 100}%` }} />}
+              {c2Count > 0 && <div className="bg-amber-500 transition-all" style={{ width: `${(c2Count / total) * 100}%` }} />}
+              {c3Count > 0 && <div className="bg-yellow-400 transition-all" style={{ width: `${(c3Count / total) * 100}%` }} />}
+              {fiCount > 0 && <div className="bg-blue-500 transition-all" style={{ width: `${(fiCount / total) * 100}%` }} />}
+            </div>
+            <p className="text-xs text-gray-400 text-center">
+              {total} total observation{total !== 1 ? "s" : ""}
+            </p>
           </div>
         )}
 
-        {/* Total */}
-        <div className="text-sm text-[var(--muted-foreground)]">
-          <span className="font-semibold text-[var(--foreground)]">{total}</span>{" "}
-          {total === 1 ? "observation" : "observations"} recorded
-        </div>
-      </CardContent>
-    </Card>
+        {total === 0 && (
+          <p className="text-sm text-gray-400 text-center py-2">
+            No observations recorded yet. This summary updates automatically.
+          </p>
+        )}
+      </div>
+    </SubCard>
   );
 }
 

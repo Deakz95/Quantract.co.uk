@@ -1,14 +1,7 @@
 "use client";
 
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-  CardDescription,
-  Textarea,
-  Label,
-} from "@quantract/ui";
+import { Label, Textarea } from "@quantract/ui";
+import { SubCard } from "./ui/SubCard";
 
 interface ExtentAndLimitationsProps {
   data: {
@@ -26,25 +19,21 @@ export function ExtentAndLimitations({ data, onChange }: ExtentAndLimitationsPro
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Extent and Limitations</CardTitle>
-        <CardDescription>
-          Extent of the installation covered and any limitations
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-6">
-          <div className="space-y-1.5">
-            <Label htmlFor="extentCovered">Extent of the Installation Covered</Label>
-            <Textarea
-              id="extentCovered"
-              value={data.extentCovered}
-              onChange={(e) => handleFieldChange("extentCovered", e.target.value)}
-              placeholder="Describe the extent of the installation covered by this report..."
-            />
-          </div>
+    <div className="space-y-4">
+      <SubCard title="Extent">
+        <div className="space-y-1.5">
+          <Label htmlFor="extentCovered">Extent of the Installation Covered</Label>
+          <Textarea
+            id="extentCovered"
+            value={data.extentCovered}
+            onChange={(e) => handleFieldChange("extentCovered", e.target.value)}
+            placeholder="Describe the extent of the installation covered by this report..."
+          />
+        </div>
+      </SubCard>
 
+      <SubCard title="Limitations">
+        <div className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="agreedLimitations">Agreed Limitations</Label>
             <Textarea
@@ -54,7 +43,6 @@ export function ExtentAndLimitations({ data, onChange }: ExtentAndLimitationsPro
               placeholder="Any agreed limitations on the inspection and testing..."
             />
           </div>
-
           <div className="space-y-1.5">
             <Label htmlFor="operationalLimitations">Operational Limitations</Label>
             <Textarea
@@ -64,22 +52,24 @@ export function ExtentAndLimitations({ data, onChange }: ExtentAndLimitationsPro
               placeholder="Any operational limitations preventing full inspection..."
             />
           </div>
-
-          <div className="flex items-center gap-3">
-            <input
-              type="checkbox"
-              id="complianceConfirmed"
-              checked={data.complianceConfirmed}
-              onChange={(e) => handleFieldChange("complianceConfirmed", e.target.checked)}
-              className="h-4 w-4 rounded border-[var(--border)] text-[var(--primary)] accent-[var(--primary)] cursor-pointer"
-            />
-            <Label htmlFor="complianceConfirmed" className="mb-0 cursor-pointer">
-              I confirm the extent and limitations have been agreed with the client
-            </Label>
-          </div>
         </div>
-      </CardContent>
-    </Card>
+      </SubCard>
+
+      <SubCard title="Confirmation" accentColor="#06b6d4">
+        <div className="flex items-center gap-3">
+          <input
+            type="checkbox"
+            id="complianceConfirmed"
+            checked={data.complianceConfirmed}
+            onChange={(e) => handleFieldChange("complianceConfirmed", e.target.checked)}
+            className="h-4 w-4 rounded border-white/10 text-blue-500 accent-blue-500 cursor-pointer"
+          />
+          <Label htmlFor="complianceConfirmed" className="mb-0 cursor-pointer">
+            I confirm the extent and limitations have been agreed with the client
+          </Label>
+        </div>
+      </SubCard>
+    </div>
   );
 }
 

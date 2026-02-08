@@ -1,16 +1,7 @@
 "use client";
 
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-  CardDescription,
-  Input,
-  Label,
-  NativeSelect,
-  Textarea,
-} from "@quantract/ui";
+import { Input, Label, NativeSelect, Textarea } from "@quantract/ui";
+import { SubCard } from "./ui/SubCard";
 import type { z } from "zod";
 import type { contractorDetailsSchema } from "@quantract/shared/certificate-types";
 
@@ -27,39 +18,35 @@ export function ContractorDetails({ data, onChange }: ContractorDetailsProps) {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Contractor Details</CardTitle>
-        <CardDescription>
-          Details of the contractor carrying out the work
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Company Name - full width */}
-        <div>
-          <Label htmlFor="contractor-companyName">Company Name</Label>
-          <Input
-            id="contractor-companyName"
-            value={data.companyName}
-            onChange={(e) => update("companyName", e.target.value)}
-            placeholder="Trading or registered company name"
-          />
+    <div className="grid md:grid-cols-2 gap-4">
+      {/* Company Info */}
+      <SubCard title="Company Info" className="md:col-span-2">
+        <div className="space-y-3">
+          <div>
+            <Label htmlFor="contractor-companyName">Company Name</Label>
+            <Input
+              id="contractor-companyName"
+              value={data.companyName}
+              onChange={(e) => update("companyName", e.target.value)}
+              placeholder="Trading or registered company name"
+            />
+          </div>
+          <div>
+            <Label htmlFor="contractor-address">Address</Label>
+            <Textarea
+              id="contractor-address"
+              value={data.address}
+              onChange={(e) => update("address", e.target.value)}
+              placeholder="Full registered or trading address"
+              className="min-h-[80px]"
+            />
+          </div>
         </div>
+      </SubCard>
 
-        {/* Address - full width, textarea */}
-        <div>
-          <Label htmlFor="contractor-address">Address</Label>
-          <Textarea
-            id="contractor-address"
-            value={data.address}
-            onChange={(e) => update("address", e.target.value)}
-            placeholder="Full registered or trading address"
-            className="min-h-[80px]"
-          />
-        </div>
-
-        {/* Phone + Email - 2 column grid */}
-        <div className="grid md:grid-cols-2 gap-4">
+      {/* Contact */}
+      <SubCard title="Contact">
+        <div className="space-y-3">
           <div>
             <Label htmlFor="contractor-phone">Phone</Label>
             <Input
@@ -81,9 +68,11 @@ export function ContractorDetails({ data, onChange }: ContractorDetailsProps) {
             />
           </div>
         </div>
+      </SubCard>
 
-        {/* Scheme Name + Scheme Number - 2 column grid */}
-        <div className="grid md:grid-cols-2 gap-4">
+      {/* Scheme */}
+      <SubCard title="Scheme Registration">
+        <div className="space-y-3">
           <div>
             <Label htmlFor="contractor-schemeName">Scheme Name</Label>
             <NativeSelect
@@ -109,21 +98,17 @@ export function ContractorDetails({ data, onChange }: ContractorDetailsProps) {
               placeholder="Membership / scheme number"
             />
           </div>
+          <div>
+            <Label htmlFor="contractor-registrationNumber">Registration Number</Label>
+            <Input
+              id="contractor-registrationNumber"
+              value={data.registrationNumber}
+              onChange={(e) => update("registrationNumber", e.target.value)}
+              placeholder="Company or contractor registration number"
+            />
+          </div>
         </div>
-
-        {/* Registration Number - full width */}
-        <div>
-          <Label htmlFor="contractor-registrationNumber">
-            Registration Number
-          </Label>
-          <Input
-            id="contractor-registrationNumber"
-            value={data.registrationNumber}
-            onChange={(e) => update("registrationNumber", e.target.value)}
-            placeholder="Company or contractor registration number"
-          />
-        </div>
-      </CardContent>
-    </Card>
+      </SubCard>
+    </div>
   );
 }

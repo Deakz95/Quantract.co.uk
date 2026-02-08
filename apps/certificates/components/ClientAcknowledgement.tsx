@@ -1,14 +1,7 @@
 "use client";
 
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-  Input,
-  Label,
-} from "@quantract/ui";
+import { Input, Label } from "@quantract/ui";
+import { SubCard } from "./ui/SubCard";
 import { SignatureField } from "./signatures/SignatureField";
 import type { SignatureValue } from "@quantract/shared/certificate-types";
 
@@ -18,9 +11,7 @@ interface ClientAcknowledgementProps {
     clientDateSigned: string;
   };
   onChange: (data: ClientAcknowledgementProps["data"]) => void;
-  /** V2 signature value (from data._signatures) */
   signatureValue?: SignatureValue | null;
-  /** V2 signature change handler */
   onSignatureChange?: (sig: SignatureValue | null) => void;
 }
 
@@ -42,27 +33,23 @@ export function ClientAcknowledgement({
 }: ClientAcknowledgementProps) {
   const updateField = <K extends keyof ClientAcknowledgementProps["data"]>(
     field: K,
-    value: ClientAcknowledgementProps["data"][K]
+    value: ClientAcknowledgementProps["data"][K],
   ) => {
     onChange({ ...data, [field]: value });
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Client Acknowledgement</CardTitle>
-        <CardDescription>
-          Client confirmation of receipt and understanding
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Static acknowledgement text */}
-        <p className="text-sm text-[var(--muted-foreground)] leading-relaxed border-l-2 border-[var(--border)] pl-4">
+    <div className="space-y-4">
+      {/* Legal text */}
+      <SubCard title="Legal Notice" accentColor="#06b6d4">
+        <p className="text-sm text-gray-400 leading-relaxed">
           {ACKNOWLEDGEMENT_TEXT}
         </p>
+      </SubCard>
 
-        {/* Client fields */}
-        <div className="grid md:grid-cols-2 gap-4">
+      {/* Client details */}
+      <SubCard title="Client Details">
+        <div className="grid md:grid-cols-2 gap-3">
           <div>
             <Label htmlFor="client-name">Client Name</Label>
             <Input
@@ -82,18 +69,18 @@ export function ClientAcknowledgement({
             />
           </div>
         </div>
+      </SubCard>
 
-        {/* Signature */}
-        {onSignatureChange && (
-          <SignatureField
-            signatureId="client"
-            label="Client Signature"
-            value={signatureValue}
-            onChange={onSignatureChange}
-          />
-        )}
-      </CardContent>
-    </Card>
+      {/* Signature */}
+      {onSignatureChange && (
+        <SignatureField
+          signatureId="client"
+          label="Client Signature"
+          value={signatureValue}
+          onChange={onSignatureChange}
+        />
+      )}
+    </div>
   );
 }
 

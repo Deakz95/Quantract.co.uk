@@ -29,6 +29,10 @@ import { ObservationsList } from "../../components/ObservationsList";
 import { SummaryOfCondition } from "../../components/SummaryOfCondition";
 import { DeclarationSection } from "../../components/DeclarationSection";
 import { ClientAcknowledgement } from "../../components/ClientAcknowledgement";
+import { SectionHeading } from "../../components/ui/SectionHeading";
+import { SubCard } from "../../components/ui/SubCard";
+import { FloatingInput } from "../../components/ui/FloatingInput";
+import { FloatingSelect } from "../../components/ui/FloatingSelect";
 
 // BS 7671 default inspection items
 const DEFAULT_INSPECTION_ITEMS = [
@@ -527,11 +531,12 @@ function EICRPageContent() {
       {/* 1. Contractor Details */}
       {activeSection === "contractor" && (
         <div className="space-y-5">
+          <SectionHeading number={1} title="Contractor Details" fieldCount={6} />
           <ContractorDetails
             data={data.contractorDetails}
             onChange={(contractorDetails) => {
               setData((prev) => ({ ...prev, contractorDetails }));
-          
+
             }}
           />
         </div>
@@ -540,90 +545,112 @@ function EICRPageContent() {
       {/* 2. Installation Details */}
       {activeSection === "installation" && (
         <div className="space-y-5">
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="jobReference">Report Reference</Label>
-              <Input id="jobReference" value={data.overview.jobReference} onChange={(e) => updateOverview("jobReference", e.target.value)} placeholder="e.g. EICR-2026-001" />
+          <SectionHeading number={2} title="Installation Details" fieldCount={11} />
+
+          <SubCard title="Report Info">
+            <div className="grid md:grid-cols-2 gap-3">
+              <div>
+                <Label htmlFor="jobReference">Report Reference</Label>
+                <Input id="jobReference" value={data.overview.jobReference} onChange={(e) => updateOverview("jobReference", e.target.value)} placeholder="e.g. EICR-2026-001" />
+              </div>
+              <div>
+                <Label htmlFor="dateOfInspection">Date of Inspection</Label>
+                <Input id="dateOfInspection" type="date" value={data.overview.dateOfInspection} onChange={(e) => updateOverview("dateOfInspection", e.target.value)} />
+              </div>
             </div>
-            <div>
-              <Label htmlFor="dateOfInspection">Date of Inspection</Label>
-              <Input id="dateOfInspection" type="date" value={data.overview.dateOfInspection} onChange={(e) => updateOverview("dateOfInspection", e.target.value)} />
+          </SubCard>
+
+          <SubCard title="Client & Occupier">
+            <div className="grid md:grid-cols-2 gap-3">
+              <div>
+                <Label htmlFor="clientName">Client Name</Label>
+                <Input id="clientName" value={data.overview.clientName} onChange={(e) => updateOverview("clientName", e.target.value)} placeholder="Client or company name" />
+              </div>
+              <div>
+                <Label htmlFor="occupier">Occupier</Label>
+                <Input id="occupier" value={data.overview.occupier} onChange={(e) => updateOverview("occupier", e.target.value)} placeholder="Occupier name (if different)" />
+              </div>
             </div>
-          </div>
-          <div className="grid md:grid-cols-2 gap-4">
+          </SubCard>
+
+          <SubCard title="Address">
             <div>
-              <Label htmlFor="clientName">Client Name</Label>
-              <Input id="clientName" value={data.overview.clientName} onChange={(e) => updateOverview("clientName", e.target.value)} placeholder="Client or company name" />
+              <Label htmlFor="installationAddress">Installation Address</Label>
+              <Textarea id="installationAddress" value={data.overview.installationAddress} onChange={(e) => updateOverview("installationAddress", e.target.value)} placeholder="Full address of the installation" className="min-h-[80px]" />
             </div>
-            <div>
-              <Label htmlFor="occupier">Occupier</Label>
-              <Input id="occupier" value={data.overview.occupier} onChange={(e) => updateOverview("occupier", e.target.value)} placeholder="Occupier name (if different)" />
+          </SubCard>
+
+          <SubCard title="Premises">
+            <div className="grid md:grid-cols-2 gap-3">
+              <div>
+                <Label htmlFor="descriptionOfPremises">Description of Premises</Label>
+                <NativeSelect id="descriptionOfPremises" value={data.overview.descriptionOfPremises} onChange={(e) => updateOverview("descriptionOfPremises", e.target.value)}>
+                  <option value="">Select...</option>
+                  <option value="domestic">Domestic</option>
+                  <option value="commercial">Commercial</option>
+                  <option value="industrial">Industrial</option>
+                  <option value="agricultural">Agricultural</option>
+                  <option value="public">Public</option>
+                  <option value="residential">Residential</option>
+                  <option value="educational">Educational</option>
+                  <option value="healthcare">Healthcare</option>
+                  <option value="other">Other</option>
+                </NativeSelect>
+              </div>
+              <div>
+                <Label htmlFor="estimatedAgeOfWiring">Estimated Age of Wiring</Label>
+                <Input id="estimatedAgeOfWiring" value={data.overview.estimatedAgeOfWiring} onChange={(e) => updateOverview("estimatedAgeOfWiring", e.target.value)} placeholder="e.g. 15 years" />
+              </div>
             </div>
-          </div>
-          <div>
-            <Label htmlFor="installationAddress">Installation Address</Label>
-            <Textarea id="installationAddress" value={data.overview.installationAddress} onChange={(e) => updateOverview("installationAddress", e.target.value)} placeholder="Full address of the installation" className="min-h-[80px]" />
-          </div>
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="descriptionOfPremises">Description of Premises</Label>
-              <NativeSelect id="descriptionOfPremises" value={data.overview.descriptionOfPremises} onChange={(e) => updateOverview("descriptionOfPremises", e.target.value)}>
-                <option value="">Select...</option>
-                <option value="domestic">Domestic</option>
-                <option value="commercial">Commercial</option>
-                <option value="industrial">Industrial</option>
-                <option value="agricultural">Agricultural</option>
-                <option value="public">Public</option>
-                <option value="residential">Residential</option>
-                <option value="educational">Educational</option>
-                <option value="healthcare">Healthcare</option>
-                <option value="other">Other</option>
-              </NativeSelect>
+          </SubCard>
+
+          <SubCard title="Dates & Purpose">
+            <div className="grid md:grid-cols-2 gap-3">
+              <div>
+                <Label htmlFor="dateOfLastInspection">Date of Last Inspection</Label>
+                <Input id="dateOfLastInspection" type="date" value={data.overview.dateOfLastInspection} onChange={(e) => updateOverview("dateOfLastInspection", e.target.value)} />
+              </div>
+              <div>
+                <Label htmlFor="previousReportReference">Previous Report Reference</Label>
+                <Input id="previousReportReference" value={data.overview.previousReportReference} onChange={(e) => updateOverview("previousReportReference", e.target.value)} placeholder="Reference of previous report" />
+              </div>
             </div>
-            <div>
-              <Label htmlFor="estimatedAgeOfWiring">Estimated Age of Wiring</Label>
-              <Input id="estimatedAgeOfWiring" value={data.overview.estimatedAgeOfWiring} onChange={(e) => updateOverview("estimatedAgeOfWiring", e.target.value)} placeholder="e.g. 15 years" />
+            <div className="mt-3">
+              <Label htmlFor="purposeOfReport">Purpose of Report</Label>
+              <Input id="purposeOfReport" value={data.overview.purposeOfReport} onChange={(e) => updateOverview("purposeOfReport", e.target.value)} placeholder="e.g. Periodic inspection, Change of tenancy, Mortgage survey" />
             </div>
-          </div>
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="dateOfLastInspection">Date of Last Inspection</Label>
-              <Input id="dateOfLastInspection" type="date" value={data.overview.dateOfLastInspection} onChange={(e) => updateOverview("dateOfLastInspection", e.target.value)} />
+          </SubCard>
+
+          <SubCard title="Checkboxes">
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <input type="checkbox" id="evidenceOfAlterations" checked={data.overview.evidenceOfAlterations} onChange={(e) => updateOverview("evidenceOfAlterations", e.target.checked)} className="w-5 h-5 rounded accent-[var(--primary)]" />
+                <Label htmlFor="evidenceOfAlterations" className="mb-0">Evidence of alterations or additions</Label>
+              </div>
+              {data.overview.evidenceOfAlterations && (
+                <div>
+                  <Label htmlFor="alterationsDetails">Details of Alterations</Label>
+                  <Textarea id="alterationsDetails" value={data.overview.alterationsDetails} onChange={(e) => updateOverview("alterationsDetails", e.target.value)} placeholder="Describe any alterations or additions observed..." className="min-h-[60px]" />
+                </div>
+              )}
+              <div className="flex items-center gap-3">
+                <input type="checkbox" id="recordsAvailable" checked={data.overview.recordsAvailable} onChange={(e) => updateOverview("recordsAvailable", e.target.checked)} className="w-5 h-5 rounded accent-[var(--primary)]" />
+                <Label htmlFor="recordsAvailable" className="mb-0">Previous records available</Label>
+              </div>
             </div>
-            <div>
-              <Label htmlFor="previousReportReference">Previous Report Reference</Label>
-              <Input id="previousReportReference" value={data.overview.previousReportReference} onChange={(e) => updateOverview("previousReportReference", e.target.value)} placeholder="Reference of previous report" />
-            </div>
-          </div>
-          <div>
-            <Label htmlFor="purposeOfReport">Purpose of Report</Label>
-            <Input id="purposeOfReport" value={data.overview.purposeOfReport} onChange={(e) => updateOverview("purposeOfReport", e.target.value)} placeholder="e.g. Periodic inspection, Change of tenancy, Mortgage survey" />
-          </div>
-          <div className="flex items-center gap-3">
-            <input type="checkbox" id="evidenceOfAlterations" checked={data.overview.evidenceOfAlterations} onChange={(e) => updateOverview("evidenceOfAlterations", e.target.checked)} className="w-5 h-5 rounded accent-[var(--primary)]" />
-            <Label htmlFor="evidenceOfAlterations" className="mb-0">Evidence of alterations or additions</Label>
-          </div>
-          {data.overview.evidenceOfAlterations && (
-            <div>
-              <Label htmlFor="alterationsDetails">Details of Alterations</Label>
-              <Textarea id="alterationsDetails" value={data.overview.alterationsDetails} onChange={(e) => updateOverview("alterationsDetails", e.target.value)} placeholder="Describe any alterations or additions observed..." className="min-h-[60px]" />
-            </div>
-          )}
-          <div className="flex items-center gap-3">
-            <input type="checkbox" id="recordsAvailable" checked={data.overview.recordsAvailable} onChange={(e) => updateOverview("recordsAvailable", e.target.checked)} className="w-5 h-5 rounded accent-[var(--primary)]" />
-            <Label htmlFor="recordsAvailable" className="mb-0">Previous records available</Label>
-          </div>
+          </SubCard>
         </div>
       )}
 
       {/* 3. Extent & Limitations */}
       {activeSection === "extent" && (
         <div className="space-y-5">
+          <SectionHeading number={3} title="Extent & Limitations" fieldCount={3} />
           <ExtentAndLimitations
             data={data.extentAndLimitations}
             onChange={(extentAndLimitations) => {
               setData((prev) => ({ ...prev, extentAndLimitations }));
-          
+
             }}
           />
         </div>
@@ -632,68 +659,44 @@ function EICRPageContent() {
       {/* 4. Supply Characteristics */}
       {activeSection === "supply" && (
         <div className="space-y-5">
-          <div className="grid md:grid-cols-3 gap-4">
-            <div>
-              <Label htmlFor="systemType">System Type (Earthing)</Label>
-              <NativeSelect id="systemType" value={data.supplyCharacteristics.systemType} onChange={(e) => updateSupply("systemType", e.target.value)}>
-                <option value="">Select...</option>
-                <option value="TN-C-S">TN-C-S (PME)</option>
-                <option value="TN-S">TN-S</option>
-                <option value="TT">TT</option>
-                <option value="IT">IT</option>
-              </NativeSelect>
-            </div>
-            <div>
-              <Label htmlFor="numberOfPhases">Number of Phases</Label>
-              <NativeSelect id="numberOfPhases" value={data.supplyCharacteristics.numberOfPhases} onChange={(e) => updateSupply("numberOfPhases", e.target.value)}>
-                <option value="">Select...</option>
-                <option value="single">Single Phase</option>
-                <option value="three">Three Phase</option>
-              </NativeSelect>
-            </div>
-            <div>
-              <Label htmlFor="natureOfSupply">Nature of Supply</Label>
-              <NativeSelect id="natureOfSupply" value={data.supplyCharacteristics.natureOfSupply} onChange={(e) => updateSupply("natureOfSupply", e.target.value)}>
-                <option value="">Select...</option>
-                <option value="AC">AC</option>
-                <option value="DC">DC</option>
-              </NativeSelect>
-            </div>
+          <SectionHeading number={4} title="Supply Characteristics" fieldCount={10} />
+
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            <FloatingSelect label="System Type (Earthing)" value={data.supplyCharacteristics.systemType} onChange={(e) => updateSupply("systemType", e.target.value)}>
+              <option value="">Select...</option>
+              <option value="TN-C-S">TN-C-S (PME)</option>
+              <option value="TN-S">TN-S</option>
+              <option value="TT">TT</option>
+              <option value="IT">IT</option>
+            </FloatingSelect>
+
+            <FloatingSelect label="Number of Phases" value={data.supplyCharacteristics.numberOfPhases} onChange={(e) => updateSupply("numberOfPhases", e.target.value)}>
+              <option value="">Select...</option>
+              <option value="single">Single Phase</option>
+              <option value="three">Three Phase</option>
+            </FloatingSelect>
+
+            <FloatingSelect label="Nature of Supply" value={data.supplyCharacteristics.natureOfSupply} onChange={(e) => updateSupply("natureOfSupply", e.target.value)}>
+              <option value="">Select...</option>
+              <option value="AC">AC</option>
+              <option value="DC">DC</option>
+            </FloatingSelect>
+
+            <FloatingInput label="Nominal Voltage to Earth" value={data.supplyCharacteristics.nominalVoltageToEarth} onChange={(e) => updateSupply("nominalVoltageToEarth", e.target.value)} placeholder="230" unit="V" />
+
+            <FloatingInput label="Voltage Between Phases" value={data.supplyCharacteristics.nominalVoltageBetweenPhases} onChange={(e) => updateSupply("nominalVoltageBetweenPhases", e.target.value)} placeholder="400" unit="V" />
+
+            <FloatingInput label="Frequency" value={data.supplyCharacteristics.frequency} onChange={(e) => updateSupply("frequency", e.target.value)} placeholder="50" unit="Hz" />
+
+            <FloatingInput label="Prospective Fault Current" value={data.supplyCharacteristics.prospectiveFaultCurrent} onChange={(e) => updateSupply("prospectiveFaultCurrent", e.target.value)} placeholder="e.g. 16" unit="kA" />
+
+            <FloatingInput label="External Ze" value={data.supplyCharacteristics.externalLoopImpedance} onChange={(e) => updateSupply("externalLoopImpedance", e.target.value)} placeholder="e.g. 0.35" unit={"\u03A9"} />
+
+            <FloatingInput label="Supply Protective Device Type" value={data.supplyCharacteristics.supplyProtectiveDeviceType} onChange={(e) => updateSupply("supplyProtectiveDeviceType", e.target.value)} placeholder="e.g. BS 88 Fuse" />
+
+            <FloatingInput label="Supply Protective Device Rating" value={data.supplyCharacteristics.supplyProtectiveDeviceRating} onChange={(e) => updateSupply("supplyProtectiveDeviceRating", e.target.value)} placeholder="e.g. 100" unit="A" />
           </div>
-          <div className="grid md:grid-cols-3 gap-4">
-            <div>
-              <Label htmlFor="nominalVoltageToEarth">Nominal Voltage to Earth (V)</Label>
-              <Input id="nominalVoltageToEarth" value={data.supplyCharacteristics.nominalVoltageToEarth} onChange={(e) => updateSupply("nominalVoltageToEarth", e.target.value)} placeholder="230" />
-            </div>
-            <div>
-              <Label htmlFor="nominalVoltageBetweenPhases">Voltage Between Phases (V)</Label>
-              <Input id="nominalVoltageBetweenPhases" value={data.supplyCharacteristics.nominalVoltageBetweenPhases} onChange={(e) => updateSupply("nominalVoltageBetweenPhases", e.target.value)} placeholder="400" />
-            </div>
-            <div>
-              <Label htmlFor="frequency">Frequency (Hz)</Label>
-              <Input id="frequency" value={data.supplyCharacteristics.frequency} onChange={(e) => updateSupply("frequency", e.target.value)} placeholder="50" />
-            </div>
-          </div>
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="prospectiveFaultCurrent">Prospective Fault Current (kA)</Label>
-              <Input id="prospectiveFaultCurrent" value={data.supplyCharacteristics.prospectiveFaultCurrent} onChange={(e) => updateSupply("prospectiveFaultCurrent", e.target.value)} placeholder="e.g. 16" />
-            </div>
-            <div>
-              <Label htmlFor="externalLoopImpedance">External Ze (Ohm)</Label>
-              <Input id="externalLoopImpedance" value={data.supplyCharacteristics.externalLoopImpedance} onChange={(e) => updateSupply("externalLoopImpedance", e.target.value)} placeholder="e.g. 0.35" />
-            </div>
-          </div>
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="supplyProtectiveDeviceType">Supply Protective Device Type</Label>
-              <Input id="supplyProtectiveDeviceType" value={data.supplyCharacteristics.supplyProtectiveDeviceType} onChange={(e) => updateSupply("supplyProtectiveDeviceType", e.target.value)} placeholder="e.g. BS 88 Fuse" />
-            </div>
-            <div>
-              <Label htmlFor="supplyProtectiveDeviceRating">Supply Protective Device Rating (A)</Label>
-              <Input id="supplyProtectiveDeviceRating" value={data.supplyCharacteristics.supplyProtectiveDeviceRating} onChange={(e) => updateSupply("supplyProtectiveDeviceRating", e.target.value)} placeholder="e.g. 100" />
-            </div>
-          </div>
+
           <div className="flex items-center gap-3">
             <input type="checkbox" id="otherSourcesOfSupply" checked={data.supplyCharacteristics.otherSourcesOfSupply} onChange={(e) => updateSupply("otherSourcesOfSupply", e.target.checked)} className="w-5 h-5 rounded accent-[var(--primary)]" />
             <Label htmlFor="otherSourcesOfSupply" className="mb-0">Other sources of supply (e.g. generator, solar PV)</Label>
@@ -710,52 +713,35 @@ function EICRPageContent() {
       {/* 5. Earthing Arrangements */}
       {activeSection === "earthing" && (
         <div className="space-y-5">
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="meansOfEarthing">Means of Earthing</Label>
-              <NativeSelect id="meansOfEarthing" value={data.earthingArrangements.meansOfEarthing} onChange={(e) => updateEarthing("meansOfEarthing", e.target.value)}>
-                <option value="">Select...</option>
-                <option value="supply_distributor">Supply Distributor</option>
-                <option value="earth_electrode">Earth Electrode</option>
-                <option value="other">Other</option>
-              </NativeSelect>
-            </div>
-            <div>
-              <Label htmlFor="earthElectrodeType">Earth Electrode Type</Label>
-              <NativeSelect id="earthElectrodeType" value={data.earthingArrangements.earthElectrodeType} onChange={(e) => updateEarthing("earthElectrodeType", e.target.value)}>
-                <option value="">Select...</option>
-                <option value="rod">Rod</option>
-                <option value="tape">Tape</option>
-                <option value="plate">Plate</option>
-                <option value="ring">Ring</option>
-                <option value="foundation">Foundation</option>
-                <option value="other">Other</option>
-              </NativeSelect>
-            </div>
-          </div>
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="earthingConductorType">Earthing Conductor Type</Label>
-              <Input id="earthingConductorType" value={data.earthingArrangements.earthingConductorType} onChange={(e) => updateEarthing("earthingConductorType", e.target.value)} placeholder="e.g. Copper" />
-            </div>
-            <div>
-              <Label htmlFor="earthingConductorSize">Earthing Conductor Size (mm2)</Label>
-              <Input id="earthingConductorSize" value={data.earthingArrangements.earthingConductorSize} onChange={(e) => updateEarthing("earthingConductorSize", e.target.value)} placeholder="e.g. 16" />
-            </div>
-          </div>
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="mainProtectiveBondingType">Main Bonding Type</Label>
-              <Input id="mainProtectiveBondingType" value={data.earthingArrangements.mainProtectiveBondingType} onChange={(e) => updateEarthing("mainProtectiveBondingType", e.target.value)} placeholder="e.g. Copper" />
-            </div>
-            <div>
-              <Label htmlFor="mainProtectiveBondingSize">Main Bonding Size (mm2)</Label>
-              <Input id="mainProtectiveBondingSize" value={data.earthingArrangements.mainProtectiveBondingSize} onChange={(e) => updateEarthing("mainProtectiveBondingSize", e.target.value)} placeholder="e.g. 10" />
-            </div>
-          </div>
-          <div>
-            <Label htmlFor="zeMeasured">Ze Measured (Ohm)</Label>
-            <Input id="zeMeasured" value={data.earthingArrangements.zeMeasured} onChange={(e) => updateEarthing("zeMeasured", e.target.value)} placeholder="e.g. 0.35" />
+          <SectionHeading number={5} title="Earthing Arrangements" fieldCount={7} />
+
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <FloatingSelect label="Means of Earthing" value={data.earthingArrangements.meansOfEarthing} onChange={(e) => updateEarthing("meansOfEarthing", e.target.value)}>
+              <option value="">Select...</option>
+              <option value="supply_distributor">Supply Distributor</option>
+              <option value="earth_electrode">Earth Electrode</option>
+              <option value="other">Other</option>
+            </FloatingSelect>
+
+            <FloatingSelect label="Earth Electrode Type" value={data.earthingArrangements.earthElectrodeType} onChange={(e) => updateEarthing("earthElectrodeType", e.target.value)}>
+              <option value="">Select...</option>
+              <option value="rod">Rod</option>
+              <option value="tape">Tape</option>
+              <option value="plate">Plate</option>
+              <option value="ring">Ring</option>
+              <option value="foundation">Foundation</option>
+              <option value="other">Other</option>
+            </FloatingSelect>
+
+            <FloatingInput label="Earthing Conductor Type" value={data.earthingArrangements.earthingConductorType} onChange={(e) => updateEarthing("earthingConductorType", e.target.value)} placeholder="e.g. Copper" />
+
+            <FloatingInput label="Earthing Conductor Size" value={data.earthingArrangements.earthingConductorSize} onChange={(e) => updateEarthing("earthingConductorSize", e.target.value)} placeholder="e.g. 16" unit="mm\u00B2" />
+
+            <FloatingInput label="Main Bonding Type" value={data.earthingArrangements.mainProtectiveBondingType} onChange={(e) => updateEarthing("mainProtectiveBondingType", e.target.value)} placeholder="e.g. Copper" />
+
+            <FloatingInput label="Main Bonding Size" value={data.earthingArrangements.mainProtectiveBondingSize} onChange={(e) => updateEarthing("mainProtectiveBondingSize", e.target.value)} placeholder="e.g. 10" unit="mm\u00B2" />
+
+            <FloatingInput label="Ze Measured" value={data.earthingArrangements.zeMeasured} onChange={(e) => updateEarthing("zeMeasured", e.target.value)} placeholder="e.g. 0.35" unit={"\u03A9"} />
           </div>
 
           {/* Bonding checklist */}
@@ -794,11 +780,12 @@ function EICRPageContent() {
       {/* 6. General Inspection */}
       {activeSection === "inspection" && (
         <div className="space-y-5">
+          <SectionHeading number={6} title="General Inspection" fieldCount={30} />
           <InspectionChecklist
             items={data.generalInspection}
             onChange={(generalInspection) => {
               setData((prev) => ({ ...prev, generalInspection: generalInspection as typeof prev.generalInspection }));
-          
+
             }}
           />
         </div>
@@ -807,6 +794,7 @@ function EICRPageContent() {
       {/* 7. Distribution Boards & Test Results */}
       {activeSection === "boards" && (
         <div className="space-y-5">
+          <SectionHeading number={7} title="Distribution Boards" fieldCount={0} />
           <div className="flex items-center justify-between">
             <p className="text-[var(--muted-foreground)]">Circuit schedules and test results per BS 7671:2018+A2:2022</p>
             <Button variant="secondary" onClick={addBoard}>+ Add Board</Button>
@@ -883,11 +871,12 @@ function EICRPageContent() {
       {/* 8. Observations */}
       {activeSection === "observations" && (
         <div className="space-y-5">
+          <SectionHeading number={8} title="Observations" fieldCount={0} />
           <ObservationsList
             observations={data.observations}
             onChange={(observations) => {
               setData((prev) => ({ ...prev, observations }));
-          
+
             }}
           />
         </div>
@@ -896,6 +885,7 @@ function EICRPageContent() {
       {/* 9. Summary of Condition */}
       {activeSection === "summary" && (
         <div className="space-y-5">
+          <SectionHeading number={9} title="Summary of Condition" fieldCount={4} />
           <SummaryOfCondition
             c1Count={summaryOfCondition.c1Count}
             c2Count={summaryOfCondition.c2Count}
@@ -908,42 +898,53 @@ function EICRPageContent() {
       {/* 10. Overall Assessment */}
       {activeSection === "assessment" && (
         <div className="space-y-5">
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="overallCondition">Overall Condition</Label>
-              <NativeSelect id="overallCondition" value={data.overallCondition} onChange={(e) => setData((prev) => ({ ...prev, overallCondition: e.target.value as EICRCertificate["overallCondition"] }))}>
-                <option value="">Select...</option>
-                <option value="satisfactory">Satisfactory</option>
-                <option value="unsatisfactory">Unsatisfactory</option>
-                <option value="further_investigation">Further Investigation Required</option>
-              </NativeSelect>
+          <SectionHeading number={10} title="Overall Assessment" fieldCount={4} />
+
+          <SubCard title="Condition">
+            <div className="grid md:grid-cols-2 gap-3">
+              <div>
+                <Label htmlFor="overallCondition">Overall Condition</Label>
+                <NativeSelect id="overallCondition" value={data.overallCondition} onChange={(e) => setData((prev) => ({ ...prev, overallCondition: e.target.value as EICRCertificate["overallCondition"] }))}>
+                  <option value="">Select...</option>
+                  <option value="satisfactory">Satisfactory</option>
+                  <option value="unsatisfactory">Unsatisfactory</option>
+                  <option value="further_investigation">Further Investigation Required</option>
+                </NativeSelect>
+              </div>
+              <div>
+                <Label htmlFor="retestInterval">Retest Interval</Label>
+                <NativeSelect id="retestInterval" value={data.retestInterval} onChange={(e) => setData((prev) => ({ ...prev, retestInterval: e.target.value }))}>
+                  <option value="">Select...</option>
+                  <option value="1">1 year</option>
+                  <option value="2">2 years</option>
+                  <option value="3">3 years</option>
+                  <option value="5">5 years</option>
+                  <option value="10">10 years</option>
+                </NativeSelect>
+              </div>
             </div>
+          </SubCard>
+
+          <SubCard title="Retest">
             <div>
               <Label htmlFor="recommendedRetestDate">Recommended Retest Date</Label>
               <Input id="recommendedRetestDate" type="date" value={data.recommendedRetestDate} onChange={(e) => setData((prev) => ({ ...prev, recommendedRetestDate: e.target.value }))} />
             </div>
-          </div>
-          <div>
-            <Label htmlFor="retestInterval">Retest Interval</Label>
-            <NativeSelect id="retestInterval" value={data.retestInterval} onChange={(e) => setData((prev) => ({ ...prev, retestInterval: e.target.value }))}>
-              <option value="">Select...</option>
-              <option value="1">1 year</option>
-              <option value="2">2 years</option>
-              <option value="3">3 years</option>
-              <option value="5">5 years</option>
-              <option value="10">10 years</option>
-            </NativeSelect>
-          </div>
-          <div>
-            <Label htmlFor="inspectorComments">Inspector Comments</Label>
-            <Textarea id="inspectorComments" value={data.inspectorComments} onChange={(e) => { setData((prev) => ({ ...prev, inspectorComments: e.target.value })); }} placeholder="Any additional comments by the inspector..." className="min-h-[100px]" />
-          </div>
+          </SubCard>
+
+          <SubCard title="Comments">
+            <div>
+              <Label htmlFor="inspectorComments">Inspector Comments</Label>
+              <Textarea id="inspectorComments" value={data.inspectorComments} onChange={(e) => { setData((prev) => ({ ...prev, inspectorComments: e.target.value })); }} placeholder="Any additional comments by the inspector..." className="min-h-[100px]" />
+            </div>
+          </SubCard>
         </div>
       )}
 
       {/* 11. Declaration */}
       {activeSection === "declaration" && (
         <div className="space-y-5">
+          <SectionHeading number={11} title="Declaration" fieldCount={3} />
           <DeclarationSection
             role="inspector"
             data={data.declarationDetails}
@@ -959,6 +960,7 @@ function EICRPageContent() {
       {/* 12. Client Acknowledgement */}
       {activeSection === "acknowledgement" && (
         <div className="space-y-5">
+          <SectionHeading number={12} title="Client Acknowledgement" fieldCount={2} />
           <ClientAcknowledgement
             data={data.clientAcknowledgement}
             onChange={(clientAcknowledgement) => {
@@ -973,6 +975,7 @@ function EICRPageContent() {
       {/* 13. Site Photos */}
       {activeSection === "photos" && (
         <div className="space-y-5">
+          <SectionHeading number={13} title="Site Photos" fieldCount={0} />
           <PhotoCapture photos={photos} onChange={setPhotos} />
         </div>
       )}

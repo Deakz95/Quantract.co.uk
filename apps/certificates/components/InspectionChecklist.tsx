@@ -1,21 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-  CardDescription,
-  Button,
-  NativeSelect,
-} from "@quantract/ui";
+import { InspectionGroup } from "./ui/InspectionGroup";
+import type { PillOption } from "./ui/PillSelector";
 
 export interface InspectionItem {
   category: string;
   itemCode: string;
   description: string;
-  outcome: string; // "pass" | "fail" | "C1" | "C2" | "C3" | "na" | "lim" | ""
+  outcome: string;
 }
 
 interface InspectionChecklistProps {
@@ -23,45 +15,44 @@ interface InspectionChecklistProps {
   onChange: (items: InspectionItem[]) => void;
 }
 
-const OUTCOME_OPTIONS = [
-  { value: "", label: "Select..." },
-  { value: "pass", label: "Pass (\u2713)" },
-  { value: "C1", label: "C1 - Danger present" },
-  { value: "C2", label: "C2 - Potentially dangerous" },
-  { value: "C3", label: "C3 - Improvement recommended" },
-  { value: "na", label: "N/A - Not applicable" },
-  { value: "lim", label: "LIM - Limitation" },
-] as const;
+const OUTCOME_PILLS: PillOption[] = [
+  { label: "\u2713", value: "pass", color: "bg-emerald-600 text-white" },
+  { label: "C1", value: "C1", color: "bg-red-600 text-white" },
+  { label: "C2", value: "C2", color: "bg-amber-600 text-white" },
+  { label: "C3", value: "C3", color: "bg-yellow-600 text-white" },
+  { label: "N/A", value: "na", color: "bg-gray-600 text-white" },
+  { label: "LIM", value: "lim", color: "bg-gray-600 text-white" },
+];
 
-const OUTCOME_COLORS: Record<string, string> = {
-  C1: "var(--error)",
-  C2: "#F59E0B",
-  C3: "#EAB308",
-  pass: "var(--success)",
+const CATEGORY_LABELS: Record<string, string> = {
+  cu_distribution_board: "A. Consumer Unit / Distribution Board",
+  wiring_systems: "B. Wiring Systems",
+  protection: "C. Protection",
+  accessories_switchgear: "D. Accessories & Switchgear",
+  special_locations: "E. Special Locations",
 };
 
 function formatCategoryName(category: string): string {
-  return category
-    .split("_")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
+  return (
+    CATEGORY_LABELS[category] ??
+    category
+      .split("_")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ")
+  );
 }
 
 function groupByCategory(items: InspectionItem[]): Map<string, InspectionItem[]> {
   const groups = new Map<string, InspectionItem[]>();
   for (const item of items) {
     const existing = groups.get(item.category);
-    if (existing) {
-      existing.push(item);
-    } else {
-      groups.set(item.category, [item]);
-    }
+    if (existing) existing.push(item);
+    else groups.set(item.category, [item]);
   }
   return groups;
 }
 
 function getCategorySummary(categoryItems: InspectionItem[]) {
-  const total = categoryItems.length;
   const pass = categoryItems.filter((i) => i.outcome === "pass").length;
   const c1 = categoryItems.filter((i) => i.outcome === "C1").length;
   const c2 = categoryItems.filter((i) => i.outcome === "C2").length;
@@ -69,7 +60,6 @@ function getCategorySummary(categoryItems: InspectionItem[]) {
   const na = categoryItems.filter((i) => i.outcome === "na").length;
   const lim = categoryItems.filter((i) => i.outcome === "lim").length;
   const unmarked = categoryItems.filter((i) => !i.outcome).length;
-
   const parts: string[] = [];
   if (pass > 0) parts.push(`${pass} pass`);
   if (c1 > 0) parts.push(`${c1} C1`);
@@ -78,8 +68,7 @@ function getCategorySummary(categoryItems: InspectionItem[]) {
   if (na > 0) parts.push(`${na} N/A`);
   if (lim > 0) parts.push(`${lim} LIM`);
   if (unmarked > 0) parts.push(`${unmarked} unmarked`);
-
-  return { total, pass, c1, c2, c3, na, lim, unmarked, summary: parts.join(", ") };
+  return parts.join(", ");
 }
 
 export function InspectionChecklist({ items, onChange }: InspectionChecklistProps) {
@@ -89,19 +78,19 @@ export function InspectionChecklist({ items, onChange }: InspectionChecklistProp
     const updated = items.map((item) =>
       item.itemCode === itemCode && item.category === category
         ? { ...item, outcome: newOutcome }
-        : item
+        : item,
     );
     onChange(updated);
   };
 
   const handleMarkAllNA = (category: string) => {
     const updated = items.map((item) =>
-      item.category === category ? { ...item, outcome: "na" } : item
+      item.category === category ? { ...item, outcome: "na" } : item,
     );
     onChange(updated);
   };
 
-  // Overall summary counts
+  // Overall counts
   const totalItems = items.length;
   const passCount = items.filter((i) => i.outcome === "pass").length;
   const c1Count = items.filter((i) => i.outcome === "C1").length;
@@ -112,154 +101,67 @@ export function InspectionChecklist({ items, onChange }: InspectionChecklistProp
   const unmarkedCount = items.filter((i) => !i.outcome).length;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>General Inspection</CardTitle>
-        <CardDescription>BS 7671 inspection items - mark each item</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {Array.from(grouped.entries()).map(([category, categoryItems]) => {
-            const stats = getCategorySummary(categoryItems);
+    <div className="space-y-3">
+      {Array.from(grouped.entries()).map(([category, categoryItems]) => (
+        <InspectionGroup
+          key={category}
+          title={formatCategoryName(category)}
+          rows={categoryItems.map((item) => ({
+            id: `${item.category}-${item.itemCode}`,
+            code: item.itemCode,
+            label: item.description,
+            value: item.outcome,
+          }))}
+          options={OUTCOME_PILLS}
+          onChange={(id, val) => {
+            const parts = id.split("-");
+            const cat = parts[0];
+            const code = parts.slice(1).join("-");
+            handleOutcomeChange(code, cat, val);
+          }}
+          onMarkAllNA={() => handleMarkAllNA(category)}
+          summary={getCategorySummary(categoryItems)}
+        />
+      ))}
 
-            return (
-              <details key={category} open>
-                <summary className="cursor-pointer list-none">
-                  <div className="flex items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--muted)] px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <svg
-                        className="w-4 h-4 text-[var(--muted-foreground)] transition-transform [details[open]>summary_&]:rotate-90"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 5l7 7-7 7"
-                        />
-                      </svg>
-                      <span className="font-semibold text-sm text-[var(--foreground)]">
-                        {formatCategoryName(category)}
-                      </span>
-                      <span className="text-xs text-[var(--muted-foreground)]">
-                        ({stats.total} items)
-                      </span>
-                      {stats.summary && (
-                        <span className="text-xs text-[var(--muted-foreground)] hidden sm:inline">
-                          &mdash; {stats.summary}
-                        </span>
-                      )}
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        handleMarkAllNA(category);
-                      }}
-                    >
-                      Mark All N/A
-                    </Button>
-                  </div>
-                </summary>
-
-                <div className="mt-1 ml-2 border-l-2 border-[var(--border)] pl-4 space-y-1">
-                  {categoryItems.map((item) => (
-                    <div
-                      key={`${item.category}-${item.itemCode}`}
-                      className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-[var(--muted)] transition-colors"
-                    >
-                      <span className="font-mono text-xs font-bold text-[var(--primary)] w-16 shrink-0">
-                        {item.itemCode}
-                      </span>
-                      <span className="text-sm text-[var(--foreground)] flex-1 min-w-0">
-                        {item.description}
-                      </span>
-                      <div className="w-56 shrink-0">
-                        <NativeSelect
-                          value={item.outcome}
-                          onChange={(e) =>
-                            handleOutcomeChange(item.itemCode, item.category, e.target.value)
-                          }
-                          className="text-sm"
-                          style={{
-                            color: item.outcome
-                              ? OUTCOME_COLORS[item.outcome] || undefined
-                              : undefined,
-                          }}
-                        >
-                          {OUTCOME_OPTIONS.map((opt) => (
-                            <option key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </option>
-                          ))}
-                        </NativeSelect>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </details>
-            );
-          })}
+      {/* Summary bar */}
+      <div className="flex flex-wrap items-center gap-4 rounded-xl bg-[#1a1f2e] border border-white/10 px-5 py-3 mt-4">
+        <span className="text-sm font-semibold text-[#e2e8f0]">Total: {totalItems}</span>
+        <div className="h-4 w-px bg-white/10" />
+        <div className="flex items-center gap-1.5">
+          <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+          <span className="text-xs text-gray-400"><strong className="text-[#e2e8f0]">{passCount}</strong> Pass</span>
         </div>
-
-        {/* Summary Bar */}
-        <div className="mt-6 flex flex-wrap items-center gap-4 rounded-xl border border-[var(--border)] bg-[var(--muted)] px-5 py-3">
-          <span className="text-sm font-semibold text-[var(--foreground)]">
-            Total: {totalItems}
-          </span>
-          <div className="h-4 w-px bg-[var(--border)]" />
-          <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-full bg-[var(--success)]" />
-            <span className="text-xs text-[var(--muted-foreground)]">
-              <strong className="text-[var(--foreground)]">{passCount}</strong> Pass
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-full bg-[var(--error)]" />
-            <span className="text-xs text-[var(--muted-foreground)]">
-              <strong className="text-[var(--foreground)]">{c1Count}</strong> C1
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#F59E0B" }} />
-            <span className="text-xs text-[var(--muted-foreground)]">
-              <strong className="text-[var(--foreground)]">{c2Count}</strong> C2
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#EAB308" }} />
-            <span className="text-xs text-[var(--muted-foreground)]">
-              <strong className="text-[var(--foreground)]">{c3Count}</strong> C3
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-full bg-[var(--muted-foreground)]" />
-            <span className="text-xs text-[var(--muted-foreground)]">
-              <strong className="text-[var(--foreground)]">{naCount}</strong> N/A
-            </span>
-          </div>
-          {limCount > 0 && (
-            <div className="flex items-center gap-1.5">
-              <div className="w-2.5 h-2.5 rounded-full bg-[var(--muted-foreground)]" />
-              <span className="text-xs text-[var(--muted-foreground)]">
-                <strong className="text-[var(--foreground)]">{limCount}</strong> LIM
-              </span>
-            </div>
-          )}
-          {unmarkedCount > 0 && (
-            <div className="flex items-center gap-1.5">
-              <div className="w-2.5 h-2.5 rounded-full border border-[var(--border)] bg-transparent" />
-              <span className="text-xs text-[var(--muted-foreground)]">
-                <strong className="text-[var(--foreground)]">{unmarkedCount}</strong> unmarked
-              </span>
-            </div>
-          )}
+        <div className="flex items-center gap-1.5">
+          <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
+          <span className="text-xs text-gray-400"><strong className="text-[#e2e8f0]">{c1Count}</strong> C1</span>
         </div>
-      </CardContent>
-    </Card>
+        <div className="flex items-center gap-1.5">
+          <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+          <span className="text-xs text-gray-400"><strong className="text-[#e2e8f0]">{c2Count}</strong> C2</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-2.5 h-2.5 rounded-full bg-yellow-400" />
+          <span className="text-xs text-gray-400"><strong className="text-[#e2e8f0]">{c3Count}</strong> C3</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-2.5 h-2.5 rounded-full bg-gray-500" />
+          <span className="text-xs text-gray-400"><strong className="text-[#e2e8f0]">{naCount}</strong> N/A</span>
+        </div>
+        {limCount > 0 && (
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-gray-500" />
+            <span className="text-xs text-gray-400"><strong className="text-[#e2e8f0]">{limCount}</strong> LIM</span>
+          </div>
+        )}
+        {unmarkedCount > 0 && (
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full border border-white/20 bg-transparent" />
+            <span className="text-xs text-gray-400"><strong className="text-[#e2e8f0]">{unmarkedCount}</strong> unmarked</span>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
