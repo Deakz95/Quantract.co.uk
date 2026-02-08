@@ -838,3 +838,22 @@ export type {
   ReissueRequest,
   IssueHistoryDisplay,
 } from "./certificate-distribution";
+
+// Re-export the branding & company identity system (CERT-A25)
+export {
+  resolveBranding,
+  formatAccreditationLine,
+  buildBrandingBindings,
+  parseAccreditations,
+  serializeAccreditations,
+  getAccreditationLabel,
+  ACCREDITATION_LABELS,
+  ACCREDITATION_SHORT_LABELS,
+} from "./certificate-branding";
+export type {
+  AccreditationBody,
+  AccreditationEntry,
+  CertificateBrandingConfig,
+  CompanyAccreditations,
+  BrandingResolutionInput,
+} from "./certificate-branding";

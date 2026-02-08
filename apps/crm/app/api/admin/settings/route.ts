@@ -81,6 +81,7 @@ export const GET = withRequestLogging(async function GET() {
         pdfFooterLine1: true,
         pdfFooterLine2: true,
         pdfContactDetails: true,
+        accreditations: true,
         uiMode: true,
         plan: true,
         subscriptionStatus: true,
@@ -227,6 +228,11 @@ export const PATCH = withRequestLogging(async function PATCH(req: Request) {
       typeof body.pdfContactDetails === "string"
         ? body.pdfContactDetails.trim() || null
         : body.pdfContactDetails === null ? null : undefined,
+
+    accreditations:
+      typeof body.accreditations === "string"
+        ? body.accreditations.trim() || null
+        : body.accreditations === null ? null : undefined,
 
     uiMode:
       typeof body.uiMode === "string" && ["simple", "standard", "full"].includes(body.uiMode)

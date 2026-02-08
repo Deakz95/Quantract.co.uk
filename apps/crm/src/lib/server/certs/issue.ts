@@ -36,6 +36,7 @@ import { renderFromTemplate, type TemplateImageAttachments } from "@/lib/server/
 import { validateTemplateForCertType } from "@quantract/shared/pdfTemplateConstants";
 import { addBusinessBreadcrumb } from "@/lib/server/observability";
 import { readUploadBytes } from "@/lib/server/storage";
+import { getBrandContextForCompanyId } from "@/lib/server/repo";
 
 // ── Types ──
 
@@ -111,10 +112,13 @@ export async function issueCertificate(input: IssueCertificateInput): Promise<Is
   // ─── 7. Generate verification token if not set ───
   const verificationToken = certAny.verificationToken ?? randomBytes(24).toString("hex");
 
-  // ─── 8. Resolve template + generate PDF ───
+  // ─── 8. Resolve branding + template + generate PDF ───
   const issuedAt = new Date();
   const publicBase = process.env.PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_APP_URL || "";
   const verifyUrl = publicBase && verificationToken ? `${publicBase.replace(/\/$/, "")}/verify/${verificationToken}` : undefined;
+
+  // Resolve company branding for PDF (CERT-A25)
+  const brand = await getBrandContextForCompanyId(companyId);
 
   // Try template-based rendering first
   let pdfBytes: Buffer;
@@ -140,10 +144,10 @@ export async function issueCertificate(input: IssueCertificateInput): Promise<Is
         outcome: agg.certificate.outcome ?? null,
         outcomeReason: agg.certificate.outcomeReason ?? null,
         data: agg.certificate.data as Record<string, unknown>,
-      });
+      }, brand);
       // Build image attachments from company-scoped certificate attachments
       const imageAttachments = buildImageAttachments(agg.attachments);
-      pdfBytes = await renderFromTemplate(templateResult.layout, dataDict, null, imageAttachments);
+      pdfBytes = await renderFromTemplate(templateResult.layout, dataDict, brand, imageAttachments);
       templateVersionId = templateResult.versionId;
     } catch (e) {
       console.warn("[issueCertificate] Template render failed, falling back to hardcoded:", e);

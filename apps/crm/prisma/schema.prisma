@@ -351,6 +351,8 @@ model Company {
   pdfFooterLine1              String?
   pdfFooterLine2              String?
   pdfContactDetails           String?
+  // Accreditation (CERT-A25) — JSON string of CompanyAccreditations
+  accreditations              String?
   defaultVatRate              Float                        @default(0.2)
   invoiceNumberPrefix         String                       @default("INV-")
   nextInvoiceNumber           Int                          @default(1)

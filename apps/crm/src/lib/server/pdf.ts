@@ -6,6 +6,7 @@ import { normalizeCertificateData, signatureIsPresent } from "@/lib/certificates
 import QRCode from "qrcode";
 import { renderFromTemplate, type TemplateLayout, type TemplateImageAttachments } from "@/lib/server/pdfTemplateRenderer";
 import { getPrisma } from "@/lib/server/prisma";
+import { parseAccreditations, formatAccreditationLine } from "@quantract/shared/certificate-types";
 
 export type BrandContext = {
   name: string;
@@ -16,6 +17,7 @@ export type BrandContext = {
   footerLine1?: string | null;
   footerLine2?: string | null;
   contactDetails?: string | null;
+  accreditations?: string | null;
 };
 
 type PdfPage = PDFPage;
@@ -115,6 +117,11 @@ export function drawBrandFooter(args: {
       const trimmed = seg.trim();
       if (trimmed) lines.push(trimmed);
     }
+  }
+  // Accreditation line (CERT-A25)
+  if (b.accreditations) {
+    const accLine = formatAccreditationLine(parseAccreditations(b.accreditations));
+    if (accLine) lines.push(accLine);
   }
 
   if (lines.length === 0) return;
@@ -1042,6 +1049,13 @@ export function buildCertificateDataDict(
     footerLine1: brand?.footerLine1 ?? "",
     footerLine2: brand?.footerLine2 ?? "",
     contactDetails: brand?.contactDetails ?? "",
+    // Branding (CERT-A25)
+    brandPrimaryColor: brand?.primaryColor ?? "",
+    brandAccentColor: brand?.accentColor ?? "",
+    brandTagline: brand?.tagline ?? "",
+    brandAccreditations: brand?.accreditations
+      ? formatAccreditationLine(parseAccreditations(brand.accreditations))
+      : "",
   };
 }
 

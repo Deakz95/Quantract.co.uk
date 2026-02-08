@@ -5,7 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/Input";
-import { Check, Palette, RefreshCw, Settings, Sparkles } from "lucide-react";
+import { Check, Eye, EyeOff, Palette, Plus, RefreshCw, Settings, Shield, Sparkles, Trash2 } from "lucide-react";
+import {
+  parseAccreditations,
+  serializeAccreditations,
+  ACCREDITATION_LABELS,
+  type AccreditationBody,
+  type AccreditationEntry,
+} from "@quantract/shared/certificate-types";
 import { themes, ThemeConfig, applyThemeToDOM, persistTheme, getThemeById } from "@/lib/themes";
 
 type CompanySettings = {
@@ -34,6 +41,7 @@ type CompanySettings = {
   onboardedAt?: string | null;
   markJobCompletedOnCertIssue?: boolean;
   uiMode?: string;
+  accreditations?: string | null;
 };
 
 function pickSettings(json: any): CompanySettings | null {
@@ -168,6 +176,7 @@ export function CompanySettingsForm(props: { mode: "settings" | "onboarding"; se
           pdfFooterLine1: form.pdfFooterLine1,
           pdfFooterLine2: form.pdfFooterLine2,
           pdfContactDetails: form.pdfContactDetails,
+          accreditations: form.accreditations,
           defaultPaymentTermsDays: form.defaultPaymentTermsDays ?? 14,
           autoChaseEnabled: Boolean(form.autoChaseEnabled),
           markJobCompletedOnCertIssue: Boolean(form.markJobCompletedOnCertIssue),
@@ -693,6 +702,12 @@ export function CompanySettingsForm(props: { mode: "settings" | "onboarding"; se
 
       }
 
+      {/* Accreditations — PDF page only (CERT-A25) */}
+      {(!section || section === "pdf") && <AccreditationsCard
+        accreditations={form.accreditations ?? null}
+        onChange={(json: string | null) => setForm({ ...form, accreditations: json })}
+      />}
+
       {/* Status Messages */}
       {error && (
         <div className="rounded-xl border border-[var(--error)]/30 bg-[var(--error)]/5 p-4 text-sm text-[var(--error)]">
@@ -736,5 +751,156 @@ export function CompanySettingsForm(props: { mode: "settings" | "onboarding"; se
         )}
       </div>
     </div>
+  );
+}
+
+/* ─── Accreditations Card (CERT-A25) ─────────────────────────────── */
+
+const BODY_OPTIONS: AccreditationBody[] = ["NICEIC", "NAPIT", "ELECSA", "STROMA", "OZEV", "BRE", "OTHER"];
+
+function AccreditationsCard({
+  accreditations,
+  onChange,
+}: {
+  accreditations: string | null;
+  onChange: (json: string | null) => void;
+}) {
+  const entries = useMemo(() => parseAccreditations(accreditations), [accreditations]);
+
+  const [addBody, setAddBody] = useState<AccreditationBody>("NICEIC");
+  const [addRegNo, setAddRegNo] = useState("");
+  const [addCustomName, setAddCustomName] = useState("");
+
+  function commit(next: AccreditationEntry[]) {
+    onChange(next.length > 0 ? serializeAccreditations(next) : null);
+  }
+
+  function handleAdd() {
+    const regNo = addRegNo.trim();
+    if (!regNo) return;
+    const entry: AccreditationEntry = {
+      body: addBody,
+      registrationNumber: regNo,
+      showOnCertificates: true,
+    };
+    if (addBody === "OTHER" && addCustomName.trim()) {
+      entry.displayName = addCustomName.trim();
+    }
+    commit([...entries, entry]);
+    setAddRegNo("");
+    setAddCustomName("");
+  }
+
+  function handleRemove(idx: number) {
+    commit(entries.filter((_, i) => i !== idx));
+  }
+
+  function toggleShow(idx: number) {
+    const next = entries.map((e, i) =>
+      i === idx ? { ...e, showOnCertificates: !e.showOnCertificates } : e,
+    );
+    commit(next);
+  }
+
+  return (
+    <Card className="border border-[var(--border)] bg-[var(--card)] rounded-2xl">
+      <CardHeader>
+        <CardTitle className="text-lg flex items-center gap-2 text-[var(--foreground)]">
+          <Shield className="w-5 h-5 text-[var(--primary)]" />
+          Accreditations
+        </CardTitle>
+        <CardDescription>Accreditation badges shown on certificate PDFs</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Existing entries */}
+        {entries.length > 0 && (
+          <div className="space-y-2">
+            {entries.map((entry, idx) => (
+              <div
+                key={idx}
+                className="flex items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2"
+              >
+                <Badge variant="secondary" className="shrink-0">
+                  {entry.displayName || ACCREDITATION_LABELS[entry.body] || entry.body}
+                </Badge>
+                <span className="text-sm text-[var(--foreground)] font-mono">
+                  {entry.registrationNumber}
+                </span>
+                <div className="ml-auto flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => toggleShow(idx)}
+                    className="p-1.5 rounded-lg hover:bg-[var(--muted)] transition-colors"
+                    title={entry.showOnCertificates ? "Shown on certificates" : "Hidden on certificates"}
+                  >
+                    {entry.showOnCertificates ? (
+                      <Eye className="w-4 h-4 text-[var(--success)]" />
+                    ) : (
+                      <EyeOff className="w-4 h-4 text-[var(--muted-foreground)]" />
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleRemove(idx)}
+                    className="p-1.5 rounded-lg hover:bg-[var(--error)]/10 transition-colors"
+                    title="Remove"
+                  >
+                    <Trash2 className="w-4 h-4 text-[var(--error)]" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Add new */}
+        <div className="flex flex-wrap items-end gap-2 pt-2 border-t border-[var(--border)]">
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-[var(--muted-foreground)]">Body</label>
+            <select
+              value={addBody}
+              onChange={(e) => setAddBody(e.target.value as AccreditationBody)}
+              className="rounded-lg border border-[var(--border)] bg-[var(--background)] px-2 py-1.5 text-sm text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
+            >
+              {BODY_OPTIONS.map((b) => (
+                <option key={b} value={b}>
+                  {ACCREDITATION_LABELS[b]}
+                </option>
+              ))}
+            </select>
+          </div>
+          {addBody === "OTHER" && (
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-[var(--muted-foreground)]">Display Name</label>
+              <Input
+                value={addCustomName}
+                onChange={(e) => setAddCustomName(e.target.value)}
+                placeholder="e.g. CompetentPerson"
+                className="w-40"
+              />
+            </div>
+          )}
+          <div className="space-y-1 flex-1 min-w-[140px]">
+            <label className="text-xs font-medium text-[var(--muted-foreground)]">Registration No.</label>
+            <Input
+              value={addRegNo}
+              onChange={(e) => setAddRegNo(e.target.value)}
+              placeholder="e.g. 12345"
+              onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+            />
+          </div>
+          <Button variant="outline" size="sm" onClick={handleAdd} disabled={!addRegNo.trim()}>
+            <Plus className="w-4 h-4 mr-1" />
+            Add
+          </Button>
+        </div>
+
+        {entries.length === 0 && (
+          <p className="text-xs text-[var(--muted-foreground)]">
+            No accreditations added. Add your NICEIC, NAPIT, or other registration numbers to display them on certificate PDFs.
+          </p>
+        )}
+      </CardContent>
+    </Card>
   );
 }

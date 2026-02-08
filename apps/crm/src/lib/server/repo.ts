@@ -48,13 +48,13 @@ import type { PrismaClient } from "@prisma/client";
 type Tx = PrismaClient;
 
 
-async function getBrandContextForCompanyId(companyId: string): Promise<BrandContext> {
+export async function getBrandContextForCompanyId(companyId: string): Promise<BrandContext> {
   const client = p();
   if (!client) {
     return { name: process.env.QT_BRAND_NAME || "Quantract", tagline: process.env.QT_BRAND_TAGLINE || null, logoPngBytes: null };
   }
   const company = await client.company
-    .findUnique({ where: { id: companyId }, select: { brandName: true, brandTagline: true, logoKey: true, themePrimary: true, themeAccent: true, pdfFooterLine1: true, pdfFooterLine2: true, pdfContactDetails: true } })
+    .findUnique({ where: { id: companyId }, select: { brandName: true, brandTagline: true, logoKey: true, themePrimary: true, themeAccent: true, pdfPrimaryColour: true, pdfAccentColour: true, pdfFooterLine1: true, pdfFooterLine2: true, pdfContactDetails: true, accreditations: true } })
     .catch(() => null);
   const logoKey = company?.logoKey || null;
   let logoPngBytes: Uint8Array | null = null;
@@ -66,11 +66,12 @@ async function getBrandContextForCompanyId(companyId: string): Promise<BrandCont
     name: company?.brandName || "Quantract",
     tagline: company?.brandTagline || null,
     logoPngBytes,
-    primaryColor: company?.themePrimary || null,
-    accentColor: company?.themeAccent || null,
+    primaryColor: company?.pdfPrimaryColour || company?.themePrimary || null,
+    accentColor: company?.pdfAccentColour || company?.themeAccent || null,
     footerLine1: company?.pdfFooterLine1 || null,
     footerLine2: company?.pdfFooterLine2 || null,
     contactDetails: company?.pdfContactDetails || null,
+    accreditations: company?.accreditations || null,
   };
 }
 
