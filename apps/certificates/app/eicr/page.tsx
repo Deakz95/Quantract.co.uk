@@ -3,7 +3,9 @@
 import { useState, useEffect, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button, Input, Label, NativeSelect, Textarea } from "@quantract/ui";
-import { getCertificateTemplate, type EICRCertificate, type BoardData as BoardDataType, migrateCircuit } from "@quantract/shared/certificate-types";
+import { getCertificateTemplate, type EICRCertificate, type BoardData as BoardDataType, migrateCircuit, getSignature, setSignature, clearSignature, hasSignature, migrateAllLegacySignatures } from "@quantract/shared/certificate-types";
+import { InstrumentPicker } from "../../components/InstrumentPicker";
+import type { SignatureValue } from "@quantract/shared/certificate-types";
 import { applyDefaults } from "@quantract/shared/certificate-defaults";
 import { useTemplateStore } from "../../lib/templateStore";
 import { getLastUsedDefaults } from "../../lib/getLastUsedDefaults";
@@ -98,9 +100,18 @@ function EICRPageContent() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentCertId, setCurrentCertId] = useState<string | null>(certificateId);
   const [activeSection, setActiveSection] = useState<SectionId>("contractor");
-  const [engineerSig, setEngineerSig] = useState<string | null>(null);
-  const [customerSig, setCustomerSig] = useState<string | null>(null);
   const [photos, setPhotos] = useState<string[]>([]);
+
+  // V2 signature helpers — read/write from data._signatures
+  const getsig = (role: string): SignatureValue | null =>
+    getSignature(data as unknown as Record<string, unknown>, role) ?? null;
+  const setSig = (role: string, sig: SignatureValue | null) => {
+    setData((prev) => {
+      const d = prev as unknown as Record<string, unknown>;
+      const updated = sig ? setSignature(d, role, sig) : clearSignature(d, role);
+      return updated as EICRCertificate;
+    });
+  };
 
   // Initialize inspection items if empty
   useEffect(() => {
@@ -150,6 +161,10 @@ function EICRPageContent() {
         if (tr && (tr.continuityOfProtectiveConductors || tr.insulationResistance || tr.earthFaultLoopImpedance)) {
           console.warn("[EICR] Legacy testResults data found — test results are now captured per-circuit in distribution board schedules.");
         }
+        // Migrate legacy signatures into _signatures (non-destructive)
+        const withMigratedSigs = migrateAllLegacySignatures("EICR", loaded as unknown as Record<string, unknown>);
+        Object.assign(loaded, { _signatures: (withMigratedSigs as Record<string, unknown>)._signatures });
+
         setData(loaded);
         setCurrentCertId(certificateId);
 
@@ -344,9 +359,11 @@ function EICRPageContent() {
 
     setIsGenerating(true);
     try {
+      const engineerSigV2 = getsig("inspector");
+      const customerSigV2 = getsig("client");
       const pdfBytes = await generateCertificatePDF(data, {
-        engineerSignature: engineerSig,
-        customerSignature: customerSig,
+        engineerSignature: engineerSigV2?.image?.dataUrl ?? null,
+        customerSignature: customerSigV2?.image?.dataUrl ?? null,
         photos,
       });
       const blob = new Blob([new Uint8Array(pdfBytes)], { type: "application/pdf" });
@@ -450,13 +467,13 @@ function EICRPageContent() {
       id: "declaration",
       label: "Declaration",
       icon: SECTION_ICONS.penTool,
-      getStatus: (): SectionStatus => engineerSig ? "complete" : "empty",
+      getStatus: (): SectionStatus => hasSignature(data as unknown as Record<string, unknown>, "inspector") ? "complete" : "empty",
     },
     {
       id: "acknowledgement",
       label: "Client Acknowledgement",
       icon: SECTION_ICONS.user,
-      getStatus: (): SectionStatus => customerSig ? "complete" : "empty",
+      getStatus: (): SectionStatus => hasSignature(data as unknown as Record<string, unknown>, "client") ? "complete" : "empty",
     },
     {
       id: "photos",
@@ -474,8 +491,7 @@ function EICRPageContent() {
     data.generalInspection,
     data.boards,
     data.overallCondition,
-    engineerSig,
-    customerSig,
+    data,
   ]);
 
   return (
@@ -820,6 +836,15 @@ function EICRPageContent() {
               Details of Test Instruments
             </summary>
             <div className="p-4 space-y-3">
+              <div className="flex justify-end">
+                <InstrumentPicker
+                  onSelect={(fields) => {
+                    Object.entries(fields).forEach(([key, val]) => {
+                      if (val) updateTestInstruments(key, val);
+                    });
+                  }}
+                />
+              </div>
               <div className="grid md:grid-cols-2 gap-3">
                 <div>
                   <Label htmlFor="instrumentSet">Instrument Set</Label>
@@ -924,10 +949,9 @@ function EICRPageContent() {
             data={data.declarationDetails}
             onChange={(declarationDetails) => {
               setData((prev) => ({ ...prev, declarationDetails }));
-          
             }}
-            signatureValue={engineerSig}
-            onSignatureChange={setEngineerSig}
+            signatureValue={getsig("inspector")}
+            onSignatureChange={(sig) => setSig("inspector", sig)}
           />
         </div>
       )}
@@ -939,10 +963,9 @@ function EICRPageContent() {
             data={data.clientAcknowledgement}
             onChange={(clientAcknowledgement) => {
               setData((prev) => ({ ...prev, clientAcknowledgement }));
-          
             }}
-            signatureValue={customerSig}
-            onSignatureChange={setCustomerSig}
+            signatureValue={getsig("client")}
+            onSignatureChange={(sig) => setSig("client", sig)}
           />
         </div>
       )}

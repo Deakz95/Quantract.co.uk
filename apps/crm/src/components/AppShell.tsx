@@ -118,6 +118,7 @@ const ADMIN_SECTIONS: NavSection[] = [
     dividerBefore: true,
     items: [
       { label: "Control Room", href: "/admin/office", icon: Building2 },
+      { label: "Cert Reviews", href: "/admin/certificates/review", icon: CheckCircle },
       { label: "Approvals", href: "/admin/office/approvals", icon: CheckCircle },
       { label: "Compliance", href: "/admin/office/compliance", icon: BadgeCheck },
       { label: "Purchasing", href: "/admin/office/purchasing", icon: Receipt },

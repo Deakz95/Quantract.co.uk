@@ -161,7 +161,8 @@ export function getAvailableTransitions(state: LifecycleState): LifecycleState[]
 export function canComplete(
   storedStatus: string,
   certType: CertificateType,
-  data: Record<string, unknown>
+  data: Record<string, unknown>,
+  reviewBlocking?: boolean,
 ): TransitionResult {
   const current = deriveLifecycleState(storedStatus, certType, data);
 
@@ -180,6 +181,13 @@ export function canComplete(
     return {
       allowed: false,
       reason: `Certificate must be ready for review before completing. Current state: "${current}".`,
+    };
+  }
+
+  if (reviewBlocking === true) {
+    return {
+      allowed: false,
+      reason: "Certificate requires review approval before completion.",
     };
   }
 

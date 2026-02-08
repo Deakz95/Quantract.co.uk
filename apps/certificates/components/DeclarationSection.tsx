@@ -9,7 +9,8 @@ import {
   Input,
   Label,
 } from "@quantract/ui";
-import { SignatureCapture } from "./SignatureCapture";
+import { SignatureField } from "./signatures/SignatureField";
+import type { SignatureValue } from "@quantract/shared/certificate-types";
 
 interface DeclarationSectionProps {
   role: "inspector" | "installer" | "designer";
@@ -21,8 +22,10 @@ interface DeclarationSectionProps {
     complianceConfirmed: boolean;
   };
   onChange: (data: DeclarationSectionProps["data"]) => void;
-  signatureValue?: string | null;
-  onSignatureChange?: (sig: string | null) => void;
+  /** V2 signature value (from data._signatures) */
+  signatureValue?: SignatureValue | null;
+  /** V2 signature change handler */
+  onSignatureChange?: (sig: SignatureValue | null) => void;
 }
 
 const ROLE_LABELS: Record<DeclarationSectionProps["role"], string> = {
@@ -132,11 +135,11 @@ export function DeclarationSection({
 
         {/* Signature */}
         {onSignatureChange && (
-          <SignatureCapture
+          <SignatureField
+            signatureId={role}
             label={`${ROLE_LABELS[role]} Signature`}
-            value={signatureValue ?? null}
+            value={signatureValue}
             onChange={onSignatureChange}
-            role={role}
           />
         )}
       </CardContent>

@@ -3,7 +3,8 @@
 import { useState, useEffect, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Input, Label, NativeSelect, Textarea } from "@quantract/ui";
-import { getCertificateTemplate, type MWCCertificate } from "@quantract/shared/certificate-types";
+import { getCertificateTemplate, type MWCCertificate, getSignature, setSignature, clearSignature, hasSignature, migrateAllLegacySignatures } from "@quantract/shared/certificate-types";
+import type { SignatureValue } from "@quantract/shared/certificate-types";
 import { applyDefaults } from "@quantract/shared/certificate-defaults";
 import { useTemplateStore } from "../../lib/templateStore";
 import { getLastUsedDefaults } from "../../lib/getLastUsedDefaults";
@@ -45,19 +46,33 @@ function MWCPageContent() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentCertId, setCurrentCertId] = useState<string | null>(certificateId);
   const [activeSection, setActiveSection] = useState<SectionId>("contractor");
-  const [engineerSig, setEngineerSig] = useState<string | null>(null);
   const [photos, setPhotos] = useState<string[]>([]);
+
+  // V2 signature helpers
+  const getsig = (role: string): SignatureValue | null =>
+    getSignature(data as unknown as Record<string, unknown>, role) ?? null;
+  const setSig = (role: string, sig: SignatureValue | null) => {
+    setData((prev) => {
+      const d = prev as unknown as Record<string, unknown>;
+      const updated = sig ? setSignature(d, role, sig) : clearSignature(d, role);
+      return updated as MWCCertificate;
+    });
+  };
 
   // Load existing certificate if ID is provided (only after hydration)
   useEffect(() => {
     if (hydrated && certificateId) {
       const existing = getCertificate(certificateId);
       if (existing && existing.data) {
-        setData(existing.data as MWCCertificate);
+        const loaded = existing.data as MWCCertificate;
+        const withMigratedSigs = migrateAllLegacySignatures("MWC", loaded as unknown as Record<string, unknown>);
+        Object.assign(loaded, { _signatures: (withMigratedSigs as Record<string, unknown>)._signatures });
+
+        setData(loaded);
         setCurrentCertId(certificateId);
 
         // Resume at first incomplete section
-        const nextStep = getNextIncompleteStep("MWC", existing.data as Record<string, unknown>);
+        const nextStep = getNextIncompleteStep("MWC", loaded as unknown as Record<string, unknown>);
         if (nextStep && isCertificateEditable(existing)) {
           const sectionMap: Record<string, SectionId> = {
             contractorDetails: "contractor",
@@ -135,8 +150,9 @@ function MWCPageContent() {
 
     setIsGenerating(true);
     try {
+      const installerSigV2 = getsig("installer");
       const pdfBytes = await generateCertificatePDF(data, {
-        engineerSignature: engineerSig,
+        engineerSignature: installerSigV2?.image?.dataUrl ?? null,
         customerSignature: null,
         photos,
       });
@@ -223,7 +239,7 @@ function MWCPageContent() {
       label: "Declaration",
       icon: SECTION_ICONS.penTool,
       getStatus: (): SectionStatus => {
-        if (engineerSig) return "complete";
+        if (hasSignature(data as unknown as Record<string, unknown>, "installer")) return "complete";
         const has = Object.values(data.declarationDetails || {}).some((v) => typeof v === "string" && v.trim());
         return has ? "partial" : "empty";
       },
@@ -243,7 +259,7 @@ function MWCPageContent() {
       icon: SECTION_ICONS.camera,
       getStatus: (): SectionStatus => "complete",
     },
-  ], [data, engineerSig]);
+  ], [data]);
 
   return (
     <CertificateLayout
@@ -540,10 +556,9 @@ function MWCPageContent() {
           data={data.declarationDetails}
           onChange={(declarationDetails) => {
             setData((prev) => ({ ...prev, declarationDetails }));
-        
           }}
-          signatureValue={engineerSig}
-          onSignatureChange={setEngineerSig}
+          signatureValue={getsig("installer")}
+          onSignatureChange={(sig) => setSig("installer", sig)}
         />
       )}
 

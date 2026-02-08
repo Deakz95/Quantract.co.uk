@@ -3,6 +3,7 @@ import { requireRoles, requireCompanyContext } from "@/lib/serverAuth";
 import { getPrisma } from "@/lib/server/prisma";
 import { getRouteParams } from "@/lib/server/routeParams";
 import { sendCertificateIssuedEmail, absoluteUrl } from "@/lib/server/email";
+import { recordAuditEvent } from "@/lib/server/repo";
 
 export const runtime = "nodejs";
 
@@ -60,6 +61,16 @@ export async function POST(req: Request, ctx: { params: Promise<{ certificateId:
       certType: cert.type,
       pdfLink,
     });
+
+    // Log distribution event (CERT-A24)
+    await recordAuditEvent({
+      entityType: "certificate",
+      entityId: certificateId,
+      action: "certificate.emailed" as any,
+      actorRole: "admin",
+      meta: { recipientEmail: clientEmail, recipientName: clientName },
+    }).catch(() => {});
+
     return NextResponse.json({ ok: true });
   } catch (err: any) {
     return NextResponse.json({ ok: false, error: err?.message || "Failed to send email" }, { status: 500 });

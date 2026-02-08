@@ -54,6 +54,13 @@ const TIMESHEET_STATUS: Record<string, StatusEntry> = {
   submitted: { label: "Submitted", variant: "warning" },
 };
 
+const REVIEW_STATUS: Record<string, StatusEntry> = {
+  not_required: { label: "No Review", variant: "secondary" },
+  pending_review: { label: "Pending Review", variant: "warning" },
+  approved: { label: "Approved", variant: "success" },
+  rejected: { label: "Changes Requested", variant: "destructive" },
+};
+
 const ENTITY_MAP: Record<string, Record<string, StatusEntry>> = {
   quote: QUOTE_STATUS,
   job: JOB_STATUS,
@@ -61,9 +68,10 @@ const ENTITY_MAP: Record<string, Record<string, StatusEntry>> = {
   expense: EXPENSE_STATUS,
   certificate: CERTIFICATE_STATUS,
   timesheet: TIMESHEET_STATUS,
+  review: REVIEW_STATUS,
 };
 
-export type EntityType = "quote" | "job" | "invoice" | "expense" | "certificate" | "timesheet";
+export type EntityType = "quote" | "job" | "invoice" | "expense" | "certificate" | "timesheet" | "review";
 
 /**
  * Returns { label, variant } for a given entity type + status string.

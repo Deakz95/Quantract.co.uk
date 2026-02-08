@@ -757,3 +757,84 @@ export type {
   TransitionResult,
   LifecycleStateInfo,
 } from "./certificate-lifecycle";
+
+// Re-export the review system (CERT-A20)
+export {
+  getReviewRecord,
+  setReviewRecord,
+  getReviewConfig,
+  deriveReviewStatus,
+  canSubmitForReview,
+  canReview,
+  isReviewBlockingCompletion,
+  submitForReview,
+  approveReview,
+  rejectReview,
+  getReviewStatusInfo,
+  canAccessReviewQueue,
+} from "./certificate-review";
+export type {
+  ReviewStatus,
+  ReviewRecord,
+  ReviewHistoryEntry,
+  CertificateReviewConfig,
+  ReviewStatusInfo,
+} from "./certificate-review";
+
+// Re-export the signature system V2 (CERT-A21)
+export {
+  getSignature,
+  setSignature,
+  clearSignature,
+  hasSignature,
+  listRequiredSignatureIds,
+  listSignatureConfigs,
+  validateSignatures,
+  createDrawnSignature,
+  createTypedSignature,
+  migrateAllLegacySignatures,
+} from "./certificate-signatures";
+export type {
+  SignatureMethod,
+  SignatureImage,
+  SignatureValue,
+  CertificateSignaturesV2,
+} from "./certificate-signatures";
+
+// Re-export the pre-fill & field ownership system (CERT-A23)
+export {
+  getPrefillRecord,
+  setPrefillRecord,
+  getFieldSource,
+  isFieldLocked,
+  isFieldPrefilled,
+  getFieldSourceLabel,
+  unlockField,
+  markFieldOverridden,
+  getPrefillMappings,
+  applyPrefill,
+  getPrefilledFields,
+} from "./certificate-prefill";
+export type {
+  FieldSource,
+  FieldSourceEntry,
+  FieldSourceMap,
+  PrefillRecord,
+  PrefillContext,
+} from "./certificate-prefill";
+
+// Re-export the distribution & issue history system (CERT-A24)
+export {
+  getIssueHistoryDisplay,
+  buildIssueHistory,
+  getDistributionHistory,
+  hasBeenDistributed,
+  getLatestIssue,
+} from "./certificate-distribution";
+export type {
+  DistributionMethod,
+  DistributionEntry,
+  IssueHistoryEntry,
+  ReissueRequest,
+  IssueHistoryDisplay,
+} from "./certificate-distribution";

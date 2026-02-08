@@ -9,13 +9,18 @@ import {
   isEditable,
   fromCrmStatus,
   toCrmStatus,
+  isReviewBlockingCompletion,
+  deriveReviewStatus,
+  getReviewConfig,
   type CertificateTypeConfig,
   type RegistryValidationResult,
   type LifecycleState,
   type LifecycleStateInfo,
   type TransitionResult,
+  type ReviewStatus,
 } from "@quantract/shared/certificate-types";
 import type { CertificateType as SharedCertificateType } from "@quantract/shared/certificate-types";
+import { applyPrefill, type PrefillContext } from "@quantract/shared/certificate-types";
 
 export const CERTIFICATE_TYPES = [
   "EIC", "EICR", "MWC",
@@ -115,8 +120,14 @@ type CertificateTemplateContext = {
   siteAddress?: string;
   clientName?: string;
   clientEmail?: string;
+  clientPhone?: string;
+  clientAddress?: string;
   jobDescription?: string;
   inspectorName?: string;
+  inspectorEmail?: string;
+  jobNumber?: number | null;
+  jobTitle?: string;
+  jobNotes?: string;
 };
 
 function mergeDeep<T>(base: T, override: Partial<T>): T {
@@ -182,7 +193,28 @@ export function getCertificateTemplate(type: CertificateType, context?: Certific
     },
   };
   const parsed = certificateDataSchema.safeParse(template);
-  return parsed.success ? parsed.data : template;
+  const validated = parsed.success ? parsed.data : template;
+
+  // Apply prefill metadata if context has job data (CERT-A23)
+  if (context?.jobId) {
+    const prefillCtx: PrefillContext = {
+      jobId: context.jobId,
+      jobNumber: context.jobNumber,
+      jobTitle: context.jobDescription ?? context.jobTitle,
+      jobNotes: context.jobNotes,
+      siteName: context.siteName,
+      siteAddress: context.siteAddress,
+      clientName: context.clientName,
+      clientEmail: context.clientEmail,
+      clientPhone: context.clientPhone,
+      clientAddress: context.clientAddress,
+      engineerName: context.inspectorName,
+      engineerEmail: context.inspectorEmail,
+    };
+    return applyPrefill(validated as unknown as Record<string, unknown>, prefillCtx, type as any) as unknown as CertificateData;
+  }
+
+  return validated;
 }
 
 /**
@@ -226,6 +258,26 @@ export function signatureIsPresent(signature?: CertificateSignature | null): boo
   if (!signature) return false;
   const label = String(signature.signatureText || signature.name || "").trim();
   return Boolean(label) && Boolean(signature.signedAtISO);
+}
+
+/**
+ * Check if a V2 signature is present in `_signatures` for a given role.
+ * Falls back to legacy `data.signatures[role]` if V2 not found.
+ */
+export function signatureIsPresentV2(data: Record<string, unknown>, role: string): boolean {
+  // Check V2 _signatures first
+  const sigs = data._signatures as Record<string, unknown> | undefined;
+  if (sigs?.[role]) {
+    const v2 = sigs[role] as Record<string, unknown>;
+    if (v2.signedAtISO) {
+      const hasImage = v2.image && typeof v2.image === "object" && (v2.image as Record<string, unknown>).dataUrl;
+      const hasTypedName = typeof v2.typedName === "string" && (v2.typedName as string).trim();
+      if (hasImage || hasTypedName) return true;
+    }
+  }
+  // Fallback: legacy path
+  const legacySigs = data.signatures as Record<string, CertificateSignature | undefined> | undefined;
+  return signatureIsPresent(legacySigs?.[role === "client" ? "customer" : role]);
 }
 
 // ── Structured validation types ──
@@ -696,16 +748,23 @@ export function canCompleteCertificate(
   crmType: CertificateType,
   crmStatus: string,
   data: CertificateData,
-): TransitionResult & { readiness?: ReadinessResult } {
+): TransitionResult & { readiness?: ReadinessResult; reviewStatus?: ReviewStatus } {
   const registryType = CRM_TYPE_TO_REGISTRY[crmType];
+  const d = data as Record<string, unknown>;
 
-  // State-machine guard
+  // Compute review blocking status
+  const reviewBlocking = registryType
+    ? isReviewBlockingCompletion(registryType, d)
+    : false;
+
+  // State-machine guard (now includes review blocking)
   const transition = registryType
-    ? lifecycleCanComplete(crmStatus, registryType, data as Record<string, unknown>)
-    : lifecycleCanComplete(crmStatus, "EIC", data as Record<string, unknown>);
+    ? lifecycleCanComplete(crmStatus, registryType, d, reviewBlocking)
+    : lifecycleCanComplete(crmStatus, "EIC", d);
 
   if (!transition.allowed) {
-    return transition;
+    const rs = registryType ? deriveReviewStatus(registryType, d) : undefined;
+    return { ...transition, reviewStatus: rs };
   }
 
   // Data-validation gate (reuses existing readiness logic)
@@ -719,6 +778,22 @@ export function canCompleteCertificate(
   }
 
   return { allowed: true, readiness };
+}
+
+/**
+ * Get review status info for a CRM certificate.
+ */
+export function getCertificateReviewStatus(
+  crmType: CertificateType,
+  data: Record<string, unknown>,
+): { required: boolean; status: ReviewStatus; config: { required: boolean; rolesAllowedToReview: string[] } } {
+  const registryType = CRM_TYPE_TO_REGISTRY[crmType];
+  if (!registryType) {
+    return { required: false, status: "not_required", config: { required: false, rolesAllowedToReview: [] } };
+  }
+  const config = getReviewConfig(registryType);
+  const status = deriveReviewStatus(registryType, data);
+  return { required: config.required, status, config };
 }
 
 /**

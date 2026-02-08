@@ -1,9 +1,8 @@
 "use client";
 
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, Input, Label } from "@quantract/ui";
-import { SignatureCapture } from "./SignatureCapture";
-
-import type { SignatureRole } from "../lib/signatureAssets";
+import { SignatureField } from "./signatures/SignatureField";
+import type { SignatureValue } from "@quantract/shared/certificate-types";
 
 interface SignatoryBlock {
   name: string;
@@ -18,16 +17,16 @@ interface EICSignatorySectionProps {
   constructionSection: SignatoryBlock;
   inspectionSection: SignatoryBlock;
   sameAsDesigner: boolean;
-  designSignature: string | null;
-  constructionSignature: string | null;
-  inspectionSignature: string | null;
+  designSignature: SignatureValue | null;
+  constructionSignature: SignatureValue | null;
+  inspectionSignature: SignatureValue | null;
   onDesignChange: (data: SignatoryBlock) => void;
   onConstructionChange: (data: SignatoryBlock) => void;
   onInspectionChange: (data: SignatoryBlock) => void;
   onSameAsDesignerChange: (value: boolean) => void;
-  onDesignSignatureChange: (value: string | null) => void;
-  onConstructionSignatureChange: (value: string | null) => void;
-  onInspectionSignatureChange: (value: string | null) => void;
+  onDesignSignatureChange: (value: SignatureValue | null) => void;
+  onConstructionSignatureChange: (value: SignatureValue | null) => void;
+  onInspectionSignatureChange: (value: SignatureValue | null) => void;
 }
 
 function SignatoryBlockForm({
@@ -39,17 +38,17 @@ function SignatoryBlockForm({
   signatureValue,
   onSignatureChange,
   disabled,
-  signatureRole,
+  signatureId,
 }: {
   title: string;
   description: string;
   complianceText: string;
   data: SignatoryBlock;
   onChange: (data: SignatoryBlock) => void;
-  signatureValue: string | null;
-  onSignatureChange: (value: string | null) => void;
+  signatureValue: SignatureValue | null;
+  onSignatureChange: (value: SignatureValue | null) => void;
   disabled?: boolean;
-  signatureRole?: SignatureRole;
+  signatureId: string;
 }) {
   const update = (field: keyof SignatoryBlock, value: string | boolean) => {
     onChange({ ...data, [field]: value });
@@ -107,11 +106,11 @@ function SignatoryBlockForm({
           />
           <p className="text-sm text-[var(--foreground)]">{complianceText}</p>
         </div>
-        <SignatureCapture
+        <SignatureField
+          signatureId={signatureId}
           label={`${title} Signature`}
           value={signatureValue}
           onChange={onSignatureChange}
-          role={signatureRole}
         />
       </CardContent>
     </Card>
@@ -189,7 +188,7 @@ export function EICSignatorySection({
             onInspectionSignatureChange(sig);
           }
         }}
-        signatureRole="designer"
+        signatureId="designer"
       />
 
       <SignatoryBlockForm
@@ -201,7 +200,7 @@ export function EICSignatorySection({
         signatureValue={constructionSignature}
         onSignatureChange={onConstructionSignatureChange}
         disabled={sameAsDesigner}
-        signatureRole="installer"
+        signatureId="installer"
       />
 
       <SignatoryBlockForm
@@ -213,7 +212,7 @@ export function EICSignatorySection({
         signatureValue={inspectionSignature}
         onSignatureChange={onInspectionSignatureChange}
         disabled={sameAsDesigner}
-        signatureRole="inspector"
+        signatureId="inspector"
       />
     </div>
   );

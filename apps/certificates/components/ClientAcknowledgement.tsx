@@ -9,7 +9,8 @@ import {
   Input,
   Label,
 } from "@quantract/ui";
-import { SignatureCapture } from "./SignatureCapture";
+import { SignatureField } from "./signatures/SignatureField";
+import type { SignatureValue } from "@quantract/shared/certificate-types";
 
 interface ClientAcknowledgementProps {
   data: {
@@ -17,8 +18,10 @@ interface ClientAcknowledgementProps {
     clientDateSigned: string;
   };
   onChange: (data: ClientAcknowledgementProps["data"]) => void;
-  signatureValue?: string | null;
-  onSignatureChange?: (sig: string | null) => void;
+  /** V2 signature value (from data._signatures) */
+  signatureValue?: SignatureValue | null;
+  /** V2 signature change handler */
+  onSignatureChange?: (sig: SignatureValue | null) => void;
 }
 
 const ACKNOWLEDGEMENT_TEXT =
@@ -82,11 +85,11 @@ export function ClientAcknowledgement({
 
         {/* Signature */}
         {onSignatureChange && (
-          <SignatureCapture
+          <SignatureField
+            signatureId="client"
             label="Client Signature"
-            value={signatureValue ?? null}
+            value={signatureValue}
             onChange={onSignatureChange}
-            role="client"
           />
         )}
       </CardContent>

@@ -5,6 +5,7 @@ import * as repo from "@/lib/server/repo";
 import { certificateIsReadyForCompletion } from "@/lib/certificates";
 import { getRouteParams } from "@/lib/server/routeParams";
 import { computeOutcome, explainOutcome } from "@/lib/server/certs";
+import { isReviewBlockingCompletion } from "@quantract/shared/certificate-types";
 
 export async function POST(_req: Request, ctx: { params: Promise<{ certificateId: string }> }) {
   const session = await requireRoles("admin");
@@ -20,6 +21,28 @@ export async function POST(_req: Request, ctx: { params: Promise<{ certificateId
   const readiness = certificateIsReadyForCompletion(info.certificate.data);
   if (!readiness.ok) {
     return NextResponse.json({ ok: false, error: `Missing ${readiness.missing.join(", ")}` }, { status: 400 });
+  }
+
+  // Review blocking check (CERT-A20)
+  const CRM_TYPE_TO_REGISTRY: Record<string, string> = {
+    EIC: "EIC", EICR: "EICR", MWC: "MWC",
+    FIRE_DESIGN: "FIRE", FIRE_INSTALLATION: "FIRE",
+    FIRE_COMMISSIONING: "FIRE", FIRE_INSPECTION_SERVICING: "FIRE",
+    EL_COMPLETION: "EML", EL_PERIODIC: "EML",
+  };
+  const registryType = CRM_TYPE_TO_REGISTRY[info.certificate.type];
+  if (registryType) {
+    const certData = info.certificate.data as Record<string, unknown>;
+    const blocking = isReviewBlockingCompletion(
+      registryType as Parameters<typeof isReviewBlockingCompletion>[0],
+      certData,
+    );
+    if (blocking) {
+      return NextResponse.json(
+        { ok: false, error: "Certificate requires review approval before completion." },
+        { status: 400 },
+      );
+    }
   }
 
   // Compute and persist outcome before completing

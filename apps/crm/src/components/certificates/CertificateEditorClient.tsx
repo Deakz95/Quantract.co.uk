@@ -8,7 +8,26 @@ import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/useToast";
 import { Breadcrumbs, type BreadcrumbItem } from "@/components/ui/Breadcrumbs";
-import { certificateIsReadyForCompletion, normalizeCertificateData, signatureIsPresent, type CertificateData, type CertificateType } from "@/lib/certificates";
+import { certificateIsReadyForCompletion, normalizeCertificateData, signatureIsPresent, getCertificateReviewStatus, type CertificateData, type CertificateType } from "@/lib/certificates";
+import { CertificateReviewBanner } from "@/components/certificates/CertificateReviewBanner";
+import { CertificateReviewPanel } from "@/components/certificates/CertificateReviewPanel";
+import { CertificateIssueHistoryPanel } from "@/components/certificates/CertificateIssueHistoryPanel";
+import {
+  getReviewRecord,
+  isReviewBlockingCompletion,
+  canSubmitForReview,
+  deriveLifecycleState,
+  fromCrmStatus,
+  createTypedSignature,
+  setSignature,
+  getSignature,
+  hasSignature as hasSignatureV2,
+  getPrefillRecord,
+  getFieldSourceLabel,
+  isFieldPrefilled,
+  isFieldLocked as checkFieldLocked,
+  unlockField,
+} from "@quantract/shared/certificate-types";
 
 type CertificateStatus = "draft" | "completed" | "issued" | "void";
 
@@ -55,6 +74,118 @@ function getErrorMessage(error: unknown, fallback: string) {
   return fallback;
 }
 
+/** CRM signature block — shows legacy + V2 signature info */
+function CrmSignatureBlock({
+  label,
+  nameLabel,
+  role,
+  v2Role,
+  data,
+  updateDataField,
+  sign,
+  disabled,
+}: {
+  label: string;
+  nameLabel: string;
+  role: "engineer" | "customer";
+  v2Role: string;
+  data: CertificateData;
+  updateDataField: (path: string[], value: string) => void;
+  sign: (role: "engineer" | "customer") => void;
+  disabled: boolean;
+}) {
+  const legacySig = data.signatures?.[role];
+  const v2Sig = getSignature(data as unknown as Record<string, unknown>, v2Role);
+  const isSigned = signatureIsPresent(legacySig) || (v2Sig && v2Sig.signedAtISO);
+
+  const signedDate = v2Sig?.signedAtISO
+    ? new Date(v2Sig.signedAtISO).toLocaleString("en-GB")
+    : legacySig?.signedAtISO
+      ? new Date(legacySig.signedAtISO).toLocaleString("en-GB")
+      : null;
+
+  return (
+    <div className="space-y-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4">
+      <div className="flex items-center gap-2">
+        <div className="text-sm font-semibold text-[var(--foreground)]">{label}</div>
+        {isSigned && (
+          <span className="inline-flex items-center gap-1 text-xs text-green-600 font-medium">
+            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3}><polyline points="20 6 9 17 4 12" /></svg>
+            Signed
+          </span>
+        )}
+      </div>
+      {/* V2 drawn signature image preview */}
+      {v2Sig?.image?.dataUrl && (
+        <div className="border border-[var(--border)] rounded-xl p-2 bg-white">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={v2Sig.image.dataUrl} alt="Signature" className="max-h-[60px] mx-auto" />
+        </div>
+      )}
+      {/* V2 typed name preview */}
+      {!v2Sig?.image?.dataUrl && v2Sig?.typedName && (
+        <div className="border border-[var(--border)] rounded-xl p-2 text-center text-base italic font-serif text-[var(--foreground)]">
+          {v2Sig.typedName}
+        </div>
+      )}
+      <label className="grid gap-1">
+        <span className="text-xs font-semibold text-[var(--muted-foreground)]">{nameLabel}</span>
+        <input
+          className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
+          value={data.signatures?.[role]?.name || ""}
+          onChange={(e) => updateDataField(["signatures", role, "name"], e.target.value)}
+          disabled={disabled}
+        />
+      </label>
+      <label className="grid gap-1">
+        <span className="text-xs font-semibold text-[var(--muted-foreground)]">Signature text</span>
+        <input
+          className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
+          value={data.signatures?.[role]?.signatureText || ""}
+          onChange={(e) => updateDataField(["signatures", role, "signatureText"], e.target.value)}
+          disabled={disabled}
+        />
+      </label>
+      <div className="flex items-center justify-between text-xs text-[var(--muted-foreground)]">
+        <span>{signedDate || "Not signed yet"}</span>
+        {!isSigned && (
+          <Button type="button" variant="secondary" onClick={() => sign(role)} disabled={disabled}>
+            Sign
+          </Button>
+        )}
+      </div>
+      {v2Sig?.method && (
+        <div className="text-[10px] text-[var(--muted-foreground)]">
+          Method: {v2Sig.method}{v2Sig.signedByName ? ` — ${v2Sig.signedByName}` : ""}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Field source badge — shows where a pre-filled value came from (CERT-A23) */
+function FieldSourceBadge({ data, path }: { data: Record<string, unknown>; path: string }) {
+  const record = getPrefillRecord(data);
+  const entry = record.sources[path];
+  if (!entry || entry.source === "manual") return null;
+  const label = getFieldSourceLabel(entry.source);
+  return (
+    <span className="ml-auto inline-flex items-center gap-1 text-[10px] font-medium text-[var(--primary)] opacity-70">
+      <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+      </svg>
+      {label}
+      {entry.locked && (
+        <svg className="w-2.5 h-2.5 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+        </svg>
+      )}
+    </span>
+  );
+}
+
 function setNestedValue<T extends Record<string, any>>(obj: T, path: string[], value: string) {
   const next = structuredClone(obj) as T;
   let target: Record<string, any> = next;
@@ -76,6 +207,8 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
   const [saving, setSaving] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const [confirmVoid, setConfirmVoid] = useState(false);
+  const [confirmReissue, setConfirmReissue] = useState(false);
+  const [reissueReason, setReissueReason] = useState("");
   const [confirmRemoveIndex, setConfirmRemoveIndex] = useState<number | null>(null);
   const [amendmentLineage, setAmendmentLineage] = useState<{ amends: any | null; amendments: any[] }>({ amends: null, amendments: [] });
   const [templateInfo, setTemplateInfo] = useState<{ name: string; version: number } | null>(null);
@@ -90,6 +223,23 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
   const readiness = useMemo(() => (data ? certificateIsReadyForCompletion(data) : { ok: false, missing: [] }), [data]);
   const canIssue = cert?.status === "completed" && mode === "admin";
   const canEdit = cert?.status !== "issued" && cert?.status !== "void";
+
+  // ── Review info (CERT-A20) ──
+  const reviewInfo = useMemo(() => {
+    if (!cert || !data) return { required: false, blocking: false, record: { reviewStatus: "not_required" as const, reviewHistory: [] as any[], reviewNotes: undefined as string | undefined, reviewedBy: undefined as string | undefined, reviewedAtISO: undefined as string | undefined }, canSubmit: { allowed: false } };
+    const d = data as unknown as Record<string, unknown>;
+    const info = getCertificateReviewStatus(cert.type, d);
+    const record = getReviewRecord(d);
+    const lifecycleState = deriveLifecycleState(cert.status, (info.config.required ? cert.type : "EIC") as Parameters<typeof deriveLifecycleState>[1], d);
+    const submitCheck = canSubmitForReview(lifecycleState, cert.type as Parameters<typeof canSubmitForReview>[1], d);
+    return {
+      required: info.required,
+      status: info.status,
+      blocking: info.required && info.status !== "approved",
+      record,
+      canSubmit: submitCheck,
+    };
+  }, [cert, data]);
 
   const breadcrumbItems: BreadcrumbItem[] = useMemo(() => {
     const basePath = mode === "admin" ? "/admin" : "/engineer";
@@ -266,6 +416,11 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
         signedAtISO: new Date().toISOString(),
       },
     };
+    // Also write to V2 _signatures for compatibility with offline app
+    const v2Role = role === "customer" ? "client" : role === "engineer" ? "inspector" : role;
+    const v2Sig = createTypedSignature(name || signatureText);
+    const withV2 = setSignature(next as unknown as Record<string, unknown>, v2Role, v2Sig);
+    (next as any)._signatures = (withV2 as any)._signatures;
     setData(next);
   }
 
@@ -323,10 +478,16 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
     if (!cert || mode !== "admin") return;
     setBusy(true);
     try {
-      const r = await fetch(`${apiBase}/${certificateId}/reissue`, { method: "POST" });
+      const r = await fetch(`${apiBase}/${certificateId}/reissue`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ reason: reissueReason.trim() || undefined }),
+      });
       const d = await r.json().catch(() => ({}));
       if (!r.ok || !d.ok) throw new Error(d?.error || "Reissue failed");
       toast({ title: "Created draft", description: "A new draft certificate was created.", variant: "success" });
+      setConfirmReissue(false);
+      setReissueReason("");
       if (d.certificate?.id) {
         window.location.href = `/admin/certificates/${d.certificate.id}`;
       } else {
@@ -357,6 +518,22 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
     }
   }
 
+  async function submitForReviewAction() {
+    if (!cert) return;
+    setBusy(true);
+    try {
+      const r = await fetch(`${apiBase}/${certificateId}/submit-review`, { method: "POST" });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d?.error || "Submit for review failed");
+      toast({ title: "Submitted for review", description: "An office reviewer will be notified.", variant: "success" });
+      await refresh();
+    } catch (error: unknown) {
+      toast({ title: "Error", description: getErrorMessage(error, "Could not submit for review."), variant: "destructive" });
+    } finally {
+      setBusy(false);
+    }
+  }
+
   function addRow() {
     setRows((prev) => [...prev, { circuitRef: "", data: {} }]);
   }
@@ -372,6 +549,17 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
   return (
     <div className="space-y-4">
       <Breadcrumbs items={breadcrumbItems} />
+
+      {/* Review banner (CERT-A20) */}
+      {cert && reviewInfo.required && (
+        <CertificateReviewBanner
+          reviewStatus={reviewInfo.record.reviewStatus}
+          reviewNotes={reviewInfo.record.reviewNotes}
+          reviewedBy={reviewInfo.record.reviewedBy}
+          reviewedAtISO={reviewInfo.record.reviewedAtISO}
+        />
+      )}
+
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="min-w-0">
           <div className="text-sm font-semibold text-[var(--foreground)]">{cert?.certificateNumber ? `Certificate ${cert.certificateNumber}` : `Certificate #${certificateId.slice(0, 8)}`}</div>
@@ -427,7 +615,7 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
                     </Button>
                   ) : null}
                   {mode === "admin" ? (
-                    <Button type="button" variant="secondary" onClick={reissueAsNew} disabled={busy}>
+                    <Button type="button" variant="secondary" onClick={() => setConfirmReissue(true)} disabled={busy}>
                       Reissue as new
                     </Button>
                   ) : null}
@@ -498,11 +686,21 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
                   ) : lastSavedAt ? `Autosaved at ${lastSavedAt}` : "Autosave enabled."}
                 </div>
                 <div className="flex flex-wrap gap-2">
+                  {reviewInfo.canSubmit.allowed && (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={submitForReviewAction}
+                      disabled={busy || lastSaveFailed}
+                    >
+                      Submit for review
+                    </Button>
+                  )}
                   <Button
                     type="button"
                     variant="secondary"
                     onClick={markComplete}
-                    disabled={busy || !readiness.ok || cert.status === "void" || cert.status === "issued" || lastSaveFailed}
+                    disabled={busy || !readiness.ok || reviewInfo.blocking || cert.status === "void" || cert.status === "issued" || lastSaveFailed}
                   >
                     Mark complete
                   </Button>
@@ -517,6 +715,11 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
               {!readiness.ok ? (
                 <div className="mt-2 text-xs text-[var(--muted-foreground)]">
                   Missing: {readiness.missing.join(", ")}.
+                </div>
+              ) : null}
+              {readiness.ok && reviewInfo.blocking ? (
+                <div className="mt-2 text-xs text-amber-600 dark:text-amber-400">
+                  Review approval required before completion.
                 </div>
               ) : null}
             </CardContent>
@@ -559,22 +762,39 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
             </Card>
           ) : null}
 
+          {/* Review panel (CERT-A20) — visible to admin/office when review is pending */}
+          {mode === "admin" && reviewInfo.required && (
+            <CertificateReviewPanel
+              certificateId={certificateId}
+              certType={cert.type}
+              data={data as unknown as Record<string, unknown>}
+              userRole="admin"
+              onReviewComplete={refresh}
+            />
+          )}
+
           <Card>
             <CardHeader>
               <CardTitle>Overview</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-3 sm:grid-cols-2">
               <label className="grid gap-1 sm:col-span-1">
-                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Job reference</span>
+                <span className="flex items-center text-xs font-semibold text-[var(--muted-foreground)]">
+                  Job reference
+                  <FieldSourceBadge data={data as unknown as Record<string, unknown>} path="overview.jobReference" />
+                </span>
                 <input
                   className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm"
                   value={data.overview.jobReference || ""}
                   onChange={(e) => updateDataField(["overview", "jobReference"], e.target.value)}
-                  disabled={busy || !canEdit}
+                  disabled={busy || !canEdit || checkFieldLocked(data as unknown as Record<string, unknown>, "overview.jobReference")}
                 />
               </label>
               <label className="grid gap-1 sm:col-span-1">
-                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Site name</span>
+                <span className="flex items-center text-xs font-semibold text-[var(--muted-foreground)]">
+                  Site name
+                  <FieldSourceBadge data={data as unknown as Record<string, unknown>} path="overview.siteName" />
+                </span>
                 <input
                   className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm"
                   value={data.overview.siteName || ""}
@@ -583,7 +803,10 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
                 />
               </label>
               <label className="grid gap-1 sm:col-span-2">
-                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Installation address</span>
+                <span className="flex items-center text-xs font-semibold text-[var(--muted-foreground)]">
+                  Installation address
+                  <FieldSourceBadge data={data as unknown as Record<string, unknown>} path="overview.installationAddress" />
+                </span>
                 <textarea
                   className="min-h-[90px] rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm"
                   value={data.overview.installationAddress || ""}
@@ -592,7 +815,10 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
                 />
               </label>
               <label className="grid gap-1 sm:col-span-1">
-                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Client name</span>
+                <span className="flex items-center text-xs font-semibold text-[var(--muted-foreground)]">
+                  Client name
+                  <FieldSourceBadge data={data as unknown as Record<string, unknown>} path="overview.clientName" />
+                </span>
                 <input
                   className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm"
                   value={data.overview.clientName || ""}
@@ -601,7 +827,10 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
                 />
               </label>
               <label className="grid gap-1 sm:col-span-1">
-                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Client email</span>
+                <span className="flex items-center text-xs font-semibold text-[var(--muted-foreground)]">
+                  Client email
+                  <FieldSourceBadge data={data as unknown as Record<string, unknown>} path="overview.clientEmail" />
+                </span>
                 <input
                   className="rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm"
                   value={data.overview.clientEmail || ""}
@@ -610,7 +839,10 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
                 />
               </label>
               <label className="grid gap-1 sm:col-span-2">
-                <span className="text-xs font-semibold text-[var(--muted-foreground)]">Job description</span>
+                <span className="flex items-center text-xs font-semibold text-[var(--muted-foreground)]">
+                  Job description
+                  <FieldSourceBadge data={data as unknown as Record<string, unknown>} path="overview.jobDescription" />
+                </span>
                 <textarea
                   className="min-h-[90px] rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm"
                   value={data.overview.jobDescription || ""}
@@ -782,63 +1014,29 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
               <CardTitle>Signatures</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4">
-                <div className="text-sm font-semibold text-[var(--foreground)]">Engineer signature</div>
-                <label className="grid gap-1">
-                  <span className="text-xs font-semibold text-[var(--muted-foreground)]">Engineer name</span>
-                  <input
-                    className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
-                    value={data.signatures?.engineer?.name || ""}
-                    onChange={(e) => updateDataField(["signatures", "engineer", "name"], e.target.value)}
-                    disabled={busy || !canEdit}
-                  />
-                </label>
-                <label className="grid gap-1">
-                  <span className="text-xs font-semibold text-[var(--muted-foreground)]">Signature text</span>
-                  <input
-                    className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
-                    value={data.signatures?.engineer?.signatureText || ""}
-                    onChange={(e) => updateDataField(["signatures", "engineer", "signatureText"], e.target.value)}
-                    disabled={busy || !canEdit}
-                  />
-                </label>
-                <div className="flex items-center justify-between text-xs text-[var(--muted-foreground)]">
-                  <span>{data.signatures?.engineer?.signedAtISO ? new Date(data.signatures.engineer.signedAtISO).toLocaleString("en-GB") : "Not signed yet"}</span>
-                  <Button type="button" variant="secondary" onClick={() => sign("engineer")} disabled={busy || !canEdit}>
-                    Sign
-                  </Button>
-                </div>
-              </div>
+              <CrmSignatureBlock
+                label="Engineer signature"
+                nameLabel="Engineer name"
+                role="engineer"
+                v2Role="inspector"
+                data={data}
+                updateDataField={updateDataField}
+                sign={sign}
+                disabled={busy || !canEdit}
+              />
+              <CrmSignatureBlock
+                label="Customer signature"
+                nameLabel="Customer name"
+                role="customer"
+                v2Role="client"
+                data={data}
+                updateDataField={updateDataField}
+                sign={sign}
+                disabled={busy || !canEdit}
+              />
 
-              <div className="space-y-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4">
-                <div className="text-sm font-semibold text-[var(--foreground)]">Customer signature</div>
-                <label className="grid gap-1">
-                  <span className="text-xs font-semibold text-[var(--muted-foreground)]">Customer name</span>
-                  <input
-                    className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
-                    value={data.signatures?.customer?.name || ""}
-                    onChange={(e) => updateDataField(["signatures", "customer", "name"], e.target.value)}
-                    disabled={busy || !canEdit}
-                  />
-                </label>
-                <label className="grid gap-1">
-                  <span className="text-xs font-semibold text-[var(--muted-foreground)]">Signature text</span>
-                  <input
-                    className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
-                    value={data.signatures?.customer?.signatureText || ""}
-                    onChange={(e) => updateDataField(["signatures", "customer", "signatureText"], e.target.value)}
-                    disabled={busy || !canEdit}
-                  />
-                </label>
-                <div className="flex items-center justify-between text-xs text-[var(--muted-foreground)]">
-                  <span>{data.signatures?.customer?.signedAtISO ? new Date(data.signatures.customer.signedAtISO).toLocaleString("en-GB") : "Not signed yet"}</span>
-                  <Button type="button" variant="secondary" onClick={() => sign("customer")} disabled={busy || !canEdit}>
-                    Sign
-                  </Button>
-                </div>
-              </div>
-
-              {!signatureIsPresent(data.signatures?.engineer) || !signatureIsPresent(data.signatures?.customer) ? (
+              {!signatureIsPresent(data.signatures?.engineer) && !hasSignatureV2(data as unknown as Record<string, unknown>, "inspector") ||
+               !signatureIsPresent(data.signatures?.customer) && !hasSignatureV2(data as unknown as Record<string, unknown>, "client") ? (
                 <div className="sm:col-span-2 text-xs text-[var(--muted-foreground)]">
                   Both signatures are required before completion.
                 </div>
@@ -970,6 +1168,13 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
               )}
             </CardContent>
           </Card>
+          {/* Issue & Distribution History (CERT-A24) */}
+          {mode === "admin" && (
+            <CertificateIssueHistoryPanel
+              certificateId={certificateId}
+              certStatus={cert.status}
+            />
+          )}
         </>
       )}
       <ConfirmDialog
@@ -993,6 +1198,26 @@ export default function CertificateEditorClient({ certificateId, mode }: Props) 
         }}
         busy={busy}
       />
+      {/* Reissue with reason dialog (CERT-A24) */}
+      <ConfirmDialog
+        open={confirmReissue}
+        title="Reissue as new certificate?"
+        description="A new draft will be created from this certificate. You can optionally provide a reason for re-issuing."
+        confirmLabel="Create new draft"
+        onCancel={() => { setConfirmReissue(false); setReissueReason(""); }}
+        onConfirm={reissueAsNew}
+        busy={busy}
+      >
+        <label className="grid gap-1 mt-3">
+          <span className="text-xs font-semibold text-[var(--muted-foreground)]">Reason (optional)</span>
+          <textarea
+            className="min-h-[60px] rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
+            value={reissueReason}
+            onChange={(e) => setReissueReason(e.target.value)}
+            placeholder="e.g. Client requested corrections to installation address"
+          />
+        </label>
+      </ConfirmDialog>
     </div>
   );
 }

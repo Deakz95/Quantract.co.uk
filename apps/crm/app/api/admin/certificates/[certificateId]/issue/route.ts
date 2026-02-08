@@ -51,6 +51,14 @@ export async function POST(_req: Request, ctx: { params: Promise<{ certificateId
             certType: c.type,
             pdfLink: absoluteUrl(`/api/admin/certificates/${c.id}/pdf`),
           });
+          // Log distribution event (CERT-A24)
+          await repo.recordAuditEvent({
+            entityType: "certificate",
+            entityId: c.id,
+            action: "certificate.emailed" as any,
+            actorRole: "admin",
+            meta: { recipientEmail: client.email, recipientName: client.name, revision: result.revision },
+          }).catch(() => {});
         }
       }
     } catch {

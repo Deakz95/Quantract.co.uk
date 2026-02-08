@@ -15,7 +15,9 @@ export type Capability =
   | "leads.scoring"
   | "maintenance.manage"
   | "maintenance.view"
-  | "accounts.access";
+  | "accounts.access"
+  | "cert.review"
+  | "cert.signoff";
 
 /** Human-readable labels for each capability (used in role preset UI). */
 export const CAPABILITY_LABELS: Record<Capability, string> = {
@@ -32,6 +34,8 @@ export const CAPABILITY_LABELS: Record<Capability, string> = {
   "maintenance.manage": "Manage maintenance",
   "maintenance.view": "View maintenance",
   "accounts.access": "Accounts access",
+  "cert.review": "Review certificates",
+  "cert.signoff": "Sign off certificates",
 };
 
 /**
@@ -46,13 +50,13 @@ export const ROLE_PRESETS: Record<string, { label: string; description: string; 
       "billing.view", "billing.manage", "invoices.view", "invoices.manage",
       "planner.manage", "expenses.manage", "suppliers.manage", "settings.manage",
       "users.manage", "leads.scoring", "maintenance.manage", "maintenance.view",
-      "accounts.access",
+      "accounts.access", "cert.review", "cert.signoff",
     ],
   },
   OFFICE: {
     label: "Office",
     description: "Back-office staff — can view invoices, manage the planner, expenses, suppliers, and view maintenance.",
-    capabilities: ["invoices.view", "planner.manage", "expenses.manage", "suppliers.manage", "maintenance.view"],
+    capabilities: ["invoices.view", "planner.manage", "expenses.manage", "suppliers.manage", "maintenance.view", "cert.review", "cert.signoff"],
   },
   FINANCE: {
     label: "Finance",

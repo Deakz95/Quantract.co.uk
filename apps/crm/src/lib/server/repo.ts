@@ -3617,14 +3617,23 @@ export async function createCertificate(input: { jobId: string; type: Certificat
   const siteAddress = job.site
     ? [job.site.address1, job.site.address2, job.site.city, job.site.county, job.site.postcode, job.site.country].filter(Boolean).join(", ")
     : (job as any).siteAddress ?? "";
+  const clientAddress = job.client
+    ? [job.client.address1, job.client.address2, job.client.city, job.client.county, job.client.postcode, job.client.country].filter(Boolean).join(", ")
+    : "";
   const template = getCertificateTemplate(input.type, {
     jobId: job.id,
+    jobNumber: (job as any).jobNumber ?? null,
+    jobTitle: job.title ?? undefined,
+    jobNotes: job.notes ?? undefined,
     siteName: job.site?.name ?? (job as any).siteName ?? undefined,
     siteAddress,
     clientName: job.client?.name ?? (job as any).clientName ?? undefined,
     clientEmail: job.client?.email ?? (job as any).clientEmail ?? undefined,
+    clientPhone: job.client?.phone ?? undefined,
+    clientAddress: clientAddress || undefined,
     jobDescription: job.title ?? job.notes ?? undefined,
     inspectorName: job.engineer?.name ?? undefined,
+    inspectorEmail: job.engineer?.email ?? undefined,
   });
   const companyId = await requireCompanyIdForPrisma();
   const row = await client.certificate

@@ -6,8 +6,15 @@ import {
   toOfflineStatus,
   getStateInfo,
   isEditable,
+  deriveReviewStatus,
+  isReviewBlockingCompletion,
+  getPrefillRecord,
+  isFieldPrefilled as sharedIsFieldPrefilled,
+  isFieldLocked as sharedIsFieldLocked,
   type LifecycleState,
   type LifecycleStateInfo,
+  type ReviewStatus,
+  type PrefillRecord,
 } from '@quantract/shared/certificate-types';
 
 export type CertificateStatus = 'draft' | 'in_progress' | 'complete' | 'issued';
@@ -261,5 +268,46 @@ export function lifecycleToStoredStatus(state: LifecycleState): CertificateStatu
   return toOfflineStatus(state);
 }
 
+// ── Review helpers (CERT-A20) ──
+
+/**
+ * Derive the review status for a stored certificate.
+ * Review metadata lives in `data._review` and flows through transparently.
+ */
+export function getCertificateReviewStatus(cert: StoredCertificate): ReviewStatus {
+  return deriveReviewStatus(cert.certificate_type, cert.data);
+}
+
+/**
+ * Check whether review blocks completion for this certificate.
+ */
+export function isReviewBlocking(cert: StoredCertificate): boolean {
+  return isReviewBlockingCompletion(cert.certificate_type, cert.data);
+}
+
+// ── Pre-fill helpers (CERT-A23) ──
+
+/**
+ * Get the pre-fill record for a stored certificate.
+ * Pre-fill metadata lives in `data._prefill` and flows through transparently.
+ */
+export function getCertificatePrefillRecord(cert: StoredCertificate): PrefillRecord {
+  return getPrefillRecord(cert.data);
+}
+
+/**
+ * Check whether a field was pre-filled from job/site/client data.
+ */
+export function isCertificateFieldPrefilled(cert: StoredCertificate, path: string): boolean {
+  return sharedIsFieldPrefilled(cert.data, path);
+}
+
+/**
+ * Check whether a field is locked (office-set, pre-filled and not overridden).
+ */
+export function isCertificateFieldLocked(cert: StoredCertificate, path: string): boolean {
+  return sharedIsFieldLocked(cert.data, path);
+}
+
 // Re-export lifecycle types for convenience
-export type { LifecycleState, LifecycleStateInfo };
+export type { LifecycleState, LifecycleStateInfo, ReviewStatus, PrefillRecord };

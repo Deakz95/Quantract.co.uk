@@ -3,7 +3,8 @@
 import { useState, useEffect, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Input, Label, NativeSelect, Textarea } from "@quantract/ui";
-import { getCertificateTemplate, type EICCertificate, type BoardData as BoardDataType } from "@quantract/shared/certificate-types";
+import { getCertificateTemplate, type EICCertificate, type BoardData as BoardDataType, getSignature, setSignature, clearSignature, hasSignature, migrateAllLegacySignatures } from "@quantract/shared/certificate-types";
+import type { SignatureValue } from "@quantract/shared/certificate-types";
 import { applyDefaults } from "@quantract/shared/certificate-defaults";
 import { useTemplateStore } from "../../lib/templateStore";
 import { getLastUsedDefaults } from "../../lib/getLastUsedDefaults";
@@ -48,17 +49,30 @@ function EICPageContent() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentCertId, setCurrentCertId] = useState<string | null>(certificateId);
   const [activeSection, setActiveSection] = useState<SectionId>("contractor");
-  const [designSig, setDesignSig] = useState<string | null>(null);
-  const [constructionSig, setConstructionSig] = useState<string | null>(null);
-  const [inspectionSig, setInspectionSig] = useState<string | null>(null);
   const [photos, setPhotos] = useState<string[]>([]);
+
+  // V2 signature helpers — read/write from data._signatures
+  const getsig = (role: string): SignatureValue | null =>
+    getSignature(data as unknown as Record<string, unknown>, role) ?? null;
+  const setSig = (role: string, sig: SignatureValue | null) => {
+    setData((prev) => {
+      const d = prev as unknown as Record<string, unknown>;
+      const updated = sig ? setSignature(d, role, sig) : clearSignature(d, role);
+      return updated as EICCertificate;
+    });
+  };
 
   // Load existing certificate if ID is provided (only after hydration)
   useEffect(() => {
     if (hydrated && certificateId) {
       const existing = getCertificate(certificateId);
       if (existing && existing.data) {
-        setData(existing.data as EICCertificate);
+        const loaded = existing.data as EICCertificate;
+        // Migrate legacy signatures into _signatures (non-destructive)
+        const withMigratedSigs = migrateAllLegacySignatures("EIC", loaded as unknown as Record<string, unknown>);
+        Object.assign(loaded, { _signatures: (withMigratedSigs as Record<string, unknown>)._signatures });
+
+        setData(loaded);
         setCurrentCertId(certificateId);
 
         // Resume at first incomplete section
@@ -185,8 +199,9 @@ function EICPageContent() {
 
     setIsGenerating(true);
     try {
+      const designSigV2 = getsig("designer");
       const pdfBytes = await generateCertificatePDF(data, {
-        engineerSignature: designSig,
+        engineerSignature: designSigV2?.image?.dataUrl ?? null,
         customerSignature: null,
         photos,
       });
@@ -288,7 +303,8 @@ function EICPageContent() {
       label: "Design / Construction / Inspection",
       icon: SECTION_ICONS.penTool,
       getStatus: (): SectionStatus => {
-        if (designSig || constructionSig || inspectionSig) return "complete";
+        const d = data as unknown as Record<string, unknown>;
+        if (hasSignature(d, "designer") || hasSignature(d, "installer") || hasSignature(d, "inspector")) return "complete";
         if (data.designSection?.name || data.constructionSection?.name || data.inspectionSection?.name) return "partial";
         return "empty";
       },
@@ -305,7 +321,7 @@ function EICPageContent() {
       icon: SECTION_ICONS.camera,
       getStatus: (): SectionStatus => "complete",
     },
-  ], [data, designSig, constructionSig, inspectionSig]);
+  ], [data]);
 
   return (
     <CertificateLayout
@@ -704,28 +720,24 @@ function EICPageContent() {
           constructionSection={data.constructionSection}
           inspectionSection={data.inspectionSection}
           sameAsDesigner={data.sameAsDesigner}
-          designSignature={designSig}
-          constructionSignature={constructionSig}
-          inspectionSignature={inspectionSig}
+          designSignature={getsig("designer")}
+          constructionSignature={getsig("installer")}
+          inspectionSignature={getsig("inspector")}
           onDesignChange={(designSection) => {
             setData((prev) => ({ ...prev, designSection }));
-        
           }}
           onConstructionChange={(constructionSection) => {
             setData((prev) => ({ ...prev, constructionSection }));
-        
           }}
           onInspectionChange={(inspectionSection) => {
             setData((prev) => ({ ...prev, inspectionSection }));
-        
           }}
           onSameAsDesignerChange={(sameAsDesigner) => {
             setData((prev) => ({ ...prev, sameAsDesigner }));
-        
           }}
-          onDesignSignatureChange={setDesignSig}
-          onConstructionSignatureChange={setConstructionSig}
-          onInspectionSignatureChange={setInspectionSig}
+          onDesignSignatureChange={(sig) => setSig("designer", sig)}
+          onConstructionSignatureChange={(sig) => setSig("installer", sig)}
+          onInspectionSignatureChange={(sig) => setSig("inspector", sig)}
         />
       )}
 

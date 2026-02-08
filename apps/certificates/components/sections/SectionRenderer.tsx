@@ -16,10 +16,13 @@
  */
 
 import type { ReactNode } from "react";
-import type { CertificateType } from "@quantract/shared/certificate-types";
+import type { CertificateType, SignatureValue } from "@quantract/shared/certificate-types";
 import {
   getTypeConfig,
   getTypeFeatures,
+  getSignature,
+  setSignature,
+  clearSignature,
   type CertificateFeatures,
 } from "@quantract/shared/certificate-types";
 
@@ -52,16 +55,10 @@ export interface SectionRendererProps {
   certType: CertificateType;
   /** Section ID from the registry */
   sectionId: string;
-  /** Full certificate data object */
+  /** Full certificate data object (includes _signatures) */
   data: Record<string, unknown>;
   /** Update full certificate data */
   onChange: (data: Record<string, unknown>) => void;
-
-  // ── Signatures (optional) ──
-  /** Signature values keyed by role ("engineer", "customer", "designer", etc.) */
-  signatures?: Record<string, string | null>;
-  /** Update a signature by role */
-  onSignatureChange?: (role: string, sig: string | null) => void;
 
   // ── Photos (optional) ──
   photos?: string[];
@@ -137,8 +134,6 @@ export function SectionRenderer({
   sectionId,
   data,
   onChange,
-  signatures,
-  onSignatureChange,
   photos,
   onPhotosChange,
   customContent,
@@ -273,10 +268,12 @@ export function SectionRenderer({
       );
 
     // ── Declaration ──
-    case "declaration":
+    case "declaration": {
+      const declRole = getDeclarationRole(certType);
+      const declSigId = declRole === "inspector" ? "inspector" : declRole;
       return (
         <DeclarationSection
-          role={getDeclarationRole(certType)}
+          role={declRole}
           data={(data.declarationDetails ?? {
             inspectorName: "",
             inspectorQualifications: "",
@@ -287,14 +284,17 @@ export function SectionRenderer({
           onChange={(declarationDetails) =>
             onChange({ ...data, declarationDetails })
           }
-          signatureValue={signatures?.engineer ?? signatures?.inspector ?? null}
-          onSignatureChange={
-            onSignatureChange
-              ? (sig) => onSignatureChange("engineer", sig)
-              : undefined
-          }
+          signatureValue={getSignature(data, declSigId) ?? null}
+          onSignatureChange={(sig) => {
+            if (sig) {
+              onChange(setSignature(data, declSigId, sig));
+            } else {
+              onChange(clearSignature(data, declSigId));
+            }
+          }}
         />
       );
+    }
 
     // ── Client Acknowledgement ──
     case "clientAcknowledgement":
@@ -307,12 +307,14 @@ export function SectionRenderer({
           onChange={(clientAcknowledgement) =>
             onChange({ ...data, clientAcknowledgement })
           }
-          signatureValue={signatures?.customer ?? signatures?.client ?? null}
-          onSignatureChange={
-            onSignatureChange
-              ? (sig) => onSignatureChange("customer", sig)
-              : undefined
-          }
+          signatureValue={getSignature(data, "client") ?? null}
+          onSignatureChange={(sig) => {
+            if (sig) {
+              onChange(setSignature(data, "client", sig));
+            } else {
+              onChange(clearSignature(data, "client"));
+            }
+          }}
         />
       );
 

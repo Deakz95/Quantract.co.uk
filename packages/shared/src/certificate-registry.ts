@@ -12,6 +12,7 @@
  */
 
 import type { CertificateType } from "./certificate-types";
+import type { CertificateReviewConfig } from "./certificate-review";
 
 // ── Section definition ──
 
@@ -109,6 +110,8 @@ export interface CertificateTypeConfig {
   signatures: CertificateSignatureConfig[];
   /** Feature flags controlling which UI components to show */
   features: CertificateFeatures;
+  /** Review/approval config (CERT-A20) — omit or set required:false to skip review */
+  review?: CertificateReviewConfig;
 }
 
 // ── Validation result ──
@@ -365,6 +368,7 @@ export const CERTIFICATE_TYPE_REGISTRY: Record<
       ...ELECTRICAL_FEATURES,
       hasDesignSection: true,
     },
+    review: { required: true, rolesAllowedToReview: ["admin", "office"] },
   },
 
   // ── EICR ──
@@ -462,6 +466,7 @@ export const CERTIFICATE_TYPE_REGISTRY: Record<
       hasClientAcknowledgement: true,
       hasSummaryOfCondition: true,
     },
+    review: { required: true, rolesAllowedToReview: ["admin", "office"] },
   },
 
   // ── MWC ──
@@ -546,6 +551,7 @@ export const CERTIFICATE_TYPE_REGISTRY: Record<
       hasBoards: false,
       hasCircuitDetails: true,
     },
+    review: { required: true, rolesAllowedToReview: ["admin", "office"] },
   },
 
   // ── FIRE ──
@@ -609,6 +615,7 @@ export const CERTIFICATE_TYPE_REGISTRY: Record<
     features: {
       ...SIMPLE_CERT_FEATURES,
     },
+    review: { required: true, rolesAllowedToReview: ["admin", "office"] },
   },
 
   // ── EML ──
@@ -672,6 +679,7 @@ export const CERTIFICATE_TYPE_REGISTRY: Record<
     features: {
       ...SIMPLE_CERT_FEATURES,
     },
+    review: { required: true, rolesAllowedToReview: ["admin", "office"] },
   },
 };
 

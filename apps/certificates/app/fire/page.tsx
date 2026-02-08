@@ -4,7 +4,8 @@ import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Button, Card, CardHeader, CardTitle, CardContent, CardDescription, Input, Label, NativeSelect, Textarea } from "@quantract/ui";
-import { getCertificateTemplate, type FireAlarmCertificate } from "@quantract/shared/certificate-types";
+import { getCertificateTemplate, type FireAlarmCertificate, getSignature, setSignature, clearSignature, migrateAllLegacySignatures } from "@quantract/shared/certificate-types";
+import type { SignatureValue } from "@quantract/shared/certificate-types";
 import {
   useCertificateStore,
   useStoreHydration,
@@ -12,7 +13,7 @@ import {
   generateCertificateNumber,
 } from "../../lib/certificateStore";
 import { StickyActionBar } from "../../components/StickyActionBar";
-import { SignatureCapture } from "../../components/SignatureCapture";
+import { SignatureField } from "../../components/signatures/SignatureField";
 import { PhotoCapture } from "../../components/PhotoCapture";
 
 function FireAlarmPageContent() {
@@ -28,16 +29,28 @@ function FireAlarmPageContent() {
   const [currentCertId, setCurrentCertId] = useState<string | null>(certificateId);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
-  const [engineerSig, setEngineerSig] = useState<string | null>(null);
-  const [customerSig, setCustomerSig] = useState<string | null>(null);
   const [photos, setPhotos] = useState<string[]>([]);
+
+  // V2 signature helpers
+  const getsig = (role: string): SignatureValue | null =>
+    getSignature(data as unknown as Record<string, unknown>, role) ?? null;
+  const setSig = (role: string, sig: SignatureValue | null) => {
+    setData((prev) => {
+      const d = prev as unknown as Record<string, unknown>;
+      const updated = sig ? setSignature(d, role, sig) : clearSignature(d, role);
+      return updated as FireAlarmCertificate;
+    });
+  };
 
   // Load existing certificate if ID is provided (only after hydration)
   useEffect(() => {
     if (hydrated && certificateId) {
       const existing = getCertificate(certificateId);
       if (existing && existing.data) {
-        setData(existing.data as FireAlarmCertificate);
+        const loaded = existing.data as FireAlarmCertificate;
+        const withMigratedSigs = migrateAllLegacySignatures("FIRE", loaded as unknown as Record<string, unknown>);
+        Object.assign(loaded, { _signatures: (withMigratedSigs as Record<string, unknown>)._signatures });
+        setData(loaded);
         setCurrentCertId(certificateId);
         setLastSaved(new Date(existing.updated_at));
       }
@@ -699,8 +712,8 @@ function FireAlarmPageContent() {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="grid md:grid-cols-2 gap-6">
-              <SignatureCapture label="Engineer Signature" value={engineerSig} onChange={setEngineerSig} role="engineer" />
-              <SignatureCapture label="Customer Signature" value={customerSig} onChange={setCustomerSig} role="client" />
+              <SignatureField signatureId="engineer" label="Engineer Signature" value={getsig("engineer")} onChange={(sig) => setSig("engineer", sig)} />
+              <SignatureField signatureId="client" label="Customer Signature" value={getsig("client")} onChange={(sig) => setSig("client", sig)} />
             </div>
             <PhotoCapture photos={photos} onChange={setPhotos} />
           </CardContent>
